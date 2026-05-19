@@ -44,8 +44,8 @@ public final class KeyboardThemePresetTest {
 
             assertEquals(themed.fontFamily, KeyboardSettings.normalizeFontFamily(themed.fontFamily));
             assertEquals(true, themed.showBeginnerTooltipPreview);
-            assertTrue(brightness(themed.primaryFunctionKeyColor) < brightness(themed.keyIdleColor));
-            assertTrue(brightness(themed.accentKeyColor) < brightness(themed.keyIdleColor));
+            assertTrue(themed.primaryFunctionKeyColor != themed.keyIdleColor);
+            assertTrue(themed.accentKeyColor != themed.keyIdleColor);
             assertEquals(330, themed.hangulKeyboardHeightDp);
             assertEquals(270, themed.englishKeyboardHeightDp);
             assertEquals(4, themed.hangulLeftPaddingDp);

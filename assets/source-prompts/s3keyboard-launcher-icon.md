@@ -1,0 +1,5 @@
+﻿# S3Keyboard launcher icon prompt
+
+A polished Android app launcher icon for a Korean gesture keyboard named S3Keyboard. A compact rounded-square keycap cluster viewed slightly from above, inspired by Korean Hangul/Dingul input: three large tactile keycaps forming a subtle gesture path, with one key showing a clean Hangul vowel-like vertical stroke and another showing a small dot/circle motif. Premium mechanical keyboard keycap feel, modern 3-tone palette with soft ivory alpha key, deep charcoal modifier key, muted coral accent key, cyan gesture glow. Centered composition, high detail, no readable text, no letters except abstract Hangul-inspired strokes, transparent or simple background, app icon ready, crisp at small sizes.
+
+Negative prompt: simple SVG, flat vector image, flat icon set, minimalist shapes, low detail, cartoon sticker, UI placeholder, simple geometric shapes, plain color blocks, crisp web illustration, infographic style, isometric camera, side view, front view, 3D render, photorealistic scene, labels, text, watermark

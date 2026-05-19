@@ -20,6 +20,8 @@ public final class ThemeSelectorActivity extends Activity {
     private ThemeOption[] themeOptions = new ThemeOption[0];
     private int selectedIndex;
     private KeyboardMode previewMode = KeyboardMode.HANGUL;
+    private Button dingulPreviewButton;
+    private Button qwertyPreviewButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +66,8 @@ public final class ThemeSelectorActivity extends Activity {
 
         LinearLayout previewModeRow = new LinearLayout(this);
         previewModeRow.setOrientation(LinearLayout.HORIZONTAL);
-        Button dingulPreviewButton = previewModeButton("Dingul", KeyboardMode.HANGUL);
-        Button qwertyPreviewButton = previewModeButton("QWERTY", KeyboardMode.ENGLISH);
+        dingulPreviewButton = previewModeButton("Dingul", KeyboardMode.HANGUL);
+        qwertyPreviewButton = previewModeButton("QWERTY", KeyboardMode.ENGLISH);
         previewModeRow.addView(dingulPreviewButton, weightedButtonParams());
         previewModeRow.addView(qwertyPreviewButton, weightedButtonParams());
         root.addView(previewModeRow, topParams(10));
@@ -83,6 +85,7 @@ public final class ThemeSelectorActivity extends Activity {
         }
         themeOptions = ThemeOption.buildOptions(UserThemeStore.load(this));
         selectedIndex = indexOfSelectedTheme(KeyboardPreferences.loadSelectedThemeId(this));
+        updatePreviewModeButtons();
         cards.removeAllViews();
         for (int i = 0; i < themeOptions.length; i++) {
             LinearLayout.LayoutParams params = matchWrap();
@@ -128,7 +131,7 @@ public final class ThemeSelectorActivity extends Activity {
         card.addView(header, matchWrap());
 
         boolean englishPreview = previewMode == KeyboardMode.ENGLISH;
-        card.addView(previewKeyboard(englishPreview ? englishSettings : hangulSettings),
+        card.addView(previewKeyboard(englishPreview ? englishSettings : hangulSettings, index),
                 previewParams(englishPreview ? 88 : 108));
         return card;
     }
@@ -155,9 +158,19 @@ public final class ThemeSelectorActivity extends Activity {
         styleSystemButton(button, previewMode == mode);
         button.setOnClickListener(v -> {
             previewMode = mode;
+            updatePreviewModeButtons();
             rebuildCards();
         });
         return button;
+    }
+
+    private void updatePreviewModeButtons() {
+        if (dingulPreviewButton != null) {
+            styleSystemButton(dingulPreviewButton, previewMode == KeyboardMode.HANGUL);
+        }
+        if (qwertyPreviewButton != null) {
+            styleSystemButton(qwertyPreviewButton, previewMode == KeyboardMode.ENGLISH);
+        }
     }
 
     private void applyTheme(int index) {
@@ -182,13 +195,18 @@ public final class ThemeSelectorActivity extends Activity {
                 .withEnglishNumberRow(false);
     }
 
-    private HangulKeyboardView previewKeyboard(KeyboardSettings previewSettings) {
+    private HangulKeyboardView previewKeyboard(KeyboardSettings previewSettings, int themeIndex) {
         HangulKeyboardView preview = new HangulKeyboardView(this);
         preview.setCompactPreviewRendering(true);
         preview.setSettings(previewSettings);
         preview.setClickable(true);
         preview.setFocusable(false);
-        preview.setOnTouchListener((v, event) -> true);
+        preview.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                applyTheme(themeIndex);
+            }
+            return true;
+        });
         preview.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         return preview;
     }

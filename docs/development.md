@@ -79,6 +79,11 @@ adb -s <device-ip>:<connect-port> uninstall com.academic.hangulgestureime
 
 - `KeyboardThemePreset` is the source of truth for built-in themes. Keep GMK-style
   themes as deterministic JSON presets rather than image-matched screenshots.
+- Every keyboard theme starts from the same three-tone keycap model:
+  `alpha` keys use `keyIdleColor` and `accentColor`, `modifier` keys use
+  `functionKeyColor` and `secondaryColor`, and selected command/accent keys use
+  `accentKeyColor`. Per-key overrides should be treated as explicit exceptions
+  on top of that model, not as the default way to build a theme.
 - Theme colors are split into global key colors plus per-key overrides:
   - `keyTextColorOverrides` changes legends, hint text, and icon foregrounds.
   - `keyBackgroundColorOverrides` changes individual key backgrounds. Supported
@@ -88,11 +93,31 @@ adb -s <device-ip>:<connect-port> uninstall com.academic.hangulgestureime
   normalizes background overrides with a `background:` prefix so the renderer can
   keep one immutable override map without mixing foreground and background lookups.
 - `LegendStylePreset.DOTS` hides slide hints and draws the main legend as a
-  Canvas circle instead of using a text bullet. Dots themes should provide colorful
-  `keyTextColorOverrides`; the dot renderer uses those colors as the dot fill.
+  Canvas circle instead of drawing text or command icons. Dots themes should
+  provide colorful `keyTextColorOverrides`; the dot renderer uses those colors as
+  the dot fill.
 - `ThemeSelectorActivity` persists the applied preset/custom theme id through
   `KeyboardPreferences.SELECTED_THEME_ID`. Avoid relying on card index alone
   because user themes can be added or removed.
+
+## App Icon Assets
+
+The launcher icon source prompt is stored at:
+
+```text
+assets\source-prompts\s3keyboard-launcher-icon.md
+```
+
+The full-resolution generated source image is stored at:
+
+```text
+assets\generated\icons\s3keyboard-launcher-icon.png
+```
+
+Launcher PNGs are derived from that source into the Android `mipmap-*`
+directories. Regenerate the source with the local `codex-image-gen` workflow
+from `C:\Users\bug95\.codex\vendor\codex-image-gen`, then resize into
+`app\src\main\res\mipmap-mdpi` through `mipmap-xxxhdpi`.
 
 ## Settings UI Styling
 

@@ -599,10 +599,9 @@ public final class HangulKeyboardView extends View {
 
         float centerX = surfaceBounds.centerX();
         int icon = iconFor(key);
-        if (icon == KeyIcon.NONE) {
-            if (settings.legendStylePreset.drawsDotLegend()) {
-                drawDotLegend(canvas, key, surfaceBounds, englishLetterKey);
-            } else {
+        if (settings.legendStylePreset.drawsDotLegend()) {
+            drawDotLegend(canvas, key, surfaceBounds, englishLetterKey);
+        } else if (icon == KeyIcon.NONE) {
             String label = displayLabelForKey(key);
             textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
             String paintLabel = textPresentation(label);
@@ -613,7 +612,6 @@ public final class HangulKeyboardView extends View {
                     : surfaceBounds.centerY();
             float centerY = labelCenterY - textCenterOffset(textPaint);
             canvas.drawText(paintLabel, centerX, centerY, textPaint);
-            }
         } else {
             drawKeyIcon(canvas, key, icon, surfaceBounds, active);
             if (shiftStateActive) {

@@ -27,19 +27,19 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
-    public void onlyBackspaceEnterAndShiftUsePrimaryFunctionRole() {
+    public void enterUsesAccentRoleWhileOtherFunctionKeysUseModifierRole() {
         assertEquals(
-                KeyVisualRole.PRIMARY_FUNCTION,
+                KeyVisualRole.FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         KeyboardSettings.defaults(),
                         GestureKey.command("Delete", KeyboardCommands.CMD_DELETE, 3)));
         assertEquals(
-                KeyVisualRole.PRIMARY_FUNCTION,
+                KeyVisualRole.ACCENT,
                 KeyboardKeyVisualClassifier.roleFor(
                         KeyboardSettings.defaults(),
                         GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3)));
         assertEquals(
-                KeyVisualRole.PRIMARY_FUNCTION,
+                KeyVisualRole.FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         KeyboardSettings.defaults().withKeyboardMode(KeyboardMode.ENGLISH),
                         GestureKey.command(
@@ -70,11 +70,11 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
-    public void functionRolesUseAccentBackground() {
+    public void keyRolesUseAlphaModifierAndAccentBackgrounds() {
         KeyboardSettings settings = KeyboardSettings.defaults();
 
         assertEquals(
-                settings.accentKeyColor,
+                settings.functionKeyColor,
                 KeyboardKeyVisualClassifier.colorFor(
                         settings,
                         GestureKey.command("Delete", KeyboardCommands.CMD_DELETE, 3)));
@@ -84,12 +84,12 @@ public final class KeyboardKeyVisualClassifierTest {
                         settings,
                         GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3)));
         assertEquals(
-                settings.accentKeyColor,
+                settings.functionKeyColor,
                 KeyboardKeyVisualClassifier.colorFor(
                         settings,
                         GestureKey.command("Options", KeyboardCommands.CMD_OPEN_OPTIONS, 3)));
         assertEquals(
-                settings.accentKeyColor,
+                settings.functionKeyColor,
                 KeyboardKeyVisualClassifier.colorFor(
                         settings,
                         GestureKey.command("Language", KeyboardCommands.CMD_TOGGLE_LANGUAGE, 2)));
@@ -173,6 +173,37 @@ public final class KeyboardKeyVisualClassifierTest {
         assertEquals(KeyVisualRole.NORMAL, KeyboardKeyVisualClassifier.roleFor(settings, key));
         assertEquals(settings.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(settings, key));
         assertEquals(0xFF123456, KeyboardKeyVisualClassifier.textColorFor(settings, key));
+    }
+
+    @Test
+    public void semanticCommandOverridesApplyToOptionsAndReservedKeys() {
+        Map<String, Integer> overrides = new HashMap<>();
+        overrides.put("options", 0x00010203);
+        overrides.put("background:options", 0x00040506);
+        overrides.put("reserved", 0x00070809);
+        overrides.put("background:reserved", 0x000A0B0C);
+        KeyboardSettings settings = KeyboardSettings.defaults().withKeyColorOverrides(overrides);
+
+        assertEquals(
+                0xFF010203,
+                KeyboardKeyVisualClassifier.textColorFor(
+                        settings,
+                        GestureKey.command("Options", KeyboardCommands.CMD_OPEN_OPTIONS, 3)));
+        assertEquals(
+                0xFF040506,
+                KeyboardKeyVisualClassifier.colorFor(
+                        settings,
+                        GestureKey.command("Options", KeyboardCommands.CMD_OPEN_OPTIONS, 3)));
+        assertEquals(
+                0xFF070809,
+                KeyboardKeyVisualClassifier.textColorFor(
+                        settings,
+                        GestureKey.command("Reserved", KeyboardCommands.CMD_RESERVED_PHRASES, 2)));
+        assertEquals(
+                0xFF0A0B0C,
+                KeyboardKeyVisualClassifier.colorFor(
+                        settings,
+                        GestureKey.command("Reserved", KeyboardCommands.CMD_RESERVED_PHRASES, 2)));
     }
 
     @Test

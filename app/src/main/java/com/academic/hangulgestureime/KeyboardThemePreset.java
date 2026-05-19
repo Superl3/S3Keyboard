@@ -99,14 +99,14 @@ final class KeyboardThemePreset {
                     modernDolchTextOverrides(),
                     modernDolchBackgroundOverrides()),
             theme("gmk-olivia-light", "GMK Olivia Light Inspired",
-                    "F2E8E4", "E6D6D1", "D8C2BD", "CFA4A9", "E2CDC8",
-                    "B99CA1", "A78389", "A78389", "33282B", "8D6A70",
+                    "F2EDE8", "242126", "242126", "E8A5AE", "E2D8D4",
+                    "ECE6E2", "BBAFB0", "BBAFB0", "2B2528", "E8A5AE",
                     5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
                     oliviaTextOverrides(),
                     oliviaBackgroundOverrides()),
             theme("gmk-olivia-dark", "GMK Olivia Dark Inspired",
-                    "3A3438", "2B282C", "211F23", "3C3035", "4B4248",
-                    "171619", "111114", "111114", "F4E7E2", "D9A3AA",
+                    "3A3438", "171619", "171619", "D9A3AA", "4B4248",
+                    "111114", "111114", "111114", "F4E7E2", "D9A3AA",
                     5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
                     oliviaTextOverrides(),
                     oliviaDarkBackgroundOverrides()),
@@ -610,34 +610,25 @@ final class KeyboardThemePreset {
 
     private static String oliviaTextOverrides() {
         return json(
-                "shift", "D9A3AA",
-                "language", "D9A3AA",
-                "space", "33282B",
-                "enter", "33282B",
-                "backspace", "F4E7E2",
-                "options", "D9A3AA",
-                "reserved", "33282B");
+                "enter", "211F23",
+                "space", "211F23",
+                "options", "211F23",
+                "reserved", "211F23");
     }
 
     private static String oliviaBackgroundOverrides() {
         return json(
-                "shift", "B99CA1",
-                "language", "B99CA1",
-                "space", "F2E8E4",
-                "enter", "CFA4A9",
-                "backspace", "A78389",
-                "options", "B99CA1",
-                "reserved", "CFA4A9");
+                "enter", "E8A5AE",
+                "space", "E8A5AE",
+                "options", "E8A5AE",
+                "reserved", "E8A5AE");
     }
 
     private static String oliviaDarkBackgroundOverrides() {
         return json(
-                "shift", "211F23",
-                "language", "211F23",
-                "space", "3A3438",
                 "enter", "D9A3AA",
-                "backspace", "211F23",
-                "options", "211F23",
+                "space", "D9A3AA",
+                "options", "D9A3AA",
                 "reserved", "D9A3AA");
     }
 
