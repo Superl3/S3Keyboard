@@ -20,6 +20,16 @@ public final class TouchResolverTest {
     }
 
     @Test
+    public void choosesNearestCandidateInsteadOfFirstCandidate() {
+        FakeTarget left = new FakeTarget("left", 0, 0, 50, 50, false);
+        FakeTarget right = new FakeTarget("right", 60, 0, 110, 50, false);
+
+        FakeTarget resolved = TouchResolver.resolve(Arrays.asList(left, right), 58, 25, 10, 0, 0, 0);
+
+        assertEquals("right", resolved.name);
+    }
+
+    @Test
     public void ignoresTouchOutsideHitSlop() {
         FakeTarget key = new FakeTarget("key", 0, 0, 50, 50, false);
 

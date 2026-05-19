@@ -1527,21 +1527,23 @@ public final class HangulKeyboardView extends View {
 
         @Override
         public boolean contains(float x, float y) {
-            return bounds.contains(x, y);
+            return visualBounds().contains(x, y);
         }
 
         @Override
         public boolean expandedContains(float x, float y, float slop) {
-            return x >= bounds.left - slop
-                    && x <= bounds.right + slop
-                    && y >= bounds.top - slop
-                    && y <= bounds.bottom + slop;
+            RectF hitBounds = visualBounds();
+            return x >= hitBounds.left - slop
+                    && x <= hitBounds.right + slop
+                    && y >= hitBounds.top - slop
+                    && y <= hitBounds.bottom + slop;
         }
 
         @Override
         public float distanceSquaredTo(float x, float y) {
-            float nearestX = Math.max(bounds.left, Math.min(bounds.right, x));
-            float nearestY = Math.max(bounds.top, Math.min(bounds.bottom, y));
+            RectF hitBounds = visualBounds();
+            float nearestX = Math.max(hitBounds.left, Math.min(hitBounds.right, x));
+            float nearestY = Math.max(hitBounds.top, Math.min(hitBounds.bottom, y));
             float dx = x - nearestX;
             float dy = y - nearestY;
             return dx * dx + dy * dy;

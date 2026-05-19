@@ -17,17 +17,12 @@ final class TouchResolver {
         float adjustedX = x + biasX;
         float adjustedY = y + touchYOffset + biasY;
 
-        for (T target : targets) {
-            if (target.contains(adjustedX, adjustedY)) {
-                return target;
-            }
-        }
-
         T best = null;
         float bestDistance = Float.MAX_VALUE;
         for (T target : targets) {
             float effectiveSlop = hitSlop + (target.isPrimaryBottomControl() ? hitSlop * 0.75f : 0f);
-            if (!target.expandedContains(adjustedX, adjustedY, effectiveSlop)) {
+            if (!target.contains(adjustedX, adjustedY)
+                    && !target.expandedContains(adjustedX, adjustedY, effectiveSlop)) {
                 continue;
             }
             float distance = target.distanceSquaredTo(adjustedX, adjustedY);
