@@ -603,7 +603,8 @@ public final class HangulKeyboardView extends View {
             String label = displayLabelForKey(key);
             textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
             String paintLabel = textPresentation(label);
-            textPaint.setTextSize(textSizeFor(paintLabel, surfaceBounds, keySlot.compactSpecialColumn));
+            boolean compactMainLabel = keySlot.compactSpecialColumn && !isFullSizeDingulSpecialLabel(key);
+            textPaint.setTextSize(textSizeFor(paintLabel, surfaceBounds, compactMainLabel));
             float labelCenterY = englishLetterKey
                     ? surfaceBounds.top + surfaceBounds.height() * 0.36f
                     : surfaceBounds.centerY();
@@ -663,6 +664,8 @@ public final class HangulKeyboardView extends View {
             float hintTextSize,
             float bottomHintInset) {
         float y = surfaceBounds.bottom - bottomHintInset;
+        hintPaint.setTextSize(hintTextSize);
+        y = surfaceBounds.top + surfaceBounds.height() * 0.73f - textCenterOffset(hintPaint);
         boolean hasLeft = displayFor(key.leftSlide) != null;
         boolean hasRight = displayFor(key.rightSlide) != null;
         if (hasLeft && hasRight) {
@@ -692,6 +695,13 @@ public final class HangulKeyboardView extends View {
             return Math.max(renderDp(6), bounds.height() * 0.12f);
         }
         return renderDp(7);
+    }
+
+    private boolean isFullSizeDingulSpecialLabel(GestureKey key) {
+        if (settings.keyboardMode != KeyboardMode.HANGUL || key == null || key.label == null) {
+            return false;
+        }
+        return "?".equals(key.label) || ".".equals(key.label) || "/".equals(key.label);
     }
 
     private void drawBorderShape(Canvas canvas, RectF bounds) {
@@ -992,8 +1002,9 @@ public final class HangulKeyboardView extends View {
     }
 
     private void drawShiftStateIndicator(Canvas canvas, RectF bounds) {
-        float radius = Math.min(renderDp(3.2f), bounds.height() * 0.048f);
-        float cx = bounds.centerX();
+        float radius = Math.min(renderDp(2.8f), bounds.height() * 0.042f);
+        float cx = (bounds.centerX() + bounds.right) / 2f;
+        cx = Math.min(bounds.right - radius - renderDp(5), cx);
         float cy = bounds.centerY() - keyIconSize() * 1.18f - renderDp(1);
         cy = Math.max(bounds.top + radius + Math.min(renderDp(2), bounds.height() * 0.04f), cy);
         iconPaint.setStyle(Paint.Style.FILL);

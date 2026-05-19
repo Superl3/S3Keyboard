@@ -798,37 +798,38 @@ public final class HangulGestureImeService extends InputMethodService
             return;
         }
 
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
         FrameLayout overlay = new FrameLayout(this);
-        overlay.setBackgroundColor(0x66000000);
+        overlay.setBackgroundColor(ui.scrim);
         overlay.setOnClickListener(v -> dismissQuickSettings());
 
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setPadding(dp(14), dp(12), dp(14), dp(14));
         GradientDrawable background = new GradientDrawable();
-        background.setColor(settings.keyboardBackgroundColor);
+        background.setColor(ui.surfaceRaised);
         background.setCornerRadius(dp(12));
-        background.setStroke(Math.max(1, dp(settings.keyBorderWidthDp)), settings.borderColor);
+        background.setStroke(Math.max(1, dp(1)), ui.border);
         panel.setBackground(background);
         panel.setOnClickListener(v -> {
         });
 
         TextView title = new TextView(this);
         title.setText("Quick settings");
-        title.setTextColor(contrastColor(settings.keyboardBackgroundColor));
+        title.setTextColor(ui.textPrimary);
         title.setTextSize(16);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         panel.addView(title, matchWrap());
 
-        panel.addView(quickButton(numberRowToggleLabel(), v -> toggleActiveNumberRow()), topWrap(8));
+        panel.addView(quickButton(numberRowToggleLabel(), activeNumberRowVisible(), v -> toggleActiveNumberRow()), topWrap(8));
         LinearLayout handRow = new LinearLayout(this);
         handRow.setOrientation(LinearLayout.HORIZONTAL);
-        handRow.addView(handednessLabelView(), weightedQuickParams(0, 4));
+        handRow.addView(handednessLabelView(ui), weightedQuickParams(0, 4));
         handRow.addView(handednessButton("왼쪽", HandednessMode.LEFT), weightedQuickParams(0, 4));
         handRow.addView(handednessButton("비활성화", HandednessMode.BALANCED), weightedQuickParams(0, 4));
         handRow.addView(handednessButton("오른쪽", HandednessMode.RIGHT), weightedQuickParams(0, 0));
         panel.addView(handRow, topWrap(6));
-        panel.addView(quickButton("Skin settings", v -> {
+        panel.addView(quickButton("Skin settings", false, v -> {
             dismissQuickSettings();
             Intent intent = new Intent(this, ThemeSelectorActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -854,10 +855,10 @@ public final class HangulGestureImeService extends InputMethodService
         quickSettingsView = null;
     }
 
-    private Button quickButton(String text, View.OnClickListener listener) {
+    private Button quickButton(String text, boolean selected, View.OnClickListener listener) {
         Button button = new Button(this);
         button.setText(text);
-        styleQuickButton(button, settings.keyIdleColor);
+        styleQuickButton(button, selected);
         button.setAllCaps(false);
         button.setOnClickListener(listener);
         return button;
@@ -867,7 +868,7 @@ public final class HangulGestureImeService extends InputMethodService
         Button button = new Button(this);
         button.setText(text);
         button.setAllCaps(false);
-        styleQuickButton(button, settings.handednessMode == mode ? settings.accentKeyColor : settings.keyIdleColor);
+        styleQuickButton(button, settings.handednessMode == mode);
         button.setOnClickListener(v -> {
             setHandedness(mode);
             dismissQuickSettings();
@@ -875,27 +876,34 @@ public final class HangulGestureImeService extends InputMethodService
         return button;
     }
 
-    private TextView handednessLabelView() {
+    private TextView handednessLabelView(SettingsUiPalette ui) {
         TextView label = new TextView(this);
         label.setText("한손모드");
-        label.setTextColor(contrastColor(settings.keyboardBackgroundColor));
+        label.setTextColor(ui.textSecondary);
         label.setGravity(Gravity.CENTER_VERTICAL);
         label.setTextSize(13);
         return label;
     }
 
-    private void styleQuickButton(Button button, int backgroundColor) {
-        button.setTextColor(contrastColor(backgroundColor));
+    private void styleQuickButton(Button button, boolean selected) {
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
+        button.setTextColor(selected ? ui.selectedText : ui.controlText);
         GradientDrawable background = new GradientDrawable();
-        background.setColor(backgroundColor);
+        background.setColor(selected ? ui.selectedFill : ui.controlFill);
         background.setCornerRadius(dp(8));
-        background.setStroke(Math.max(1, dp(settings.keyBorderWidthDp)), settings.borderColor);
+        background.setStroke(Math.max(1, dp(selected ? 2 : 1)), selected ? ui.selectedBorder : ui.border);
         button.setBackground(background);
+    }
+
+    private boolean activeNumberRowVisible() {
+        return settings.keyboardMode == KeyboardMode.ENGLISH
+                ? settings.showEnglishNumberRow
+                : settings.showHangulNumberRow;
     }
 
     private String numberRowToggleLabel() {
         String layout = settings.keyboardMode == KeyboardMode.ENGLISH ? "QWERTY" : "Dingul";
-        return layout + " number row: " + (settings.showNumberRow ? "on" : "off");
+        return layout + " number row: " + (activeNumberRowVisible() ? "on" : "off");
     }
 
     private void toggleActiveNumberRow() {

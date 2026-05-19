@@ -223,7 +223,7 @@ final class KeyboardThemePreset {
 
     private static String shiftIndicatorColor(String id) {
         if (id == null) {
-            return "2563EB";
+            return "06B6D4";
         }
         if (id.startsWith("marigold-fiesta")) {
             return id.endsWith("dark") ? "36E7F4" : "008B82";
@@ -234,7 +234,7 @@ final class KeyboardThemePreset {
         if (id.contains("macos") || id.contains("slate")) {
             return "0891B2";
         }
-        return "2563EB";
+        return "06B6D4";
     }
 
     private static String marigoldFiestaDarkOverrides() {

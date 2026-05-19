@@ -39,6 +39,8 @@ public final class ThemeSelectorActivity extends Activity {
 
     private View createContentView() {
         ScrollView scrollView = new ScrollView(this);
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
+        scrollView.setBackgroundColor(ui.background);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -46,12 +48,14 @@ public final class ThemeSelectorActivity extends Activity {
         scrollView.addView(root);
 
         TextView title = label("Theme Selector");
+        title.setTextColor(ui.textPrimary);
         title.setTextSize(22);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         root.addView(title, matchWrap());
 
         Button editorButton = new Button(this);
         editorButton.setText("Open Theme Editor");
+        styleSystemButton(editorButton, false);
         editorButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_keyboard_settings, 0, 0, 0);
         editorButton.setCompoundDrawablePadding(dp(8));
         editorButton.setOnClickListener(v -> startActivity(new Intent(this, ThemeEditorActivity.class)));
@@ -87,15 +91,15 @@ public final class ThemeSelectorActivity extends Activity {
 
     private View themeCard(int index) {
         ThemeOption option = themeOptions[index];
-        KeyboardSettings titleSettings = option.applyTo(settings);
         KeyboardSettings englishSettings = previewSettingsFor(option, KeyboardMode.ENGLISH);
         KeyboardSettings hangulSettings = previewSettingsFor(option, KeyboardMode.HANGUL);
         boolean selected = index == selectedIndex;
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(14), dp(14), dp(14), dp(16));
-        card.setBackground(cardBackground(titleSettings, selected));
+        card.setBackground(cardBackground(ui, selected));
         card.setElevation(selected ? dp(4) : dp(1));
         card.setOnClickListener(v -> applyTheme(index));
 
@@ -103,7 +107,7 @@ public final class ThemeSelectorActivity extends Activity {
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
         TextView title = label(option.label);
-        title.setTextColor(0xFF111827);
+        title.setTextColor(ui.textPrimary);
         title.setTextSize(18);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         header.addView(title, new LinearLayout.LayoutParams(
@@ -111,7 +115,7 @@ public final class ThemeSelectorActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 1f));
         if (selected) {
-            header.addView(selectedBadge(titleSettings));
+            header.addView(selectedBadge(ui));
         }
         card.addView(header, matchWrap());
 
@@ -121,17 +125,17 @@ public final class ThemeSelectorActivity extends Activity {
         return card;
     }
 
-    private TextView selectedBadge(KeyboardSettings titleSettings) {
+    private TextView selectedBadge(SettingsUiPalette ui) {
         TextView badge = label("Selected");
-        badge.setTextColor(titleSettings.accentColor);
+        badge.setTextColor(ui.selectedText);
         badge.setTextSize(12);
         badge.setTypeface(Typeface.DEFAULT_BOLD);
         badge.setGravity(Gravity.CENTER);
         badge.setPadding(dp(10), dp(3), dp(10), dp(3));
         GradientDrawable background = new GradientDrawable();
-        background.setColor(0x00FFFFFF);
+        background.setColor(ui.selectedFill);
         background.setCornerRadius(dp(999));
-        background.setStroke(dp(1), titleSettings.accentColor);
+        background.setStroke(dp(1), ui.selectedBorder);
         badge.setBackground(background);
         return badge;
     }
@@ -140,6 +144,7 @@ public final class ThemeSelectorActivity extends Activity {
         Button button = new Button(this);
         button.setText(label);
         button.setAllCaps(false);
+        styleSystemButton(button, previewMode == mode);
         button.setOnClickListener(v -> {
             previewMode = mode;
             rebuildCards();
@@ -179,17 +184,28 @@ public final class ThemeSelectorActivity extends Activity {
         return preview;
     }
 
-    private GradientDrawable cardBackground(KeyboardSettings cardSettings, boolean selected) {
+    private GradientDrawable cardBackground(SettingsUiPalette ui, boolean selected) {
         GradientDrawable background = new GradientDrawable();
-        background.setColor(0xFFFFFFFF);
+        background.setColor(ui.surfaceRaised);
         background.setCornerRadius(dp(18));
-        background.setStroke(dp(selected ? 4 : 1), selected ? cardSettings.accentColor : 0xFFE5E7EB);
+        background.setStroke(dp(selected ? 4 : 1), selected ? ui.selectedBorder : ui.border);
         return background;
+    }
+
+    private void styleSystemButton(Button button, boolean selected) {
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
+        button.setTextColor(selected ? ui.selectedText : ui.controlText);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(selected ? ui.selectedFill : ui.controlFill);
+        background.setCornerRadius(dp(8));
+        background.setStroke(dp(selected ? 2 : 1), selected ? ui.selectedBorder : ui.border);
+        button.setBackground(background);
     }
 
     private TextView label(String text) {
         TextView label = new TextView(this);
         label.setText(text);
+        label.setTextColor(SettingsUiPalette.from(this).textPrimary);
         label.setTextSize(14);
         return label;
     }

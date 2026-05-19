@@ -288,7 +288,9 @@ public final class MainActivity extends Activity {
 
     private ScrollView createContentView() {
         int padding = dp(24);
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
         ScrollView scrollView = new ScrollView(this);
+        scrollView.setBackgroundColor(ui.background);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -297,6 +299,7 @@ public final class MainActivity extends Activity {
 
         TextView title = new TextView(this);
         title.setText(getString(R.string.app_name));
+        title.setTextColor(ui.textPrimary);
         title.setTextSize(22);
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleParams = matchWrap();
@@ -1317,6 +1320,7 @@ public final class MainActivity extends Activity {
     private TextView label(String text) {
         TextView label = new TextView(this);
         label.setText(text);
+        label.setTextColor(SettingsUiPalette.from(this).textPrimary);
         label.setTextSize(14);
         return label;
     }

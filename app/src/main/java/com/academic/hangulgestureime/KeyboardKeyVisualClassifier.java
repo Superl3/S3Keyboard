@@ -67,7 +67,7 @@ final class KeyboardKeyVisualClassifier {
         if (override == null) {
             override = findOverride(settings, "shift_indicator");
         }
-        return override == null ? settings.accentColor : override;
+        return override == null ? 0xFF06B6D4 : override;
     }
 
     static boolean isPrimaryFunctionKey(GestureKey key) {
