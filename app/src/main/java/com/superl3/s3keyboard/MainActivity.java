@@ -1526,8 +1526,14 @@ public final class MainActivity extends Activity {
 
     private View themePresetCard(int index) {
         ThemeOption option = themeOptions[index];
-        KeyboardSettings englishSettings = previewSettingsFor(option, KeyboardMode.ENGLISH);
-        KeyboardSettings hangulSettings = previewSettingsFor(option, KeyboardMode.HANGUL);
+        KeyboardSettings englishSettings = ThemePreviewSettings.forOption(
+                option,
+                settings,
+                KeyboardMode.ENGLISH);
+        KeyboardSettings hangulSettings = ThemePreviewSettings.forOption(
+                option,
+                settings,
+                KeyboardMode.HANGUL);
         boolean selected = index == selectedThemePresetIndex;
         SettingsUiPalette ui = SettingsUiPalette.from(this);
 
@@ -1576,17 +1582,6 @@ public final class MainActivity extends Activity {
                 dp(heightDp));
         params.topMargin = dp(6);
         return params;
-    }
-
-    private KeyboardSettings previewSettingsFor(ThemeOption option, KeyboardMode mode) {
-        return option.applyTo(settings)
-                .withKeyboardMode(mode)
-                .withHintVisibility(
-                        false,
-                        false,
-                        false)
-                .withHangulNumberRow(false)
-                .withEnglishNumberRow(false);
     }
 
     private GradientDrawable themeCardBackground(SettingsUiPalette ui, boolean selected) {

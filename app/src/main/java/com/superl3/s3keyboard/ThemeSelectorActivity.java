@@ -96,8 +96,14 @@ public final class ThemeSelectorActivity extends Activity {
 
     private View themeCard(int index) {
         ThemeOption option = themeOptions[index];
-        KeyboardSettings englishSettings = previewSettingsFor(option, KeyboardMode.ENGLISH);
-        KeyboardSettings hangulSettings = previewSettingsFor(option, KeyboardMode.HANGUL);
+        KeyboardSettings englishSettings = ThemePreviewSettings.forOption(
+                option,
+                settings,
+                KeyboardMode.ENGLISH);
+        KeyboardSettings hangulSettings = ThemePreviewSettings.forOption(
+                option,
+                settings,
+                KeyboardMode.HANGUL);
         boolean selected = index == selectedIndex;
         SettingsUiPalette ui = SettingsUiPalette.from(this);
 
@@ -185,14 +191,6 @@ public final class ThemeSelectorActivity extends Activity {
         KeyboardPreferences.saveSettings(this, settings);
         Toast.makeText(this, "Theme applied: " + themeOptions[index].label, Toast.LENGTH_SHORT).show();
         rebuildCards();
-    }
-
-    private KeyboardSettings previewSettingsFor(ThemeOption option, KeyboardMode mode) {
-        return option.applyTo(settings)
-                .withKeyboardMode(mode)
-                .withHintVisibility(false, false, false)
-                .withHangulNumberRow(false)
-                .withEnglishNumberRow(false);
     }
 
     private HangulKeyboardView previewKeyboard(KeyboardSettings previewSettings, int themeIndex) {
