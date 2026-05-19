@@ -809,14 +809,14 @@ public final class ThemeEditorActivity extends Activity {
         Spinner spinner = new Spinner(this);
         ArrayAdapter<ColorOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                ColorOption.OPTIONS);
+                ColorOption.EDITOR_OPTIONS);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (!syncing) {
                     selectedThemePresetIndex = 0;
-                    listener.onColorChanged(ColorOption.OPTIONS[position].color);
+                    listener.onColorChanged(ColorOption.EDITOR_OPTIONS[position].color);
                 }
             }
 
@@ -853,13 +853,13 @@ public final class ThemeEditorActivity extends Activity {
         Spinner spinner = new Spinner(this);
         ArrayAdapter<FontOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                FontOption.OPTIONS);
+                FontOption.EDITOR_OPTIONS);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (!syncing) {
-                    updateSettings(settings.withFontFamily(FontOption.OPTIONS[position].value));
+                    updateSettings(settings.withFontFamily(FontOption.EDITOR_OPTIONS[position].value));
                 }
             }
 
@@ -1010,8 +1010,8 @@ public final class ThemeEditorActivity extends Activity {
             return 0;
         }
         int opaqueColor = 0xFF000000 | (color & 0x00FFFFFF);
-        for (int i = 0; i < ColorOption.OPTIONS.length; i++) {
-            if (ColorOption.OPTIONS[i].color == opaqueColor) {
+        for (int i = 0; i < ColorOption.EDITOR_OPTIONS.length; i++) {
+            if (ColorOption.EDITOR_OPTIONS[i].color == opaqueColor) {
                 return i;
             }
         }
@@ -1020,8 +1020,8 @@ public final class ThemeEditorActivity extends Activity {
 
     private int indexOfFont(String fontFamily) {
         String normalized = KeyboardSettings.normalizeFontFamily(fontFamily);
-        for (int i = 0; i < FontOption.OPTIONS.length; i++) {
-            if (FontOption.OPTIONS[i].value.equals(normalized)) {
+        for (int i = 0; i < FontOption.EDITOR_OPTIONS.length; i++) {
+            if (FontOption.EDITOR_OPTIONS[i].value.equals(normalized)) {
                 return i;
             }
         }
@@ -1050,61 +1050,4 @@ public final class ThemeEditorActivity extends Activity {
         }
     }
 
-    private static final class ColorOption {
-        static final ColorOption[] OPTIONS = {
-                new ColorOption("Key idle", KeyboardSettings.DEFAULT_KEY_IDLE_COLOR),
-                new ColorOption("Background", KeyboardSettings.DEFAULT_KEYBOARD_BACKGROUND_COLOR),
-                new ColorOption("Pressed gray", KeyboardSettings.DEFAULT_KEY_PRESSED_COLOR),
-                new ColorOption("Secondary gray", KeyboardSettings.DEFAULT_SECONDARY_COLOR),
-                new ColorOption("Black", KeyboardSettings.DEFAULT_ACCENT_COLOR),
-                new ColorOption("White", 0xFFFFFFFF),
-                new ColorOption("Neutral outline", 0xFF45484F),
-                new ColorOption("Neutral depth", 0xFF2F3339),
-                new ColorOption("Warm outline", 0xFF9F9488),
-                new ColorOption("Warm depth", 0xFFB7AA9B),
-                new ColorOption("Blue", 0xFF3F6EDB),
-                new ColorOption("Green", 0xFF2E7D57),
-                new ColorOption("Teal", 0xFF00897B),
-                new ColorOption("Coral", 0xFFE76F51),
-                new ColorOption("Yellow", 0xFFE9C46A),
-                new ColorOption("Marigold cyan", 0xFF4DE4D2),
-                new ColorOption("Marigold pink", 0xFFFF5DAE),
-                new ColorOption("Marigold orange", 0xFFFF9F32)
-        };
-
-        final String label;
-        final int color;
-
-        ColorOption(String label, int color) {
-            this.label = label;
-            this.color = 0xFF000000 | (color & 0x00FFFFFF);
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
-
-    private static final class FontOption {
-        static final FontOption[] OPTIONS = {
-                new FontOption("Default", KeyboardSettings.FONT_DEFAULT),
-                new FontOption("Noto Sans KR", KeyboardSettings.FONT_NOTO_SANS_KR),
-                new FontOption("Noto Serif KR", KeyboardSettings.FONT_NOTO_SERIF_KR),
-                new FontOption("D2Coding", KeyboardSettings.FONT_D2CODING)
-        };
-
-        final String label;
-        final String value;
-
-        FontOption(String label, String value) {
-            this.label = label;
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
 }

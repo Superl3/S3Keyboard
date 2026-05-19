@@ -1416,13 +1416,13 @@ public final class MainActivity extends Activity {
         Spinner spinner = new Spinner(this);
         ArrayAdapter<ColorOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                ColorOption.OPTIONS);
+                ColorOption.BASIC_OPTIONS);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (!syncing) {
-                    listener.onColorChanged(ColorOption.OPTIONS[position].color);
+                    listener.onColorChanged(ColorOption.BASIC_OPTIONS[position].color);
                 }
             }
 
@@ -1620,14 +1620,14 @@ public final class MainActivity extends Activity {
         Spinner spinner = new Spinner(this);
         ArrayAdapter<FontOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                FontOption.OPTIONS);
+                FontOption.BASIC_OPTIONS);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (!syncing) {
                     selectedThemePresetIndex = 0;
-                    settings = settings.withFontFamily(FontOption.OPTIONS[position].value);
+                    settings = settings.withFontFamily(FontOption.BASIC_OPTIONS[position].value);
                     saveAndSync();
                 }
             }
@@ -1641,8 +1641,8 @@ public final class MainActivity extends Activity {
 
     private int indexOfColor(int color) {
         int opaqueColor = 0xFF000000 | (color & 0x00FFFFFF);
-        for (int i = 0; i < ColorOption.OPTIONS.length; i++) {
-            if (ColorOption.OPTIONS[i].color == opaqueColor) {
+        for (int i = 0; i < ColorOption.BASIC_OPTIONS.length; i++) {
+            if (ColorOption.BASIC_OPTIONS[i].color == opaqueColor) {
                 return i;
             }
         }
@@ -1651,8 +1651,8 @@ public final class MainActivity extends Activity {
 
     private int indexOfFont(String fontFamily) {
         String normalized = KeyboardSettings.normalizeFontFamily(fontFamily);
-        for (int i = 0; i < FontOption.OPTIONS.length; i++) {
-            if (FontOption.OPTIONS[i].value.equals(normalized)) {
+        for (int i = 0; i < FontOption.BASIC_OPTIONS.length; i++) {
+            if (FontOption.BASIC_OPTIONS[i].value.equals(normalized)) {
                 return i;
             }
         }
@@ -1715,55 +1715,4 @@ public final class MainActivity extends Activity {
         void onValue(int value);
     }
 
-    private static final class FontOption {
-        static final FontOption[] OPTIONS = {
-                new FontOption("기본", KeyboardSettings.FONT_DEFAULT),
-                new FontOption("Noto Sans KR", KeyboardSettings.FONT_NOTO_SANS_KR),
-                new FontOption("Noto Serif KR", KeyboardSettings.FONT_NOTO_SERIF_KR),
-                new FontOption("D2Coding", KeyboardSettings.FONT_D2CODING)
-        };
-
-        final String label;
-        final String value;
-
-        FontOption(String label, String value) {
-            this.label = label;
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
-
-    private static final class ColorOption {
-        static final ColorOption[] OPTIONS = {
-                new ColorOption("기본 버튼", KeyboardSettings.DEFAULT_KEY_IDLE_COLOR),
-                new ColorOption("버튼 바깥", KeyboardSettings.DEFAULT_KEYBOARD_BACKGROUND_COLOR),
-                new ColorOption("눌림 회색", KeyboardSettings.DEFAULT_KEY_PRESSED_COLOR),
-                new ColorOption("보조 회색", KeyboardSettings.DEFAULT_SECONDARY_COLOR),
-                new ColorOption("검정", KeyboardSettings.DEFAULT_ACCENT_COLOR),
-                new ColorOption("흰색", 0xFFFFFFFF),
-                new ColorOption("파랑", 0xFF3F6EDB),
-                new ColorOption("초록", 0xFF2E7D57),
-                new ColorOption("청록", 0xFF00897B),
-                new ColorOption("보라", 0xFF6D5BD0),
-                new ColorOption("코랄", 0xFFE76F51),
-                new ColorOption("노랑", 0xFFE9C46A)
-        };
-
-        final String label;
-        final int color;
-
-        ColorOption(String label, int color) {
-            this.label = label;
-            this.color = 0xFF000000 | (color & 0x00FFFFFF);
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
 }
