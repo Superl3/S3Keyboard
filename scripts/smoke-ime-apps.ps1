@@ -8,8 +8,8 @@ $ErrorActionPreference = "Stop"
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $Adb = Join-Path $env:ANDROID_SDK_ROOT "platform-tools\adb.exe"
-$Package = "com.academic.hangulgestureime"
-$Ime = "$Package/.HangulGestureImeService"
+$Package = "com.superl3.s3keyboard"
+$Ime = "$Package/.S3KeyboardService"
 $Apk = Join-Path $Root "app\build\outputs\apk\debug\app-debug.apk"
 $CaptureDir = Join-Path $Root "captures\smoke"
 

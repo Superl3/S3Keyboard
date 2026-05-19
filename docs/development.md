@@ -53,15 +53,15 @@ or discovered by `adb mdns services`.
 adb pair <device-ip>:<pairing-port> <pairing-code>
 adb connect <device-ip>:<connect-port>
 adb -s <device-ip>:<connect-port> install -r app\build\outputs\apk\debug\app-debug.apk
-adb -s <device-ip>:<connect-port> shell ime enable com.academic.hangulgestureime/.HangulGestureImeService
-adb -s <device-ip>:<connect-port> shell ime set com.academic.hangulgestureime/.HangulGestureImeService
+adb -s <device-ip>:<connect-port> shell ime enable com.superl3.s3keyboard/.S3KeyboardService
+adb -s <device-ip>:<connect-port> shell ime set com.superl3.s3keyboard/.S3KeyboardService
 ```
 
 If a previously-installed APK was signed with a different key, Android will reject
 an update with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. Uninstall the package first:
 
 ```powershell
-adb -s <device-ip>:<connect-port> uninstall com.academic.hangulgestureime
+adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 ```
 
 ## Current Input Feel Architecture

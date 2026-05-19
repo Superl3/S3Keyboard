@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "HangulGestureIme"
+rootProject.name = "S3Keyboard"
 include ":app"

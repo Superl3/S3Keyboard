@@ -1,6 +1,6 @@
 # Privacy Notice Draft
 
-Hangul Gesture IME Research is a clean-room research keyboard for closed beta testing.
+New Dingul Research is a clean-room research keyboard for closed beta testing.
 
 ## What stays on the device
 

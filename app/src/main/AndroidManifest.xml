@@ -30,7 +30,7 @@
             android:label="Theme Selector" />
 
         <service
-            android:name=".HangulGestureImeService"
+            android:name=".S3KeyboardService"
             android:exported="true"
             android:label="@string/ime_name"
             android:permission="android.permission.BIND_INPUT_METHOD">

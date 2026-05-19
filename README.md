@@ -1,4 +1,4 @@
-# Hangul Gesture IME Research Prototype
+# New Dingul Research Prototype
 
 This workspace contains a clean-room Android input method prototype for studying a Korean gesture-keyboard UX. It is built from the described interaction model and screenshot, not from proprietary APK code or assets.
 
@@ -75,7 +75,7 @@ After enabling USB debugging on a device or starting an emulator:
 rtk powershell -ExecutionPolicy Bypass -File .\scripts\install-debug.ps1
 ```
 
-Then open the app once, enable `Hangul Gesture IME` in Android keyboard settings, and select it as the active input method.
+Then open the app once, enable `New Dingul` in Android keyboard settings, and select it as the active input method.
 
 ## Emulator Demo
 

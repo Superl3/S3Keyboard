@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace "com.academic.hangulgestureime"
+    namespace "com.superl3.s3keyboard"
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.academic.hangulgestureime"
+        applicationId "com.superl3.s3keyboard"
         minSdk 23
         targetSdk 35
         versionCode 1

@@ -1,4 +1,4 @@
-﻿param(
+param(
     [ValidateRange(10, 30)]
     [int] $HangulSpecialColumnPercent = 17,
     [int] $HangulMainRegionRatio = 0,
@@ -34,9 +34,9 @@ if ($PSBoundParameters.ContainsKey("HangulMainRegionRatio")) {
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $Adb = Join-Path $env:ANDROID_SDK_ROOT "platform-tools\adb.exe"
-$Package = "com.academic.hangulgestureime"
+$Package = "com.superl3.s3keyboard"
 $Activity = "$Package/.MainActivity"
-$Ime = "$Package/.HangulGestureImeService"
+$Ime = "$Package/.S3KeyboardService"
 $Apk = Join-Path $Root "app\build\outputs\apk\debug\app-debug.apk"
 $CaptureDir = Join-Path $Root "captures"
 
