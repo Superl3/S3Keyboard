@@ -28,4 +28,8 @@ enum LegendStylePreset {
     boolean replacesMainLegend() {
         return this == DOTS;
     }
+
+    boolean drawsDotLegend() {
+        return this == DOTS;
+    }
 }

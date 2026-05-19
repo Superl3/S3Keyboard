@@ -24,6 +24,10 @@ final class KeyboardKeyVisualClassifier {
     }
 
     static int colorFor(KeyboardSettings settings, GestureKey key) {
+        Integer override = backgroundOverrideColorFor(settings, key);
+        if (override != null) {
+            return override;
+        }
         KeyVisualRole role = roleFor(settings, key);
         if (role == KeyVisualRole.ACCENT) {
             return settings.accentKeyColor;
@@ -123,8 +127,60 @@ final class KeyboardKeyVisualClassifier {
         return null;
     }
 
+    private static Integer backgroundOverrideColorFor(KeyboardSettings settings, GestureKey key) {
+        if (settings == null || key == null || settings.keyColorOverrides.isEmpty()) {
+            return null;
+        }
+        Integer color = findBackgroundOverride(settings, "label:" + key.label);
+        if (color != null) {
+            return color;
+        }
+        color = findBackgroundOverride(settings, "tap:" + key.tap);
+        if (color != null) {
+            return color;
+        }
+        color = findBackgroundOverride(settings, key.tap);
+        if (color != null) {
+            return color;
+        }
+        color = findBackgroundOverride(settings, key.label);
+        if (color != null) {
+            return color;
+        }
+        if (key.icon != KeyIcon.NONE) {
+            color = findBackgroundOverride(settings, "icon:" + key.icon);
+            if (color != null) {
+                return color;
+            }
+        }
+        if (KeyboardCommands.CMD_SPACE.equals(key.tap)) {
+            return findBackgroundOverride(settings, "space");
+        }
+        if (KeyboardCommands.CMD_DELETE.equals(key.tap)) {
+            return findBackgroundOverride(settings, "backspace");
+        }
+        if (KeyboardCommands.CMD_ENTER.equals(key.tap)) {
+            return findBackgroundOverride(settings, "enter");
+        }
+        if (KeyboardCommands.CMD_SHIFT_ONCE.equals(key.tap)) {
+            return findBackgroundOverride(settings, "shift");
+        }
+        if (KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)) {
+            return findBackgroundOverride(settings, "language");
+        }
+        return null;
+    }
+
     private static Integer findOverride(KeyboardSettings settings, String key) {
         return settings.keyColorOverrides.get(KeyboardSettings.normalizeKeyOverrideName(key));
+    }
+
+    private static Integer findBackgroundOverride(KeyboardSettings settings, String key) {
+        Integer color = settings.keyColorOverrides.get(KeyboardSettings.normalizeKeyOverrideName("background:" + key));
+        if (color != null) {
+            return color;
+        }
+        return settings.keyColorOverrides.get(KeyboardSettings.normalizeKeyOverrideName("bg:" + key));
     }
 
     private static boolean isHangulAccentKey(KeyboardSettings settings, GestureKey key) {

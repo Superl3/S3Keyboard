@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -81,6 +82,7 @@ public final class ThemeSelectorActivity extends Activity {
             return;
         }
         themeOptions = ThemeOption.buildOptions(UserThemeStore.load(this));
+        selectedIndex = indexOfSelectedTheme(KeyboardPreferences.loadSelectedThemeId(this));
         cards.removeAllViews();
         for (int i = 0; i < themeOptions.length; i++) {
             LinearLayout.LayoutParams params = matchWrap();
@@ -110,12 +112,18 @@ public final class ThemeSelectorActivity extends Activity {
         title.setTextColor(ui.textPrimary);
         title.setTextSize(18);
         title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setSingleLine(true);
+        title.setEllipsize(TextUtils.TruncateAt.END);
         header.addView(title, new LinearLayout.LayoutParams(
                 0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 1f));
         if (selected) {
-            header.addView(selectedBadge(ui));
+            LinearLayout.LayoutParams badgeParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            badgeParams.leftMargin = dp(8);
+            header.addView(selectedBadge(ui), badgeParams);
         }
         card.addView(header, matchWrap());
 
@@ -160,6 +168,7 @@ public final class ThemeSelectorActivity extends Activity {
         }
         selectedIndex = index;
         settings = themeOptions[index].applyTo(settings);
+        KeyboardPreferences.saveSelectedThemeId(this, themeOptions[index].stableId());
         KeyboardPreferences.saveSettings(this, settings);
         Toast.makeText(this, "Theme applied: " + themeOptions[index].label, Toast.LENGTH_SHORT).show();
         rebuildCards();
@@ -182,6 +191,18 @@ public final class ThemeSelectorActivity extends Activity {
         preview.setOnTouchListener((v, event) -> true);
         preview.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         return preview;
+    }
+
+    private int indexOfSelectedTheme(String selectedThemeId) {
+        if (selectedThemeId == null || selectedThemeId.isEmpty()) {
+            return -1;
+        }
+        for (int i = 0; i < themeOptions.length; i++) {
+            if (selectedThemeId.equals(themeOptions[i].stableId())) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private GradientDrawable cardBackground(SettingsUiPalette ui, boolean selected) {
@@ -247,11 +268,13 @@ public final class ThemeSelectorActivity extends Activity {
     private static final class ThemeOption {
         final String label;
         final KeyboardThemePreset preset;
+        final String userThemeId;
         final String userThemeJson;
 
-        ThemeOption(String label, KeyboardThemePreset preset, String userThemeJson) {
+        ThemeOption(String label, KeyboardThemePreset preset, String userThemeId, String userThemeJson) {
             this.label = label;
             this.preset = preset;
+            this.userThemeId = userThemeId;
             this.userThemeJson = userThemeJson;
         }
 
@@ -260,12 +283,12 @@ public final class ThemeSelectorActivity extends Activity {
             ThemeOption[] options = new ThemeOption[KeyboardThemePreset.PRESETS.length + userCount];
             for (int i = 0; i < KeyboardThemePreset.PRESETS.length; i++) {
                 KeyboardThemePreset preset = KeyboardThemePreset.PRESETS[i];
-                options[i] = new ThemeOption(preset.displayName, preset, null);
+                options[i] = new ThemeOption(preset.displayName, preset, null, null);
             }
             for (int i = 0; i < userCount; i++) {
                 UserThemeStore.UserTheme theme = userThemes[i];
                 options[KeyboardThemePreset.PRESETS.length + i] =
-                        new ThemeOption(theme.name, null, theme.json);
+                        new ThemeOption(theme.name, null, theme.id, theme.json);
             }
             return options;
         }
@@ -278,6 +301,13 @@ public final class ThemeSelectorActivity extends Activity {
                 return KeyboardThemeJson.importTheme(settings, userThemeJson);
             }
             return settings;
+        }
+
+        String stableId() {
+            if (preset != null) {
+                return preset.id;
+            }
+            return userThemeId == null ? "" : userThemeId;
         }
     }
 }

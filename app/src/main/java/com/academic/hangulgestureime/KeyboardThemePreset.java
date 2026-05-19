@@ -57,7 +57,9 @@ final class KeyboardThemePreset {
             theme("gmk-bento", "GMK Bento Inspired",
                     "E8E0D3", "2E6687", "25536F", "E66D61", "CBBFAE",
                     "9DA7A4", "5C6E72", "5C6E72", "234E68", "E66D61",
-                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
+                    bentoTextOverrides(),
+                    bentoBackgroundOverrides()),
             theme("gmk-metropolis", "GMK Metropolis Inspired",
                     "1E3D57", "182F45", "112537", "193344", "254B67",
                     "0D1B2A", "08131E", "08131E", "7FD7F4", "FFB000",
@@ -65,19 +67,27 @@ final class KeyboardThemePreset {
             theme("gmk-oblivion", "GMK Oblivion Inspired",
                     "6F787D", "252A2E", "171A1E", "3A4037", "555F64",
                     "101214", "0A0B0D", "0A0B0D", "E8ECEC", "93A0A5",
-                    4, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true),
+                    4, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true,
+                    oblivionTextOverrides(),
+                    oblivionBackgroundOverrides()),
             theme("gmk-oblivion-hagoromo", "GMK Oblivion Hagoromo Inspired",
                     "EDE8DD", "2A2C2F", "1B1D20", "2F3235", "D6D0C3",
                     "111214", "0B0C0E", "0B0C0E", "485057", "6FB35D",
-                    4, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true),
+                    4, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true,
+                    oblivionTextOverrides(),
+                    oblivionBackgroundOverrides()),
             theme("gmk-8008", "GMK 8008 Inspired",
                     "8C929D", "1E2028", "161820", "B94D61", "5A606A",
                     "111216", "0E0F13", "0E0F13", "F05B6C", "A9ADB8",
-                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
+                    gmk8008TextOverrides(),
+                    gmk8008BackgroundOverrides()),
             theme("gmk-hammerhead", "GMK HammerHead Inspired",
                     "B9C7CD", "132633", "0B1720", "27AFA3", "8EA2A9",
                     "DDE4DE", "7C8D93", "7C8D93", "122430", "0AA29A",
-                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
+                    hammerheadTextOverrides(),
+                    hammerheadBackgroundOverrides()),
             theme("gmk-dracula", "GMK Dracula Inspired",
                     "44475A", "343746", "282A36", "363949", "50546A",
                     "1E2029", "191B22", "191B22", "F8F8F2", "BD93F9",
@@ -85,25 +95,35 @@ final class KeyboardThemePreset {
             theme("gmk-modern-dolch", "GMK Modern Dolch Inspired",
                     "616A70", "2A2F34", "1C2024", "2E6F70", "4A5258",
                     "555B60", "202327", "202327", "E8ECEF", "64D4CF",
-                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
+                    modernDolchTextOverrides(),
+                    modernDolchBackgroundOverrides()),
             theme("gmk-olivia-light", "GMK Olivia Light Inspired",
                     "F2E8E4", "E6D6D1", "D8C2BD", "CFA4A9", "E2CDC8",
                     "B99CA1", "A78389", "A78389", "33282B", "8D6A70",
-                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
+                    oliviaTextOverrides(),
+                    oliviaBackgroundOverrides()),
             theme("gmk-olivia-dark", "GMK Olivia Dark Inspired",
                     "3A3438", "2B282C", "211F23", "3C3035", "4B4248",
                     "171619", "111114", "111114", "F4E7E2", "D9A3AA",
-                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
+                    oliviaTextOverrides(),
+                    oliviaDarkBackgroundOverrides()),
             theme("gmk-dots-light", "GMK Dots Light Inspired",
                     "F6F3EA", "E8E4D9", "D8D4CA", "CFCBC0", "E2DED3",
                     "ECE8DD", "C3BEB3", "C3BEB3", "1D2430", "6C7480",
                     5, 6, true, 1, KeyboardSettings.FONT_NOTO_SANS_KR, false, false,
-                    null, LegendStylePreset.DOTS),
+                    dotsColorOverrides(false),
+                    dotsBackgroundOverrides(false),
+                    LegendStylePreset.DOTS),
             theme("gmk-dots-dark", "GMK Dots Dark Inspired",
                     "20242C", "1B1F27", "15181E", "181C23", "2C313C",
                     "101318", "0B0E12", "0B0E12", "F4F6FA", "AAB4C2",
                     5, 6, true, 1, KeyboardSettings.FONT_NOTO_SANS_KR, false, false,
-                    null, LegendStylePreset.DOTS),
+                    dotsColorOverrides(true),
+                    dotsBackgroundOverrides(true),
+                    LegendStylePreset.DOTS),
             theme("marigold-fiesta-dark", "Marigold Fiesta Dark",
                     "202225", "2A2C31", "111318", "111318", "3C4048",
                     "111214", "45484F", "2F3339", "F8F1DF", "B8A9BF",
@@ -227,6 +247,7 @@ final class KeyboardThemePreset {
                 showHangulSlideHints,
                 showEnglishSlideHints,
                 keyColorOverridesJson,
+                null,
                 LegendStylePreset.DEFAULT);
     }
 
@@ -251,6 +272,101 @@ final class KeyboardThemePreset {
             boolean showHangulSlideHints,
             boolean showEnglishSlideHints,
             String keyColorOverridesJson,
+            String keyBackgroundOverridesJson) {
+        return theme(
+                id,
+                displayName,
+                keyIdle,
+                functionKey,
+                primaryFunctionKey,
+                accentKey,
+                keyPressed,
+                keyboardBackground,
+                border,
+                depth,
+                accent,
+                secondary,
+                roundnessDp,
+                keyGapDp,
+                depthEnabled,
+                depthDp,
+                fontFamily,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                keyColorOverridesJson,
+                keyBackgroundOverridesJson,
+                LegendStylePreset.DEFAULT);
+    }
+
+    private static KeyboardThemePreset theme(
+            String id,
+            String displayName,
+            String keyIdle,
+            String functionKey,
+            String primaryFunctionKey,
+            String accentKey,
+            String keyPressed,
+            String keyboardBackground,
+            String border,
+            String depth,
+            String accent,
+            String secondary,
+            int roundnessDp,
+            int keyGapDp,
+            boolean depthEnabled,
+            int depthDp,
+            String fontFamily,
+            boolean showHangulSlideHints,
+            boolean showEnglishSlideHints,
+            String keyColorOverridesJson,
+            LegendStylePreset legendStylePreset) {
+        return theme(
+                id,
+                displayName,
+                keyIdle,
+                functionKey,
+                primaryFunctionKey,
+                accentKey,
+                keyPressed,
+                keyboardBackground,
+                border,
+                depth,
+                accent,
+                secondary,
+                roundnessDp,
+                keyGapDp,
+                depthEnabled,
+                depthDp,
+                fontFamily,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                keyColorOverridesJson,
+                null,
+                legendStylePreset);
+    }
+
+    private static KeyboardThemePreset theme(
+            String id,
+            String displayName,
+            String keyIdle,
+            String functionKey,
+            String primaryFunctionKey,
+            String accentKey,
+            String keyPressed,
+            String keyboardBackground,
+            String border,
+            String depth,
+            String accent,
+            String secondary,
+            int roundnessDp,
+            int keyGapDp,
+            boolean depthEnabled,
+            int depthDp,
+            String fontFamily,
+            boolean showHangulSlideHints,
+            boolean showEnglishSlideHints,
+            String keyColorOverridesJson,
+            String keyBackgroundOverridesJson,
             LegendStylePreset legendStylePreset) {
         return new KeyboardThemePreset(
                 id,
@@ -283,6 +399,7 @@ final class KeyboardThemePreset {
                         + typographyBlock(id, fontFamily)
                         + legendStyleBlock(legendStylePreset)
                         + keyColorOverridesBlock(id, keyColorOverridesJson)
+                        + keyBackgroundColorOverridesBlock(keyBackgroundOverridesJson)
                         + "}");
     }
 
@@ -323,6 +440,13 @@ final class KeyboardThemePreset {
             return ",\"keyTextColorOverrides\":{" + indicator + "}";
         }
         return ",\"keyTextColorOverrides\":" + json.substring(0, json.length() - 1) + "," + indicator + "}";
+    }
+
+    private static String keyBackgroundColorOverridesBlock(String json) {
+        if (json == null || json.isEmpty()) {
+            return "";
+        }
+        return ",\"keyBackgroundColorOverrides\":" + json;
     }
 
     private static String shiftIndicatorColor(String id) {
@@ -372,6 +496,203 @@ final class KeyboardThemePreset {
             return "0891B2";
         }
         return "06B6D4";
+    }
+
+    private static String bentoTextOverrides() {
+        return json(
+                "shift", "F8776C",
+                "language", "F8776C",
+                "space", "F8776C",
+                "enter", "FFF3E7",
+                "backspace", "F8776C",
+                "options", "F8776C",
+                "reserved", "FFF3E7");
+    }
+
+    private static String bentoBackgroundOverrides() {
+        return json(
+                "shift", "2E6687",
+                "language", "2E6687",
+                "space", "E66D61",
+                "enter", "E66D61",
+                "backspace", "2E6687",
+                "options", "E66D61",
+                "reserved", "2E6687");
+    }
+
+    private static String oblivionTextOverrides() {
+        return json(
+                "shift", "E3C247",
+                "language", "49A6C8",
+                "space", "49A6C8",
+                "enter", "9ACB5A",
+                "backspace", "C3CCD0",
+                "options", "E24F3D",
+                "reserved", "9ACB5A");
+    }
+
+    private static String oblivionBackgroundOverrides() {
+        return json(
+                "shift", "1A1D20",
+                "language", "1A1D20",
+                "space", "6F787D",
+                "enter", "24282C",
+                "backspace", "24282C",
+                "options", "24282C",
+                "reserved", "24282C");
+    }
+
+    private static String gmk8008TextOverrides() {
+        return json(
+                "shift", "F05B6C",
+                "language", "F05B6C",
+                "space", "181A21",
+                "enter", "181A21",
+                "backspace", "F05B6C",
+                "options", "F05B6C",
+                "reserved", "181A21");
+    }
+
+    private static String gmk8008BackgroundOverrides() {
+        return json(
+                "shift", "1E2028",
+                "language", "1E2028",
+                "space", "F05B6C",
+                "enter", "F05B6C",
+                "backspace", "1E2028",
+                "options", "1E2028",
+                "reserved", "F05B6C");
+    }
+
+    private static String hammerheadTextOverrides() {
+        return json(
+                "shift", "25BFB2",
+                "language", "25BFB2",
+                "space", "132633",
+                "enter", "132633",
+                "backspace", "B9C7CD",
+                "options", "25BFB2",
+                "reserved", "132633");
+    }
+
+    private static String hammerheadBackgroundOverrides() {
+        return json(
+                "shift", "132633",
+                "language", "132633",
+                "space", "B9C7CD",
+                "enter", "27AFA3",
+                "backspace", "132633",
+                "options", "132633",
+                "reserved", "27AFA3");
+    }
+
+    private static String modernDolchTextOverrides() {
+        return json(
+                "shift", "D65E72",
+                "language", "64D4CF",
+                "space", "F0F3F4",
+                "enter", "F0F3F4",
+                "backspace", "D9DFE2",
+                "options", "64D4CF",
+                "reserved", "F0F3F4");
+    }
+
+    private static String modernDolchBackgroundOverrides() {
+        return json(
+                "shift", "2A2F34",
+                "language", "2A2F34",
+                "space", "616A70",
+                "enter", "2E6F70",
+                "backspace", "2A2F34",
+                "options", "2A2F34",
+                "reserved", "B95A68");
+    }
+
+    private static String oliviaTextOverrides() {
+        return json(
+                "shift", "D9A3AA",
+                "language", "D9A3AA",
+                "space", "33282B",
+                "enter", "33282B",
+                "backspace", "F4E7E2",
+                "options", "D9A3AA",
+                "reserved", "33282B");
+    }
+
+    private static String oliviaBackgroundOverrides() {
+        return json(
+                "shift", "B99CA1",
+                "language", "B99CA1",
+                "space", "F2E8E4",
+                "enter", "CFA4A9",
+                "backspace", "A78389",
+                "options", "B99CA1",
+                "reserved", "CFA4A9");
+    }
+
+    private static String oliviaDarkBackgroundOverrides() {
+        return json(
+                "shift", "211F23",
+                "language", "211F23",
+                "space", "3A3438",
+                "enter", "D9A3AA",
+                "backspace", "211F23",
+                "options", "211F23",
+                "reserved", "D9A3AA");
+    }
+
+    private static String dotsBackgroundOverrides(boolean dark) {
+        return json(
+                "space", dark ? "1B1F27" : "E8E4D9",
+                "enter", dark ? "252B34" : "D8D4CA",
+                "backspace", dark ? "252B34" : "D8D4CA",
+                "shift", dark ? "252B34" : "D8D4CA",
+                "language", dark ? "252B34" : "D8D4CA",
+                "options", dark ? "252B34" : "D8D4CA",
+                "reserved", dark ? "252B34" : "D8D4CA");
+    }
+
+    private static String dotsColorOverrides(boolean dark) {
+        String[] palette = dark
+                ? new String[] { "EF476F", "FFD166", "06D6A0", "4CC9F0", "B5179E", "F77F00" }
+                : new String[] { "E63946", "F4A261", "2A9D8F", "457B9D", "7B2CBF", "FF6B6B" };
+        String[] keys = {
+                "tap:q", "tap:w", "tap:e", "tap:r", "tap:t", "tap:y", "tap:u", "tap:i", "tap:o", "tap:p",
+                "tap:a", "tap:s", "tap:d", "tap:f", "tap:g", "tap:h", "tap:j", "tap:k", "tap:l",
+                "tap:z", "tap:x", "tap:c", "tap:v", "tap:b", "tap:n", "tap:m",
+                "tap:\u3131", "tap:\u3134", "tap:\u3137", "tap:\u3139", "tap:\u3141", "tap:\u3145",
+                "tap:\u3147", "tap:\u3148", "tap:\u314E", "tap:\u3163", "tap:\u3161",
+                "?", ".", "/", "space", "enter", "backspace", "shift", "language", "options", "reserved"
+        };
+        StringBuilder builder = new StringBuilder("{");
+        for (int i = 0; i < keys.length; i++) {
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append('"')
+                    .append(keys[i])
+                    .append("\":\"#")
+                    .append(palette[i % palette.length])
+                    .append('"');
+        }
+        builder.append('}');
+        return builder.toString();
+    }
+
+    private static String json(String... keyColors) {
+        StringBuilder builder = new StringBuilder("{");
+        for (int i = 0; i + 1 < keyColors.length; i += 2) {
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append('"')
+                    .append(keyColors[i])
+                    .append("\":\"#")
+                    .append(keyColors[i + 1])
+                    .append('"');
+        }
+        builder.append('}');
+        return builder.toString();
     }
 
     private static String marigoldFiestaDarkOverrides() {

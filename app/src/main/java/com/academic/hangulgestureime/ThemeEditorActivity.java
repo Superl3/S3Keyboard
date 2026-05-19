@@ -1,7 +1,6 @@
 package com.academic.hangulgestureime;
 
 import android.app.Activity;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -189,6 +188,7 @@ public final class ThemeEditorActivity extends Activity {
         saveThemeButton.setOnClickListener(v -> {
             UserThemeStore.UserTheme saved = UserThemeStore.saveCurrent(this, settings);
             selectedThemePresetIndex = indexOfUserTheme(saved.id);
+            KeyboardPreferences.saveSelectedThemeId(this, saved.id);
             refreshThemePresetAdapter();
             syncControls();
         });
@@ -208,6 +208,9 @@ public final class ThemeEditorActivity extends Activity {
                 selectedKey = null;
                 selectedOverrideKey = "";
                 settings = themeOptions[position].applyTo(settings);
+                KeyboardPreferences.saveSelectedThemeId(
+                        ThemeEditorActivity.this,
+                        themeOptions[position].stableId());
                 KeyboardPreferences.saveSettings(ThemeEditorActivity.this, settings);
                 syncControls();
             }
@@ -225,6 +228,7 @@ public final class ThemeEditorActivity extends Activity {
         saveThemeButton.setOnClickListener(v -> {
             UserThemeStore.UserTheme saved = UserThemeStore.saveCurrent(this, settings);
             selectedThemePresetIndex = indexOfUserTheme(saved.id);
+            KeyboardPreferences.saveSelectedThemeId(this, saved.id);
             refreshThemePresetAdapter();
             syncControls();
         });
@@ -239,6 +243,9 @@ public final class ThemeEditorActivity extends Activity {
                 return;
             }
             UserThemeStore.delete(this, option.userThemeId);
+            if (option.userThemeId.equals(KeyboardPreferences.loadSelectedThemeId(this))) {
+                KeyboardPreferences.saveSelectedThemeId(this, "");
+            }
             selectedThemePresetIndex = 0;
             refreshThemePresetAdapter();
             syncControls();
@@ -615,6 +622,7 @@ public final class ThemeEditorActivity extends Activity {
     private void updateSettings(KeyboardSettings next) {
         selectedThemePresetIndex = 0;
         settings = next;
+        KeyboardPreferences.saveSelectedThemeId(this, "");
         KeyboardPreferences.saveSettings(this, settings);
         syncControls();
     }
@@ -865,7 +873,7 @@ public final class ThemeEditorActivity extends Activity {
     private CheckBox checkBox(String label, BooleanChangeListener listener) {
         CheckBox checkBox = new CheckBox(this);
         checkBox.setText(label);
-        checkBox.setTextColor(SettingsUiPalette.from(this).textPrimary);
+        SettingsViewStyler.compoundButton(checkBox, this);
         checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -905,7 +913,7 @@ public final class ThemeEditorActivity extends Activity {
         RadioButton button = new RadioButton(this);
         button.setId(id);
         button.setText(label);
-        button.setTextColor(SettingsUiPalette.from(this).textPrimary);
+        SettingsViewStyler.compoundButton(button, this);
         return button;
     }
 
@@ -919,14 +927,7 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private void styleSystemButton(Button button) {
-        SettingsUiPalette ui = SettingsUiPalette.from(this);
-        button.setAllCaps(false);
-        button.setTextColor(ui.controlText);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(ui.controlFill);
-        background.setCornerRadius(dp(8));
-        background.setStroke(Math.max(1, dp(1)), ui.border);
-        button.setBackground(background);
+        SettingsViewStyler.button(button, this, false);
     }
 
     private LinearLayout.LayoutParams buttonParams() {
@@ -1091,6 +1092,13 @@ public final class ThemeEditorActivity extends Activity {
                 return KeyboardThemeJson.importTheme(settings, userThemeJson);
             }
             return settings;
+        }
+
+        private String stableId() {
+            if (preset != null) {
+                return preset.id;
+            }
+            return userThemeId == null ? "" : userThemeId;
         }
 
         @Override

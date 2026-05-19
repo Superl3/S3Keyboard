@@ -196,6 +196,27 @@ public final class KeyboardThemeJsonTest {
         assertEquals(LegendStylePreset.DOTS, imported.legendStylePreset);
     }
 
+    @Test
+    public void importsAndExportsKeyBackgroundOverrides() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"keyBackgroundColorOverrides\":{"
+                + "\"enter\":\"#FF6677\","
+                + "\"tap:q\":\"#112233\""
+                + "}"
+                + "}";
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(0xFFFF6677, (int) imported.keyColorOverrides.get("background:enter"));
+        assertEquals(0xFF112233, (int) imported.keyColorOverrides.get("background:tap:q"));
+
+        String exported = KeyboardThemeJson.exportTheme(imported, "Backgrounds", "local", null);
+        KeyboardSettings roundTrip = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), exported);
+
+        assertEquals(0xFFFF6677, (int) roundTrip.keyColorOverrides.get("background:enter"));
+        assertEquals(0xFF112233, (int) roundTrip.keyColorOverrides.get("background:tap:q"));
+    }
+
     private static Map<String, Integer> sampleKeyOverrides() {
         Map<String, Integer> overrides = new HashMap<>();
         overrides.put("tap:a", 0x00E95420);

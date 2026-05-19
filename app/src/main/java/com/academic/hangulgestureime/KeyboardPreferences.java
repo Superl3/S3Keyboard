@@ -63,6 +63,7 @@ final class KeyboardPreferences {
     static final String HANGUL_SPECIAL_COLUMN_PERCENT = "hangul_special_column_percent";
     static final String HANGUL_MAIN_KEY_UNITS = "hangul_main_key_units";
     static final String KEY_COLOR_OVERRIDES = "key_color_overrides";
+    static final String SELECTED_THEME_ID = "selected_theme_id";
     static final String RESERVED_TAP_TEXT = "reserved_tap_text";
     static final String RESERVED_LEFT_TEXT = "reserved_left_text";
     static final String RESERVED_RIGHT_TEXT = "reserved_right_text";
@@ -317,6 +318,16 @@ final class KeyboardPreferences {
     static void saveKeyboardMode(Context context, KeyboardMode mode) {
         prefs(context).edit()
                 .putString(KEYBOARD_MODE_LAST, mode.preferenceValue)
+                .apply();
+    }
+
+    static String loadSelectedThemeId(Context context) {
+        return prefs(context).getString(SELECTED_THEME_ID, "");
+    }
+
+    static void saveSelectedThemeId(Context context, String themeId) {
+        prefs(context).edit()
+                .putString(SELECTED_THEME_ID, themeId == null ? "" : themeId)
                 .apply();
     }
 

@@ -314,6 +314,7 @@ public final class MainActivity extends Activity {
         testInput.setSingleLine(false);
         testInput.setMinLines(2);
         testInput.setFocusableInTouchMode(true);
+        SettingsViewStyler.editText(testInput, this);
         root.addView(testInput, matchWrapWithTop(18));
         maybeShowDemoKeyboard(testInput);
 
@@ -586,6 +587,7 @@ public final class MainActivity extends Activity {
         saveThemeButton.setOnClickListener(v -> {
             UserThemeStore.UserTheme saved = UserThemeStore.saveCurrent(this, settings);
             selectedThemePresetIndex = indexOfUserTheme(saved.id);
+            KeyboardPreferences.saveSelectedThemeId(this, saved.id);
             refreshThemePresetAdapter();
             syncControls();
         });
@@ -600,6 +602,9 @@ public final class MainActivity extends Activity {
                 return;
             }
             UserThemeStore.delete(this, option.userThemeId);
+            if (option.userThemeId.equals(KeyboardPreferences.loadSelectedThemeId(this))) {
+                KeyboardPreferences.saveSelectedThemeId(this, "");
+            }
             selectedThemePresetIndex = 0;
             refreshThemePresetAdapter();
             syncControls();
@@ -1345,20 +1350,11 @@ public final class MainActivity extends Activity {
     }
 
     private void styleSystemButton(Button button) {
-        SettingsUiPalette ui = SettingsUiPalette.from(this);
-        button.setAllCaps(false);
-        button.setTextColor(ui.controlText);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(ui.controlFill);
-        background.setCornerRadius(dp(8));
-        background.setStroke(Math.max(1, dp(1)), ui.border);
-        button.setBackground(background);
+        SettingsViewStyler.button(button, this, false);
     }
 
     private void styleCheckBox(CheckBox checkBox) {
-        if (checkBox != null) {
-            checkBox.setTextColor(SettingsUiPalette.from(this).textPrimary);
-        }
+        SettingsViewStyler.compoundButton(checkBox, this);
     }
 
     private SeekBar seekBar(int max) {
@@ -1372,8 +1368,7 @@ public final class MainActivity extends Activity {
         input.setSingleLine(true);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
         input.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        input.setTextColor(SettingsUiPalette.from(this).textPrimary);
-        input.setHintTextColor(SettingsUiPalette.from(this).textSecondary);
+        SettingsViewStyler.editText(input, this);
         input.setText(String.valueOf(initialValue));
         input.setSelectAllOnFocus(true);
         input.setOnEditorActionListener((v, actionId, event) -> {
@@ -1505,11 +1500,13 @@ public final class MainActivity extends Activity {
     private void applyThemeOption(int position) {
         if (position <= 0 || position >= themeOptions.length) {
             selectedThemePresetIndex = 0;
+            KeyboardPreferences.saveSelectedThemeId(this, "");
             syncControls();
             return;
         }
         selectedThemePresetIndex = position;
         settings = themeOptions[position].applyTo(settings);
+        KeyboardPreferences.saveSelectedThemeId(this, themeOptions[position].stableId());
         saveAndSync();
     }
 
@@ -1760,6 +1757,13 @@ public final class MainActivity extends Activity {
                 return KeyboardThemeJson.importTheme(settings, userThemeJson);
             }
             return settings;
+        }
+
+        private String stableId() {
+            if (preset != null) {
+                return preset.id;
+            }
+            return userThemeId == null ? "" : userThemeId;
         }
 
         @Override

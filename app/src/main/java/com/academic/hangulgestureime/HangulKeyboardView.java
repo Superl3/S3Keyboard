@@ -600,6 +600,9 @@ public final class HangulKeyboardView extends View {
         float centerX = surfaceBounds.centerX();
         int icon = iconFor(key);
         if (icon == KeyIcon.NONE) {
+            if (settings.legendStylePreset.drawsDotLegend()) {
+                drawDotLegend(canvas, key, surfaceBounds, englishLetterKey);
+            } else {
             String label = displayLabelForKey(key);
             textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
             String paintLabel = textPresentation(label);
@@ -610,6 +613,7 @@ public final class HangulKeyboardView extends View {
                     : surfaceBounds.centerY();
             float centerY = labelCenterY - textCenterOffset(textPaint);
             canvas.drawText(paintLabel, centerX, centerY, textPaint);
+            }
         } else {
             drawKeyIcon(canvas, key, icon, surfaceBounds, active);
             if (shiftStateActive) {
@@ -655,6 +659,16 @@ public final class HangulKeyboardView extends View {
             return;
         }
         drawIconCentered(canvas, icon, x, y, hintIconSize() * 0.74f, settings.secondaryColor);
+    }
+
+    private void drawDotLegend(Canvas canvas, GestureKey key, RectF surfaceBounds, boolean englishLetterKey) {
+        textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
+        float radius = Math.min(surfaceBounds.width(), surfaceBounds.height()) * 0.13f;
+        radius = Math.max(renderDp(4), Math.min(radius, renderDp(8)));
+        float centerY = englishLetterKey
+                ? surfaceBounds.top + surfaceBounds.height() * 0.36f
+                : surfaceBounds.centerY();
+        canvas.drawCircle(surfaceBounds.centerX(), centerY, radius, textPaint);
     }
 
     private void drawEnglishSlideHints(

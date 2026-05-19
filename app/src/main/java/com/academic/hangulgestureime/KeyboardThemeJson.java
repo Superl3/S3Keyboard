@@ -73,7 +73,14 @@ final class KeyboardThemeJson {
             }
 
             if (!safeSettings.keyColorOverrides.isEmpty()) {
-                root.put("keyTextColorOverrides", keyOverridesToJsonObject(safeSettings.keyColorOverrides));
+                JSONObject textOverrides = keyOverridesToJsonObject(safeSettings.keyColorOverrides, false);
+                if (textOverrides.length() > 0) {
+                    root.put("keyTextColorOverrides", textOverrides);
+                }
+                JSONObject backgroundOverrides = keyOverridesToJsonObject(safeSettings.keyColorOverrides, true);
+                if (backgroundOverrides.length() > 0) {
+                    root.put("keyBackgroundColorOverrides", backgroundOverrides);
+                }
             }
 
             return root.toString(2);
@@ -100,6 +107,7 @@ final class KeyboardThemeJson {
             if (keyColorOverrides == null) {
                 keyColorOverrides = root.optJSONObject("keyColorOverrides");
             }
+            JSONObject keyBackgroundColorOverrides = root.optJSONObject("keyBackgroundColorOverrides");
 
             boolean customDepthColor = base.customDepthColorEnabled;
             int depthColor = base.depthColor;
@@ -172,7 +180,9 @@ final class KeyboardThemeJson {
                                 themed.legendStylePreset.preferenceValue)));
             }
 
-            themed = themed.withKeyColorOverrides(decodeKeyColorOverrides(keyColorOverrides));
+            Map<String, Integer> overrides = decodeKeyColorOverrides(keyColorOverrides);
+            overrides.putAll(decodeKeyBackgroundColorOverrides(keyBackgroundColorOverrides));
+            themed = themed.withKeyColorOverrides(overrides);
             return themed;
         } catch (JSONException exception) {
             throw new IllegalArgumentException("Invalid theme JSON.", exception);
@@ -217,6 +227,25 @@ final class KeyboardThemeJson {
         return overrides;
     }
 
+    static Map<String, Integer> decodeKeyBackgroundColorOverrides(JSONObject object) {
+        Map<String, Integer> overrides = new HashMap<>();
+        if (object == null) {
+            return overrides;
+        }
+        Iterator<String> keys = object.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            if (object.isNull(key)) {
+                continue;
+            }
+            int parsed = parseColor(object.optString(key), Integer.MIN_VALUE);
+            if (parsed != Integer.MIN_VALUE) {
+                overrides.put("background:" + key, parsed);
+            }
+        }
+        return overrides;
+    }
+
     private static String emptyToDefault(String value, String defaultValue) {
         return value == null || value.isEmpty() ? defaultValue : value;
     }
@@ -229,6 +258,10 @@ final class KeyboardThemeJson {
     }
 
     private static JSONObject keyOverridesToJsonObject(Map<String, Integer> keyColorOverrides) {
+        return keyOverridesToJsonObject(keyColorOverrides, false);
+    }
+
+    private static JSONObject keyOverridesToJsonObject(Map<String, Integer> keyColorOverrides, boolean background) {
         JSONObject object = new JSONObject();
         if (keyColorOverrides == null || keyColorOverrides.isEmpty()) {
             return object;
@@ -236,13 +269,33 @@ final class KeyboardThemeJson {
         try {
             for (Map.Entry<String, Integer> entry : keyColorOverrides.entrySet()) {
                 if (entry.getKey() != null && entry.getValue() != null) {
-                    object.put(entry.getKey(), colorToString(entry.getValue()));
+                    String key = entry.getKey();
+                    String outputKey = backgroundOutputKey(key);
+                    if (background && outputKey != null) {
+                        object.put(outputKey, colorToString(entry.getValue()));
+                    } else if (!background && outputKey == null) {
+                        object.put(key, colorToString(entry.getValue()));
+                    }
                 }
             }
         } catch (JSONException exception) {
             throw new IllegalStateException("Failed to encode key color overrides.", exception);
         }
         return object;
+    }
+
+    private static String backgroundOutputKey(String key) {
+        if (key == null) {
+            return null;
+        }
+        String normalized = KeyboardSettings.normalizeKeyOverrideName(key);
+        if (normalized.startsWith("background:")) {
+            return key.substring(Math.min(key.length(), "background:".length()));
+        }
+        if (normalized.startsWith("bg:")) {
+            return key.substring(Math.min(key.length(), "bg:".length()));
+        }
+        return null;
     }
 
     private static int parseColor(String value, int fallback) {
