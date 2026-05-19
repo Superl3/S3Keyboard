@@ -54,6 +54,30 @@ final class KeyboardThemePreset {
                     "FFFFFF", "EFEFEF", "E0E0E0", "E0E0E0", "C8D7EA",
                     "F3F4F6", "111111", null, "000000", "424242",
                     5, 6, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
+            theme("gmk-bento", "GMK Bento Inspired",
+                    "E9DCC9", "D9C6B1", "C96F62", "8FB9BE", "D7BDA7",
+                    "C7B49F", "927E6F", "927E6F", "2E5F6A", "B7645F",
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+            theme("gmk-oblivion", "GMK Oblivion Inspired",
+                    "4B5158", "393F46", "2F343B", "35463B", "343A41",
+                    "1F2328", "171B20", "171B20", "F0EEE7", "AEB8C4",
+                    4, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true),
+            theme("gmk-8008", "GMK 8008 Inspired",
+                    "666E79", "505864", "38404A", "3F4853", "454D58",
+                    "2A3038", "20262D", "20262D", "F2D7DF", "91B8D5",
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+            theme("gmk-hammerhead", "GMK HammerHead Inspired",
+                    "233B42", "1A3037", "12252C", "17343A", "173139",
+                    "0E1B20", "0A1519", "0A1519", "C6F3EC", "62B7BA",
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+            theme("gmk-dracula", "GMK Dracula Inspired",
+                    "44475A", "343746", "282A36", "363949", "50546A",
+                    "1E2029", "191B22", "191B22", "F8F8F2", "BD93F9",
+                    5, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true),
+            theme("gmk-modern-dolch", "GMK Modern Dolch Inspired",
+                    "C9CDD2", "AEB5BE", "8F98A4", "75AEB0", "A6ADB6",
+                    "737E8A", "5F6873", "5F6873", "20252C", "4E5964",
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
             theme("marigold-fiesta-dark", "Marigold Fiesta Dark",
                     "202225", "2A2C31", "111318", "111318", "3C4048",
                     "111214", "45484F", "2F3339", "F8F1DF", "B8A9BF",
@@ -227,6 +251,24 @@ final class KeyboardThemePreset {
         }
         if (id.startsWith("marigold-fiesta")) {
             return id.endsWith("dark") ? "36E7F4" : "008B82";
+        }
+        if (id.equals("gmk-bento")) {
+            return "2F8CA1";
+        }
+        if (id.equals("gmk-oblivion")) {
+            return "6CBF84";
+        }
+        if (id.equals("gmk-8008")) {
+            return "7DBBE8";
+        }
+        if (id.equals("gmk-hammerhead")) {
+            return "39D4C8";
+        }
+        if (id.equals("gmk-dracula")) {
+            return "8BE9FD";
+        }
+        if (id.equals("gmk-modern-dolch")) {
+            return "55C7C8";
         }
         if (id.contains("android") || id.contains("paper") || id.contains("graphite")) {
             return "16A34A";

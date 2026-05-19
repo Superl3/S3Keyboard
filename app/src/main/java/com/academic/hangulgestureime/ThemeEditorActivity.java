@@ -123,9 +123,11 @@ public final class ThemeEditorActivity extends Activity {
 
     private View createContentView() {
         int padding = dp(16);
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(padding, padding, padding, padding);
+        root.setBackgroundColor(ui.background);
 
         TextView title = label("Theme Editor");
         title.setTextSize(22);
@@ -161,6 +163,7 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(preview, matchWrapWithTop(8));
 
         ScrollView scrollView = new ScrollView(this);
+        scrollView.setBackgroundColor(ui.background);
         LinearLayout editorRoot = new LinearLayout(this);
         editorRoot.setOrientation(LinearLayout.VERTICAL);
         scrollView.addView(editorRoot);
@@ -865,6 +868,7 @@ public final class ThemeEditorActivity extends Activity {
     private CheckBox checkBox(String label, BooleanChangeListener listener) {
         CheckBox checkBox = new CheckBox(this);
         checkBox.setText(label);
+        checkBox.setTextColor(SettingsUiPalette.from(this).textPrimary);
         checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -904,12 +908,14 @@ public final class ThemeEditorActivity extends Activity {
         RadioButton button = new RadioButton(this);
         button.setId(id);
         button.setText(label);
+        button.setTextColor(SettingsUiPalette.from(this).textPrimary);
         return button;
     }
 
     private TextView label(String text) {
         TextView label = new TextView(this);
         label.setText(text);
+        label.setTextColor(SettingsUiPalette.from(this).textPrimary);
         label.setTextSize(14);
         label.setGravity(Gravity.START);
         return label;

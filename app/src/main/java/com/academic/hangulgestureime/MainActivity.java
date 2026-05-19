@@ -1497,19 +1497,19 @@ public final class MainActivity extends Activity {
 
     private View themePresetCard(int index) {
         ThemePresetOption option = themeOptions[index];
-        KeyboardSettings titleSettings = option.applyTo(settings);
         KeyboardSettings englishSettings = previewSettingsFor(option, KeyboardMode.ENGLISH);
         KeyboardSettings hangulSettings = previewSettingsFor(option, KeyboardMode.HANGUL);
         boolean selected = index == selectedThemePresetIndex;
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(14), dp(14), dp(14), dp(16));
-        card.setBackground(themeCardBackground(titleSettings, selected));
+        card.setBackground(themeCardBackground(ui, selected));
         card.setOnClickListener(v -> applyThemeOption(index));
 
         TextView title = label(option.label);
-        title.setTextColor(0xFF111827);
+        title.setTextColor(ui.textPrimary);
         title.setTextSize(18);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         card.addView(title, matchWrap());
@@ -1523,7 +1523,7 @@ public final class MainActivity extends Activity {
 
     private TextView themePreviewLabel(String text) {
         TextView label = label(text);
-        label.setTextColor(0xFF64748B);
+        label.setTextColor(SettingsUiPalette.from(this).textSecondary);
         label.setTextSize(11);
         label.setTypeface(Typeface.DEFAULT_BOLD);
         return label;
@@ -1560,13 +1560,13 @@ public final class MainActivity extends Activity {
                 .withEnglishNumberRow(false);
     }
 
-    private GradientDrawable themeCardBackground(KeyboardSettings cardSettings, boolean selected) {
+    private GradientDrawable themeCardBackground(SettingsUiPalette ui, boolean selected) {
         GradientDrawable background = new GradientDrawable();
-        background.setColor(0xFFFFFFFF);
+        background.setColor(ui.surfaceRaised);
         background.setCornerRadius(dp(18));
         background.setStroke(
                 dp(selected ? 2 : 1),
-                selected ? cardSettings.accentColor : 0xFFE5E7EB);
+                selected ? ui.selectedBorder : ui.border);
         return background;
     }
 
