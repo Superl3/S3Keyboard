@@ -115,15 +115,13 @@ final class KeyboardThemePreset {
                     "ECE8DD", "C3BEB3", "C3BEB3", "1D2430", "6C7480",
                     5, 6, true, 1, KeyboardSettings.FONT_NOTO_SANS_KR, false, false,
                     dotsColorOverrides(false),
-                    dotsBackgroundOverrides(false),
-                    LegendStylePreset.DOTS),
+                    dotsBackgroundOverrides(false)),
             theme("gmk-dots-dark", "GMK Dots Dark Inspired",
                     "20242C", "1B1F27", "15181E", "181C23", "2C313C",
                     "101318", "0B0E12", "0B0E12", "F4F6FA", "AAB4C2",
                     5, 6, true, 1, KeyboardSettings.FONT_NOTO_SANS_KR, false, false,
                     dotsColorOverrides(true),
-                    dotsBackgroundOverrides(true),
-                    LegendStylePreset.DOTS),
+                    dotsBackgroundOverrides(true)),
             theme("marigold-fiesta-dark", "Marigold Fiesta Dark",
                     "202225", "2A2C31", "111318", "111318", "3C4048",
                     "111214", "45484F", "2F3339", "F8F1DF", "B8A9BF",
@@ -651,8 +649,9 @@ final class KeyboardThemePreset {
                 "tap:q", "tap:w", "tap:e", "tap:r", "tap:t", "tap:y", "tap:u", "tap:i", "tap:o", "tap:p",
                 "tap:a", "tap:s", "tap:d", "tap:f", "tap:g", "tap:h", "tap:j", "tap:k", "tap:l",
                 "tap:z", "tap:x", "tap:c", "tap:v", "tap:b", "tap:n", "tap:m",
-                "tap:\u3131", "tap:\u3134", "tap:\u3137", "tap:\u3139", "tap:\u3141", "tap:\u3145",
-                "tap:\u3147", "tap:\u3148", "tap:\u314E", "tap:\u3163", "tap:\u3161",
+                "tap:\u3131", "tap:\u3134", "tap:\u3162", "tap:\u3139", "tap:\u3141", "tap:\u3163",
+                "__dingul_center_vowel__", "tap:\u3145", "tap:\u3147", "__dingul_wide_vowel__",
+                "tap:\u3148", "tap:\u314E", "\u3163.", "\u3161\u3150",
                 "?", ".", "/", "space", "enter", "backspace", "shift", "language", "options", "reserved"
         };
         StringBuilder builder = new StringBuilder("{");
@@ -716,7 +715,7 @@ final class KeyboardThemePreset {
                 + "\"tap:m\":\"#C2A2FF\","
                 + "\"tap:\u3131\":\"#C75DFF\","
                 + "\"tap:\u3134\":\"#A887FF\","
-                + "\"tap:\u3137\":\"#4DE4D2\","
+                + "\"tap:\u3162\":\"#42D68C\","
                 + "\"tap:\u3163\":\"#FFD25A\","
                 + "\"tap:\u3139\":\"#FF9B48\","
                 + "\"tap:\u3141\":\"#FF5DAE\","
@@ -727,6 +726,7 @@ final class KeyboardThemePreset {
                 + "\"tap:\u314E\":\"#E7D84E\","
                 + "\"__dingul_center_vowel__\":\"#FFD25A\","
                 + "\"__dingul_wide_vowel__\":\"#36E7F4\","
+                + "\"\u3162\":\"#42D68C\","
                 + "\"\u3163.\":\"#42D68C\","
                 + "\"\u3161\u3150\":\"#36E7F4\","
                 + "\"?\":\"#FF5DAE\","
@@ -780,7 +780,7 @@ final class KeyboardThemePreset {
                 + "\"tap:m\":\"#7B5CC5\","
                 + "\"tap:\u3131\":\"#7C3CB3\","
                 + "\"tap:\u3134\":\"#6550B5\","
-                + "\"tap:\u3137\":\"#008B82\","
+                + "\"tap:\u3162\":\"#00814E\","
                 + "\"tap:\u3163\":\"#C98900\","
                 + "\"tap:\u3139\":\"#B85F19\","
                 + "\"tap:\u3141\":\"#C02666\","
@@ -791,6 +791,7 @@ final class KeyboardThemePreset {
                 + "\"tap:\u314E\":\"#8E7600\","
                 + "\"__dingul_center_vowel__\":\"#C98900\","
                 + "\"__dingul_wide_vowel__\":\"#007C89\","
+                + "\"\u3162\":\"#00814E\","
                 + "\"\u3163.\":\"#00814E\","
                 + "\"\u3161\u3150\":\"#007C89\","
                 + "\"?\":\"#C02666\","

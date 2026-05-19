@@ -89,6 +89,36 @@ public final class KeyboardThemePresetTest {
         assertEquals(true, light.keyColorOverrides.containsKey(".."));
     }
 
+    @Test
+    public void gmkDotsPresetsKeepReadableKeyLegends() {
+        KeyboardSettings dark = KeyboardThemePreset.find("gmk-dots-dark")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings light = KeyboardThemePreset.find("gmk-dots-light")
+                .applyTo(KeyboardSettings.defaults());
+
+        assertEquals(LegendStylePreset.DEFAULT, dark.legendStylePreset);
+        assertEquals(LegendStylePreset.DEFAULT, light.legendStylePreset);
+    }
+
+    @Test
+    public void colorfulDingulPresetsTintAllVowelLegends() {
+        KeyboardSettings dark = KeyboardThemePreset.find("marigold-fiesta-dark")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings light = KeyboardThemePreset.find("marigold-fiesta-light")
+                .applyTo(KeyboardSettings.defaults());
+
+        assertTrue(dark.keyColorOverrides.containsKey("tap:ㅢ"));
+        assertTrue(dark.keyColorOverrides.containsKey("__dingul_center_vowel__"));
+        assertTrue(dark.keyColorOverrides.containsKey("__dingul_wide_vowel__"));
+        assertTrue(dark.keyColorOverrides.containsKey("ㅣ."));
+        assertTrue(dark.keyColorOverrides.containsKey("ㅡㅐ"));
+        assertTrue(light.keyColorOverrides.containsKey("tap:ㅢ"));
+        assertTrue(light.keyColorOverrides.containsKey("__dingul_center_vowel__"));
+        assertTrue(light.keyColorOverrides.containsKey("__dingul_wide_vowel__"));
+        assertTrue(light.keyColorOverrides.containsKey("ㅣ."));
+        assertTrue(light.keyColorOverrides.containsKey("ㅡㅐ"));
+    }
+
     private static int brightness(int color) {
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
