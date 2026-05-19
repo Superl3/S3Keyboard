@@ -13,6 +13,7 @@ final class KeyboardPreferences {
     static final String ENGLISH_LEFT_PADDING_DP = "english_left_padding_dp";
     static final String ENGLISH_RIGHT_PADDING_DP = "english_right_padding_dp";
     static final String HANGUL_MAIN_SPECIAL_GAP_DP = "hangul_main_special_gap_dp";
+    static final String KEYBOARD_TOP_PADDING_DP = "keyboard_top_padding_dp";
     static final String KEYBOARD_BOTTOM_PADDING_DP = "keyboard_bottom_padding_dp";
     static final String BOTTOM_ROW_TOP_PADDING_DP = "bottom_row_top_padding_dp";
     static final String KEYBOARD_HEIGHT_DP = "keyboard_height_dp";
@@ -21,6 +22,7 @@ final class KeyboardPreferences {
     static final String SHOW_NUMBER_ROW = "show_number_row";
     static final String SHOW_HANGUL_NUMBER_ROW = "show_hangul_number_row";
     static final String SHOW_ENGLISH_NUMBER_ROW = "show_english_number_row";
+    static final String ADDITIONAL_NUMBER_ROW_COLOR_MODE = "additional_number_row_color_mode";
     static final String HAPTIC_FEEDBACK_ENABLED = "haptic_feedback_enabled";
     static final String HIT_SLOP_DP = "hit_slop_dp";
     static final String GESTURE_THRESHOLD_DP = "gesture_threshold_dp";
@@ -54,6 +56,10 @@ final class KeyboardPreferences {
     static final String SHOW_HANGUL_SLIDE_HINTS = "show_hangul_slide_hints";
     static final String SHOW_ENGLISH_SLIDE_HINTS = "show_english_slide_hints";
     static final String SHOW_BEGINNER_TOOLTIP_PREVIEW = "show_beginner_tooltip_preview";
+    static final String SHOW_CONSONANT_PREVIEW = "show_consonant_preview";
+    static final String SHOW_VOWEL_PREVIEW = "show_vowel_preview";
+    static final String HAPTIC_TICK_DURATION_MS = "haptic_tick_duration_ms";
+    static final String HAPTIC_TICK_GAP_MS = "haptic_tick_gap_ms";
     static final String HANGUL_SPECIAL_COLUMN_PERCENT = "hangul_special_column_percent";
     static final String HANGUL_MAIN_KEY_UNITS = "hangul_main_key_units";
     static final String KEY_COLOR_OVERRIDES = "key_color_overrides";
@@ -61,6 +67,10 @@ final class KeyboardPreferences {
     static final String RESERVED_LEFT_TEXT = "reserved_left_text";
     static final String RESERVED_RIGHT_TEXT = "reserved_right_text";
     static final String RESERVED_UP_TEXT = "reserved_up_text";
+    static final String DIFFERENTIATED_HAPTIC_ENABLED = "differentiated_haptic_enabled";
+    static final String TOUCH_BIAS_AUTO_CORRECTION_ENABLED = "touch_bias_auto_correction_enabled";
+    static final String CLIPBOARD_HISTORY_ENABLED = "clipboard_history_enabled";
+    static final String FLOATING_MODE_ENABLED = "floating_mode_enabled";
 
     private static final String PREF_NAME = "keyboard_preferences";
     private static final String DEFAULT_RESERVED_TAP_TEXT = "ㅋㅋㅋ";
@@ -71,6 +81,12 @@ final class KeyboardPreferences {
     private static final int LEGACY_DEFAULT_PRIMARY_TEXT_SIZE_PERCENT = 92;
     private static final int LEGACY_DEFAULT_SECONDARY_TEXT_SIZE_PERCENT = 90;
     private static final int LEGACY_DEFAULT_GESTURE_THRESHOLD_DP = 28;
+    static final int DEFAULT_HAPTIC_TICK_DURATION_MS = 14;
+    static final int MIN_HAPTIC_TICK_DURATION_MS = 4;
+    static final int MAX_HAPTIC_TICK_DURATION_MS = 40;
+    static final int DEFAULT_HAPTIC_TICK_GAP_MS = 18;
+    static final int MIN_HAPTIC_TICK_GAP_MS = 4;
+    static final int MAX_HAPTIC_TICK_GAP_MS = 60;
 
     private KeyboardPreferences() {
     }
@@ -126,6 +142,9 @@ final class KeyboardPreferences {
         int hangulMainSpecialGapDp = prefs.getInt(
                 HANGUL_MAIN_SPECIAL_GAP_DP,
                 defaults.hangulMainSpecialGapDp);
+        int keyboardTopPaddingDp = prefs.getInt(
+                KEYBOARD_TOP_PADDING_DP,
+                defaults.keyboardTopPaddingDp);
         int keyboardBottomPaddingDp = prefs.getInt(
                 KEYBOARD_BOTTOM_PADDING_DP,
                 defaults.keyboardBottomPaddingDp);
@@ -210,7 +229,11 @@ final class KeyboardPreferences {
         return loaded
                 .withHangulSidePadding(hangulLeftPaddingDp, hangulRightPaddingDp)
                 .withEnglishSidePadding(englishLeftPaddingDp, englishRightPaddingDp)
-                .withLayoutSpacing(hangulMainSpecialGapDp, keyboardBottomPaddingDp, bottomRowTopPaddingDp)
+                .withLayoutSpacing(
+                        hangulMainSpecialGapDp,
+                        keyboardTopPaddingDp,
+                        keyboardBottomPaddingDp,
+                        bottomRowTopPaddingDp)
                 .withTypography(
                         prefs.getString(FONT_FAMILY, defaults.fontFamily),
                         primaryTextSizePercent,
@@ -220,7 +243,10 @@ final class KeyboardPreferences {
                         prefs.getBoolean(SECONDARY_TEXT_BOLD, defaults.secondaryTextBold),
                         prefs.getBoolean(SECONDARY_TEXT_ITALIC, defaults.secondaryTextItalic))
                 .withKeyColorOverrides(
-                        KeyboardThemeJson.decodeKeyColorOverrides(prefs.getString(KEY_COLOR_OVERRIDES, "")));
+                        KeyboardThemeJson.decodeKeyColorOverrides(prefs.getString(KEY_COLOR_OVERRIDES, "")))
+                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.fromPreference(prefs.getString(
+                        ADDITIONAL_NUMBER_ROW_COLOR_MODE,
+                        defaults.additionalNumberRowColorMode.preferenceValue)));
     }
 
     static void saveSettings(Context context, KeyboardSettings settings) {
@@ -234,6 +260,7 @@ final class KeyboardPreferences {
                 .putInt(ENGLISH_LEFT_PADDING_DP, settings.englishLeftPaddingDp)
                 .putInt(ENGLISH_RIGHT_PADDING_DP, settings.englishRightPaddingDp)
                 .putInt(HANGUL_MAIN_SPECIAL_GAP_DP, settings.hangulMainSpecialGapDp)
+                .putInt(KEYBOARD_TOP_PADDING_DP, settings.keyboardTopPaddingDp)
                 .putInt(KEYBOARD_BOTTOM_PADDING_DP, settings.keyboardBottomPaddingDp)
                 .putInt(BOTTOM_ROW_TOP_PADDING_DP, settings.bottomRowTopPaddingDp)
                 .putInt(KEYBOARD_HEIGHT_DP, settings.keyboardHeightDp)
@@ -242,6 +269,9 @@ final class KeyboardPreferences {
                 .putBoolean(SHOW_NUMBER_ROW, settings.showNumberRow)
                 .putBoolean(SHOW_HANGUL_NUMBER_ROW, settings.showHangulNumberRow)
                 .putBoolean(SHOW_ENGLISH_NUMBER_ROW, settings.showEnglishNumberRow)
+                .putString(
+                        ADDITIONAL_NUMBER_ROW_COLOR_MODE,
+                        settings.additionalNumberRowColorMode.preferenceValue)
                 .putBoolean(HAPTIC_FEEDBACK_ENABLED, settings.hapticFeedbackEnabled)
                 .putInt(HIT_SLOP_DP, settings.hitSlopDp)
                 .putInt(GESTURE_THRESHOLD_DP, settings.gestureThresholdDp)
@@ -287,6 +317,86 @@ final class KeyboardPreferences {
     static void saveKeyboardMode(Context context, KeyboardMode mode) {
         prefs(context).edit()
                 .putString(KEYBOARD_MODE_LAST, mode.preferenceValue)
+                .apply();
+    }
+
+    static int loadHapticTickDurationMs(Context context) {
+        return clamp(
+                prefs(context).getInt(HAPTIC_TICK_DURATION_MS, DEFAULT_HAPTIC_TICK_DURATION_MS),
+                MIN_HAPTIC_TICK_DURATION_MS,
+                MAX_HAPTIC_TICK_DURATION_MS);
+    }
+
+    static int loadHapticTickGapMs(Context context) {
+        return clamp(
+                prefs(context).getInt(HAPTIC_TICK_GAP_MS, DEFAULT_HAPTIC_TICK_GAP_MS),
+                MIN_HAPTIC_TICK_GAP_MS,
+                MAX_HAPTIC_TICK_GAP_MS);
+    }
+
+    static void saveHapticTickDurationMs(Context context, int durationMs) {
+        prefs(context).edit()
+                .putInt(
+                        HAPTIC_TICK_DURATION_MS,
+                        clamp(durationMs, MIN_HAPTIC_TICK_DURATION_MS, MAX_HAPTIC_TICK_DURATION_MS))
+                .apply();
+    }
+
+    static boolean loadDifferentiatedHapticEnabled(Context context) {
+        return prefs(context).getBoolean(DIFFERENTIATED_HAPTIC_ENABLED, true);
+    }
+
+    static void saveDifferentiatedHapticEnabled(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(DIFFERENTIATED_HAPTIC_ENABLED, enabled).apply();
+    }
+
+    static boolean loadTouchBiasAutoCorrectionEnabled(Context context) {
+        return prefs(context).getBoolean(TOUCH_BIAS_AUTO_CORRECTION_ENABLED, true);
+    }
+
+    static void saveTouchBiasAutoCorrectionEnabled(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(TOUCH_BIAS_AUTO_CORRECTION_ENABLED, enabled).apply();
+    }
+
+    static boolean loadClipboardHistoryEnabled(Context context) {
+        return prefs(context).getBoolean(CLIPBOARD_HISTORY_ENABLED, false);
+    }
+
+    static void saveClipboardHistoryEnabled(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(CLIPBOARD_HISTORY_ENABLED, enabled).apply();
+    }
+
+    static boolean loadFloatingModeEnabled(Context context) {
+        return prefs(context).getBoolean(FLOATING_MODE_ENABLED, false);
+    }
+
+    static void saveFloatingModeEnabled(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(FLOATING_MODE_ENABLED, enabled).apply();
+    }
+
+    static void saveHapticTickGapMs(Context context, int gapMs) {
+        prefs(context).edit()
+                .putInt(HAPTIC_TICK_GAP_MS, clamp(gapMs, MIN_HAPTIC_TICK_GAP_MS, MAX_HAPTIC_TICK_GAP_MS))
+                .apply();
+    }
+
+    static boolean loadShowConsonantPreview(Context context) {
+        return prefs(context).getBoolean(SHOW_CONSONANT_PREVIEW, true);
+    }
+
+    static boolean loadShowVowelPreview(Context context) {
+        return prefs(context).getBoolean(SHOW_VOWEL_PREVIEW, true);
+    }
+
+    static void saveShowConsonantPreview(Context context, boolean enabled) {
+        prefs(context).edit()
+                .putBoolean(SHOW_CONSONANT_PREVIEW, enabled)
+                .apply();
+    }
+
+    static void saveShowVowelPreview(Context context, boolean enabled) {
+        prefs(context).edit()
+                .putBoolean(SHOW_VOWEL_PREVIEW, enabled)
                 .apply();
     }
 
@@ -387,6 +497,10 @@ final class KeyboardPreferences {
 
     private static boolean isHeightKey(String key) {
         return HANGUL_KEYBOARD_HEIGHT_DP.equals(key) || ENGLISH_KEYBOARD_HEIGHT_DP.equals(key);
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static int hangulSpecialColumnPercent(SharedPreferences prefs, KeyboardSettings defaults) {

@@ -49,7 +49,12 @@ final class KeyboardThemeJson {
             shape.put("keyGapDp", safeSettings.keyGapDp);
             shape.put("depthEnabled", safeSettings.keyDepthEnabled);
             shape.put("depthDp", safeSettings.keyDepthDp);
+            shape.put("keyboardTopPaddingDp", safeSettings.keyboardTopPaddingDp);
             root.put("shape", shape);
+
+            JSONObject numberRow = new JSONObject();
+            numberRow.put("colorMode", safeSettings.additionalNumberRowColorMode.preferenceValue);
+            root.put("additionalNumberRow", numberRow);
 
             JSONObject typography = new JSONObject();
             typography.put("fontFamily", safeSettings.fontFamily);
@@ -83,6 +88,7 @@ final class KeyboardThemeJson {
             JSONObject colors = root.optJSONObject("colors");
             JSONObject shape = root.optJSONObject("shape");
             JSONObject typography = root.optJSONObject("typography");
+            JSONObject numberRow = root.optJSONObject("additionalNumberRow");
             JSONObject keyColorOverrides = root.optJSONObject("keyTextColorOverrides");
             if (keyColorOverrides == null) {
                 keyColorOverrides = root.optJSONObject("keyColorOverrides");
@@ -123,6 +129,11 @@ final class KeyboardThemeJson {
                         .withKeyDepth(
                                 shape.optBoolean("depthEnabled", themed.keyDepthEnabled),
                                 shape.optInt("depthDp", themed.keyDepthDp));
+                themed = themed.withLayoutSpacing(
+                        themed.hangulMainSpecialGapDp,
+                        shape.optInt("keyboardTopPaddingDp", themed.keyboardTopPaddingDp),
+                        themed.keyboardBottomPaddingDp,
+                        themed.bottomRowTopPaddingDp);
             }
 
             if (typography != null) {
@@ -138,6 +149,13 @@ final class KeyboardThemeJson {
                         typography.optBoolean("primaryTextItalic", themed.primaryTextItalic),
                         typography.optBoolean("secondaryTextBold", themed.secondaryTextBold),
                         typography.optBoolean("secondaryTextItalic", themed.secondaryTextItalic));
+            }
+
+            if (numberRow != null) {
+                themed = themed.withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.fromPreference(
+                        numberRow.optString(
+                                "colorMode",
+                                themed.additionalNumberRowColorMode.preferenceValue)));
             }
 
             themed = themed.withKeyColorOverrides(decodeKeyColorOverrides(keyColorOverrides));

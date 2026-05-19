@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S3Keyboard Theme Builder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="editor">
+      <header class="titlebar">
+        <div>
+          <h1>S3Keyboard Theme Builder</h1>
+          <p>Builds schemaVersion 1 theme JSON for the Android importer.</p>
+        </div>
+        <button id="copyJson" type="button">Copy JSON</button>
+      </header>
+
+      <div class="panel">
+        <label>Name <input id="themeName" type="text" value="Untitled Theme"></label>
+        <label>Author <input id="themeAuthor" type="text" value="local"></label>
+        <label>Preset
+          <select id="presetSelect"></select>
+        </label>
+      </div>
+
+      <div class="grid">
+        <section class="panel">
+          <h2>Colors</h2>
+          <div id="colorControls" class="controls"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Shape</h2>
+          <div id="shapeControls" class="controls"></div>
+          <label class="check"><input id="depthEnabled" type="checkbox"> Depth enabled</label>
+          <label class="check"><input id="customDepth" type="checkbox"> Export custom depth color</label>
+        </section>
+
+        <section class="panel">
+          <h2>Typography</h2>
+          <label>Font
+            <select id="fontFamily">
+              <option value="default">Default</option>
+              <option value="noto_sans_kr">Noto Sans KR</option>
+              <option value="noto_serif_kr">Noto Serif KR</option>
+              <option value="d2coding">D2Coding</option>
+            </select>
+          </label>
+          <label>Primary text <input id="primaryTextSizePercent" type="range" min="70" max="150"></label>
+          <output id="primaryOut"></output>
+          <label>Secondary text <input id="secondaryTextSizePercent" type="range" min="70" max="150"></label>
+          <output id="secondaryOut"></output>
+          <label class="check"><input id="primaryTextBold" type="checkbox"> Primary bold</label>
+          <label class="check"><input id="primaryTextItalic" type="checkbox"> Primary italic</label>
+          <label class="check"><input id="secondaryTextBold" type="checkbox"> Secondary bold</label>
+          <label class="check"><input id="secondaryTextItalic" type="checkbox"> Secondary italic</label>
+        </section>
+
+        <section class="panel">
+          <h2>Additional Number Row</h2>
+          <label>Color mode
+            <select id="numberRowMode">
+              <option value="full_dimmed">Full accent</option>
+              <option value="full_default">Full default</option>
+              <option value="center_dimmed">Accent 4-7</option>
+            </select>
+          </label>
+          <p class="hint">This is independent of theme colors. It selects which number-row keys receive accent background.</p>
+        </section>
+      </div>
+
+      <section class="panel">
+        <h2>Key Text Overrides</h2>
+        <p class="hint">One per line: <code>tap:q = #C75DFF</code>, <code>space = #F7EEDB</code>, <code>__dingul_center_vowel__ = #FFD25A</code>.</p>
+        <textarea id="overridesText" spellcheck="false"></textarea>
+      </section>
+    </section>
+
+    <aside class="preview">
+      <section class="keyboard" id="keyboardPreview" aria-label="Theme preview"></section>
+      <section class="panel">
+        <h2>Theme JSON</h2>
+        <textarea id="jsonOutput" spellcheck="false"></textarea>
+        <div class="actions">
+          <button id="importJson" type="button">Import JSON</button>
+          <button id="downloadJson" type="button">Download</button>
+        </div>
+        <p id="status" class="status"></p>
+      </section>
+    </aside>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

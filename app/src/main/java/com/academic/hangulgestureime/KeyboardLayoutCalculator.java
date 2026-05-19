@@ -31,9 +31,10 @@ final class KeyboardLayoutCalculator {
         }
         availableWidth = Math.max(minimumKeyboardWidth, availableWidth);
 
+        float topPadding = dp(settings.keyboardTopPaddingDp, safeDensity);
         float bottomPadding = dp(settings.keyboardBottomPaddingDp, safeDensity);
         float bottomRowTopPadding = rows.size() > 1 ? dp(settings.bottomRowTopPaddingDp, safeDensity) : 0f;
-        float usableHeight = Math.max(rows.size(), height - bottomPadding);
+        float usableHeight = Math.max(rows.size(), height - topPadding - bottomPadding);
         float bottomRowHeight = bottomRowHeight(usableHeight, bottomRowTopPadding, rows.size(), safeDensity);
         float nonBottomHeight = rows.size() > 1
                 ? Math.max(rows.size() - 1, usableHeight - bottomRowTopPadding - bottomRowHeight)
@@ -52,9 +53,9 @@ final class KeyboardLayoutCalculator {
                     ? Math.min(dp(settings.hangulMainSpecialGapDp, safeDensity), Math.max(0f, availableWidth - 1f))
                     : 0f;
             float rowAvailableWidth = Math.max(1f, availableWidth - rowSpecialGap);
-            float top = bottomRow
+            float top = topPadding + (bottomRow
                     ? characterRowHeight * (rows.size() - 1) + bottomRowTopPadding
-                    : rowIndex * characterRowHeight;
+                    : rowIndex * characterRowHeight);
             float unitWidth = Math.max(0.1f, rowAvailableWidth / (float) row.baseUnits);
             float contentWidth = KeyboardRowMetrics.contentWidth(row, unitWidth, 0f) + rowSpecialGap;
             float maxContentWidth = KeyboardRowMetrics.maxContentWidth(row, unitWidth, 0f) + rowSpecialGap;
@@ -93,8 +94,9 @@ final class KeyboardLayoutCalculator {
             return usableHeight;
         }
         float desired = dp(KeyboardSettings.DEFAULT_BOTTOM_CONTROL_ROW_HEIGHT_DP, density);
+        float balanced = Math.max(1f, usableHeight / (float) rowCount * 1.05f);
         float maxHeight = Math.max(1f, usableHeight - bottomRowTopPadding - (rowCount - 1));
-        return Math.min(desired, maxHeight);
+        return Math.min(Math.min(desired, balanced), maxHeight);
     }
 
     private static boolean isHangulCharacterRow(

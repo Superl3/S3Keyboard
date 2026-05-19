@@ -17,7 +17,8 @@ public final class KeyboardLayoutFactoryTest {
 
         assertEquals("a", a.valueFor(GestureAction.TAP));
         assertEquals("A", a.valueFor(GestureAction.UP));
-        assertEquals("-", a.valueFor(GestureAction.LONG_PRESS));
+        assertEquals("@", a.valueFor(GestureAction.DOWN));
+        assertEquals("@", a.valueFor(GestureAction.LONG_PRESS));
     }
 
     @Test
@@ -158,13 +159,13 @@ public final class KeyboardLayoutFactoryTest {
     }
 
     @Test
-    public void englishBottomLanguageAndSpaceOfferUrlPunctuationGestures() {
+    public void englishBottomLanguageOffersPunctuationAndSpaceHidesUrlGesture() {
         KeyboardSettings settings = KeyboardSettings.defaults().withKeyboardMode(KeyboardMode.ENGLISH);
         List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
         GestureKey space = findKey(rows, "스페이스");
         GestureKey language = findKey(rows, "한/영");
 
-        assertEquals(".com", space.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_NOOP, space.valueFor(GestureAction.UP));
         assertEquals(KeyboardCommands.CMD_MOVE_LEFT, space.valueFor(GestureAction.LEFT));
         assertEquals(KeyboardCommands.CMD_MOVE_RIGHT, space.valueFor(GestureAction.RIGHT));
         assertEquals(KeyboardCommands.CMD_TOGGLE_LANGUAGE, language.valueFor(GestureAction.TAP));
@@ -249,6 +250,31 @@ public final class KeyboardLayoutFactoryTest {
     }
 
     @Test
+    public void englishQwertySlideSymbolsMatchCompactSampleLayout() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withEnglishNumberRow(false);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
+
+        assertEquals("1", findKey(rows, "q").downSlide);
+        assertEquals("0", findKey(rows, "p").downSlide);
+        assertDirections(findKey(rows, "s"), "S", null, "#", "%");
+        assertEquals("/", findKey(rows, "d").downSlide);
+        assertDirections(findKey(rows, "g"), "G", null, "~", "^");
+        assertDirections(findKey(rows, "h"), "H", null, "_", "-");
+        assertDirections(findKey(rows, "j"), "J", null, "+", "=");
+        assertDirections(findKey(rows, "k"), "K", null, "<", ">");
+        assertEquals("♥", findKey(rows, "l").downSlide);
+        assertDirections(findKey(rows, "z"), "Z", null, "(", ")");
+        assertDirections(findKey(rows, "x"), "X", null, "[", "]");
+        assertDirections(findKey(rows, "c"), "C", null, ";", ":");
+        assertDirections(findKey(rows, "v"), "V", null, "'", "\"");
+        assertDirections(findKey(rows, "b"), "B", null, "&", "|");
+        assertEquals("!", findKey(rows, "n").downSlide);
+        assertEquals("?", findKey(rows, "m").downSlide);
+    }
+
+    @Test
     public void englishShiftAndBackspaceHaveCommandIcons() {
         KeyboardSettings settings = KeyboardSettings.defaults().withKeyboardMode(KeyboardMode.ENGLISH);
         List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
@@ -290,6 +316,7 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals(KeyboardCommands.CMD_HAND_LEFT, options.valueFor(GestureAction.LEFT));
         assertEquals(KeyboardCommands.CMD_HAND_RIGHT, options.valueFor(GestureAction.RIGHT));
         assertEquals(KeyboardCommands.CMD_HAND_BALANCED, options.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_QUICK_SETTINGS, options.valueFor(GestureAction.LONG_PRESS));
     }
 
     private GestureKey findKey(List<KeyboardRow> rows, String label) {

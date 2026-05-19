@@ -3,29 +3,29 @@ package com.academic.hangulgestureime;
 final class KeyboardThemePreset {
     static final KeyboardThemePreset[] PRESETS = {
             theme("ios-clean-light", "iOS Clean Light",
-                    "FBFBFD", "EEF0F4", "E4E7ED", "E4E7ED", "D6D8DD",
+                    "FBFBFD", "EEF0F4", "E4E7ED", "CCD3DE", "D6D8DD",
                     "D1D5DB", "C2C7D0", null, "111827", "707780",
-                    8, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, false, false),
+                    5, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, false, false),
             theme("ios-clean-dark", "iOS Clean Dark",
                     "2B2D31", "3A3D43", "202328", "202328", "5A5E66",
                     "1D1F23", "202328", null, "F8FAFC", "B8BEC8",
-                    8, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, false, false),
+                    5, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, false, false),
             theme("macos-frost-light", "macOS Frost Light",
                     "F6F7F9", "E7EAEE", "DCE2EA", "DCE2EA", "C9D2DC",
                     "EEF1F4", "B8C0CA", "B8C0CA", "1F2937", "667085",
-                    6, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
+                    4, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
             theme("macos-graphite-dark", "macOS Graphite Dark",
                     "30343A", "3B414A", "252B32", "252B32", "596271",
                     "20242A", "15191F", "15191F", "F4F7FA", "AEB7C4",
-                    6, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
+                    4, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
             theme("android-material-light", "Android Material Light",
                     "FFFBFE", "ECE6F0", "E1DCE8", "E1DCE8", "D0C4DB",
                     "F3EDF7", "CAC4D0", null, "1D1B20", "625B71",
-                    12, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
+                    7, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
             theme("android-material-dark", "Android Material Dark",
                     "211F26", "2B2930", "17151B", "17151B", "4A4458",
                     "141218", "49454F", null, "E6E1E5", "CAC4D0",
-                    12, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
+                    7, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
             theme("paper-mono-flat", "Paper Mono Flat",
                     "FAFAFA", "EFEFEF", "E5E5E5", "E5E5E5", "DADADA",
                     "F4F4F4", "D0D0D0", null, "111111", "777777",
@@ -33,27 +33,19 @@ final class KeyboardThemePreset {
             theme("amoled-black", "AMOLED Black",
                     "050505", "111111", "000000", "000000", "2D2D2D",
                     "000000", "303030", null, "F7F7F7", "A7A7A7",
-                    6, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, false, false),
+                    4, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, false, false),
             theme("nord-snow", "Nord Snow",
                     "F8FAFC", "EEF2F7", "E4EAF2", "E4EAF2", "D8DEE9",
                     "E5E9F0", "B8C2CC", "B8C2CC", "2E3440", "667085",
-                    7, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
             theme("nord-night", "Nord Night",
                     "2E3440", "3B4252", "252B35", "252B35", "4C566A",
                     "242933", "1E2430", "1E2430", "ECEFF4", "C7D0DC",
-                    7, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
             theme("slate-glass", "Slate Glass",
                     "F7F9FC", "E9EEF5", "DFE7F0", "DFE7F0", "D7E2EF",
                     "EAF0F6", "AEB8C6", null, "0F172A", "64748B",
-                    14, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, false, false),
-            theme("mint-air", "Mint Air",
-                    "FBFEFC", "EAF5F0", "DCEFE7", "DCEFE7", "CBEADD",
-                    "E6F2EC", "B5C9BF", null, "12352C", "5F746B",
-                    10, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
-            theme("lavender-focus", "Lavender Focus",
-                    "FCFBFF", "F0ECF8", "E7E0F2", "E7E0F2", "D9CFE7",
-                    "F4F0FA", "C9BED6", null, "231B32", "6E607C",
-                    10, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
+                    8, 5, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, false, false),
             theme("graphite-mono", "Graphite Mono",
                     "F5F5F5", "E8E8E8", "DDDDDD", "DDDDDD", "CFCFCF",
                     "EDEDED", "B8B8B8", "B8B8B8", "161616", "686868",
@@ -68,8 +60,8 @@ final class KeyboardThemePreset {
                     4, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
                     marigoldFiestaDarkOverrides()),
             theme("marigold-fiesta-light", "Marigold Fiesta Light",
-                    "FFFDF8", "FBF8F2", "F7F4EE", "F7F4EE", "E8E2D8",
-                    "FFFFFF", "BBB4AA", "D2CCC2", "271811", "6C5542",
+                    "FAFAF7", "F1F0EC", "E8E7E2", "E8E7E2", "DAD8D1",
+                    "F3F2EF", "B9B7B0", "CCC9C2", "25201C", "64605A",
                     4, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
                     marigoldFiestaLightOverrides())
     };
@@ -188,10 +180,12 @@ final class KeyboardThemePreset {
                         + "\"borderWidthDp\":" + KeyboardSettings.DEFAULT_KEY_BORDER_WIDTH_DP + ","
                         + "\"keyGapDp\":" + keyGapDp + ","
                         + "\"depthEnabled\":" + depthEnabled + ","
-                        + "\"depthDp\":" + depthDp
+                        + "\"depthDp\":" + depthDp + ","
+                        + "\"keyboardTopPaddingDp\":" + KeyboardSettings.DEFAULT_KEYBOARD_TOP_PADDING_DP
                         + "},"
+                        + numberRowBlock(id)
                         + typographyBlock(id, fontFamily)
-                        + keyColorOverridesBlock(keyColorOverridesJson)
+                        + keyColorOverridesBlock(id, keyColorOverridesJson)
                         + "}");
     }
 
@@ -212,8 +206,35 @@ final class KeyboardThemePreset {
                 + "}";
     }
 
-    private static String keyColorOverridesBlock(String json) {
-        return json == null || json.isEmpty() ? "" : ",\"keyTextColorOverrides\":" + json;
+    private static String numberRowBlock(String id) {
+        String mode = id != null && id.startsWith("marigold-fiesta")
+                ? AdditionalNumberRowColorMode.CENTER_DIMMED.preferenceValue
+                : AdditionalNumberRowColorMode.FULL_DIMMED.preferenceValue;
+        return "\"additionalNumberRow\":{\"colorMode\":\"" + mode + "\"},";
+    }
+
+    private static String keyColorOverridesBlock(String id, String json) {
+        String indicator = "\"shiftIndicator\":\"#" + shiftIndicatorColor(id) + "\"";
+        if (json == null || json.isEmpty()) {
+            return ",\"keyTextColorOverrides\":{" + indicator + "}";
+        }
+        return ",\"keyTextColorOverrides\":" + json.substring(0, json.length() - 1) + "," + indicator + "}";
+    }
+
+    private static String shiftIndicatorColor(String id) {
+        if (id == null) {
+            return "2563EB";
+        }
+        if (id.startsWith("marigold-fiesta")) {
+            return id.endsWith("dark") ? "36E7F4" : "008B82";
+        }
+        if (id.contains("android") || id.contains("paper") || id.contains("graphite")) {
+            return "16A34A";
+        }
+        if (id.contains("macos") || id.contains("slate")) {
+            return "0891B2";
+        }
+        return "2563EB";
     }
 
     private static String marigoldFiestaDarkOverrides() {
@@ -245,6 +266,7 @@ final class KeyboardThemePreset {
                 + "\"tap:n\":\"#F28C4B\","
                 + "\"tap:m\":\"#C2A2FF\","
                 + "\"tap:\u3131\":\"#C75DFF\","
+                + "\"tap:\u3134\":\"#A887FF\","
                 + "\"tap:\u3137\":\"#4DE4D2\","
                 + "\"tap:\u3163\":\"#FFD25A\","
                 + "\"tap:\u3139\":\"#FF9B48\","
@@ -254,8 +276,20 @@ final class KeyboardThemePreset {
                 + "\"tap:\u3161\":\"#36E7F4\","
                 + "\"tap:\u3148\":\"#FFB84D\","
                 + "\"tap:\u314E\":\"#E7D84E\","
+                + "\"__dingul_center_vowel__\":\"#FFD25A\","
+                + "\"__dingul_wide_vowel__\":\"#36E7F4\","
                 + "\"\u3163.\":\"#42D68C\","
+                + "\"\u3161\u3150\":\"#36E7F4\","
+                + "\"?\":\"#FF5DAE\","
+                + "\".\":\"#DDE868\","
+                + "\". .\":\"#E7D84E\","
+                + "\"/\":\"#4DE4D2\","
                 + "\"shift\":\"#E9D64A\","
+                + "\"options\":\"#FF5DAE\","
+                + "\"reserved\":\"#C75DFF\","
+                + "\"icon:1\":\"#FF5DAE\","
+                + "\"icon:2\":\"#C75DFF\","
+                + "\"icon:3\":\"#F7EEDB\","
                 + "\"backspace\":\"#EDEAF3\","
                 + "\"bksp\":\"#EDEAF3\","
                 + "\"space\":\"#F7EEDB\","
@@ -296,6 +330,7 @@ final class KeyboardThemePreset {
                 + "\"tap:n\":\"#B9671E\","
                 + "\"tap:m\":\"#7B5CC5\","
                 + "\"tap:\u3131\":\"#7C3CB3\","
+                + "\"tap:\u3134\":\"#6550B5\","
                 + "\"tap:\u3137\":\"#008B82\","
                 + "\"tap:\u3163\":\"#C98900\","
                 + "\"tap:\u3139\":\"#B85F19\","
@@ -305,8 +340,20 @@ final class KeyboardThemePreset {
                 + "\"tap:\u3161\":\"#007C89\","
                 + "\"tap:\u3148\":\"#B66B00\","
                 + "\"tap:\u314E\":\"#8E7600\","
+                + "\"__dingul_center_vowel__\":\"#C98900\","
+                + "\"__dingul_wide_vowel__\":\"#007C89\","
                 + "\"\u3163.\":\"#00814E\","
+                + "\"\u3161\u3150\":\"#007C89\","
+                + "\"?\":\"#C02666\","
+                + "\".\":\"#7E7D00\","
+                + "\". .\":\"#8E7600\","
+                + "\"/\":\"#008B82\","
                 + "\"shift\":\"#8E7600\","
+                + "\"options\":\"#C02666\","
+                + "\"reserved\":\"#7C3CB3\","
+                + "\"icon:1\":\"#C02666\","
+                + "\"icon:2\":\"#7C3CB3\","
+                + "\"icon:3\":\"#2B2D31\","
                 + "\"backspace\":\"#202225\","
                 + "\"bksp\":\"#202225\","
                 + "\"space\":\"#2B2D31\","

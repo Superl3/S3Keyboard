@@ -9,7 +9,7 @@ import org.junit.Test;
 
 public final class KeyboardKeyVisualClassifierTest {
     @Test
-    public void spacebarUsesNormalKeyRole() {
+    public void spacebarUsesFunctionKeyRole() {
         GestureKey space = new GestureKey(
                 "Space",
                 KeyboardCommands.CMD_SPACE,
@@ -22,7 +22,7 @@ public final class KeyboardKeyVisualClassifierTest {
                 KeyIcon.SPACE);
 
         assertEquals(
-                KeyVisualRole.NORMAL,
+                KeyVisualRole.FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(KeyboardSettings.defaults(), space));
     }
 
@@ -70,6 +70,32 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
+    public void functionRolesUseAccentBackground() {
+        KeyboardSettings settings = KeyboardSettings.defaults();
+
+        assertEquals(
+                settings.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        settings,
+                        GestureKey.command("Delete", KeyboardCommands.CMD_DELETE, 3)));
+        assertEquals(
+                settings.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        settings,
+                        GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3)));
+        assertEquals(
+                settings.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        settings,
+                        GestureKey.command("Options", KeyboardCommands.CMD_OPEN_OPTIONS, 3)));
+        assertEquals(
+                settings.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        settings,
+                        GestureKey.command("Language", KeyboardCommands.CMD_TOGGLE_LANGUAGE, 2)));
+    }
+
+    @Test
     public void hangulSemicolonAndSlashSpecialKeysUseAccentRole() {
         KeyboardSettings hangul = KeyboardSettings.defaults();
 
@@ -98,6 +124,41 @@ public final class KeyboardKeyVisualClassifierTest {
                 KeyboardKeyVisualClassifier.roleFor(
                         hangul.withKeyboardMode(KeyboardMode.ENGLISH),
                         new GestureKey(".", ".", "\"", "`", ",", KeyboardCommands.CMD_NOOP, null)));
+        assertEquals(
+                hangul.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        hangul,
+                        new GestureKey(".", ".", "\"", "`", ",", KeyboardCommands.CMD_NOOP, null)));
+    }
+
+    @Test
+    public void contextualVowelCommandKeysUseNormalBackground() {
+        KeyboardSettings hangul = KeyboardSettings.defaults();
+
+        assertEquals(
+                KeyVisualRole.NORMAL,
+                KeyboardKeyVisualClassifier.roleFor(
+                        hangul,
+                        new GestureKey(
+                                "ㅣ.",
+                                KeyboardCommands.CMD_DINGUL_CENTER_VOWEL,
+                                "ㅗ",
+                                "ㅜ",
+                                "ㅓ",
+                                "ㅏ",
+                                null)));
+        assertEquals(
+                KeyVisualRole.NORMAL,
+                KeyboardKeyVisualClassifier.roleFor(
+                        hangul,
+                        new GestureKey(
+                                "ㅡㅐ",
+                                KeyboardCommands.CMD_DINGUL_WIDE_VOWEL,
+                                "ㅙ",
+                                "ㅞ",
+                                "ㅔ",
+                                "ㅐ",
+                                null)));
     }
 
     @Test
@@ -112,5 +173,33 @@ public final class KeyboardKeyVisualClassifierTest {
         assertEquals(KeyVisualRole.NORMAL, KeyboardKeyVisualClassifier.roleFor(settings, key));
         assertEquals(settings.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(settings, key));
         assertEquals(0xFF123456, KeyboardKeyVisualClassifier.textColorFor(settings, key));
+    }
+
+    @Test
+    public void numberRowColorModeAppliesToBackgroundAndForeground() {
+        GestureKey three = new GestureKey("3", "3", null, "#", null, null, "#");
+        GestureKey five = new GestureKey("5", "5", null, "%", null, null, "%");
+        KeyboardSettings center = KeyboardSettings.defaults()
+                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.CENTER_DIMMED);
+        KeyboardSettings fullDefault = KeyboardSettings.defaults()
+                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.FULL_DEFAULT);
+
+        assertEquals(center.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(center, three));
+        assertEquals(center.accentColor, KeyboardKeyVisualClassifier.textColorFor(center, three));
+        assertEquals(center.accentColor, KeyboardKeyVisualClassifier.hintColorFor(center, three));
+        assertEquals(center.accentKeyColor, KeyboardKeyVisualClassifier.colorFor(center, five));
+        assertEquals(center.secondaryColor, KeyboardKeyVisualClassifier.textColorFor(center, five));
+        assertEquals(center.secondaryColor, KeyboardKeyVisualClassifier.hintColorFor(center, five));
+        assertEquals(fullDefault.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(fullDefault, five));
+        assertEquals(fullDefault.accentColor, KeyboardKeyVisualClassifier.textColorFor(fullDefault, five));
+    }
+
+    @Test
+    public void shiftIndicatorCanUseThemeOverride() {
+        Map<String, Integer> overrides = new HashMap<>();
+        overrides.put("shiftIndicator", 0x0000A676);
+        KeyboardSettings settings = KeyboardSettings.defaults().withKeyColorOverrides(overrides);
+
+        assertEquals(0xFF00A676, KeyboardKeyVisualClassifier.shiftIndicatorColorFor(settings));
     }
 }

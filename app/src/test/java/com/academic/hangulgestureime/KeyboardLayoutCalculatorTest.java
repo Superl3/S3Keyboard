@@ -83,6 +83,43 @@ public final class KeyboardLayoutCalculatorTest {
     }
 
     @Test
+    public void bottomControlRowShrinksForCompactThemePreviews() {
+        KeyboardSettings english = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withEnglishNumberRow(false);
+        List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
+                KeyboardLayoutFactory.build(english),
+                english,
+                320f,
+                88f,
+                1f);
+
+        KeyboardLayoutCalculator.Slot topRow = slots.get(0);
+        KeyboardLayoutCalculator.Slot bottomRow = slots.get(slots.size() - 1);
+        float topRowHeight = topRow.bottom - topRow.top;
+        float bottomRowHeight = bottomRow.bottom - bottomRow.top;
+
+        assertEquals(20.475f, bottomRowHeight, 0.001f);
+        assertEquals(true, bottomRowHeight <= topRowHeight * 1.1f);
+    }
+
+    @Test
+    public void keyboardTopPaddingMovesRowsWithinMeasuredHeight() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withHangulNumberRow(false)
+                .withLayoutSpacing(8, 12, 4, 0);
+        List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
+                KeyboardLayoutFactory.build(settings),
+                settings,
+                320f,
+                250f,
+                1f);
+
+        assertEquals(12f, slots.get(0).top, 0.001f);
+        assertEquals(246f, slots.get(slots.size() - 1).bottom, 0.001f);
+    }
+
+    @Test
     public void visualKeyGapDoesNotChangePhysicalLayoutSlots() {
         KeyboardSettings withoutGap = KeyboardSettings.defaults().withKeyGap(0);
         KeyboardSettings withGap = KeyboardSettings.defaults().withKeyGap(18);

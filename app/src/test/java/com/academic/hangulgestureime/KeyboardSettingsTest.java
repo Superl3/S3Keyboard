@@ -53,6 +53,7 @@ public final class KeyboardSettingsTest {
         assertEquals(KeyboardSettings.DEFAULT_ENGLISH_LEFT_PADDING_DP, settings.englishLeftPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_ENGLISH_RIGHT_PADDING_DP, settings.englishRightPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_HANGUL_MAIN_SPECIAL_GAP_DP, settings.hangulMainSpecialGapDp);
+        assertEquals(KeyboardSettings.DEFAULT_KEYBOARD_TOP_PADDING_DP, settings.keyboardTopPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_KEYBOARD_BOTTOM_PADDING_DP, settings.keyboardBottomPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_BOTTOM_ROW_TOP_PADDING_DP, settings.bottomRowTopPaddingDp);
         assertEquals(4, settings.keyboardBottomPaddingDp);
@@ -187,17 +188,18 @@ public final class KeyboardSettingsTest {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withHangulSidePadding(11, 12)
                 .withEnglishSidePadding(21, 22)
-                .withLayoutSpacing(999, 999, 999);
+                .withLayoutSpacing(999, 999, 999, 999);
         KeyboardSettings tooSmall = KeyboardSettings.defaults()
                 .withHangulSidePadding(-1, -2)
                 .withEnglishSidePadding(-3, -4)
-                .withLayoutSpacing(-5, -6, -7);
+                .withLayoutSpacing(-5, -6, -7, -8);
 
         assertEquals(11, settings.hangulLeftPaddingDp);
         assertEquals(12, settings.hangulRightPaddingDp);
         assertEquals(21, settings.englishLeftPaddingDp);
         assertEquals(22, settings.englishRightPaddingDp);
         assertEquals(KeyboardSettings.MAX_HANGUL_MAIN_SPECIAL_GAP_DP, settings.hangulMainSpecialGapDp);
+        assertEquals(KeyboardSettings.MAX_KEYBOARD_TOP_PADDING_DP, settings.keyboardTopPaddingDp);
         assertEquals(KeyboardSettings.MAX_KEYBOARD_BOTTOM_PADDING_DP, settings.keyboardBottomPaddingDp);
         assertEquals(KeyboardSettings.MAX_BOTTOM_ROW_TOP_PADDING_DP, settings.bottomRowTopPaddingDp);
         assertEquals(0, tooSmall.hangulLeftPaddingDp);
@@ -205,6 +207,7 @@ public final class KeyboardSettingsTest {
         assertEquals(0, tooSmall.englishLeftPaddingDp);
         assertEquals(0, tooSmall.englishRightPaddingDp);
         assertEquals(0, tooSmall.hangulMainSpecialGapDp);
+        assertEquals(0, tooSmall.keyboardTopPaddingDp);
         assertEquals(0, tooSmall.keyboardBottomPaddingDp);
         assertEquals(0, tooSmall.bottomRowTopPaddingDp);
     }

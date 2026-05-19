@@ -9,6 +9,14 @@ final class KeyboardLayoutFactory {
     private static final String[] NUMBER_ROW_SYMBOLS = {
             "!", "@", "#", "$", "%", "^", "&", "*", "(", ")"
     };
+    private static final EnglishSlideSpec[] TOP_QWERTY_SLIDES = {
+            single("1"), single("2"), single("3"), single("4"), single("5"),
+            single("6"), single("7"), single("8"), single("9"), single("0")
+    };
+    private static final EnglishSlideSpec[] HOME_QWERTY_SLIDES = {
+            single("@"), pair("#", "%"), single("/"), single("*"), pair("~", "^"),
+            pair("_", "-"), pair("+", "="), pair("<", ">"), single("♥")
+    };
 
     private KeyboardLayoutFactory() {
     }
@@ -87,12 +95,8 @@ final class KeyboardLayoutFactory {
 
     private static List<KeyboardRow> englishRows() {
         return Arrays.asList(
-                englishRow("qwertyuiop", new String[] {
-                        "!", "@", "#", "$", "%", "^", "&", "*", "(", ")"
-                }),
-                englishRow("asdfghjkl", new String[] {
-                        "-", "_", "+", "=", "/", "\\", ":", ";", "\""
-                }),
+                englishRow("qwertyuiop", TOP_QWERTY_SLIDES),
+                englishRow("asdfghjkl", HOME_QWERTY_SLIDES),
                 new KeyboardRow(Arrays.asList(
                         GestureKey.command(
                                 "Shift",
@@ -100,28 +104,44 @@ final class KeyboardLayoutFactory {
                                 KeyboardCommands.CMD_SHIFT_LOCK,
                                 3,
                                 KeyIcon.SHIFT),
-                        englishKey('z', "'", 2),
-                        englishKey('x', "`", 2),
-                        englishKey('c', "~", 2),
-                        englishKey('v', "<", 2),
-                        englishKey('b', ">", 2),
-                        englishKey('n', "[", 2),
-                        englishKey('m', "]", 2),
+                        englishKey('z', pair("(", ")"), 2),
+                        englishKey('x', pair("[", "]"), 2),
+                        englishKey('c', pair(";", ":"), 2),
+                        englishKey('v', pair("'", "\""), 2),
+                        englishKey('b', pair("&", "|"), 2),
+                        englishKey('n', single("!"), 2),
+                        englishKey('m', single("?"), 2),
                         GestureKey.command("삭제", KeyboardCommands.CMD_DELETE, 3)), 20));
     }
 
-    private static KeyboardRow englishRow(String letters, String[] longPressValues) {
+    private static KeyboardRow englishRow(String letters, EnglishSlideSpec[] slides) {
         List<GestureKey> keys = new ArrayList<>();
         for (int i = 0; i < letters.length(); i++) {
-            keys.add(englishKey(letters.charAt(i), longPressValues[i], 2));
+            keys.add(englishKey(letters.charAt(i), slides[i], 2));
         }
         return new KeyboardRow(keys, 20);
     }
 
-    private static GestureKey englishKey(char lower, String longPress, int widthUnits) {
+    private static GestureKey englishKey(char lower, EnglishSlideSpec slide, int widthUnits) {
         String lowercase = String.valueOf(lower);
         String uppercase = String.valueOf(Character.toUpperCase(lower));
-        return new GestureKey(lowercase, lowercase, uppercase, longPress, null, null, longPress, widthUnits);
+        return new GestureKey(
+                lowercase,
+                lowercase,
+                uppercase,
+                slide.down,
+                slide.left,
+                slide.right,
+                slide.longPress,
+                widthUnits);
+    }
+
+    private static EnglishSlideSpec single(String value) {
+        return new EnglishSlideSpec(value, null, null, value);
+    }
+
+    private static EnglishSlideSpec pair(String left, String right) {
+        return new EnglishSlideSpec(null, left, right, null);
     }
 
     private static KeyboardRow bottomRow(KeyboardSettings settings) {
@@ -133,7 +153,7 @@ final class KeyboardLayoutFactory {
                         null,
                         KeyboardCommands.CMD_HAND_LEFT,
                         KeyboardCommands.CMD_HAND_RIGHT,
-                        null,
+                        KeyboardCommands.CMD_QUICK_SETTINGS,
                         3,
                         KeyIcon.OPTIONS),
                 new GestureKey(
@@ -168,7 +188,7 @@ final class KeyboardLayoutFactory {
         return new GestureKey(
                 "스페이스",
                 KeyboardCommands.CMD_SPACE,
-                settings.keyboardMode == KeyboardMode.ENGLISH ? ".com" : null,
+                KeyboardCommands.CMD_NOOP,
                 null,
                 KeyboardCommands.CMD_MOVE_LEFT,
                 KeyboardCommands.CMD_MOVE_RIGHT,
@@ -231,5 +251,19 @@ final class KeyboardLayoutFactory {
 
     private static GestureKey specialKey(String label, String command, int widthUnits) {
         return GestureKey.command(label, command, widthUnits);
+    }
+
+    private static final class EnglishSlideSpec {
+        final String down;
+        final String left;
+        final String right;
+        final String longPress;
+
+        EnglishSlideSpec(String down, String left, String right, String longPress) {
+            this.down = down;
+            this.left = left;
+            this.right = right;
+            this.longPress = longPress;
+        }
     }
 }

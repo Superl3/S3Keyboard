@@ -46,6 +46,7 @@ public final class ThemeEditorActivity extends Activity {
     private Spinner depthColorSpinner;
     private Spinner fontFamilySpinner;
     private Spinner handednessSpinner;
+    private Spinner additionalNumberRowColorModeSpinner;
     private Spinner selectedKeyColorSpinner;
     private Button deleteThemeButton;
     private Button resetSelectedKeyButton;
@@ -59,6 +60,7 @@ public final class ThemeEditorActivity extends Activity {
     private SeekBar englishRightPaddingSeekBar;
     private SeekBar hangulSpecialColumnSeekBar;
     private SeekBar hangulMainSpecialGapSeekBar;
+    private SeekBar keyboardTopPaddingSeekBar;
     private SeekBar keyboardBottomPaddingSeekBar;
     private SeekBar bottomRowTopPaddingSeekBar;
     private SeekBar roundnessSeekBar;
@@ -88,6 +90,7 @@ public final class ThemeEditorActivity extends Activity {
     private TextView englishRightPaddingValue;
     private TextView hangulSpecialColumnValue;
     private TextView hangulMainSpecialGapValue;
+    private TextView keyboardTopPaddingValue;
     private TextView keyboardBottomPaddingValue;
     private TextView bottomRowTopPaddingValue;
     private TextView roundnessValue;
@@ -102,6 +105,9 @@ public final class ThemeEditorActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getActionBar() != null) {
+            getActionBar().hide();
+        }
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         settings = KeyboardPreferences.load(this);
         setContentView(createContentView());
@@ -282,18 +288,6 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(label("Key idle"), matchWrapWithTop(8));
         root.addView(keyIdleColorSpinner, matchWrap());
 
-        functionKeyColorSpinner = colorSpinner(color -> updateSettings(settings.withFunctionKeyColors(
-                color,
-                settings.primaryFunctionKeyColor)));
-        root.addView(label("Function key"), matchWrapWithTop(8));
-        root.addView(functionKeyColorSpinner, matchWrap());
-
-        primaryFunctionKeyColorSpinner = colorSpinner(color -> updateSettings(settings.withFunctionKeyColors(
-                settings.functionKeyColor,
-                color)));
-        root.addView(label("Primary function key"), matchWrapWithTop(8));
-        root.addView(primaryFunctionKeyColorSpinner, matchWrap());
-
         accentKeyColorSpinner = colorSpinner(color -> updateSettings(settings.withExtendedThemeColors(
                 settings.keyIdleColor,
                 settings.keyPressedColor,
@@ -464,6 +458,7 @@ public final class ThemeEditorActivity extends Activity {
         hangulMainSpecialGapSeekBar = seekBar(KeyboardSettings.MAX_HANGUL_MAIN_SPECIAL_GAP_DP, progress ->
                 updateSettings(settings.withLayoutSpacing(
                         progress,
+                        settings.keyboardTopPaddingDp,
                         settings.keyboardBottomPaddingDp,
                         settings.bottomRowTopPaddingDp)));
         root.addView(hangulMainSpecialGapValue, matchWrapWithTop(8));
@@ -482,11 +477,22 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(englishRightPaddingValue, matchWrapWithTop(8));
         root.addView(englishRightPaddingSeekBar, matchWrap());
 
-        root.addView(label("Bottom spacing"), matchWrapWithTop(12));
+        root.addView(label("Vertical spacing"), matchWrapWithTop(12));
+        keyboardTopPaddingValue = label("");
+        keyboardTopPaddingSeekBar = seekBar(KeyboardSettings.MAX_KEYBOARD_TOP_PADDING_DP, progress ->
+                updateSettings(settings.withLayoutSpacing(
+                        settings.hangulMainSpecialGapDp,
+                        progress,
+                        settings.keyboardBottomPaddingDp,
+                        settings.bottomRowTopPaddingDp)));
+        root.addView(keyboardTopPaddingValue, matchWrapWithTop(8));
+        root.addView(keyboardTopPaddingSeekBar, matchWrap());
+
         bottomRowTopPaddingValue = label("");
         bottomRowTopPaddingSeekBar = seekBar(KeyboardSettings.MAX_BOTTOM_ROW_TOP_PADDING_DP, progress ->
                 updateSettings(settings.withLayoutSpacing(
                         settings.hangulMainSpecialGapDp,
+                        settings.keyboardTopPaddingDp,
                         settings.keyboardBottomPaddingDp,
                         progress)));
         root.addView(bottomRowTopPaddingValue, matchWrapWithTop(8));
@@ -496,6 +502,7 @@ public final class ThemeEditorActivity extends Activity {
         keyboardBottomPaddingSeekBar = seekBar(KeyboardSettings.MAX_KEYBOARD_BOTTOM_PADDING_DP, progress ->
                 updateSettings(settings.withLayoutSpacing(
                         settings.hangulMainSpecialGapDp,
+                        settings.keyboardTopPaddingDp,
                         progress,
                         settings.bottomRowTopPaddingDp)));
         root.addView(keyboardBottomPaddingValue, matchWrapWithTop(8));
@@ -507,6 +514,10 @@ public final class ThemeEditorActivity extends Activity {
                 updateSettings(settings.withEnglishNumberRow(checked)));
         root.addView(hangulNumberRowCheckBox, matchWrapWithTop(12));
         root.addView(englishNumberRowCheckBox, matchWrapWithTop(4));
+
+        additionalNumberRowColorModeSpinner = additionalNumberRowColorModeSpinner();
+        root.addView(label("Additional number row color"), matchWrapWithTop(8));
+        root.addView(additionalNumberRowColorModeSpinner, matchWrap());
     }
 
     private void addTypographyControls(LinearLayout root) {
@@ -628,6 +639,7 @@ public final class ThemeEditorActivity extends Activity {
                 hangulSpecialColumnSeekBar,
                 settings.hangulSpecialColumnPercent - KeyboardSettings.MIN_HANGUL_SPECIAL_COLUMN_PERCENT);
         setProgress(hangulMainSpecialGapSeekBar, settings.hangulMainSpecialGapDp);
+        setProgress(keyboardTopPaddingSeekBar, settings.keyboardTopPaddingDp);
         setProgress(bottomRowTopPaddingSeekBar, settings.bottomRowTopPaddingDp);
         setProgress(keyboardBottomPaddingSeekBar, settings.keyboardBottomPaddingDp);
         setProgress(roundnessSeekBar, settings.keyRoundnessDp);
@@ -637,8 +649,6 @@ public final class ThemeEditorActivity extends Activity {
         setProgress(primaryTextSizeSeekBar, settings.primaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
         setProgress(secondaryTextSizeSeekBar, settings.secondaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
         setSelection(keyIdleColorSpinner, indexOfColor(settings.keyIdleColor));
-        setSelection(functionKeyColorSpinner, indexOfColor(settings.functionKeyColor));
-        setSelection(primaryFunctionKeyColorSpinner, indexOfColor(settings.primaryFunctionKeyColor));
         setSelection(accentKeyColorSpinner, indexOfColor(settings.accentKeyColor));
         setSelection(keyPressedColorSpinner, indexOfColor(settings.keyPressedColor));
         setSelection(keyboardBackgroundColorSpinner, indexOfColor(settings.keyboardBackgroundColor));
@@ -647,6 +657,7 @@ public final class ThemeEditorActivity extends Activity {
         setSelection(borderColorSpinner, indexOfColor(settings.borderColor));
         setSelection(depthColorSpinner, indexOfColor(settings.depthColor));
         setSelection(fontFamilySpinner, indexOfFont(settings.fontFamily));
+        setSelection(additionalNumberRowColorModeSpinner, settings.additionalNumberRowColorMode.ordinal());
         setChecked(hangulNumberRowCheckBox, settings.showHangulNumberRow);
         setChecked(englishNumberRowCheckBox, settings.showEnglishNumberRow);
         setChecked(keyDepthCheckBox, settings.keyDepthEnabled);
@@ -679,6 +690,7 @@ public final class ThemeEditorActivity extends Activity {
         hangulSpecialColumnValue.setText("Hangul special column: " + settings.hangulSpecialColumnPercent + "%");
         hangulMainSpecialGapValue.setText("Dingul main/special gap: "
                 + settings.hangulMainSpecialGapDp + "dp");
+        keyboardTopPaddingValue.setText("Keyboard top padding: " + settings.keyboardTopPaddingDp + "dp");
         bottomRowTopPaddingValue.setText("Bottom row top padding: " + settings.bottomRowTopPaddingDp + "dp");
         keyboardBottomPaddingValue.setText("Keyboard bottom padding: " + settings.keyboardBottomPaddingDp + "dp");
         roundnessValue.setText("Roundness: " + settings.keyRoundnessDp + "dp");
@@ -718,7 +730,7 @@ public final class ThemeEditorActivity extends Activity {
 
     private void updatePreviewHeight() {
         LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) preview.getLayoutParams();
-        params.height = dp(settings.measuredHeightDp() + (settings.showBeginnerTooltipPreview ? 54 : 0));
+        params.height = dp(settings.measuredHeightDp());
         preview.setLayoutParams(params);
     }
 
@@ -793,6 +805,30 @@ public final class ThemeEditorActivity extends Activity {
                 if (!syncing) {
                     selectedThemePresetIndex = 0;
                     listener.onColorChanged(ColorOption.OPTIONS[position].color);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        return spinner;
+    }
+
+    private Spinner additionalNumberRowColorModeSpinner() {
+        Spinner spinner = new Spinner(this);
+        ArrayAdapter<AdditionalNumberRowColorMode> adapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_item,
+                AdditionalNumberRowColorMode.values());
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!syncing) {
+                    updateSettings(settings.withAdditionalNumberRowColorMode(
+                            AdditionalNumberRowColorMode.values()[position]));
                 }
             }
 
@@ -1054,8 +1090,6 @@ public final class ThemeEditorActivity extends Activity {
     private static final class ColorOption {
         static final ColorOption[] OPTIONS = {
                 new ColorOption("Key idle", KeyboardSettings.DEFAULT_KEY_IDLE_COLOR),
-                new ColorOption("Function key", KeyboardSettings.DEFAULT_FUNCTION_KEY_COLOR),
-                new ColorOption("Primary function", KeyboardSettings.DEFAULT_PRIMARY_FUNCTION_KEY_COLOR),
                 new ColorOption("Background", KeyboardSettings.DEFAULT_KEYBOARD_BACKGROUND_COLOR),
                 new ColorOption("Pressed gray", KeyboardSettings.DEFAULT_KEY_PRESSED_COLOR),
                 new ColorOption("Secondary gray", KeyboardSettings.DEFAULT_SECONDARY_COLOR),

@@ -4,8 +4,10 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -45,8 +47,13 @@ public final class HangulKeyboardView extends View {
     private boolean englishShiftActive;
     private boolean englishCapsLocked;
     private boolean compactPreviewRendering;
+    private boolean showConsonantPreview = true;
+    private boolean showVowelPreview = true;
+    private OnPreviewOverlayListener previewOverlayListener;
     private long nextTouchSequence;
     private TouchSample lastTextTouchSample;
+    private boolean differentiatedHapticEnabled = true;
+    private boolean touchBiasAutoCorrectionEnabled = true;
 
     public HangulKeyboardView(Context context) {
         super(context);
@@ -57,6 +64,8 @@ public final class HangulKeyboardView extends View {
         iconRegistry = new KeyboardIconRegistry(context);
         touchBiasStore = new TouchBiasStore(context);
         touchBias = touchBiasStore.load();
+        differentiatedHapticEnabled = KeyboardPreferences.loadDifferentiatedHapticEnabled(context);
+        touchBiasAutoCorrectionEnabled = KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(context);
         initPaints();
         setSettings(KeyboardPreferences.load(context));
     }
@@ -69,9 +78,18 @@ public final class HangulKeyboardView extends View {
         previewKeySelectionListener = listener;
     }
 
+    void setOnPreviewOverlayListener(OnPreviewOverlayListener listener) {
+        previewOverlayListener = listener;
+    }
+
     void setSettings(KeyboardSettings settings) {
         this.settings = settings == null ? KeyboardSettings.defaults() : settings;
         feedback.setEnabled(this.settings.hapticFeedbackEnabled);
+        feedback.reloadPreferences(getContext());
+        differentiatedHapticEnabled = KeyboardPreferences.loadDifferentiatedHapticEnabled(getContext());
+        touchBiasAutoCorrectionEnabled = KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(getContext());
+        showConsonantPreview = KeyboardPreferences.loadShowConsonantPreview(getContext());
+        showVowelPreview = KeyboardPreferences.loadShowVowelPreview(getContext());
         touchBias = touchBiasStore.load();
         rows = KeyboardLayoutFactory.build(this.settings);
         applyTypeface();
@@ -79,6 +97,7 @@ public final class HangulKeyboardView extends View {
             layoutKeys(getWidth(), getHeight());
         }
         requestLayout();
+        updatePreviewPopup();
         invalidate();
     }
 
@@ -99,7 +118,7 @@ public final class HangulKeyboardView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        int desiredHeight = dp(settings.measuredHeightDp()) + tooltipReservePx();
+        int desiredHeight = dp(settings.measuredHeightDp());
         setMeasuredDimension(width, resolveSize(desiredHeight, heightMeasureSpec));
     }
 
@@ -107,6 +126,7 @@ public final class HangulKeyboardView extends View {
     protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
         super.onSizeChanged(width, height, oldWidth, oldHeight);
         layoutKeys(width, height);
+        updateSystemGestureExclusion(width, height);
     }
 
     @Override
@@ -118,13 +138,11 @@ public final class HangulKeyboardView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        int topReserve = tooltipReservePx();
         keyPaint.setColor(settings.keyboardBackgroundColor);
-        canvas.drawRect(0, topReserve, getWidth(), getHeight(), keyPaint);
+        canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
         for (KeySlot keySlot : keySlots) {
             drawKey(canvas, keySlot);
         }
-        drawOverlay(canvas);
     }
 
     @Override
@@ -164,12 +182,13 @@ public final class HangulKeyboardView extends View {
         if (previewKeySelectionListener == null) {
             if (isDeleteKey(keySlot.key)) {
                 state.tapOutputAlreadyEmitted = true;
-                feedback.tap();
+                feedback.tapHeavy();
                 emitValue(KeyboardCommands.CMD_DELETE);
             }
             int longPressDelay = longPressDelayFor(keySlot.key);
             scheduleLongPress(state, longPressDelay);
         }
+        updatePreviewPopup();
         invalidate();
         return true;
     }
@@ -188,6 +207,7 @@ public final class HangulKeyboardView extends View {
             }
         }
         if (handled) {
+            updatePreviewPopup();
             invalidate();
         }
         return handled;
@@ -198,7 +218,11 @@ public final class HangulKeyboardView extends View {
         GestureAction action = state.gestureState.update(
                 x - state.downX,
                 y - state.downY,
-                dp(settings.gestureThresholdDp));
+                baseGestureThresholdPx(),
+                gestureThresholdPxFor(GestureAction.UP),
+                gestureThresholdPxFor(GestureAction.DOWN),
+                gestureThresholdPxFor(GestureAction.LEFT),
+                gestureThresholdPxFor(GestureAction.RIGHT));
         if (state.gestureState.isLocked() && !wasLocked) {
             cancelLongPressTimer(state);
             feedback.slideLock();
@@ -227,15 +251,19 @@ public final class HangulKeyboardView extends View {
             removeTouchState(state, true);
             return true;
         }
-        String repeatableTap = repeatableValue(state.keySlot.key);
-        boolean repeatAlreadyFired = repeatableTap != null && repeatController.hasFired();
+        boolean repeatAlreadyFired = repeatController.hasFired();
         if (!state.longPressTriggered && !repeatAlreadyFired && !state.tapOutputAlreadyEmitted) {
             GestureAction action = state.gestureState.release(
                     event.getX(pointerIndex) - state.downX,
                     event.getY(pointerIndex) - state.downY,
-                    dp(settings.gestureThresholdDp));
+                    baseGestureThresholdPx(),
+                    gestureThresholdPxFor(GestureAction.UP),
+                    gestureThresholdPxFor(GestureAction.DOWN),
+                    gestureThresholdPxFor(GestureAction.LEFT),
+                    gestureThresholdPxFor(GestureAction.RIGHT));
+            state.activeAction = action;
             if (action == GestureAction.TAP) {
-                feedback.tap();
+                feedbackForKey(state.keySlot.key, action);
             }
             queueTouchOutput(
                     state,
@@ -264,6 +292,7 @@ public final class HangulKeyboardView extends View {
                 } else {
                     emitValue(state.keySlot.key.valueFor(GestureAction.LONG_PRESS));
                 }
+                updatePreviewPopup();
                 invalidate();
             }
         };
@@ -271,7 +300,13 @@ public final class HangulKeyboardView extends View {
     }
 
     private void queueTouchOutput(TouchState state, String value, float x, float y) {
-        pendingTouchOutputs.add(new PendingTouchOutput(state.sequence, state.keySlot, value, x, y));
+        pendingTouchOutputs.add(new PendingTouchOutput(
+                state.sequence,
+                state.keySlot,
+                state.activeAction,
+                value,
+                x,
+                y));
         flushPendingTouchOutputs();
     }
 
@@ -284,7 +319,7 @@ public final class HangulKeyboardView extends View {
                 return;
             }
             pendingTouchOutputs.remove(nextIndex);
-            rememberTextTouch(next.keySlot, valueOrNull(next.value), next.x, next.y);
+            rememberTextTouch(next.keySlot, valueOrNull(next.value), next.action, next.x, next.y);
             emitValue(next.value);
         }
     }
@@ -331,13 +366,36 @@ public final class HangulKeyboardView extends View {
         }
     }
 
-    private void rememberTextTouch(KeySlot keySlot, String value, float x, float y) {
+    private void feedbackForKey(GestureKey key, GestureAction action) {
+        if (!differentiatedHapticEnabled) {
+            feedback.tap();
+            return;
+        }
+        String value = key.valueFor(action);
+        if (KeyboardCommands.CMD_ENTER.equals(value)) {
+            feedback.tapConfirm();
+        } else if (KeyboardCommands.CMD_SHIFT_ONCE.equals(value)
+                || KeyboardCommands.CMD_SHIFT_LOCK.equals(value)
+                || KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(value)) {
+            feedback.tapClick();
+        } else if (KeyboardCommands.CMD_DELETE.equals(value)) {
+            feedback.tapHeavy();
+        } else {
+            feedback.tap();
+        }
+    }
+
+    KeyboardFeedback getFeedback() {
+        return feedback;
+    }
+
+    private void rememberTextTouch(KeySlot keySlot, String value, GestureAction action, float x, float y) {
         if (keySlot == null || value == null || KeyboardCommands.isCommand(value)) {
             return;
         }
         float offsetXDp = (x - keySlot.bounds.centerX()) / getResources().getDisplayMetrics().density;
         float offsetYDp = (y - keySlot.bounds.centerY()) / getResources().getDisplayMetrics().density;
-        lastTextTouchSample = new TouchSample(offsetXDp, offsetYDp, System.currentTimeMillis());
+        lastTextTouchSample = new TouchSample(offsetXDp, offsetYDp, action, System.currentTimeMillis());
     }
 
     private void recordImmediateDeleteIfNeeded(String value) {
@@ -352,8 +410,13 @@ public final class HangulKeyboardView extends View {
         }
 
         if (System.currentTimeMillis() - lastTextTouchSample.timeMs <= 1500) {
-            touchBiasStore.recordImmediateDelete(lastTextTouchSample.offsetXDp, lastTextTouchSample.offsetYDp);
-            touchBias = touchBiasStore.load();
+            if (touchBiasAutoCorrectionEnabled) {
+                touchBiasStore.recordImmediateDelete(
+                        lastTextTouchSample.offsetXDp,
+                        lastTextTouchSample.offsetYDp,
+                        lastTextTouchSample.action);
+                touchBias = touchBiasStore.load();
+            }
         }
         lastTextTouchSample = null;
     }
@@ -369,6 +432,7 @@ public final class HangulKeyboardView extends View {
         activeTouches.clear();
         pendingTouchOutputs.clear();
         repeatController.stop();
+        hidePreviewPopup();
         invalidate();
     }
 
@@ -385,6 +449,7 @@ public final class HangulKeyboardView extends View {
         if (stopRepeat) {
             repeatController.stop();
         }
+        updatePreviewPopup();
         invalidate();
     }
 
@@ -495,24 +560,29 @@ public final class HangulKeyboardView extends View {
             return;
         }
 
-        int topReserve = tooltipReservePx();
-        int keyboardHeight = Math.max(1, height - topReserve);
         int visualGap = renderDp(settings.keyGapDp);
         float density = getResources().getDisplayMetrics().density;
         List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
                 rows,
                 settings,
                 width,
-                keyboardHeight,
+                Math.max(1, height),
                 density);
         for (KeyboardLayoutCalculator.Slot slot : slots) {
             keySlots.add(new KeySlot(
                     slot.key,
-                    new RectF(slot.left, slot.top + topReserve, slot.right, slot.bottom + topReserve),
+                    new RectF(slot.left, slot.top, slot.right, slot.bottom),
                     slot.primaryBottomControl,
                     slot.compactSpecialColumn,
                     visualGap));
         }
+    }
+
+    private void updateSystemGestureExclusion(int width, int height) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || width <= 0 || height <= 0) {
+            return;
+        }
+        setSystemGestureExclusionRects(Collections.singletonList(new Rect(0, 0, width, height)));
     }
 
     private void drawKey(Canvas canvas, KeySlot keySlot) {
@@ -553,23 +623,75 @@ public final class HangulKeyboardView extends View {
             float horizontalHintInset = keySlot.compactSpecialColumn
                     ? surfaceBounds.width() * 0.23f
                     : renderDp(19);
-            float topHintInset = keySlot.compactSpecialColumn
-                    ? Math.min(renderDp(12), surfaceBounds.height() * 0.18f)
-                    : renderDp(15);
-            float bottomHintInset = keySlot.compactSpecialColumn
-                    ? Math.min(renderDp(9), surfaceBounds.height() * 0.14f)
-                    : (englishLetterKey
-                            ? Math.max(renderDp(4), surfaceBounds.height() * 0.08f)
-                            : renderDp(7));
-            if (!englishLetterKey) {
-                drawHint(canvas, key.upSlide, centerX, surfaceBounds.top + topHintInset, hintTextSize);
+            boolean numberRowKey = isAdditionalNumberRowKey(key);
+            float topHintInset = topHintInset(surfaceBounds, keySlot, englishLetterKey, numberRowKey);
+            float bottomHintInset = bottomHintInset(surfaceBounds, englishLetterKey, numberRowKey);
+            if (isSpaceKey(key)) {
+                drawSpaceCursorHints(canvas, key, surfaceBounds, hintTextSize);
+            } else if (englishLetterKey) {
+                drawEnglishSlideHints(canvas, key, surfaceBounds, hintTextSize, bottomHintInset);
+            } else {
+                drawHint(canvas, key, key.upSlide, centerX, surfaceBounds.top + topHintInset, hintTextSize);
+                drawHint(canvas, key, key.downSlide, centerX, surfaceBounds.bottom - bottomHintInset, hintTextSize);
+                drawHint(canvas, key, key.leftSlide, surfaceBounds.left + horizontalHintInset,
+                        surfaceBounds.centerY() - textCenterOffset(hintPaint), hintTextSize);
+                drawHint(canvas, key, key.rightSlide, surfaceBounds.right - horizontalHintInset,
+                        surfaceBounds.centerY() - textCenterOffset(hintPaint), hintTextSize);
             }
-            drawHint(canvas, key.downSlide, centerX, surfaceBounds.bottom - bottomHintInset, hintTextSize);
-            drawHint(canvas, key.leftSlide, surfaceBounds.left + horizontalHintInset,
-                    surfaceBounds.centerY() - textCenterOffset(hintPaint), hintTextSize);
-            drawHint(canvas, key.rightSlide, surfaceBounds.right - horizontalHintInset,
-                    surfaceBounds.centerY() - textCenterOffset(hintPaint), hintTextSize);
         }
+    }
+
+    private void drawSpaceCursorHints(Canvas canvas, GestureKey key, RectF surfaceBounds, float hintTextSize) {
+        float y = surfaceBounds.centerY();
+        float inset = Math.min(renderDp(28), surfaceBounds.width() * 0.10f);
+        drawSpaceCursorHint(canvas, key.leftSlide, surfaceBounds.left + inset, y);
+        drawSpaceCursorHint(canvas, key.rightSlide, surfaceBounds.right - inset, y);
+    }
+
+    private void drawSpaceCursorHint(Canvas canvas, String value, float x, float y) {
+        int icon = KeyIcon.forCommand(value);
+        if (icon == KeyIcon.NONE) {
+            return;
+        }
+        drawIconCentered(canvas, icon, x, y, hintIconSize() * 0.74f, settings.secondaryColor);
+    }
+
+    private void drawEnglishSlideHints(
+            Canvas canvas,
+            GestureKey key,
+            RectF surfaceBounds,
+            float hintTextSize,
+            float bottomHintInset) {
+        float y = surfaceBounds.bottom - bottomHintInset;
+        boolean hasLeft = displayFor(key.leftSlide) != null;
+        boolean hasRight = displayFor(key.rightSlide) != null;
+        if (hasLeft && hasRight) {
+            drawHint(canvas, key, key.leftSlide, surfaceBounds.left + surfaceBounds.width() * 0.32f, y, hintTextSize);
+            drawHint(canvas, key, key.rightSlide, surfaceBounds.right - surfaceBounds.width() * 0.32f, y, hintTextSize);
+            return;
+        }
+        String centered = displayFor(key.downSlide) != null
+                ? key.downSlide
+                : (hasLeft ? key.leftSlide : key.rightSlide);
+        drawHint(canvas, key, centered, surfaceBounds.centerX(), y, hintTextSize);
+    }
+
+    private float topHintInset(
+            RectF bounds,
+            KeySlot keySlot,
+            boolean englishLetterKey,
+            boolean numberRowKey) {
+        if (numberRowKey || englishLetterKey) {
+            return Math.max(renderDp(6), bounds.height() * 0.12f);
+        }
+        return renderDp(11);
+    }
+
+    private float bottomHintInset(RectF bounds, boolean englishLetterKey, boolean numberRowKey) {
+        if (numberRowKey || englishLetterKey) {
+            return Math.max(renderDp(6), bounds.height() * 0.12f);
+        }
+        return renderDp(7);
     }
 
     private void drawBorderShape(Canvas canvas, RectF bounds) {
@@ -670,7 +792,7 @@ public final class HangulKeyboardView extends View {
         return settings.secondaryTextSizePercent / 100f;
     }
 
-    private void drawHint(Canvas canvas, String value, float x, float y, float textSize) {
+    private void drawHint(Canvas canvas, GestureKey key, String value, float x, float y, float textSize) {
         int icon = KeyIcon.forCommand(value);
         if (icon != KeyIcon.NONE) {
             drawIconCentered(canvas, icon, x, y, hintIconSize(), false);
@@ -679,32 +801,76 @@ public final class HangulKeyboardView extends View {
 
         String label = displayFor(value);
         if (label != null && label.length() <= 4) {
-            hintPaint.setColor(settings.secondaryColor);
+            hintPaint.setColor(KeyboardKeyVisualClassifier.hintColorFor(settings, key));
             hintPaint.setTextSize(textSize);
             canvas.drawText(textPresentation(label), x, y, hintPaint);
         }
     }
 
-    private void drawOverlay(Canvas canvas) {
+    private void updatePreviewPopup() {
         TouchState activeTouch = primaryTouch();
         if (!settings.showBeginnerTooltipPreview || activeTouch == null) {
+            hidePreviewPopup();
+            return;
+        }
+        if (!shouldShowPreviewForTouch(activeTouch)) {
+            hidePreviewPopup();
             return;
         }
 
         String value = previewValueForTouch(activeTouch);
         String label = displayFor(value);
         if (label == null) {
+            hidePreviewPopup();
             return;
         }
 
-        overlayTextPaint.setTextSize(overlayTextSizeFor(label));
-        float width = Math.min(renderDp(92), Math.max(renderDp(48), overlayTextPaint.measureText(label) + renderDp(28)));
-        float height = renderDp(42);
+        String paintLabel = textPresentation(label);
+        overlayTextPaint.setTextSize(overlayTextSizeFor(paintLabel));
+        int popupWidth = Math.min(renderDp(92), Math.max(
+                renderDp(48),
+                Math.round(overlayTextPaint.measureText(paintLabel)) + renderDp(28)));
+        int popupHeight = renderDp(42);
         RectF anchor = activeTouch.keySlot.visualBounds();
-        float centerX = anchor.centerX();
-        float centerY = anchor.top - renderDp(8) - height / 2f;
-        centerY = Math.max(renderDp(4) + height / 2f, centerY);
-        drawOverlayItem(canvas, value, centerX, centerY, true, width, height);
+        if (previewOverlayListener != null) {
+            previewOverlayListener.onPreviewOverlayChanged(new PreviewOverlaySpec(
+                    paintLabel,
+                    Math.round(anchor.centerX() - popupWidth / 2f),
+                    Math.round(anchor.top - renderDp(8) - popupHeight),
+                    popupWidth,
+                    popupHeight,
+                    overlayTextSizeFor(paintLabel),
+                    KeyboardKeyVisualClassifier.textColorFor(settings, activeTouch.keySlot.key),
+                    baseColorForKey(activeTouch.keySlot),
+                    settings.borderColor,
+                    renderDp(settings.keyBorderWidthDp),
+                    renderDp(6)));
+        }
+    }
+
+    private void hidePreviewPopup() {
+        if (previewOverlayListener != null) {
+            previewOverlayListener.onPreviewOverlayHidden();
+        }
+    }
+
+    private boolean shouldShowPreviewForTouch(TouchState state) {
+        GestureKey key = state == null ? null : state.keySlot.key;
+        if (key == null) {
+            return true;
+        }
+        boolean consonant = hasHangulConsonant(key.valueFor(state.activeAction)) || hasHangulConsonant(key.label);
+        boolean vowel = hasHangulVowel(key.valueFor(state.activeAction)) || hasHangulVowel(key.label);
+        if (isDingulVowelCommand(key.valueFor(state.activeAction)) || isDingulVowelCommand(key.tap)) {
+            vowel = true;
+        }
+        if (vowel && !showVowelPreview) {
+            return false;
+        }
+        if (consonant && !showConsonantPreview) {
+            return false;
+        }
+        return true;
     }
 
     private String previewValueForTouch(TouchState state) {
@@ -777,6 +943,10 @@ public final class HangulKeyboardView extends View {
         return KeyboardCommands.CMD_SHIFT_ONCE.equals(key.tap);
     }
 
+    private boolean isSpaceKey(GestureKey key) {
+        return key != null && KeyboardCommands.CMD_SPACE.equals(key.tap);
+    }
+
     private String displayLabelForKey(GestureKey key) {
         if (englishShiftActive && isEnglishLetterKey(key)) {
             return key.label.toUpperCase(Locale.US);
@@ -791,6 +961,14 @@ public final class HangulKeyboardView extends View {
                 && isSingleAsciiLetter(key.upSlide);
     }
 
+    private boolean isAdditionalNumberRowKey(GestureKey key) {
+        return key != null
+                && key.tap != null
+                && key.tap.length() == 1
+                && key.tap.charAt(0) >= '0'
+                && key.tap.charAt(0) <= '9';
+    }
+
     private boolean isSingleAsciiLetter(String value) {
         if (value == null || value.length() != 1) {
             return false;
@@ -800,27 +978,32 @@ public final class HangulKeyboardView extends View {
     }
 
     private void drawKeyIcon(Canvas canvas, GestureKey key, int icon, RectF bounds, boolean selected) {
+        float cy = bounds.centerY();
+        if (icon == KeyIcon.SPACE) {
+            cy += Math.min(renderDp(5), bounds.height() * 0.09f);
+        }
         drawIconCentered(
                 canvas,
                 icon,
                 bounds.centerX(),
-                bounds.centerY(),
+                cy,
                 keyIconSize(),
                 KeyboardKeyVisualClassifier.iconColorFor(settings, key, selected));
     }
 
     private void drawShiftStateIndicator(Canvas canvas, RectF bounds) {
-        float radius = renderDp(4.5f);
+        float radius = Math.min(renderDp(3.2f), bounds.height() * 0.048f);
         float cx = bounds.centerX();
-        float cy = bounds.centerY() - keyIconSize() * 1.30f - renderDp(2);
-        cy = Math.max(bounds.top + radius + renderDp(3), cy);
+        float cy = bounds.centerY() - keyIconSize() * 1.18f - renderDp(1);
+        cy = Math.max(bounds.top + radius + Math.min(renderDp(2), bounds.height() * 0.04f), cy);
         iconPaint.setStyle(Paint.Style.FILL);
-        iconPaint.setColor(settings.accentColor);
+        iconPaint.setColor(KeyboardKeyVisualClassifier.shiftIndicatorColorFor(settings));
         canvas.drawCircle(cx, cy, radius, iconPaint);
         iconPaint.setStyle(Paint.Style.STROKE);
-        iconPaint.setStrokeWidth(renderDp(1.5f));
+        float strokeWidth = Math.min(renderDp(1.1f), Math.max(1f, radius * 0.28f));
+        iconPaint.setStrokeWidth(strokeWidth);
         iconPaint.setColor(settings.keyIdleColor);
-        canvas.drawCircle(cx, cy, radius + renderDp(1.5f), iconPaint);
+        canvas.drawCircle(cx, cy, radius + strokeWidth, iconPaint);
     }
 
     private void drawIconCentered(
@@ -1127,6 +1310,36 @@ public final class HangulKeyboardView extends View {
                 || KeyboardCommands.CMD_RESERVED_UP.equals(value);
     }
 
+    private boolean isDingulVowelCommand(String value) {
+        return KeyboardCommands.CMD_DINGUL_CENTER_VOWEL.equals(value)
+                || KeyboardCommands.CMD_DINGUL_WIDE_VOWEL.equals(value);
+    }
+
+    private boolean hasHangulConsonant(String value) {
+        if (value == null) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            if (HangulAutomata.isInitialConsonant(ch) || HangulAutomata.canBeFinalConsonant(ch)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasHangulVowel(String value) {
+        if (value == null) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            if (HangulAutomata.isVowel(value.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private String textPresentation(String label) {
         return "♥".equals(label) ? "♥\uFE0E" : label;
     }
@@ -1176,11 +1389,12 @@ public final class HangulKeyboardView extends View {
         return KeyboardIconSizing.overlayIconSizePx(getDensity()) * renderScale();
     }
 
-    private int tooltipReservePx() {
-        if (!settings.showBeginnerTooltipPreview) {
-            return 0;
-        }
-        return renderDp(54);
+    private int baseGestureThresholdPx() {
+        return dp(settings.gestureThresholdDp);
+    }
+
+    private int gestureThresholdPxFor(GestureAction action) {
+        return dp(settings.gestureThresholdDp + touchBias.gestureThresholdAdjustmentForDirection(action));
     }
 
     public interface OnKeyGestureListener {
@@ -1189,6 +1403,51 @@ public final class HangulKeyboardView extends View {
 
     interface OnPreviewKeySelectionListener {
         void onPreviewKeySelected(GestureKey key);
+    }
+
+    interface OnPreviewOverlayListener {
+        void onPreviewOverlayChanged(PreviewOverlaySpec spec);
+
+        void onPreviewOverlayHidden();
+    }
+
+    static final class PreviewOverlaySpec {
+        final String label;
+        final int x;
+        final int y;
+        final int width;
+        final int height;
+        final float textSizePx;
+        final int textColor;
+        final int backgroundColor;
+        final int borderColor;
+        final int borderWidthPx;
+        final int cornerRadiusPx;
+
+        PreviewOverlaySpec(
+                String label,
+                int x,
+                int y,
+                int width,
+                int height,
+                float textSizePx,
+                int textColor,
+                int backgroundColor,
+                int borderColor,
+                int borderWidthPx,
+                int cornerRadiusPx) {
+            this.label = label;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.textSizePx = textSizePx;
+            this.textColor = textColor;
+            this.backgroundColor = backgroundColor;
+            this.borderColor = borderColor;
+            this.borderWidthPx = borderWidthPx;
+            this.cornerRadiusPx = cornerRadiusPx;
+        }
     }
 
     private static final class TouchState {
@@ -1215,13 +1474,21 @@ public final class HangulKeyboardView extends View {
     private static final class PendingTouchOutput {
         final long sequence;
         final KeySlot keySlot;
+        final GestureAction action;
         final String value;
         final float x;
         final float y;
 
-        PendingTouchOutput(long sequence, KeySlot keySlot, String value, float x, float y) {
+        PendingTouchOutput(
+                long sequence,
+                KeySlot keySlot,
+                GestureAction action,
+                String value,
+                float x,
+                float y) {
             this.sequence = sequence;
             this.keySlot = keySlot;
+            this.action = action == null ? GestureAction.TAP : action;
             this.value = value;
             this.x = x;
             this.y = y;
@@ -1289,11 +1556,13 @@ public final class HangulKeyboardView extends View {
     private static final class TouchSample {
         final float offsetXDp;
         final float offsetYDp;
+        final GestureAction action;
         final long timeMs;
 
-        TouchSample(float offsetXDp, float offsetYDp, long timeMs) {
+        TouchSample(float offsetXDp, float offsetYDp, GestureAction action, long timeMs) {
             this.offsetXDp = offsetXDp;
             this.offsetYDp = offsetYDp;
+            this.action = action == null ? GestureAction.TAP : action;
             this.timeMs = timeMs;
         }
     }

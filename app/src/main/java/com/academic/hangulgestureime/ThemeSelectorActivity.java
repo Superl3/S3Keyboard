@@ -11,16 +11,21 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public final class ThemeSelectorActivity extends Activity {
     private KeyboardSettings settings;
     private LinearLayout cards;
     private ThemeOption[] themeOptions = new ThemeOption[0];
     private int selectedIndex;
+    private KeyboardMode previewMode = KeyboardMode.HANGUL;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getActionBar() != null) {
+            getActionBar().hide();
+        }
         settings = KeyboardPreferences.load(this);
         setContentView(createContentView());
     }
@@ -51,6 +56,14 @@ public final class ThemeSelectorActivity extends Activity {
         editorButton.setCompoundDrawablePadding(dp(8));
         editorButton.setOnClickListener(v -> startActivity(new Intent(this, ThemeEditorActivity.class)));
         root.addView(editorButton, topParams(12));
+
+        LinearLayout previewModeRow = new LinearLayout(this);
+        previewModeRow.setOrientation(LinearLayout.HORIZONTAL);
+        Button dingulPreviewButton = previewModeButton("Dingul", KeyboardMode.HANGUL);
+        Button qwertyPreviewButton = previewModeButton("QWERTY", KeyboardMode.ENGLISH);
+        previewModeRow.addView(dingulPreviewButton, weightedButtonParams());
+        previewModeRow.addView(qwertyPreviewButton, weightedButtonParams());
+        root.addView(previewModeRow, topParams(10));
 
         cards = new LinearLayout(this);
         cards.setOrientation(LinearLayout.VERTICAL);
@@ -83,23 +96,59 @@ public final class ThemeSelectorActivity extends Activity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(14), dp(14), dp(14), dp(16));
         card.setBackground(cardBackground(titleSettings, selected));
+        card.setElevation(selected ? dp(4) : dp(1));
         card.setOnClickListener(v -> applyTheme(index));
 
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
         TextView title = label(option.label);
         title.setTextColor(0xFF111827);
         title.setTextSize(18);
         title.setTypeface(Typeface.DEFAULT_BOLD);
-        card.addView(title, matchWrap());
+        header.addView(title, new LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f));
+        if (selected) {
+            header.addView(selectedBadge(titleSettings));
+        }
+        card.addView(header, matchWrap());
 
-        card.addView(previewLabel("QWERTY preview"), topParams(10));
-        card.addView(previewKeyboard(englishSettings), previewParams(88));
-        card.addView(previewLabel("Dingul preview"), topParams(12));
-        card.addView(previewKeyboard(hangulSettings), previewParams(108));
+        boolean englishPreview = previewMode == KeyboardMode.ENGLISH;
+        card.addView(previewKeyboard(englishPreview ? englishSettings : hangulSettings),
+                previewParams(englishPreview ? 88 : 108));
         return card;
     }
 
+    private TextView selectedBadge(KeyboardSettings titleSettings) {
+        TextView badge = label("Selected");
+        badge.setTextColor(titleSettings.accentColor);
+        badge.setTextSize(12);
+        badge.setTypeface(Typeface.DEFAULT_BOLD);
+        badge.setGravity(Gravity.CENTER);
+        badge.setPadding(dp(10), dp(3), dp(10), dp(3));
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(0x00FFFFFF);
+        background.setCornerRadius(dp(999));
+        background.setStroke(dp(1), titleSettings.accentColor);
+        badge.setBackground(background);
+        return badge;
+    }
+
+    private Button previewModeButton(String label, KeyboardMode mode) {
+        Button button = new Button(this);
+        button.setText(label);
+        button.setAllCaps(false);
+        button.setOnClickListener(v -> {
+            previewMode = mode;
+            rebuildCards();
+        });
+        return button;
+    }
+
     private void applyTheme(int index) {
-        if (index <= 0 || index >= themeOptions.length) {
+        if (index < 0 || index >= themeOptions.length) {
             selectedIndex = 0;
             rebuildCards();
             return;
@@ -107,6 +156,7 @@ public final class ThemeSelectorActivity extends Activity {
         selectedIndex = index;
         settings = themeOptions[index].applyTo(settings);
         KeyboardPreferences.saveSettings(this, settings);
+        Toast.makeText(this, "Theme applied: " + themeOptions[index].label, Toast.LENGTH_SHORT).show();
         rebuildCards();
     }
 
@@ -122,24 +172,18 @@ public final class ThemeSelectorActivity extends Activity {
         HangulKeyboardView preview = new HangulKeyboardView(this);
         preview.setCompactPreviewRendering(true);
         preview.setSettings(previewSettings);
-        preview.setEnabled(false);
+        preview.setClickable(true);
+        preview.setFocusable(false);
+        preview.setOnTouchListener((v, event) -> true);
         preview.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         return preview;
-    }
-
-    private TextView previewLabel(String text) {
-        TextView label = label(text);
-        label.setTextColor(0xFF64748B);
-        label.setTextSize(11);
-        label.setTypeface(Typeface.DEFAULT_BOLD);
-        return label;
     }
 
     private GradientDrawable cardBackground(KeyboardSettings cardSettings, boolean selected) {
         GradientDrawable background = new GradientDrawable();
         background.setColor(0xFFFFFFFF);
         background.setCornerRadius(dp(18));
-        background.setStroke(dp(selected ? 2 : 1), selected ? cardSettings.accentColor : 0xFFE5E7EB);
+        background.setStroke(dp(selected ? 4 : 1), selected ? cardSettings.accentColor : 0xFFE5E7EB);
         return background;
     }
 
@@ -154,13 +198,23 @@ public final class ThemeSelectorActivity extends Activity {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dp(heightDp));
-        params.topMargin = dp(6);
+        params.topMargin = dp(10);
         return params;
     }
 
     private LinearLayout.LayoutParams topParams(int topMarginDp) {
         LinearLayout.LayoutParams params = matchWrap();
         params.topMargin = dp(topMarginDp);
+        return params;
+    }
+
+    private LinearLayout.LayoutParams weightedButtonParams() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f);
+        params.leftMargin = dp(3);
+        params.rightMargin = dp(3);
         return params;
     }
 
@@ -187,15 +241,14 @@ public final class ThemeSelectorActivity extends Activity {
 
         static ThemeOption[] buildOptions(UserThemeStore.UserTheme[] userThemes) {
             int userCount = userThemes == null ? 0 : userThemes.length;
-            ThemeOption[] options = new ThemeOption[KeyboardThemePreset.PRESETS.length + userCount + 1];
-            options[0] = new ThemeOption("Current custom", null, null);
+            ThemeOption[] options = new ThemeOption[KeyboardThemePreset.PRESETS.length + userCount];
             for (int i = 0; i < KeyboardThemePreset.PRESETS.length; i++) {
                 KeyboardThemePreset preset = KeyboardThemePreset.PRESETS[i];
-                options[i + 1] = new ThemeOption(preset.displayName, preset, null);
+                options[i] = new ThemeOption(preset.displayName, preset, null);
             }
             for (int i = 0; i < userCount; i++) {
                 UserThemeStore.UserTheme theme = userThemes[i];
-                options[KeyboardThemePreset.PRESETS.length + 1 + i] =
+                options[KeyboardThemePreset.PRESETS.length + i] =
                         new ThemeOption(theme.name, null, theme.json);
             }
             return options;

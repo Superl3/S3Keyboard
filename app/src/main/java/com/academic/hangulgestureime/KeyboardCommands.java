@@ -22,6 +22,7 @@ final class KeyboardCommands {
     static final String CMD_HAND_LEFT = "__hand_left__";
     static final String CMD_HAND_RIGHT = "__hand_right__";
     static final String CMD_HAND_BALANCED = "__hand_balanced__";
+    static final String CMD_QUICK_SETTINGS = "__quick_settings__";
     static final String CMD_NOOP = "__noop__";
 
     private KeyboardCommands() {
@@ -74,6 +75,8 @@ final class KeyboardCommands {
             case CMD_HAND_RIGHT:
             case CMD_HAND_BALANCED:
                 return null;
+            case CMD_QUICK_SETTINGS:
+                return "Quick";
             case CMD_NOOP:
                 return null;
             default:

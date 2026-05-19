@@ -18,9 +18,11 @@ final class KeyboardSettings {
     static final int DEFAULT_ENGLISH_LEFT_PADDING_DP = 6;
     static final int DEFAULT_ENGLISH_RIGHT_PADDING_DP = 6;
     static final int DEFAULT_HANGUL_MAIN_SPECIAL_GAP_DP = 8;
+    static final int DEFAULT_KEYBOARD_TOP_PADDING_DP = 6;
     static final int DEFAULT_KEYBOARD_BOTTOM_PADDING_DP = 4;
     static final int DEFAULT_BOTTOM_ROW_TOP_PADDING_DP = 0;
     static final int MAX_HANGUL_MAIN_SPECIAL_GAP_DP = 32;
+    static final int MAX_KEYBOARD_TOP_PADDING_DP = 48;
     static final int MAX_KEYBOARD_BOTTOM_PADDING_DP = 48;
     static final int MAX_BOTTOM_ROW_TOP_PADDING_DP = 48;
     static final int DEFAULT_HIT_SLOP_DP = 8;
@@ -64,6 +66,8 @@ final class KeyboardSettings {
     static final boolean DEFAULT_SHOW_BEGINNER_TOOLTIP_PREVIEW = true;
     static final boolean DEFAULT_SHOW_HANGUL_NUMBER_ROW = false;
     static final boolean DEFAULT_SHOW_ENGLISH_NUMBER_ROW = true;
+    static final AdditionalNumberRowColorMode DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE =
+            AdditionalNumberRowColorMode.FULL_DIMMED;
     static final int DEFAULT_HANGUL_SPECIAL_COLUMN_PERCENT = 17;
     static final int MIN_HANGUL_SPECIAL_COLUMN_PERCENT = 10;
     static final int MAX_HANGUL_SPECIAL_COLUMN_PERCENT = 30;
@@ -87,6 +91,7 @@ final class KeyboardSettings {
     final boolean showEnglishNumberRow;
     final boolean forceNumberRow;
     final boolean showNumberRow;
+    final AdditionalNumberRowColorMode additionalNumberRowColorMode;
     final boolean hapticFeedbackEnabled;
     final int hitSlopDp;
     final int gestureThresholdDp;
@@ -123,6 +128,7 @@ final class KeyboardSettings {
     final boolean showBeginnerTooltipPreview;
     final int hangulSpecialColumnPercent;
     final int hangulMainSpecialGapDp;
+    final int keyboardTopPaddingDp;
     final int keyboardBottomPaddingDp;
     final int bottomRowTopPaddingDp;
     final Map<String, Integer> keyColorOverrides;
@@ -210,6 +216,7 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE,
                 Collections.emptyMap());
     }
 
@@ -297,6 +304,7 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE,
                 Collections.emptyMap());
     }
 
@@ -345,6 +353,7 @@ final class KeyboardSettings {
             boolean showEnglishSlideHints,
             boolean showBeginnerTooltipPreview,
             int hangulSpecialColumnPercent,
+            AdditionalNumberRowColorMode additionalNumberRowColorMode,
             Map<String, Integer> keyColorOverrides) {
         this(
                 keyboardMode,
@@ -391,12 +400,14 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
                 keyColorOverrides,
                 leftMarginDp,
                 rightMarginDp,
                 leftMarginDp,
                 rightMarginDp,
                 DEFAULT_HANGUL_MAIN_SPECIAL_GAP_DP,
+                DEFAULT_KEYBOARD_TOP_PADDING_DP,
                 DEFAULT_KEYBOARD_BOTTOM_PADDING_DP,
                 DEFAULT_BOTTOM_ROW_TOP_PADDING_DP);
     }
@@ -446,12 +457,14 @@ final class KeyboardSettings {
             boolean showEnglishSlideHints,
             boolean showBeginnerTooltipPreview,
             int hangulSpecialColumnPercent,
+            AdditionalNumberRowColorMode additionalNumberRowColorMode,
             Map<String, Integer> keyColorOverrides,
             int hangulLeftPaddingDp,
             int hangulRightPaddingDp,
             int englishLeftPaddingDp,
             int englishRightPaddingDp,
             int hangulMainSpecialGapDp,
+            int keyboardTopPaddingDp,
             int keyboardBottomPaddingDp,
             int bottomRowTopPaddingDp) {
         this.keyboardMode = keyboardMode == null ? KeyboardMode.HANGUL : keyboardMode;
@@ -472,6 +485,9 @@ final class KeyboardSettings {
         this.forceNumberRow = forceNumberRow;
         this.showNumberRow = forceNumberRow
                 || (this.keyboardMode == KeyboardMode.ENGLISH ? showEnglishNumberRow : showHangulNumberRow);
+        this.additionalNumberRowColorMode = additionalNumberRowColorMode == null
+                ? DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE
+                : additionalNumberRowColorMode;
         this.hapticFeedbackEnabled = hapticFeedbackEnabled;
         this.hitSlopDp = clamp(hitSlopDp, 0, 32);
         this.gestureThresholdDp = clamp(
@@ -523,6 +539,10 @@ final class KeyboardSettings {
                 hangulMainSpecialGapDp,
                 0,
                 MAX_HANGUL_MAIN_SPECIAL_GAP_DP);
+        this.keyboardTopPaddingDp = clamp(
+                keyboardTopPaddingDp,
+                0,
+                MAX_KEYBOARD_TOP_PADDING_DP);
         this.keyboardBottomPaddingDp = clamp(
                 keyboardBottomPaddingDp,
                 0,
@@ -570,10 +590,18 @@ final class KeyboardSettings {
                 DEFAULT_CUSTOM_DEPTH_COLOR_ENABLED,
                 DEFAULT_DEPTH_COLOR,
                 DEFAULT_FONT_FAMILY,
+                DEFAULT_PRIMARY_TEXT_SIZE_PERCENT,
+                DEFAULT_SECONDARY_TEXT_SIZE_PERCENT,
+                DEFAULT_PRIMARY_TEXT_BOLD,
+                DEFAULT_PRIMARY_TEXT_ITALIC,
+                DEFAULT_SECONDARY_TEXT_BOLD,
+                DEFAULT_SECONDARY_TEXT_ITALIC,
                 DEFAULT_SHOW_HANGUL_SLIDE_HINTS,
                 DEFAULT_SHOW_ENGLISH_SLIDE_HINTS,
                 DEFAULT_SHOW_BEGINNER_TOOLTIP_PREVIEW,
-                DEFAULT_HANGUL_SPECIAL_COLUMN_PERCENT);
+                DEFAULT_HANGUL_SPECIAL_COLUMN_PERCENT,
+                DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE,
+                Collections.emptyMap());
     }
 
     private KeyboardSettings copy(
@@ -653,12 +681,14 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
                 keyColorOverrides,
                 hangulLeftPaddingDp,
                 hangulRightPaddingDp,
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -705,6 +735,7 @@ final class KeyboardSettings {
                 leftPaddingDp,
                 rightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -718,6 +749,7 @@ final class KeyboardSettings {
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -731,12 +763,25 @@ final class KeyboardSettings {
                 leftPaddingDp,
                 rightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
 
     KeyboardSettings withLayoutSpacing(
             int hangulMainSpecialGapDp,
+            int keyboardBottomPaddingDp,
+            int bottomRowTopPaddingDp) {
+        return withLayoutSpacing(
+                hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
+                keyboardBottomPaddingDp,
+                bottomRowTopPaddingDp);
+    }
+
+    KeyboardSettings withLayoutSpacing(
+            int hangulMainSpecialGapDp,
+            int keyboardTopPaddingDp,
             int keyboardBottomPaddingDp,
             int bottomRowTopPaddingDp) {
         return withLayoutSpacing(
@@ -747,6 +792,7 @@ final class KeyboardSettings {
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -759,6 +805,7 @@ final class KeyboardSettings {
             int englishLeftPaddingDp,
             int englishRightPaddingDp,
             int hangulMainSpecialGapDp,
+            int keyboardTopPaddingDp,
             int keyboardBottomPaddingDp,
             int bottomRowTopPaddingDp) {
         return new KeyboardSettings(
@@ -806,12 +853,14 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
                 keyColorOverrides,
                 hangulLeftPaddingDp,
                 hangulRightPaddingDp,
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -874,12 +923,14 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
                 keyColorOverrides,
                 hangulLeftPaddingDp,
                 hangulRightPaddingDp,
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -1027,6 +1078,64 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyGapDp,
                 hangulSpecialColumnPercent);
+    }
+
+    KeyboardSettings withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode mode) {
+        return new KeyboardSettings(
+                keyboardMode,
+                handednessMode,
+                leftMarginDp,
+                rightMarginDp,
+                hangulKeyboardHeightDp,
+                englishKeyboardHeightDp,
+                showHangulNumberRow,
+                showEnglishNumberRow,
+                forceNumberRow,
+                hapticFeedbackEnabled,
+                hitSlopDp,
+                gestureThresholdDp,
+                touchYOffsetDp,
+                repeatStartDelayMs,
+                repeatIntervalMs,
+                englishDoubleSpacePeriodEnabled,
+                enterKeyLabel,
+                keyIdleColor,
+                keyPressedColor,
+                keyboardBackgroundColor,
+                accentColor,
+                secondaryColor,
+                functionKeyColor,
+                primaryFunctionKeyColor,
+                accentKeyColor,
+                borderColor,
+                keyBorderWidthDp,
+                keyRoundnessDp,
+                keyGapDp,
+                keyDepthEnabled,
+                keyDepthDp,
+                customDepthColorEnabled,
+                depthColor,
+                fontFamily,
+                primaryTextSizePercent,
+                secondaryTextSizePercent,
+                primaryTextBold,
+                primaryTextItalic,
+                secondaryTextBold,
+                secondaryTextItalic,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                showBeginnerTooltipPreview,
+                hangulSpecialColumnPercent,
+                mode,
+                keyColorOverrides,
+                hangulLeftPaddingDp,
+                hangulRightPaddingDp,
+                englishLeftPaddingDp,
+                englishRightPaddingDp,
+                hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
+                keyboardBottomPaddingDp,
+                bottomRowTopPaddingDp);
     }
 
     KeyboardSettings withRuntimeNumberRowForced(boolean forceNumberRow) {
@@ -1313,12 +1422,14 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
                 keyColorOverrides,
                 hangulLeftPaddingDp,
                 hangulRightPaddingDp,
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -1456,12 +1567,14 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
                 keyColorOverrides,
                 hangulLeftPaddingDp,
                 hangulRightPaddingDp,
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -1545,12 +1658,14 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
                 keyColorOverrides,
                 hangulLeftPaddingDp,
                 hangulRightPaddingDp,
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -1604,12 +1719,14 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
                 keyColorOverrides,
                 hangulLeftPaddingDp,
                 hangulRightPaddingDp,
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }
@@ -1660,12 +1777,14 @@ final class KeyboardSettings {
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
                 hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
                 keyColorOverrides,
                 hangulLeftPaddingDp,
                 hangulRightPaddingDp,
                 englishLeftPaddingDp,
                 englishRightPaddingDp,
                 hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp);
     }

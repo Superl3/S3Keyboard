@@ -2,6 +2,7 @@ package com.academic.hangulgestureime;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashSet;
@@ -18,6 +19,8 @@ public final class KeyboardThemePresetTest {
         assertNotNull(KeyboardThemePreset.find("macos-graphite-dark"));
         assertNotNull(KeyboardThemePreset.find("android-material-light"));
         assertNotNull(KeyboardThemePreset.find("android-material-dark"));
+        assertNull(KeyboardThemePreset.find("mint-air"));
+        assertNull(KeyboardThemePreset.find("lavender-focus"));
     }
 
     @Test
@@ -32,13 +35,17 @@ public final class KeyboardThemePresetTest {
                     .withHeights(330, 270)
                     .withHangulSidePadding(4, 5)
                     .withEnglishSidePadding(6, 7)
-                    .withLayoutSpacing(8, 9, 10);
+                    .withLayoutSpacing(
+                            8,
+                            KeyboardSettings.DEFAULT_KEYBOARD_TOP_PADDING_DP,
+                            9,
+                            10);
             KeyboardSettings themed = preset.applyTo(base);
 
             assertEquals(themed.fontFamily, KeyboardSettings.normalizeFontFamily(themed.fontFamily));
             assertEquals(true, themed.showBeginnerTooltipPreview);
-            assertEquals(themed.primaryFunctionKeyColor, themed.accentKeyColor);
             assertTrue(brightness(themed.primaryFunctionKeyColor) < brightness(themed.keyIdleColor));
+            assertTrue(brightness(themed.accentKeyColor) < brightness(themed.keyIdleColor));
             assertEquals(330, themed.hangulKeyboardHeightDp);
             assertEquals(270, themed.englishKeyboardHeightDp);
             assertEquals(4, themed.hangulLeftPaddingDp);
@@ -46,8 +53,10 @@ public final class KeyboardThemePresetTest {
             assertEquals(6, themed.englishLeftPaddingDp);
             assertEquals(7, themed.englishRightPaddingDp);
             assertEquals(8, themed.hangulMainSpecialGapDp);
+            assertEquals(KeyboardSettings.DEFAULT_KEYBOARD_TOP_PADDING_DP, themed.keyboardTopPaddingDp);
             assertEquals(9, themed.keyboardBottomPaddingDp);
             assertEquals(10, themed.bottomRowTopPaddingDp);
+            assertTrue(themed.keyColorOverrides.containsKey("shiftindicator"));
         }
     }
 
@@ -71,13 +80,13 @@ public final class KeyboardThemePresetTest {
         assertEquals(0xFF45484F, dark.borderColor);
         assertEquals(0xFF2F3339, dark.depthColor);
         assertEquals(4, light.keyRoundnessDp);
-        assertEquals(0xFFBBB4AA, light.borderColor);
-        assertEquals(0xFFD2CCC2, light.depthColor);
-        assertEquals(0xFFFFFFFF, light.keyboardBackgroundColor);
+        assertEquals(0xFFB9B7B0, light.borderColor);
+        assertEquals(0xFFCCC9C2, light.depthColor);
+        assertEquals(0xFFF3F2EF, light.keyboardBackgroundColor);
         assertEquals(KeyboardSettings.FONT_NOTO_SANS_KR, dark.fontFamily);
         assertEquals(KeyboardSettings.FONT_NOTO_SANS_KR, light.fontFamily);
-        assertEquals(false, dark.keyColorOverrides.containsKey(".."));
-        assertEquals(false, light.keyColorOverrides.containsKey(".."));
+        assertEquals(true, dark.keyColorOverrides.containsKey(".."));
+        assertEquals(true, light.keyColorOverrides.containsKey(".."));
     }
 
     private static int brightness(int color) {

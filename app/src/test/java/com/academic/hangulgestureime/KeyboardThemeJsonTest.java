@@ -40,7 +40,7 @@ public final class KeyboardThemeJsonTest {
                 .withHeights(346, 282)
                 .withHangulSidePadding(8, 10)
                 .withEnglishSidePadding(3, 5)
-                .withLayoutSpacing(12, 7, 9)
+                .withLayoutSpacing(12, 11, 7, 9)
                 .withKeyColorOverrides(sampleKeyOverrides());
 
         KeyboardSettings base = KeyboardSettings.defaults().withHintVisibility(true, false, true);
@@ -82,6 +82,7 @@ public final class KeyboardThemeJsonTest {
         assertEquals(KeyboardSettings.DEFAULT_ENGLISH_LEFT_PADDING_DP, imported.englishLeftPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_ENGLISH_RIGHT_PADDING_DP, imported.englishRightPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_HANGUL_MAIN_SPECIAL_GAP_DP, imported.hangulMainSpecialGapDp);
+        assertEquals(11, imported.keyboardTopPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_KEYBOARD_BOTTOM_PADDING_DP, imported.keyboardBottomPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_BOTTOM_ROW_TOP_PADDING_DP, imported.bottomRowTopPaddingDp);
         assertFalse(exported.contains("\"layout\""));
@@ -135,7 +136,7 @@ public final class KeyboardThemeJsonTest {
                 .withHeights(330, 270)
                 .withHangulSidePadding(4, 5)
                 .withEnglishSidePadding(6, 7)
-                .withLayoutSpacing(8, 9, 10);
+                .withLayoutSpacing(8, 9, 10, 11);
         String json = "{"
                 + "\"schemaVersion\":1,"
                 + "\"layout\":{"
@@ -146,6 +147,7 @@ public final class KeyboardThemeJsonTest {
                 + "\"englishLeftPaddingDp\":13,"
                 + "\"englishRightPaddingDp\":14,"
                 + "\"hangulMainSpecialGapDp\":15,"
+                + "\"keyboardTopPaddingDp\":18,"
                 + "\"keyboardBottomPaddingDp\":16,"
                 + "\"bottomRowTopPaddingDp\":17"
                 + "}"
@@ -160,8 +162,9 @@ public final class KeyboardThemeJsonTest {
         assertEquals(6, imported.englishLeftPaddingDp);
         assertEquals(7, imported.englishRightPaddingDp);
         assertEquals(8, imported.hangulMainSpecialGapDp);
-        assertEquals(9, imported.keyboardBottomPaddingDp);
-        assertEquals(10, imported.bottomRowTopPaddingDp);
+        assertEquals(9, imported.keyboardTopPaddingDp);
+        assertEquals(10, imported.keyboardBottomPaddingDp);
+        assertEquals(11, imported.bottomRowTopPaddingDp);
     }
 
     @Test

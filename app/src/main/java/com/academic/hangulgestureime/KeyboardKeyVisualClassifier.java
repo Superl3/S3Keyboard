@@ -14,7 +14,7 @@ final class KeyboardKeyVisualClassifier {
         if (isHangulAccentKey(settings, key)) {
             return KeyVisualRole.ACCENT;
         }
-        if (KeyboardCommands.CMD_SPACE.equals(key.tap)) {
+        if (isDingulVowelCommandKey(key)) {
             return KeyVisualRole.NORMAL;
         }
         if (key.icon != KeyIcon.NONE || KeyboardCommands.isCommand(key.tap)) {
@@ -24,17 +24,14 @@ final class KeyboardKeyVisualClassifier {
     }
 
     static int colorFor(KeyboardSettings settings, GestureKey key) {
-        switch (roleFor(settings, key)) {
-            case PRIMARY_FUNCTION:
-                return settings.primaryFunctionKeyColor;
-            case ACCENT:
-                return settings.accentKeyColor;
-            case FUNCTION:
-                return settings.functionKeyColor;
-            case NORMAL:
-            default:
-                return settings.keyIdleColor;
+        KeyVisualRole role = roleFor(settings, key);
+        if (role == KeyVisualRole.ACCENT) {
+            return settings.accentKeyColor;
         }
+        if (isAdditionalNumberRowKey(key)) {
+            return additionalNumberRowColor(settings, key);
+        }
+        return role == KeyVisualRole.NORMAL ? settings.keyIdleColor : settings.accentKeyColor;
     }
 
     static int textColorFor(KeyboardSettings settings, GestureKey key) {
@@ -42,7 +39,19 @@ final class KeyboardKeyVisualClassifier {
         if (override != null) {
             return override;
         }
+        if (isAdditionalNumberRowKey(key)) {
+            return additionalNumberRowUsesAccent(settings, key)
+                    ? settings.secondaryColor
+                    : settings.accentColor;
+        }
         return settings.accentColor;
+    }
+
+    static int hintColorFor(KeyboardSettings settings, GestureKey key) {
+        if (isAdditionalNumberRowKey(key)) {
+            return textColorFor(settings, key);
+        }
+        return settings.secondaryColor;
     }
 
     static int iconColorFor(KeyboardSettings settings, GestureKey key, boolean selected) {
@@ -51,6 +60,14 @@ final class KeyboardKeyVisualClassifier {
             return override;
         }
         return selected ? settings.accentColor : settings.secondaryColor;
+    }
+
+    static int shiftIndicatorColorFor(KeyboardSettings settings) {
+        Integer override = findOverride(settings, "shiftindicator");
+        if (override == null) {
+            override = findOverride(settings, "shift_indicator");
+        }
+        return override == null ? settings.accentColor : override;
     }
 
     static boolean isPrimaryFunctionKey(GestureKey key) {
@@ -114,5 +131,36 @@ final class KeyboardKeyVisualClassifier {
         return settings != null
                 && settings.keyboardMode == KeyboardMode.HANGUL
                 && (".".equals(key.label) || "/".equals(key.label));
+    }
+
+    private static boolean isDingulVowelCommandKey(GestureKey key) {
+        return KeyboardCommands.CMD_DINGUL_CENTER_VOWEL.equals(key.tap)
+                || KeyboardCommands.CMD_DINGUL_WIDE_VOWEL.equals(key.tap);
+    }
+
+    private static boolean isAdditionalNumberRowKey(GestureKey key) {
+        return key != null
+                && key.tap != null
+                && key.tap.length() == 1
+                && key.tap.charAt(0) >= '0'
+                && key.tap.charAt(0) <= '9';
+    }
+
+    private static int additionalNumberRowColor(KeyboardSettings settings, GestureKey key) {
+        return additionalNumberRowUsesAccent(settings, key)
+                ? settings.accentKeyColor
+                : settings.keyIdleColor;
+    }
+
+    private static boolean additionalNumberRowUsesAccent(KeyboardSettings settings, GestureKey key) {
+        switch (settings.additionalNumberRowColorMode) {
+            case FULL_DEFAULT:
+                return false;
+            case CENTER_DIMMED:
+                return key.tap.charAt(0) >= '4' && key.tap.charAt(0) <= '7';
+            case FULL_DIMMED:
+            default:
+                return true;
+        }
     }
 }
