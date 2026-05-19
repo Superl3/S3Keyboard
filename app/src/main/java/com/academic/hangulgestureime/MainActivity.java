@@ -366,15 +366,13 @@ public final class MainActivity extends Activity {
 
     private void addLayoutControls(LinearLayout root) {
         handednessSpinner = new Spinner(this);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 new String[] {
                         HandednessMode.BALANCED.displayName,
                         HandednessMode.LEFT.displayName,
                         HandednessMode.RIGHT.displayName
                 });
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         handednessSpinner.setAdapter(adapter);
         handednessSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -569,6 +567,7 @@ public final class MainActivity extends Activity {
         addSectionTitle(root, "Theme");
         Button openThemeSelectorButton = new Button(this);
         openThemeSelectorButton.setText("Open Theme Selector");
+        styleSystemButton(openThemeSelectorButton);
         setButtonIcon(openThemeSelectorButton, R.drawable.ic_keyboard_keyboard);
         openThemeSelectorButton.setOnClickListener(v ->
                 startActivity(new Intent(this, ThemeSelectorActivity.class)));
@@ -1153,6 +1152,7 @@ public final class MainActivity extends Activity {
     private void addAndroidImeControls(LinearLayout root) {
         Button settingsButton = new Button(this);
         settingsButton.setText(R.string.open_input_settings);
+        styleSystemButton(settingsButton);
         setButtonIcon(settingsButton, R.drawable.ic_keyboard_settings);
         settingsButton.setOnClickListener(v ->
                 startActivity(new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)));
@@ -1160,6 +1160,7 @@ public final class MainActivity extends Activity {
 
         Button pickerButton = new Button(this);
         pickerButton.setText(R.string.show_input_picker);
+        styleSystemButton(pickerButton);
         setButtonIcon(pickerButton, R.drawable.ic_keyboard_keyboard);
         pickerButton.setOnClickListener(v -> {
             InputMethodManager imm = getSystemService(InputMethodManager.class);
@@ -1181,6 +1182,24 @@ public final class MainActivity extends Activity {
         }
 
         syncing = true;
+        styleCheckBox(customDepthColorCheckBox);
+        styleCheckBox(primaryTextBoldCheckBox);
+        styleCheckBox(primaryTextItalicCheckBox);
+        styleCheckBox(secondaryTextBoldCheckBox);
+        styleCheckBox(secondaryTextItalicCheckBox);
+        styleCheckBox(hangulNumberRowCheckBox);
+        styleCheckBox(englishNumberRowCheckBox);
+        styleCheckBox(hapticCheckBox);
+        styleCheckBox(differentiatedHapticCheckBox);
+        styleCheckBox(touchBiasAutoCorrectionCheckBox);
+        styleCheckBox(clipboardHistoryCheckBox);
+        styleCheckBox(doubleSpacePeriodCheckBox);
+        styleCheckBox(keyDepthCheckBox);
+        styleCheckBox(hangulSlideHintsCheckBox);
+        styleCheckBox(englishSlideHintsCheckBox);
+        styleCheckBox(beginnerTooltipPreviewCheckBox);
+        styleCheckBox(consonantPreviewCheckBox);
+        styleCheckBox(vowelPreviewCheckBox);
         if (themeOptions.length == 0) {
             reloadThemeOptions();
         }
@@ -1325,6 +1344,23 @@ public final class MainActivity extends Activity {
         return label;
     }
 
+    private void styleSystemButton(Button button) {
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
+        button.setAllCaps(false);
+        button.setTextColor(ui.controlText);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(ui.controlFill);
+        background.setCornerRadius(dp(8));
+        background.setStroke(Math.max(1, dp(1)), ui.border);
+        button.setBackground(background);
+    }
+
+    private void styleCheckBox(CheckBox checkBox) {
+        if (checkBox != null) {
+            checkBox.setTextColor(SettingsUiPalette.from(this).textPrimary);
+        }
+    }
+
     private SeekBar seekBar(int max) {
         SeekBar seekBar = new SeekBar(this);
         seekBar.setMax(max);
@@ -1336,6 +1372,8 @@ public final class MainActivity extends Activity {
         input.setSingleLine(true);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
         input.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        input.setTextColor(SettingsUiPalette.from(this).textPrimary);
+        input.setHintTextColor(SettingsUiPalette.from(this).textSecondary);
         input.setText(String.valueOf(initialValue));
         input.setSelectAllOnFocus(true);
         input.setOnEditorActionListener((v, actionId, event) -> {
@@ -1381,11 +1419,9 @@ public final class MainActivity extends Activity {
 
     private Spinner colorSpinner(final ColorChangeListener listener) {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<ColorOption> adapter = new ArrayAdapter<>(
+        ArrayAdapter<ColorOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 ColorOption.OPTIONS);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -1404,11 +1440,9 @@ public final class MainActivity extends Activity {
 
     private Spinner additionalNumberRowColorModeSpinner() {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<AdditionalNumberRowColorMode> adapter = new ArrayAdapter<>(
+        ArrayAdapter<AdditionalNumberRowColorMode> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 AdditionalNumberRowColorMode.values());
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -1456,11 +1490,9 @@ public final class MainActivity extends Activity {
         }
         boolean wasSyncing = syncing;
         syncing = true;
-        ArrayAdapter<ThemePresetOption> adapter = new ArrayAdapter<>(
+        ArrayAdapter<ThemePresetOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 themeOptions);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         themePresetSpinner.setAdapter(adapter);
         syncing = wasSyncing;
         rebuildThemePresetCards();
@@ -1589,11 +1621,9 @@ public final class MainActivity extends Activity {
 
     private Spinner fontSpinner() {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<FontOption> adapter = new ArrayAdapter<>(
+        ArrayAdapter<FontOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 FontOption.OPTIONS);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override

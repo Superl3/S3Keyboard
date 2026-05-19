@@ -1,6 +1,7 @@
 package com.academic.hangulgestureime;
 
 import android.app.Activity;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -184,6 +185,7 @@ public final class ThemeEditorActivity extends Activity {
     private void addThemeSaveControls(LinearLayout root) {
         Button saveThemeButton = new Button(this);
         saveThemeButton.setText("Save current theme");
+        styleSystemButton(saveThemeButton);
         saveThemeButton.setOnClickListener(v -> {
             UserThemeStore.UserTheme saved = UserThemeStore.saveCurrent(this, settings);
             selectedThemePresetIndex = indexOfUserTheme(saved.id);
@@ -219,6 +221,7 @@ public final class ThemeEditorActivity extends Activity {
 
         Button saveThemeButton = new Button(this);
         saveThemeButton.setText("Save current theme");
+        styleSystemButton(saveThemeButton);
         saveThemeButton.setOnClickListener(v -> {
             UserThemeStore.UserTheme saved = UserThemeStore.saveCurrent(this, settings);
             selectedThemePresetIndex = indexOfUserTheme(saved.id);
@@ -229,6 +232,7 @@ public final class ThemeEditorActivity extends Activity {
 
         deleteThemeButton = new Button(this);
         deleteThemeButton.setText("Delete selected custom theme");
+        styleSystemButton(deleteThemeButton);
         deleteThemeButton.setOnClickListener(v -> {
             ThemePresetOption option = selectedThemeOption();
             if (option == null || option.userThemeId == null) {
@@ -269,6 +273,7 @@ public final class ThemeEditorActivity extends Activity {
 
         resetSelectedKeyButton = new Button(this);
         resetSelectedKeyButton.setText("Reset this key");
+        styleSystemButton(resetSelectedKeyButton);
         resetSelectedKeyButton.setOnClickListener(v -> {
             if (selectedOverrideKey.isEmpty()) {
                 return;
@@ -398,15 +403,13 @@ public final class ThemeEditorActivity extends Activity {
 
     private void addLayoutControls(LinearLayout root) {
         handednessSpinner = new Spinner(this);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 new String[] {
                         HandednessMode.BALANCED.displayName,
                         HandednessMode.LEFT.displayName,
                         HandednessMode.RIGHT.displayName
                 });
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         handednessSpinner.setAdapter(adapter);
         handednessSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -796,11 +799,9 @@ public final class ThemeEditorActivity extends Activity {
 
     private Spinner colorSpinner(final ColorChangeListener listener) {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<ColorOption> adapter = new ArrayAdapter<>(
+        ArrayAdapter<ColorOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 ColorOption.OPTIONS);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -820,11 +821,9 @@ public final class ThemeEditorActivity extends Activity {
 
     private Spinner additionalNumberRowColorModeSpinner() {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<AdditionalNumberRowColorMode> adapter = new ArrayAdapter<>(
+        ArrayAdapter<AdditionalNumberRowColorMode> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 AdditionalNumberRowColorMode.values());
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -844,11 +843,9 @@ public final class ThemeEditorActivity extends Activity {
 
     private Spinner fontSpinner() {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<FontOption> adapter = new ArrayAdapter<>(
+        ArrayAdapter<FontOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 FontOption.OPTIONS);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -921,6 +918,17 @@ public final class ThemeEditorActivity extends Activity {
         return label;
     }
 
+    private void styleSystemButton(Button button) {
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
+        button.setAllCaps(false);
+        button.setTextColor(ui.controlText);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(ui.controlFill);
+        background.setCornerRadius(dp(8));
+        background.setStroke(Math.max(1, dp(1)), ui.border);
+        button.setBackground(background);
+    }
+
     private LinearLayout.LayoutParams buttonParams() {
         LinearLayout.LayoutParams params = matchWrap();
         params.topMargin = dp(10);
@@ -968,11 +976,9 @@ public final class ThemeEditorActivity extends Activity {
         }
         boolean wasSyncing = syncing;
         syncing = true;
-        ArrayAdapter<ThemePresetOption> adapter = new ArrayAdapter<>(
+        ArrayAdapter<ThemePresetOption> adapter = new SettingsArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
                 themeOptions);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         themePresetSpinner.setAdapter(adapter);
         syncing = wasSyncing;
     }

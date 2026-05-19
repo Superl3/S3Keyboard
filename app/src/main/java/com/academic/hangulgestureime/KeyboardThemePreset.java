@@ -55,29 +55,55 @@ final class KeyboardThemePreset {
                     "F3F4F6", "111111", null, "000000", "424242",
                     5, 6, false, 0, KeyboardSettings.FONT_NOTO_SANS_KR, true, false),
             theme("gmk-bento", "GMK Bento Inspired",
-                    "E9DCC9", "D9C6B1", "C96F62", "8FB9BE", "D7BDA7",
-                    "C7B49F", "927E6F", "927E6F", "2E5F6A", "B7645F",
+                    "E8E0D3", "2E6687", "25536F", "E66D61", "CBBFAE",
+                    "9DA7A4", "5C6E72", "5C6E72", "234E68", "E66D61",
                     5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+            theme("gmk-metropolis", "GMK Metropolis Inspired",
+                    "1E3D57", "182F45", "112537", "193344", "254B67",
+                    "0D1B2A", "08131E", "08131E", "7FD7F4", "FFB000",
+                    5, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true),
             theme("gmk-oblivion", "GMK Oblivion Inspired",
-                    "4B5158", "393F46", "2F343B", "35463B", "343A41",
-                    "1F2328", "171B20", "171B20", "F0EEE7", "AEB8C4",
+                    "6F787D", "252A2E", "171A1E", "3A4037", "555F64",
+                    "101214", "0A0B0D", "0A0B0D", "E8ECEC", "93A0A5",
+                    4, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true),
+            theme("gmk-oblivion-hagoromo", "GMK Oblivion Hagoromo Inspired",
+                    "EDE8DD", "2A2C2F", "1B1D20", "2F3235", "D6D0C3",
+                    "111214", "0B0C0E", "0B0C0E", "485057", "6FB35D",
                     4, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true),
             theme("gmk-8008", "GMK 8008 Inspired",
-                    "666E79", "505864", "38404A", "3F4853", "454D58",
-                    "2A3038", "20262D", "20262D", "F2D7DF", "91B8D5",
+                    "8C929D", "1E2028", "161820", "B94D61", "5A606A",
+                    "111216", "0E0F13", "0E0F13", "F05B6C", "A9ADB8",
                     5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
             theme("gmk-hammerhead", "GMK HammerHead Inspired",
-                    "233B42", "1A3037", "12252C", "17343A", "173139",
-                    "0E1B20", "0A1519", "0A1519", "C6F3EC", "62B7BA",
+                    "B9C7CD", "132633", "0B1720", "27AFA3", "8EA2A9",
+                    "DDE4DE", "7C8D93", "7C8D93", "122430", "0AA29A",
                     5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
             theme("gmk-dracula", "GMK Dracula Inspired",
                     "44475A", "343746", "282A36", "363949", "50546A",
                     "1E2029", "191B22", "191B22", "F8F8F2", "BD93F9",
                     5, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true),
             theme("gmk-modern-dolch", "GMK Modern Dolch Inspired",
-                    "C9CDD2", "AEB5BE", "8F98A4", "75AEB0", "A6ADB6",
-                    "737E8A", "5F6873", "5F6873", "20252C", "4E5964",
+                    "616A70", "2A2F34", "1C2024", "2E6F70", "4A5258",
+                    "555B60", "202327", "202327", "E8ECEF", "64D4CF",
                     5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+            theme("gmk-olivia-light", "GMK Olivia Light Inspired",
+                    "F2E8E4", "E6D6D1", "D8C2BD", "CFA4A9", "E2CDC8",
+                    "B99CA1", "A78389", "A78389", "33282B", "8D6A70",
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+            theme("gmk-olivia-dark", "GMK Olivia Dark Inspired",
+                    "3A3438", "2B282C", "211F23", "3C3035", "4B4248",
+                    "171619", "111114", "111114", "F4E7E2", "D9A3AA",
+                    5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true),
+            theme("gmk-dots-light", "GMK Dots Light Inspired",
+                    "F6F3EA", "E8E4D9", "D8D4CA", "CFCBC0", "E2DED3",
+                    "ECE8DD", "C3BEB3", "C3BEB3", "1D2430", "6C7480",
+                    5, 6, true, 1, KeyboardSettings.FONT_NOTO_SANS_KR, false, false,
+                    null, LegendStylePreset.DOTS),
+            theme("gmk-dots-dark", "GMK Dots Dark Inspired",
+                    "20242C", "1B1F27", "15181E", "181C23", "2C313C",
+                    "101318", "0B0E12", "0B0E12", "F4F6FA", "AAB4C2",
+                    5, 6, true, 1, KeyboardSettings.FONT_NOTO_SANS_KR, false, false,
+                    null, LegendStylePreset.DOTS),
             theme("marigold-fiesta-dark", "Marigold Fiesta Dark",
                     "202225", "2A2C31", "111318", "111318", "3C4048",
                     "111214", "45484F", "2F3339", "F8F1DF", "B8A9BF",
@@ -180,6 +206,52 @@ final class KeyboardThemePreset {
             boolean showHangulSlideHints,
             boolean showEnglishSlideHints,
             String keyColorOverridesJson) {
+        return theme(
+                id,
+                displayName,
+                keyIdle,
+                functionKey,
+                primaryFunctionKey,
+                accentKey,
+                keyPressed,
+                keyboardBackground,
+                border,
+                depth,
+                accent,
+                secondary,
+                roundnessDp,
+                keyGapDp,
+                depthEnabled,
+                depthDp,
+                fontFamily,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                keyColorOverridesJson,
+                LegendStylePreset.DEFAULT);
+    }
+
+    private static KeyboardThemePreset theme(
+            String id,
+            String displayName,
+            String keyIdle,
+            String functionKey,
+            String primaryFunctionKey,
+            String accentKey,
+            String keyPressed,
+            String keyboardBackground,
+            String border,
+            String depth,
+            String accent,
+            String secondary,
+            int roundnessDp,
+            int keyGapDp,
+            boolean depthEnabled,
+            int depthDp,
+            String fontFamily,
+            boolean showHangulSlideHints,
+            boolean showEnglishSlideHints,
+            String keyColorOverridesJson,
+            LegendStylePreset legendStylePreset) {
         return new KeyboardThemePreset(
                 id,
                 displayName,
@@ -209,6 +281,7 @@ final class KeyboardThemePreset {
                         + "},"
                         + numberRowBlock(id)
                         + typographyBlock(id, fontFamily)
+                        + legendStyleBlock(legendStylePreset)
                         + keyColorOverridesBlock(id, keyColorOverridesJson)
                         + "}");
     }
@@ -237,6 +310,13 @@ final class KeyboardThemePreset {
         return "\"additionalNumberRow\":{\"colorMode\":\"" + mode + "\"},";
     }
 
+    private static String legendStyleBlock(LegendStylePreset preset) {
+        if (preset == null || preset == LegendStylePreset.DEFAULT) {
+            return "";
+        }
+        return ",\"legendStyle\":{\"preset\":\"" + preset.preferenceValue + "\"}";
+    }
+
     private static String keyColorOverridesBlock(String id, String json) {
         String indicator = "\"shiftIndicator\":\"#" + shiftIndicatorColor(id) + "\"";
         if (json == null || json.isEmpty()) {
@@ -255,8 +335,14 @@ final class KeyboardThemePreset {
         if (id.equals("gmk-bento")) {
             return "2F8CA1";
         }
+        if (id.equals("gmk-metropolis")) {
+            return "FFB000";
+        }
         if (id.equals("gmk-oblivion")) {
             return "6CBF84";
+        }
+        if (id.equals("gmk-oblivion-hagoromo")) {
+            return "7BBE64";
         }
         if (id.equals("gmk-8008")) {
             return "7DBBE8";
@@ -269,6 +355,15 @@ final class KeyboardThemePreset {
         }
         if (id.equals("gmk-modern-dolch")) {
             return "55C7C8";
+        }
+        if (id.equals("gmk-olivia-light") || id.equals("gmk-olivia-dark")) {
+            return "D9A3AA";
+        }
+        if (id.equals("gmk-dots-light")) {
+            return "5865F2";
+        }
+        if (id.equals("gmk-dots-dark")) {
+            return "FFFFFF";
         }
         if (id.contains("android") || id.contains("paper") || id.contains("graphite")) {
             return "16A34A";

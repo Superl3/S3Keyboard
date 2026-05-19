@@ -186,6 +186,16 @@ public final class KeyboardThemeJsonTest {
         assertEquals(false, imported.showBeginnerTooltipPreview);
     }
 
+    @Test
+    public void importsAndExportsLegendStyle() {
+        KeyboardSettings settings = KeyboardSettings.defaults().withLegendStyle(LegendStylePreset.DOTS);
+
+        String exported = KeyboardThemeJson.exportTheme(settings, "Dots", "local", null);
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), exported);
+
+        assertEquals(LegendStylePreset.DOTS, imported.legendStylePreset);
+    }
+
     private static Map<String, Integer> sampleKeyOverrides() {
         Map<String, Integer> overrides = new HashMap<>();
         overrides.put("tap:a", 0x00E95420);

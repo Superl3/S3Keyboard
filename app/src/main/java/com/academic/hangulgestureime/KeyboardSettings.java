@@ -64,6 +64,7 @@ final class KeyboardSettings {
     static final boolean DEFAULT_SHOW_HANGUL_SLIDE_HINTS = true;
     static final boolean DEFAULT_SHOW_ENGLISH_SLIDE_HINTS = true;
     static final boolean DEFAULT_SHOW_BEGINNER_TOOLTIP_PREVIEW = true;
+    static final LegendStylePreset DEFAULT_LEGEND_STYLE_PRESET = LegendStylePreset.DEFAULT;
     static final boolean DEFAULT_SHOW_HANGUL_NUMBER_ROW = false;
     static final boolean DEFAULT_SHOW_ENGLISH_NUMBER_ROW = true;
     static final AdditionalNumberRowColorMode DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE =
@@ -132,6 +133,7 @@ final class KeyboardSettings {
     final int keyboardBottomPaddingDp;
     final int bottomRowTopPaddingDp;
     final Map<String, Integer> keyColorOverrides;
+    final LegendStylePreset legendStylePreset;
 
     KeyboardSettings(
             KeyboardMode keyboardMode,
@@ -467,6 +469,120 @@ final class KeyboardSettings {
             int keyboardTopPaddingDp,
             int keyboardBottomPaddingDp,
             int bottomRowTopPaddingDp) {
+        this(
+                keyboardMode,
+                handednessMode,
+                leftMarginDp,
+                rightMarginDp,
+                hangulKeyboardHeightDp,
+                englishKeyboardHeightDp,
+                showHangulNumberRow,
+                showEnglishNumberRow,
+                forceNumberRow,
+                hapticFeedbackEnabled,
+                hitSlopDp,
+                gestureThresholdDp,
+                touchYOffsetDp,
+                repeatStartDelayMs,
+                repeatIntervalMs,
+                englishDoubleSpacePeriodEnabled,
+                enterKeyLabel,
+                keyIdleColor,
+                keyPressedColor,
+                keyboardBackgroundColor,
+                accentColor,
+                secondaryColor,
+                functionKeyColor,
+                primaryFunctionKeyColor,
+                accentKeyColor,
+                borderColor,
+                keyBorderWidthDp,
+                keyRoundnessDp,
+                keyGapDp,
+                keyDepthEnabled,
+                keyDepthDp,
+                customDepthColorEnabled,
+                depthColor,
+                fontFamily,
+                primaryTextSizePercent,
+                secondaryTextSizePercent,
+                primaryTextBold,
+                primaryTextItalic,
+                secondaryTextBold,
+                secondaryTextItalic,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                showBeginnerTooltipPreview,
+                hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
+                keyColorOverrides,
+                hangulLeftPaddingDp,
+                hangulRightPaddingDp,
+                englishLeftPaddingDp,
+                englishRightPaddingDp,
+                hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
+                keyboardBottomPaddingDp,
+                bottomRowTopPaddingDp,
+                DEFAULT_LEGEND_STYLE_PRESET);
+    }
+
+    private KeyboardSettings(
+            KeyboardMode keyboardMode,
+            HandednessMode handednessMode,
+            int leftMarginDp,
+            int rightMarginDp,
+            int hangulKeyboardHeightDp,
+            int englishKeyboardHeightDp,
+            boolean showHangulNumberRow,
+            boolean showEnglishNumberRow,
+            boolean forceNumberRow,
+            boolean hapticFeedbackEnabled,
+            int hitSlopDp,
+            int gestureThresholdDp,
+            int touchYOffsetDp,
+            int repeatStartDelayMs,
+            int repeatIntervalMs,
+            boolean englishDoubleSpacePeriodEnabled,
+            String enterKeyLabel,
+            int keyIdleColor,
+            int keyPressedColor,
+            int keyboardBackgroundColor,
+            int accentColor,
+            int secondaryColor,
+            int functionKeyColor,
+            int primaryFunctionKeyColor,
+            int accentKeyColor,
+            int borderColor,
+            int keyBorderWidthDp,
+            int keyRoundnessDp,
+            int keyGapDp,
+            boolean keyDepthEnabled,
+            int keyDepthDp,
+            boolean customDepthColorEnabled,
+            int depthColor,
+            String fontFamily,
+            int primaryTextSizePercent,
+            int secondaryTextSizePercent,
+            boolean primaryTextBold,
+            boolean primaryTextItalic,
+            boolean secondaryTextBold,
+            boolean secondaryTextItalic,
+            boolean showHangulSlideHints,
+            boolean showEnglishSlideHints,
+            boolean showBeginnerTooltipPreview,
+            int hangulSpecialColumnPercent,
+            AdditionalNumberRowColorMode additionalNumberRowColorMode,
+            Map<String, Integer> keyColorOverrides,
+            int hangulLeftPaddingDp,
+            int hangulRightPaddingDp,
+            int englishLeftPaddingDp,
+            int englishRightPaddingDp,
+            int hangulMainSpecialGapDp,
+            int keyboardTopPaddingDp,
+            int keyboardBottomPaddingDp,
+            int bottomRowTopPaddingDp,
+            LegendStylePreset legendStylePreset) {
         this.keyboardMode = keyboardMode == null ? KeyboardMode.HANGUL : keyboardMode;
         this.handednessMode = handednessMode == null ? HandednessMode.BALANCED : handednessMode;
         this.leftMarginDp = clamp(leftMarginDp, 0, MAX_MARGIN_DP);
@@ -552,6 +668,7 @@ final class KeyboardSettings {
                 0,
                 MAX_BOTTOM_ROW_TOP_PADDING_DP);
         this.keyColorOverrides = normalizeKeyColorOverrides(keyColorOverrides);
+        this.legendStylePreset = legendStylePreset == null ? DEFAULT_LEGEND_STYLE_PRESET : legendStylePreset;
     }
 
     static KeyboardSettings defaults() {
@@ -862,7 +979,8 @@ final class KeyboardSettings {
                 hangulMainSpecialGapDp,
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
-                bottomRowTopPaddingDp);
+                bottomRowTopPaddingDp,
+                legendStylePreset);
     }
 
     KeyboardSettings withHeight(int keyboardHeightDp) {
@@ -932,7 +1050,8 @@ final class KeyboardSettings {
                 hangulMainSpecialGapDp,
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
-                bottomRowTopPaddingDp);
+                bottomRowTopPaddingDp,
+                legendStylePreset);
     }
 
     KeyboardSettings withActiveHeight(int keyboardHeightDp) {
@@ -1431,7 +1550,8 @@ final class KeyboardSettings {
                 hangulMainSpecialGapDp,
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
-                bottomRowTopPaddingDp);
+                bottomRowTopPaddingDp,
+                legendStylePreset);
     }
 
     KeyboardSettings withKeyRoundness(int keyRoundnessDp) {
@@ -1576,7 +1696,8 @@ final class KeyboardSettings {
                 hangulMainSpecialGapDp,
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
-                bottomRowTopPaddingDp);
+                bottomRowTopPaddingDp,
+                legendStylePreset);
     }
 
     KeyboardSettings withDepthColor(boolean customDepthColorEnabled, int depthColor) {
@@ -1667,7 +1788,8 @@ final class KeyboardSettings {
                 hangulMainSpecialGapDp,
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
-                bottomRowTopPaddingDp);
+                bottomRowTopPaddingDp,
+                legendStylePreset);
     }
 
     KeyboardSettings withHintVisibility(
@@ -1728,7 +1850,8 @@ final class KeyboardSettings {
                 hangulMainSpecialGapDp,
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
-                bottomRowTopPaddingDp);
+                bottomRowTopPaddingDp,
+                legendStylePreset);
     }
 
     KeyboardSettings withKeyColorOverrides(Map<String, Integer> keyColorOverrides) {
@@ -1786,7 +1909,67 @@ final class KeyboardSettings {
                 hangulMainSpecialGapDp,
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
-                bottomRowTopPaddingDp);
+                bottomRowTopPaddingDp,
+                legendStylePreset);
+    }
+
+    KeyboardSettings withLegendStyle(LegendStylePreset legendStylePreset) {
+        return new KeyboardSettings(
+                keyboardMode,
+                handednessMode,
+                leftMarginDp,
+                rightMarginDp,
+                hangulKeyboardHeightDp,
+                englishKeyboardHeightDp,
+                showHangulNumberRow,
+                showEnglishNumberRow,
+                forceNumberRow,
+                hapticFeedbackEnabled,
+                hitSlopDp,
+                gestureThresholdDp,
+                touchYOffsetDp,
+                repeatStartDelayMs,
+                repeatIntervalMs,
+                englishDoubleSpacePeriodEnabled,
+                enterKeyLabel,
+                keyIdleColor,
+                keyPressedColor,
+                keyboardBackgroundColor,
+                accentColor,
+                secondaryColor,
+                functionKeyColor,
+                primaryFunctionKeyColor,
+                accentKeyColor,
+                borderColor,
+                keyBorderWidthDp,
+                keyRoundnessDp,
+                keyGapDp,
+                keyDepthEnabled,
+                keyDepthDp,
+                customDepthColorEnabled,
+                depthColor,
+                fontFamily,
+                primaryTextSizePercent,
+                secondaryTextSizePercent,
+                primaryTextBold,
+                primaryTextItalic,
+                secondaryTextBold,
+                secondaryTextItalic,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                showBeginnerTooltipPreview,
+                hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
+                keyColorOverrides,
+                hangulLeftPaddingDp,
+                hangulRightPaddingDp,
+                englishLeftPaddingDp,
+                englishRightPaddingDp,
+                hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
+                keyboardBottomPaddingDp,
+                bottomRowTopPaddingDp,
+                legendStylePreset);
     }
 
     KeyboardSettings withHangulSpecialColumnPercent(int hangulSpecialColumnPercent) {

@@ -958,6 +958,9 @@ public final class HangulKeyboardView extends View {
     }
 
     private String displayLabelForKey(GestureKey key) {
+        if (settings.legendStylePreset.replacesMainLegend() && key != null && key.icon == KeyIcon.NONE) {
+            return "●";
+        }
         if (englishShiftActive && isEnglishLetterKey(key)) {
             return key.label.toUpperCase(Locale.US);
         }
@@ -1278,6 +1281,9 @@ public final class HangulKeyboardView extends View {
     }
 
     private boolean shouldShowSlideHints() {
+        if (settings.legendStylePreset.hidesSlideHints()) {
+            return false;
+        }
         return settings.keyboardMode == KeyboardMode.ENGLISH
                 ? settings.showEnglishSlideHints
                 : settings.showHangulSlideHints;

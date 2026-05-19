@@ -8,6 +8,12 @@ final class SettingsUiPalette {
     final int background;
     final int surface;
     final int surfaceRaised;
+    final int primaryBackground;
+    final int secondaryBackground;
+    final int specialBackground;
+    final int primaryForeground;
+    final int secondaryForeground;
+    final int specialForeground;
     final int textPrimary;
     final int textSecondary;
     final int selectedFill;
@@ -23,6 +29,12 @@ final class SettingsUiPalette {
             int background,
             int surface,
             int surfaceRaised,
+            int primaryBackground,
+            int secondaryBackground,
+            int specialBackground,
+            int primaryForeground,
+            int secondaryForeground,
+            int specialForeground,
             int textPrimary,
             int textSecondary,
             int selectedFill,
@@ -36,6 +48,12 @@ final class SettingsUiPalette {
         this.background = background;
         this.surface = surface;
         this.surfaceRaised = surfaceRaised;
+        this.primaryBackground = primaryBackground;
+        this.secondaryBackground = secondaryBackground;
+        this.specialBackground = specialBackground;
+        this.primaryForeground = primaryForeground;
+        this.secondaryForeground = secondaryForeground;
+        this.specialForeground = specialForeground;
         this.textPrimary = textPrimary;
         this.textSecondary = textSecondary;
         this.selectedFill = selectedFill;
@@ -53,32 +71,44 @@ final class SettingsUiPalette {
         if (dark) {
             return new SettingsUiPalette(
                     true,
-                    0xFF171A20,
-                    0xFF20242B,
-                    0xFF252A32,
-                    0xFFE5E7EB,
-                    0xFFA7B0BE,
-                    0xFF2F6F73,
-                    0xFFEAFBFB,
-                    0xFF5FCFD4,
-                    0xFF2B3038,
-                    0xFFE5E7EB,
-                    0xFF3B4250,
+                    0xFF17191D,
+                    0xFF20232A,
+                    0xFF252932,
+                    0xFF17191D,
+                    0xFF20232A,
+                    0xFF1D4E55,
+                    0xFFF0ECE4,
+                    0xFFC9C4BB,
+                    0xFFB7F2EA,
+                    0xFFF0ECE4,
+                    0xFFC9C4BB,
+                    0xFF1D4E55,
+                    0xFFECFFFC,
+                    0xFF5ED4D0,
+                    0xFF20232A,
+                    0xFFF0ECE4,
+                    0xFF3A3F48,
                     0x99000000);
         }
         return new SettingsUiPalette(
                 false,
-                0xFFEEF1F5,
-                0xFFF7F8FA,
-                0xFFFDFDFE,
-                0xFF2B3038,
-                0xFF667085,
-                0xFFD7EEF0,
-                0xFF244247,
-                0xFF4AA8AF,
-                0xFFE4E8EE,
-                0xFF2B3038,
-                0xFFC7CED8,
+                0xFFF2F0EA,
+                0xFFFBF8F1,
+                0xFFFFFFFF,
+                0xFFF2F0EA,
+                0xFFFBF8F1,
+                0xFFDDEEEB,
+                0xFF2D3036,
+                0xFF626A73,
+                0xFF14545A,
+                0xFF2D3036,
+                0xFF626A73,
+                0xFFDDEEEB,
+                0xFF14545A,
+                0xFF42AEB0,
+                0xFFE7E2D8,
+                0xFF2D3036,
+                0xFFCBC4B8,
                 0x66000000);
     }
 }

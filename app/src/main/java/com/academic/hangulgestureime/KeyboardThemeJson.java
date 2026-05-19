@@ -66,6 +66,12 @@ final class KeyboardThemeJson {
             typography.put("secondaryTextItalic", safeSettings.secondaryTextItalic);
             root.put("typography", typography);
 
+            if (safeSettings.legendStylePreset != LegendStylePreset.DEFAULT) {
+                JSONObject legendStyle = new JSONObject();
+                legendStyle.put("preset", safeSettings.legendStylePreset.preferenceValue);
+                root.put("legendStyle", legendStyle);
+            }
+
             if (!safeSettings.keyColorOverrides.isEmpty()) {
                 root.put("keyTextColorOverrides", keyOverridesToJsonObject(safeSettings.keyColorOverrides));
             }
@@ -88,6 +94,7 @@ final class KeyboardThemeJson {
             JSONObject colors = root.optJSONObject("colors");
             JSONObject shape = root.optJSONObject("shape");
             JSONObject typography = root.optJSONObject("typography");
+            JSONObject legendStyle = root.optJSONObject("legendStyle");
             JSONObject numberRow = root.optJSONObject("additionalNumberRow");
             JSONObject keyColorOverrides = root.optJSONObject("keyTextColorOverrides");
             if (keyColorOverrides == null) {
@@ -156,6 +163,13 @@ final class KeyboardThemeJson {
                         numberRow.optString(
                                 "colorMode",
                                 themed.additionalNumberRowColorMode.preferenceValue)));
+            }
+
+            if (legendStyle != null) {
+                themed = themed.withLegendStyle(LegendStylePreset.fromPreference(
+                        legendStyle.optString(
+                                "preset",
+                                themed.legendStylePreset.preferenceValue)));
             }
 
             themed = themed.withKeyColorOverrides(decodeKeyColorOverrides(keyColorOverrides));
