@@ -1,0 +1,52 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.academic.hangulgestureime"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.academic.hangulgestureime"
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName "0.1.0"
+    }
+
+    signingConfigs {
+        closedBeta {
+            def keystorePath = providers.gradleProperty("HANGUL_IME_KEYSTORE").orNull
+            def keystorePassword = providers.gradleProperty("HANGUL_IME_KEYSTORE_PASSWORD").orNull
+            def keyAliasValue = providers.gradleProperty("HANGUL_IME_KEY_ALIAS").orNull
+            def keyPasswordValue = providers.gradleProperty("HANGUL_IME_KEY_PASSWORD").orNull
+            if (keystorePath && keystorePassword && keyAliasValue && keyPasswordValue) {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias keyAliasValue
+                keyPassword keyPasswordValue
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            if (signingConfigs.closedBeta.storeFile != null) {
+                signingConfig signingConfigs.closedBeta
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.json:json:20240303"
+}

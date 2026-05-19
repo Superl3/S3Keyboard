@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "iOS Clean Dark",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#2B2D31",
+    "functionKey": "#3A3D43",
+    "primaryFunctionKey": "#202328",
+    "accentKey": "#202328",
+    "keyPressed": "#5A5E66",
+    "keyboardBackground": "#1D1F23",
+    "border": "#202328",
+    "depth": null,
+    "accent": "#F8FAFC",
+    "secondary": "#B8BEC8"
+  },
+  "shape": {
+    "roundnessDp": 8,
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": false,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

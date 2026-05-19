@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">뉴딩굴</string>
+    <string name="ime_name">뉴딩굴</string>
+    <string name="ime_subtype_ko">Korean / English</string>
+    <string name="open_input_settings">Android 입력기 설정 열기</string>
+    <string name="show_input_picker">입력기 선택</string>
+    <string name="privacy_notice_title">베타 개인정보 안내</string>
+    <string name="privacy_notice_body">이 입력기는 입력 조합과 터치 보정을 기기 안에서만 처리합니다. 네트워크 권한이 없고, 입력한 문장이나 비밀번호를 저장하거나 전송하지 않습니다. 터치 보정은 직전 입력 뒤 즉시 삭제한 패턴의 위치 오프셋 통계만 로컬에 저장합니다.</string>
+    <string name="gesture_practice_title">제스처 연습</string>
+    <string name="gesture_practice_hint">키보드 즉석 테스트</string>
+    <string name="gesture_practice_body">키를 누른 뒤 위, 아래, 왼쪽, 오른쪽으로 밀어 입력을 확인하세요. 영문 Shift는 탭으로 다음 1글자 대문자, 길게 누르기로 Caps Lock을 전환합니다.</string>
+    <string name="layout_settings_title">키보드 레이아웃</string>
+    <string name="visual_settings_title">꾸미기</string>
+    <string name="input_feel_title">입력감 개선</string>
+    <string name="android_ime_title">Android 입력기</string>
+    <string name="debug_demo_title">Debug demo/test</string>
+    <string name="debug_demo_body">스크린샷 자동화용 intent override는 debug 빌드에서 demo_settings=true일 때만 저장됩니다. release 빌드에서는 외부 intent extra를 사용자 설정으로 반영하지 않습니다.</string>
+    <string name="keyboard_view_description">뉴딩굴 키보드</string>
+</resources>

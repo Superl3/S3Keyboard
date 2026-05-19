@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "Slate Glass",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#F7F9FC",
+    "functionKey": "#E9EEF5",
+    "primaryFunctionKey": "#DFE7F0",
+    "accentKey": "#DFE7F0",
+    "keyPressed": "#D7E2EF",
+    "keyboardBackground": "#EAF0F6",
+    "border": "#AEB8C6",
+    "depth": null,
+    "accent": "#0F172A",
+    "secondary": "#64748B"
+  },
+  "shape": {
+    "roundnessDp": 14,
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": false,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "AMOLED Black",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#050505",
+    "functionKey": "#111111",
+    "primaryFunctionKey": "#000000",
+    "accentKey": "#000000",
+    "keyPressed": "#2D2D2D",
+    "keyboardBackground": "#000000",
+    "border": "#303030",
+    "depth": null,
+    "accent": "#F7F7F7",
+    "secondary": "#A7A7A7"
+  },
+  "shape": {
+    "roundnessDp": 6,
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": false,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

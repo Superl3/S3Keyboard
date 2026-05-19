@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "Lavender Focus",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#FCFBFF",
+    "functionKey": "#F0ECF8",
+    "primaryFunctionKey": "#E7E0F2",
+    "accentKey": "#E7E0F2",
+    "keyPressed": "#D9CFE7",
+    "keyboardBackground": "#F4F0FA",
+    "border": "#C9BED6",
+    "depth": null,
+    "accent": "#231B32",
+    "secondary": "#6E607C"
+  },
+  "shape": {
+    "roundnessDp": 10,
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": true,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

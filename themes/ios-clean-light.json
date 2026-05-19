@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "iOS Clean Light",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#FBFBFD",
+    "functionKey": "#EEF0F4",
+    "primaryFunctionKey": "#E4E7ED",
+    "accentKey": "#E4E7ED",
+    "keyPressed": "#D6D8DD",
+    "keyboardBackground": "#D1D5DB",
+    "border": "#C2C7D0",
+    "depth": null,
+    "accent": "#111827",
+    "secondary": "#707780"
+  },
+  "shape": {
+    "roundnessDp": 8,
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": false,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

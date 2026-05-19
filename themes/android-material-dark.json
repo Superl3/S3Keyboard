@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "Android Material Dark",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#211F26",
+    "functionKey": "#2B2930",
+    "primaryFunctionKey": "#17151B",
+    "accentKey": "#17151B",
+    "keyPressed": "#4A4458",
+    "keyboardBackground": "#141218",
+    "border": "#49454F",
+    "depth": null,
+    "accent": "#E6E1E5",
+    "secondary": "#CAC4D0"
+  },
+  "shape": {
+    "roundnessDp": 12,
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": true,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

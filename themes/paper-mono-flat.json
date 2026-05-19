@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "Paper Mono Flat",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#FAFAFA",
+    "functionKey": "#EFEFEF",
+    "primaryFunctionKey": "#E5E5E5",
+    "accentKey": "#E5E5E5",
+    "keyPressed": "#DADADA",
+    "keyboardBackground": "#F4F4F4",
+    "border": "#D0D0D0",
+    "depth": null,
+    "accent": "#111111",
+    "secondary": "#777777"
+  },
+  "shape": {
+    "roundnessDp": 3,
+    "keyGapDp": 6,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "d2coding",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": false,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

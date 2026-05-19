@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "Nord Night",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#2E3440",
+    "functionKey": "#3B4252",
+    "primaryFunctionKey": "#252B35",
+    "accentKey": "#252B35",
+    "keyPressed": "#4C566A",
+    "keyboardBackground": "#242933",
+    "border": "#1E2430",
+    "depth": "#1E2430",
+    "accent": "#ECEFF4",
+    "secondary": "#C7D0DC"
+  },
+  "shape": {
+    "roundnessDp": 7,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": true,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

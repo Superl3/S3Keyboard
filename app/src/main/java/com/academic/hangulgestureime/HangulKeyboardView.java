@@ -1,0 +1,1300 @@
+package com.academic.hangulgestureime;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
+import android.graphics.Typeface;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewConfiguration;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
+public final class HangulKeyboardView extends View {
+    private final List<KeySlot> keySlots = new ArrayList<>();
+    private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint hintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint depthPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint overlayTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final KeyboardIconRegistry iconRegistry;
+    private final List<TouchState> activeTouches = new ArrayList<>();
+    private final List<PendingTouchOutput> pendingTouchOutputs = new ArrayList<>();
+    private final KeyboardFeedback feedback = new KeyboardFeedback(this);
+    private final RepeatController repeatController = new RepeatController(this, new RepeatController.Callback() {
+        @Override
+        public void onRepeat(String value) {
+            emitValue(value);
+        }
+    });
+
+    private KeyboardSettings settings = KeyboardSettings.defaults();
+    private List<KeyboardRow> rows = Collections.emptyList();
+    private TouchBiasStore touchBiasStore;
+    private TouchBiasStore.Bias touchBias = TouchBiasStore.Bias.none();
+    private OnKeyGestureListener listener;
+    private OnPreviewKeySelectionListener previewKeySelectionListener;
+    private boolean englishShiftActive;
+    private boolean englishCapsLocked;
+    private boolean compactPreviewRendering;
+    private long nextTouchSequence;
+    private TouchSample lastTextTouchSample;
+
+    public HangulKeyboardView(Context context) {
+        super(context);
+        setFocusable(true);
+        setFocusableInTouchMode(true);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+        setContentDescription(context.getString(R.string.keyboard_view_description));
+        iconRegistry = new KeyboardIconRegistry(context);
+        touchBiasStore = new TouchBiasStore(context);
+        touchBias = touchBiasStore.load();
+        initPaints();
+        setSettings(KeyboardPreferences.load(context));
+    }
+
+    public void setOnKeyGestureListener(OnKeyGestureListener listener) {
+        this.listener = listener;
+    }
+
+    void setOnPreviewKeySelectionListener(OnPreviewKeySelectionListener listener) {
+        previewKeySelectionListener = listener;
+    }
+
+    void setSettings(KeyboardSettings settings) {
+        this.settings = settings == null ? KeyboardSettings.defaults() : settings;
+        feedback.setEnabled(this.settings.hapticFeedbackEnabled);
+        touchBias = touchBiasStore.load();
+        rows = KeyboardLayoutFactory.build(this.settings);
+        applyTypeface();
+        if (getWidth() > 0 && getHeight() > 0) {
+            layoutKeys(getWidth(), getHeight());
+        }
+        requestLayout();
+        invalidate();
+    }
+
+    void setEnglishShiftState(boolean active, boolean locked) {
+        englishShiftActive = active;
+        englishCapsLocked = locked;
+        invalidate();
+    }
+
+    void setCompactPreviewRendering(boolean compactPreviewRendering) {
+        this.compactPreviewRendering = compactPreviewRendering;
+        if (getWidth() > 0 && getHeight() > 0) {
+            layoutKeys(getWidth(), getHeight());
+        }
+        invalidate();
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int width = MeasureSpec.getSize(widthMeasureSpec);
+        int desiredHeight = dp(settings.measuredHeightDp()) + tooltipReservePx();
+        setMeasuredDimension(width, resolveSize(desiredHeight, heightMeasureSpec));
+    }
+
+    @Override
+    protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
+        super.onSizeChanged(width, height, oldWidth, oldHeight);
+        layoutKeys(width, height);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        clearTouchState();
+        repeatController.stop();
+        super.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        int topReserve = tooltipReservePx();
+        keyPaint.setColor(settings.keyboardBackgroundColor);
+        canvas.drawRect(0, topReserve, getWidth(), getHeight(), keyPaint);
+        for (KeySlot keySlot : keySlots) {
+            drawKey(canvas, keySlot);
+        }
+        drawOverlay(canvas);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_POINTER_DOWN:
+                return handlePointerDown(event, event.getActionIndex());
+            case MotionEvent.ACTION_MOVE:
+                return handleMove(event);
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+                return handlePointerUp(event, event.getActionIndex());
+            case MotionEvent.ACTION_CANCEL:
+                clearTouchState();
+                return true;
+            default:
+                return super.onTouchEvent(event);
+        }
+    }
+
+    private boolean handlePointerDown(MotionEvent event, int pointerIndex) {
+        KeySlot keySlot = findKey(event.getX(pointerIndex), event.getY(pointerIndex));
+        if (keySlot == null) {
+            return false;
+        }
+
+        int pointerId = event.getPointerId(pointerIndex);
+        removeTouchState(pointerId);
+        TouchState state = new TouchState(
+                pointerId,
+                keySlot,
+                event.getX(pointerIndex),
+                event.getY(pointerIndex),
+                nextTouchSequence++);
+        activeTouches.add(state);
+        if (previewKeySelectionListener == null) {
+            if (isDeleteKey(keySlot.key)) {
+                state.tapOutputAlreadyEmitted = true;
+                feedback.tap();
+                emitValue(KeyboardCommands.CMD_DELETE);
+            }
+            int longPressDelay = longPressDelayFor(keySlot.key);
+            scheduleLongPress(state, longPressDelay);
+        }
+        invalidate();
+        return true;
+    }
+
+    private boolean handleMove(MotionEvent event) {
+        if (activeTouches.isEmpty()) {
+            return false;
+        }
+
+        boolean handled = false;
+        for (int i = 0; i < event.getPointerCount(); i++) {
+            TouchState state = findTouchState(event.getPointerId(i));
+            if (state != null) {
+                updateTouchMove(state, event.getX(i), event.getY(i));
+                handled = true;
+            }
+        }
+        if (handled) {
+            invalidate();
+        }
+        return handled;
+    }
+
+    private void updateTouchMove(TouchState state, float x, float y) {
+        boolean wasLocked = state.gestureState.isLocked();
+        GestureAction action = state.gestureState.update(
+                x - state.downX,
+                y - state.downY,
+                dp(settings.gestureThresholdDp));
+        if (state.gestureState.isLocked() && !wasLocked) {
+            cancelLongPressTimer(state);
+            feedback.slideLock();
+            String repeatValue = repeatableValue(state.keySlot.key.valueFor(action));
+            if (previewKeySelectionListener == null && isCursorMove(repeatValue)) {
+                repeatController.start(
+                        repeatValue,
+                        settings.repeatStartDelayMs,
+                        settings.repeatIntervalMs,
+                        false);
+            }
+        }
+        state.activeAction = state.longPressTriggered ? GestureAction.LONG_PRESS : action;
+    }
+
+    private boolean handlePointerUp(MotionEvent event, int pointerIndex) {
+        TouchState state = findTouchState(event.getPointerId(pointerIndex));
+        if (state == null) {
+            return false;
+        }
+
+        cancelLongPressTimer(state);
+        if (previewKeySelectionListener != null) {
+            feedback.tap();
+            previewKeySelectionListener.onPreviewKeySelected(state.keySlot.key);
+            removeTouchState(state, true);
+            return true;
+        }
+        String repeatableTap = repeatableValue(state.keySlot.key);
+        boolean repeatAlreadyFired = repeatableTap != null && repeatController.hasFired();
+        if (!state.longPressTriggered && !repeatAlreadyFired && !state.tapOutputAlreadyEmitted) {
+            GestureAction action = state.gestureState.release(
+                    event.getX(pointerIndex) - state.downX,
+                    event.getY(pointerIndex) - state.downY,
+                    dp(settings.gestureThresholdDp));
+            if (action == GestureAction.TAP) {
+                feedback.tap();
+            }
+            queueTouchOutput(
+                    state,
+                    state.keySlot.key.valueFor(action),
+                    event.getX(pointerIndex),
+                    event.getY(pointerIndex));
+        }
+        removeTouchState(state, true);
+        flushPendingTouchOutputs();
+        return true;
+    }
+
+    private void scheduleLongPress(final TouchState state, int delayMs) {
+        state.longPressRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!activeTouches.contains(state) || state.gestureState.isLocked()) {
+                    return;
+                }
+                state.longPressTriggered = true;
+                state.activeAction = GestureAction.LONG_PRESS;
+                feedback.longPress();
+                String repeatValue = repeatableValue(state.keySlot.key);
+                if (repeatValue != null) {
+                    repeatController.start(repeatValue, settings.repeatIntervalMs, settings.repeatIntervalMs, true);
+                } else {
+                    emitValue(state.keySlot.key.valueFor(GestureAction.LONG_PRESS));
+                }
+                invalidate();
+            }
+        };
+        postDelayed(state.longPressRunnable, delayMs);
+    }
+
+    private void queueTouchOutput(TouchState state, String value, float x, float y) {
+        pendingTouchOutputs.add(new PendingTouchOutput(state.sequence, state.keySlot, value, x, y));
+        flushPendingTouchOutputs();
+    }
+
+    private void flushPendingTouchOutputs() {
+        while (!pendingTouchOutputs.isEmpty()) {
+            int nextIndex = nextPendingOutputIndex();
+            PendingTouchOutput next = pendingTouchOutputs.get(nextIndex);
+            long oldestActiveSequence = oldestActiveTouchSequence();
+            if (oldestActiveSequence >= 0 && oldestActiveSequence < next.sequence) {
+                return;
+            }
+            pendingTouchOutputs.remove(nextIndex);
+            rememberTextTouch(next.keySlot, valueOrNull(next.value), next.x, next.y);
+            emitValue(next.value);
+        }
+    }
+
+    private int longPressDelayFor(GestureKey key) {
+        if (isDeleteKey(key)) {
+            return Math.max(120, Math.min(settings.repeatStartDelayMs, 170));
+        }
+        return repeatableValue(key) == null
+                ? ViewConfiguration.getLongPressTimeout()
+                : settings.repeatStartDelayMs;
+    }
+
+    private int nextPendingOutputIndex() {
+        int nextIndex = 0;
+        long nextSequence = pendingTouchOutputs.get(0).sequence;
+        for (int i = 1; i < pendingTouchOutputs.size(); i++) {
+            long sequence = pendingTouchOutputs.get(i).sequence;
+            if (sequence < nextSequence) {
+                nextSequence = sequence;
+                nextIndex = i;
+            }
+        }
+        return nextIndex;
+    }
+
+    private long oldestActiveTouchSequence() {
+        long oldest = -1;
+        for (TouchState state : activeTouches) {
+            if (oldest < 0 || state.sequence < oldest) {
+                oldest = state.sequence;
+            }
+        }
+        return oldest;
+    }
+
+    private void emitValue(String value) {
+        if (KeyboardCommands.CMD_NOOP.equals(value)) {
+            return;
+        }
+        if (listener != null && value != null && !value.isEmpty()) {
+            recordImmediateDeleteIfNeeded(value);
+            listener.onKeyGesture(value);
+        }
+    }
+
+    private void rememberTextTouch(KeySlot keySlot, String value, float x, float y) {
+        if (keySlot == null || value == null || KeyboardCommands.isCommand(value)) {
+            return;
+        }
+        float offsetXDp = (x - keySlot.bounds.centerX()) / getResources().getDisplayMetrics().density;
+        float offsetYDp = (y - keySlot.bounds.centerY()) / getResources().getDisplayMetrics().density;
+        lastTextTouchSample = new TouchSample(offsetXDp, offsetYDp, System.currentTimeMillis());
+    }
+
+    private void recordImmediateDeleteIfNeeded(String value) {
+        if (!KeyboardCommands.CMD_DELETE.equals(value) || lastTextTouchSample == null) {
+            if (!KeyboardCommands.isCommand(value)) {
+                return;
+            }
+            if (!KeyboardCommands.CMD_DELETE.equals(value)) {
+                lastTextTouchSample = null;
+            }
+            return;
+        }
+
+        if (System.currentTimeMillis() - lastTextTouchSample.timeMs <= 1500) {
+            touchBiasStore.recordImmediateDelete(lastTextTouchSample.offsetXDp, lastTextTouchSample.offsetYDp);
+            touchBias = touchBiasStore.load();
+        }
+        lastTextTouchSample = null;
+    }
+
+    private String valueOrNull(String value) {
+        return value == null || value.isEmpty() ? null : value;
+    }
+
+    private void clearTouchState() {
+        for (TouchState state : new ArrayList<>(activeTouches)) {
+            cancelLongPressTimer(state);
+        }
+        activeTouches.clear();
+        pendingTouchOutputs.clear();
+        repeatController.stop();
+        invalidate();
+    }
+
+    private void removeTouchState(int pointerId) {
+        TouchState state = findTouchState(pointerId);
+        if (state != null) {
+            removeTouchState(state, false);
+        }
+    }
+
+    private void removeTouchState(TouchState state, boolean stopRepeat) {
+        cancelLongPressTimer(state);
+        activeTouches.remove(state);
+        if (stopRepeat) {
+            repeatController.stop();
+        }
+        invalidate();
+    }
+
+    private TouchState findTouchState(int pointerId) {
+        for (TouchState state : activeTouches) {
+            if (state.pointerId == pointerId) {
+                return state;
+            }
+        }
+        return null;
+    }
+
+    private TouchState primaryTouch() {
+        if (activeTouches.isEmpty()) {
+            return null;
+        }
+        return activeTouches.get(activeTouches.size() - 1);
+    }
+
+    private boolean isActiveKey(KeySlot keySlot) {
+        for (TouchState state : activeTouches) {
+            if (state.keySlot == keySlot) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void cancelLongPressTimer(TouchState state) {
+        if (state != null && state.longPressRunnable != null) {
+            removeCallbacks(state.longPressRunnable);
+            state.longPressRunnable = null;
+        }
+    }
+
+    private void initPaints() {
+        keyPaint.setStyle(Paint.Style.FILL);
+
+        borderPaint.setStyle(Paint.Style.STROKE);
+        borderPaint.setStrokeWidth(dp(1));
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(sp(17));
+        textPaint.setFakeBoldText(false);
+
+        hintPaint.setTextAlign(Paint.Align.CENTER);
+        hintPaint.setTextSize(sp(10));
+
+        iconPaint.setStrokeCap(Paint.Cap.ROUND);
+        iconPaint.setStrokeJoin(Paint.Join.ROUND);
+
+        depthPaint.setStyle(Paint.Style.FILL);
+
+        overlayPaint.setStyle(Paint.Style.FILL);
+
+        overlayTextPaint.setTextAlign(Paint.Align.CENTER);
+        overlayTextPaint.setTextSize(sp(16));
+        overlayTextPaint.setFakeBoldText(false);
+        applyTypeface();
+    }
+
+    private void applyTypeface() {
+        if (textPaint == null) {
+            return;
+        }
+        Typeface primaryTypeface = typefaceFor(
+                settings.fontFamily,
+                settings.primaryTextBold,
+                settings.primaryTextItalic);
+        Typeface secondaryTypeface = typefaceFor(
+                settings.fontFamily,
+                settings.secondaryTextBold,
+                settings.secondaryTextItalic);
+        textPaint.setTypeface(primaryTypeface);
+        hintPaint.setTypeface(secondaryTypeface);
+        overlayTextPaint.setTypeface(primaryTypeface);
+        textPaint.setFakeBoldText(false);
+        hintPaint.setFakeBoldText(false);
+        overlayTextPaint.setFakeBoldText(false);
+        textPaint.setTextSkewX(settings.primaryTextItalic ? -0.22f : 0f);
+        hintPaint.setTextSkewX(settings.secondaryTextItalic ? -0.22f : 0f);
+        overlayTextPaint.setTextSkewX(settings.primaryTextItalic ? -0.22f : 0f);
+    }
+
+    private Typeface typefaceFor(String fontFamily, boolean bold, boolean italic) {
+        int style = Typeface.NORMAL;
+        if (bold) {
+            style |= Typeface.BOLD;
+        }
+        if (italic) {
+            style |= Typeface.ITALIC;
+        }
+        switch (KeyboardSettings.normalizeFontFamily(fontFamily)) {
+            case KeyboardSettings.FONT_NOTO_SERIF_KR:
+                return Typeface.create("serif", style);
+            case KeyboardSettings.FONT_D2CODING:
+                return Typeface.create("monospace", style);
+            case KeyboardSettings.FONT_NOTO_SANS_KR:
+            case KeyboardSettings.FONT_DEFAULT:
+            default:
+                return Typeface.create("sans-serif", style);
+        }
+    }
+
+    private void layoutKeys(int width, int height) {
+        keySlots.clear();
+        if (rows.isEmpty()) {
+            return;
+        }
+
+        int topReserve = tooltipReservePx();
+        int keyboardHeight = Math.max(1, height - topReserve);
+        int visualGap = renderDp(settings.keyGapDp);
+        float density = getResources().getDisplayMetrics().density;
+        List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
+                rows,
+                settings,
+                width,
+                keyboardHeight,
+                density);
+        for (KeyboardLayoutCalculator.Slot slot : slots) {
+            keySlots.add(new KeySlot(
+                    slot.key,
+                    new RectF(slot.left, slot.top + topReserve, slot.right, slot.bottom + topReserve),
+                    slot.primaryBottomControl,
+                    slot.compactSpecialColumn,
+                    visualGap));
+        }
+    }
+
+    private void drawKey(Canvas canvas, KeySlot keySlot) {
+        GestureKey key = keySlot.key;
+        boolean active = isActiveKey(keySlot);
+        boolean shiftStateActive = isShiftKey(key) && englishShiftActive;
+        boolean englishLetterKey = isEnglishLetterKey(key);
+        RectF visualBounds = keySlot.visualBounds();
+        RectF surfaceBounds = keySurfaceBounds(visualBounds, active);
+        drawKeyDepth(canvas, visualBounds, active);
+        keyPaint.setColor(active ? settings.keyPressedColor : baseColorForKey(keySlot));
+        drawKeyShape(canvas, surfaceBounds, keyPaint);
+        drawBorderShape(canvas, surfaceBounds);
+
+        float centerX = surfaceBounds.centerX();
+        int icon = iconFor(key);
+        if (icon == KeyIcon.NONE) {
+            String label = displayLabelForKey(key);
+            textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
+            String paintLabel = textPresentation(label);
+            textPaint.setTextSize(textSizeFor(paintLabel, surfaceBounds, keySlot.compactSpecialColumn));
+            float labelCenterY = englishLetterKey
+                    ? surfaceBounds.top + surfaceBounds.height() * 0.36f
+                    : surfaceBounds.centerY();
+            float centerY = labelCenterY - textCenterOffset(textPaint);
+            canvas.drawText(paintLabel, centerX, centerY, textPaint);
+        } else {
+            drawKeyIcon(canvas, key, icon, surfaceBounds, active);
+            if (shiftStateActive) {
+                drawShiftStateIndicator(canvas, surfaceBounds);
+            }
+        }
+
+        if (shouldShowSlideHints() && shouldDrawSlideHintsForKey(key, icon)) {
+            float hintTextSize = (englishLetterKey
+                    ? renderSp(8.4f)
+                    : (keySlot.compactSpecialColumn ? renderSp(7) : renderSp(8.5f))) * secondaryTextScale();
+            float horizontalHintInset = keySlot.compactSpecialColumn
+                    ? surfaceBounds.width() * 0.23f
+                    : renderDp(19);
+            float topHintInset = keySlot.compactSpecialColumn
+                    ? Math.min(renderDp(12), surfaceBounds.height() * 0.18f)
+                    : renderDp(15);
+            float bottomHintInset = keySlot.compactSpecialColumn
+                    ? Math.min(renderDp(9), surfaceBounds.height() * 0.14f)
+                    : (englishLetterKey
+                            ? Math.max(renderDp(4), surfaceBounds.height() * 0.08f)
+                            : renderDp(7));
+            if (!englishLetterKey) {
+                drawHint(canvas, key.upSlide, centerX, surfaceBounds.top + topHintInset, hintTextSize);
+            }
+            drawHint(canvas, key.downSlide, centerX, surfaceBounds.bottom - bottomHintInset, hintTextSize);
+            drawHint(canvas, key.leftSlide, surfaceBounds.left + horizontalHintInset,
+                    surfaceBounds.centerY() - textCenterOffset(hintPaint), hintTextSize);
+            drawHint(canvas, key.rightSlide, surfaceBounds.right - horizontalHintInset,
+                    surfaceBounds.centerY() - textCenterOffset(hintPaint), hintTextSize);
+        }
+    }
+
+    private void drawBorderShape(Canvas canvas, RectF bounds) {
+        float strokeWidth = renderDp(settings.keyBorderWidthDp);
+        if (strokeWidth <= 0f) {
+            return;
+        }
+        borderPaint.setColor(settings.borderColor);
+        borderPaint.setStrokeWidth(strokeWidth);
+        RectF borderBounds = new RectF(bounds);
+        float inset = strokeWidth / 2f;
+        borderBounds.inset(inset, inset);
+        if (borderBounds.width() <= 0f || borderBounds.height() <= 0f) {
+            return;
+        }
+        drawKeyShape(canvas, borderBounds, borderPaint);
+    }
+
+    private RectF keySurfaceBounds(RectF bounds, boolean active) {
+        if (!settings.keyDepthEnabled || settings.keyDepthDp <= 0) {
+            return new RectF(bounds);
+        }
+        float pressOffset = active
+                ? Math.min(renderDp(settings.keyDepthDp) * 0.60f, bounds.height() * 0.06f)
+                : 0f;
+        return new RectF(bounds.left, bounds.top + pressOffset, bounds.right, bounds.bottom + pressOffset);
+    }
+
+    private void drawKeyDepth(Canvas canvas, RectF bounds, boolean active) {
+        if (!settings.keyDepthEnabled || settings.keyDepthDp <= 0) {
+            return;
+        }
+        float configuredDepth = renderDp(settings.keyDepthDp);
+        float depth = active
+                ? Math.min(configuredDepth * 0.35f, bounds.height() * 0.035f)
+                : Math.min(configuredDepth, bounds.height() * 0.12f);
+        if (depth <= 0f) {
+            return;
+        }
+        RectF depthBounds = new RectF(bounds.left, bounds.top + depth, bounds.right, bounds.bottom + depth);
+        depthPaint.setColor(depthColor(active));
+        drawKeyShape(canvas, depthBounds, depthPaint);
+    }
+
+    private int baseColorForKey(KeySlot keySlot) {
+        return KeyboardKeyVisualClassifier.colorFor(settings, keySlot.key);
+    }
+
+    private int depthColor(boolean active) {
+        int baseColor = settings.customDepthColorEnabled ? settings.depthColor : settings.borderColor;
+        return shadeColor(baseColor, active ? 0.72f : 0.88f);
+    }
+
+    private int shadeColor(int color, float factor) {
+        int a = color & 0xFF000000;
+        int r = Math.round(((color >> 16) & 0xFF) * factor);
+        int g = Math.round(((color >> 8) & 0xFF) * factor);
+        int b = Math.round((color & 0xFF) * factor);
+        return a | (clampColor(r) << 16) | (clampColor(g) << 8) | clampColor(b);
+    }
+
+    private int clampColor(int value) {
+        return Math.max(0, Math.min(255, value));
+    }
+
+    private float textSizeFor(String label, RectF bounds, boolean compactSpecialColumn) {
+        float size;
+        if (label.length() >= 5) {
+            size = renderSp(8.5f);
+        } else if (label.length() >= 3) {
+            size = renderSp(compactSpecialColumn ? 8 : 10);
+        } else {
+            size = renderSp(compactSpecialColumn ? 12 : 17);
+        }
+        size *= primaryTextScale();
+
+        float minSize = renderSp(7) * primaryTextScale();
+        float maxWidth = bounds.width() * (compactSpecialColumn ? 0.60f : 0.78f);
+        while (size > minSize) {
+            textPaint.setTextSize(size);
+            if (textPaint.measureText(label) <= maxWidth) {
+                break;
+            }
+            size -= renderSp(1);
+        }
+        return Math.max(minSize, size);
+    }
+
+    private float overlayTextSizeFor(String label) {
+        return (label.length() > 3 ? renderSp(10) : renderSp(16)) * primaryTextScale();
+    }
+
+    private float primaryTextScale() {
+        return settings.primaryTextSizePercent / 100f;
+    }
+
+    private float secondaryTextScale() {
+        return settings.secondaryTextSizePercent / 100f;
+    }
+
+    private void drawHint(Canvas canvas, String value, float x, float y, float textSize) {
+        int icon = KeyIcon.forCommand(value);
+        if (icon != KeyIcon.NONE) {
+            drawIconCentered(canvas, icon, x, y, hintIconSize(), false);
+            return;
+        }
+
+        String label = displayFor(value);
+        if (label != null && label.length() <= 4) {
+            hintPaint.setColor(settings.secondaryColor);
+            hintPaint.setTextSize(textSize);
+            canvas.drawText(textPresentation(label), x, y, hintPaint);
+        }
+    }
+
+    private void drawOverlay(Canvas canvas) {
+        TouchState activeTouch = primaryTouch();
+        if (!settings.showBeginnerTooltipPreview || activeTouch == null) {
+            return;
+        }
+
+        String value = previewValueForTouch(activeTouch);
+        String label = displayFor(value);
+        if (label == null) {
+            return;
+        }
+
+        overlayTextPaint.setTextSize(overlayTextSizeFor(label));
+        float width = Math.min(renderDp(92), Math.max(renderDp(48), overlayTextPaint.measureText(label) + renderDp(28)));
+        float height = renderDp(42);
+        RectF anchor = activeTouch.keySlot.visualBounds();
+        float centerX = anchor.centerX();
+        float centerY = anchor.top - renderDp(8) - height / 2f;
+        centerY = Math.max(renderDp(4) + height / 2f, centerY);
+        drawOverlayItem(canvas, value, centerX, centerY, true, width, height);
+    }
+
+    private String previewValueForTouch(TouchState state) {
+        if (state == null) {
+            return null;
+        }
+        if (state.activeAction == GestureAction.LONG_PRESS
+                && state.keySlot.key.longPress == null
+                && repeatableValue(state.keySlot.key.tap) != null) {
+            return state.keySlot.key.tap;
+        }
+        return previewValueWithShift(state.keySlot.key.valueFor(state.activeAction));
+    }
+
+    private String previewValueWithShift(String value) {
+        if (settings.keyboardMode == KeyboardMode.ENGLISH
+                && englishShiftActive
+                && isSingleAsciiLetter(value)) {
+            return value.toUpperCase(Locale.US);
+        }
+        return value;
+    }
+
+    private void drawOverlayItem(
+            Canvas canvas,
+            String value,
+            float centerX,
+            float centerY,
+            boolean selected,
+            float width,
+            float height) {
+        String label = displayFor(value);
+        if (label == null) {
+            return;
+        }
+
+        RectF rect = new RectF(
+                centerX - width / 2f,
+                centerY - height / 2f,
+                centerX + width / 2f,
+                centerY + height / 2f);
+        overlayPaint.setColor(selected ? settings.keyPressedColor : settings.keyIdleColor);
+        canvas.drawRoundRect(rect, renderDp(6), renderDp(6), overlayPaint);
+        drawBorderShape(canvas, rect);
+        int icon = isReservedPhraseCommand(value) ? KeyIcon.NONE : KeyIcon.forCommand(value);
+        if (icon == KeyIcon.NONE) {
+            overlayTextPaint.setColor(settings.accentColor);
+            String paintLabel = textPresentation(label);
+            overlayTextPaint.setTextSize(overlayTextSizeFor(paintLabel));
+            canvas.drawText(paintLabel, centerX, centerY - textCenterOffset(overlayTextPaint), overlayTextPaint);
+        } else {
+            drawIconCentered(
+                    canvas,
+                    icon,
+                    rect.centerX(),
+                    rect.centerY(),
+                    overlayIconSize(),
+                    selected);
+        }
+    }
+
+    private int iconFor(GestureKey key) {
+        if (isShiftKey(key) && englishCapsLocked) {
+            return KeyIcon.CAPS_LOCK;
+        }
+        return key.icon;
+    }
+
+    private boolean isShiftKey(GestureKey key) {
+        return KeyboardCommands.CMD_SHIFT_ONCE.equals(key.tap);
+    }
+
+    private String displayLabelForKey(GestureKey key) {
+        if (englishShiftActive && isEnglishLetterKey(key)) {
+            return key.label.toUpperCase(Locale.US);
+        }
+        return key.label;
+    }
+
+    private boolean isEnglishLetterKey(GestureKey key) {
+        return key != null
+                && isSingleAsciiLetter(key.label)
+                && isSingleAsciiLetter(key.tap)
+                && isSingleAsciiLetter(key.upSlide);
+    }
+
+    private boolean isSingleAsciiLetter(String value) {
+        if (value == null || value.length() != 1) {
+            return false;
+        }
+        char c = value.charAt(0);
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    }
+
+    private void drawKeyIcon(Canvas canvas, GestureKey key, int icon, RectF bounds, boolean selected) {
+        drawIconCentered(
+                canvas,
+                icon,
+                bounds.centerX(),
+                bounds.centerY(),
+                keyIconSize(),
+                KeyboardKeyVisualClassifier.iconColorFor(settings, key, selected));
+    }
+
+    private void drawShiftStateIndicator(Canvas canvas, RectF bounds) {
+        float radius = renderDp(4.5f);
+        float cx = bounds.centerX();
+        float cy = bounds.centerY() - keyIconSize() * 1.30f - renderDp(2);
+        cy = Math.max(bounds.top + radius + renderDp(3), cy);
+        iconPaint.setStyle(Paint.Style.FILL);
+        iconPaint.setColor(settings.accentColor);
+        canvas.drawCircle(cx, cy, radius, iconPaint);
+        iconPaint.setStyle(Paint.Style.STROKE);
+        iconPaint.setStrokeWidth(renderDp(1.5f));
+        iconPaint.setColor(settings.keyIdleColor);
+        canvas.drawCircle(cx, cy, radius + renderDp(1.5f), iconPaint);
+    }
+
+    private void drawIconCentered(
+            Canvas canvas,
+            int icon,
+            float cx,
+            float cy,
+            float size,
+            boolean selected) {
+        int iconColor = selected ? settings.accentColor : settings.secondaryColor;
+        drawIconCentered(canvas, icon, cx, cy, size, iconColor);
+    }
+
+    private void drawIconCentered(
+            Canvas canvas,
+            int icon,
+            float cx,
+            float cy,
+            float size,
+            int iconColor) {
+        float left = cx - size / 2f;
+        float top = cy - size / 2f;
+        float right = cx + size / 2f;
+        float bottom = cy + size / 2f;
+
+        RectF iconBounds = new RectF(left, top, right, bottom);
+        if (iconRegistry.draw(canvas, icon, iconBounds, iconColor)) {
+            return;
+        }
+
+        iconPaint.setColor(iconColor);
+        iconPaint.setStrokeWidth(Math.max(renderDp(1.5f), size / 10f));
+        iconPaint.setStyle(Paint.Style.STROKE);
+
+        switch (icon) {
+            case KeyIcon.OPTIONS:
+                drawOptionsIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.RESERVED:
+                drawBookmarkIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.SPACE:
+                drawSpaceIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.LANGUAGE:
+                drawLanguageIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.SEARCH:
+                drawSearchIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.DONE:
+                drawDoneIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.NEXT:
+                drawNextIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.SHIFT:
+            case KeyIcon.CAPS_LOCK:
+                drawShiftIcon(canvas, left, top, right, bottom, icon == KeyIcon.CAPS_LOCK);
+                break;
+            case KeyIcon.BACKSPACE:
+                drawBackspaceIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.HIDE:
+                drawHideIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.SETTINGS:
+                drawSettingsIcon(canvas, left, top, right, bottom);
+                break;
+            case KeyIcon.MOVE_LEFT:
+                drawArrowIcon(canvas, left, top, right, bottom, false);
+                break;
+            case KeyIcon.MOVE_RIGHT:
+                drawArrowIcon(canvas, left, top, right, bottom, true);
+                break;
+            case KeyIcon.ENTER:
+            default:
+                drawEnterIcon(canvas, left, top, right, bottom);
+                break;
+        }
+    }
+
+    private void drawOptionsIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        float third = (bottom - top) / 3f;
+        for (int i = 0; i < 3; i++) {
+            float y = top + third * (i + 0.5f);
+            canvas.drawLine(left, y, right, y, iconPaint);
+        }
+        canvas.drawCircle(left + (right - left) * 0.35f, top + third * 0.5f, renderDp(2.5f), iconPaint);
+        canvas.drawCircle(left + (right - left) * 0.7f, top + third * 1.5f, renderDp(2.5f), iconPaint);
+        canvas.drawCircle(left + (right - left) * 0.5f, top + third * 2.5f, renderDp(2.5f), iconPaint);
+    }
+
+    private void drawBookmarkIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        Path path = new Path();
+        path.moveTo(left + (right - left) * 0.25f, top);
+        path.lineTo(right - (right - left) * 0.25f, top);
+        path.lineTo(right - (right - left) * 0.25f, bottom);
+        path.lineTo((left + right) / 2f, bottom - (bottom - top) * 0.22f);
+        path.lineTo(left + (right - left) * 0.25f, bottom);
+        path.close();
+        canvas.drawPath(path, iconPaint);
+    }
+
+    private void drawSpaceIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        float y = bottom - (bottom - top) * 0.25f;
+        canvas.drawLine(left, y, right, y, iconPaint);
+        canvas.drawLine(left, y, left, y - (bottom - top) * 0.25f, iconPaint);
+        canvas.drawLine(right, y, right, y - (bottom - top) * 0.25f, iconPaint);
+    }
+
+    private void drawLanguageIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        RectF oval = new RectF(left, top, right, bottom);
+        canvas.drawOval(oval, iconPaint);
+        canvas.drawLine(left, (top + bottom) / 2f, right, (top + bottom) / 2f, iconPaint);
+        canvas.drawOval(new RectF(left + (right - left) * 0.28f, top, right - (right - left) * 0.28f, bottom), iconPaint);
+    }
+
+    private void drawEnterIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        float midY = (top + bottom) / 2f;
+        canvas.drawLine(right, top, right, midY, iconPaint);
+        canvas.drawLine(right, midY, left, midY, iconPaint);
+        canvas.drawLine(left, midY, left + (right - left) * 0.25f, top + (bottom - top) * 0.32f, iconPaint);
+        canvas.drawLine(left, midY, left + (right - left) * 0.25f, bottom - (bottom - top) * 0.32f, iconPaint);
+    }
+
+    private void drawSearchIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        float radius = (right - left) * 0.28f;
+        float cx = left + (right - left) * 0.42f;
+        float cy = top + (bottom - top) * 0.42f;
+        canvas.drawCircle(cx, cy, radius, iconPaint);
+        canvas.drawLine(cx + radius * 0.7f, cy + radius * 0.7f, right, bottom, iconPaint);
+    }
+
+    private void drawDoneIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        canvas.drawLine(left, (top + bottom) / 2f, left + (right - left) * 0.4f, bottom, iconPaint);
+        canvas.drawLine(left + (right - left) * 0.4f, bottom, right, top, iconPaint);
+    }
+
+    private void drawNextIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        drawArrowIcon(canvas, left, top, right - (right - left) * 0.18f, bottom, true);
+        canvas.drawLine(right, top, right, bottom, iconPaint);
+    }
+
+    private void drawShiftIcon(Canvas canvas, float left, float top, float right, float bottom, boolean locked) {
+        Path path = new Path();
+        float midX = (left + right) / 2f;
+        path.moveTo(midX, top);
+        path.lineTo(right, top + (bottom - top) * 0.45f);
+        path.lineTo(right - (right - left) * 0.28f, top + (bottom - top) * 0.45f);
+        path.lineTo(right - (right - left) * 0.28f, bottom - (locked ? (bottom - top) * 0.2f : 0));
+        path.lineTo(left + (right - left) * 0.28f, bottom - (locked ? (bottom - top) * 0.2f : 0));
+        path.lineTo(left + (right - left) * 0.28f, top + (bottom - top) * 0.45f);
+        path.lineTo(left, top + (bottom - top) * 0.45f);
+        path.close();
+        canvas.drawPath(path, iconPaint);
+        if (locked) {
+            canvas.drawLine(left + (right - left) * 0.22f, bottom, right - (right - left) * 0.22f, bottom, iconPaint);
+        }
+    }
+
+    private void drawBackspaceIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        Path path = new Path();
+        path.moveTo(left + (right - left) * 0.28f, top);
+        path.lineTo(right, top);
+        path.lineTo(right, bottom);
+        path.lineTo(left + (right - left) * 0.28f, bottom);
+        path.lineTo(left, (top + bottom) / 2f);
+        path.close();
+        canvas.drawPath(path, iconPaint);
+        canvas.drawLine(left + (right - left) * 0.45f, top + (bottom - top) * 0.35f,
+                right - (right - left) * 0.18f, bottom - (bottom - top) * 0.35f, iconPaint);
+        canvas.drawLine(right - (right - left) * 0.18f, top + (bottom - top) * 0.35f,
+                left + (right - left) * 0.45f, bottom - (bottom - top) * 0.35f, iconPaint);
+    }
+
+    private void drawHideIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        RectF rect = new RectF(left, top, right, top + (bottom - top) * 0.58f);
+        canvas.drawRect(rect, iconPaint);
+        float cell = (right - left) / 4f;
+        for (int i = 1; i < 4; i++) {
+            canvas.drawLine(left + cell * i, rect.top, left + cell * i, rect.bottom, iconPaint);
+        }
+        canvas.drawLine((left + right) / 2f, rect.bottom + (bottom - top) * 0.12f,
+                (left + right) / 2f, bottom, iconPaint);
+        canvas.drawLine((left + right) / 2f, bottom, left + (right - left) * 0.35f,
+                bottom - (bottom - top) * 0.16f, iconPaint);
+        canvas.drawLine((left + right) / 2f, bottom, right - (right - left) * 0.35f,
+                bottom - (bottom - top) * 0.16f, iconPaint);
+    }
+
+    private void drawSettingsIcon(Canvas canvas, float left, float top, float right, float bottom) {
+        float cx = (left + right) / 2f;
+        float cy = (top + bottom) / 2f;
+        float radius = (right - left) * 0.25f;
+        canvas.drawCircle(cx, cy, radius, iconPaint);
+        canvas.drawCircle(cx, cy, radius * 0.42f, iconPaint);
+        for (int i = 0; i < 8; i++) {
+            double angle = Math.PI * 2 * i / 8.0;
+            float sx = cx + (float) Math.cos(angle) * radius;
+            float sy = cy + (float) Math.sin(angle) * radius;
+            float ex = cx + (float) Math.cos(angle) * radius * 1.35f;
+            float ey = cy + (float) Math.sin(angle) * radius * 1.35f;
+            canvas.drawLine(sx, sy, ex, ey, iconPaint);
+        }
+    }
+
+    private void drawArrowIcon(Canvas canvas, float left, float top, float right, float bottom, boolean rightward) {
+        float midY = (top + bottom) / 2f;
+        float headX = rightward ? right : left;
+        float tailX = rightward ? left : right;
+        canvas.drawLine(tailX, midY, headX, midY, iconPaint);
+        float dir = rightward ? -1f : 1f;
+        canvas.drawLine(headX, midY, headX + dir * (right - left) * 0.28f, top, iconPaint);
+        canvas.drawLine(headX, midY, headX + dir * (right - left) * 0.28f, bottom, iconPaint);
+    }
+
+    private void drawKeyShape(Canvas canvas, RectF bounds, Paint paint) {
+        float radius = renderDp(settings.keyRoundnessDp);
+        if (paint.getStyle() == Paint.Style.STROKE) {
+            radius = Math.max(0f, radius - paint.getStrokeWidth() / 2f);
+        }
+        if (radius <= 0f) {
+            canvas.drawRect(bounds, paint);
+        } else {
+            canvas.drawRoundRect(bounds, radius, radius, paint);
+        }
+    }
+
+    private KeySlot findKey(float x, float y) {
+        return TouchResolver.resolve(
+                keySlots,
+                x,
+                y,
+                dp(settings.hitSlopDp),
+                dp(settings.touchYOffsetDp),
+                dp(touchBias.xDp),
+                dp(touchBias.yDp));
+    }
+
+    private String repeatableValue(GestureKey key) {
+        return repeatableValue(key.tap);
+    }
+
+    private String repeatableValue(String value) {
+        if (KeyboardCommands.CMD_DELETE.equals(value)
+                || KeyboardCommands.CMD_MOVE_LEFT.equals(value)
+                || KeyboardCommands.CMD_MOVE_RIGHT.equals(value)) {
+            return value;
+        }
+        return null;
+    }
+
+    private boolean isCursorMove(String value) {
+        return KeyboardCommands.CMD_MOVE_LEFT.equals(value)
+                || KeyboardCommands.CMD_MOVE_RIGHT.equals(value);
+    }
+
+    private boolean isDeleteKey(GestureKey key) {
+        return key != null && KeyboardCommands.CMD_DELETE.equals(key.tap);
+    }
+
+    private boolean shouldShowSlideHints() {
+        return settings.keyboardMode == KeyboardMode.ENGLISH
+                ? settings.showEnglishSlideHints
+                : settings.showHangulSlideHints;
+    }
+
+    private boolean shouldDrawSlideHintsForKey(GestureKey key, int icon) {
+        if (key == null) {
+            return false;
+        }
+        if (icon == KeyIcon.NONE) {
+            return true;
+        }
+        return hasVisibleSlideHint(key.upSlide)
+                || hasVisibleSlideHint(key.downSlide)
+                || hasVisibleSlideHint(key.leftSlide)
+                || hasVisibleSlideHint(key.rightSlide);
+    }
+
+    private boolean hasVisibleSlideHint(String value) {
+        if (value == null || value.isEmpty() || KeyboardCommands.CMD_NOOP.equals(value)) {
+            return false;
+        }
+        if (isReservedPhraseCommand(value)) {
+            return false;
+        }
+        return displayFor(value) != null;
+    }
+
+    private String displayFor(String value) {
+        if (isReservedPhraseCommand(value)) {
+            String phrase = KeyboardPreferences.loadReservedPhraseForCommand(getContext(), value);
+            return phrase == null || phrase.isEmpty() ? null : phrase;
+        }
+        return KeyboardCommands.labelFor(value);
+    }
+
+    private boolean isReservedPhraseCommand(String value) {
+        return KeyboardCommands.CMD_RESERVED_PHRASES.equals(value)
+                || KeyboardCommands.CMD_RESERVED_LEFT.equals(value)
+                || KeyboardCommands.CMD_RESERVED_RIGHT.equals(value)
+                || KeyboardCommands.CMD_RESERVED_UP.equals(value);
+    }
+
+    private String textPresentation(String label) {
+        return "♥".equals(label) ? "♥\uFE0E" : label;
+    }
+
+    private float textCenterOffset(Paint paint) {
+        Paint.FontMetrics metrics = paint.getFontMetrics();
+        return (metrics.ascent + metrics.descent) / 2f;
+    }
+
+    private float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private int dp(float value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private float getDensity() {
+        return getResources().getDisplayMetrics().density;
+    }
+
+    private float sp(float value) {
+        return value * getResources().getDisplayMetrics().scaledDensity;
+    }
+
+    private int renderDp(float value) {
+        return Math.round(value * getResources().getDisplayMetrics().density * renderScale());
+    }
+
+    private float renderSp(float value) {
+        return value * getResources().getDisplayMetrics().scaledDensity * renderScale();
+    }
+
+    private float renderScale() {
+        return compactPreviewRendering ? 0.62f : 1f;
+    }
+
+    private float keyIconSize() {
+        return KeyboardIconSizing.keyIconSizePx(getDensity()) * renderScale();
+    }
+
+    private float hintIconSize() {
+        return KeyboardIconSizing.hintIconSizePx(getDensity()) * renderScale();
+    }
+
+    private float overlayIconSize() {
+        return KeyboardIconSizing.overlayIconSizePx(getDensity()) * renderScale();
+    }
+
+    private int tooltipReservePx() {
+        if (!settings.showBeginnerTooltipPreview) {
+            return 0;
+        }
+        return renderDp(54);
+    }
+
+    public interface OnKeyGestureListener {
+        void onKeyGesture(String value);
+    }
+
+    interface OnPreviewKeySelectionListener {
+        void onPreviewKeySelected(GestureKey key);
+    }
+
+    private static final class TouchState {
+        final int pointerId;
+        final KeySlot keySlot;
+        final GestureState gestureState = new GestureState();
+        final float downX;
+        final float downY;
+        final long sequence;
+        GestureAction activeAction = GestureAction.TAP;
+        boolean longPressTriggered;
+        boolean tapOutputAlreadyEmitted;
+        Runnable longPressRunnable;
+
+        TouchState(int pointerId, KeySlot keySlot, float downX, float downY, long sequence) {
+            this.pointerId = pointerId;
+            this.keySlot = keySlot;
+            this.downX = downX;
+            this.downY = downY;
+            this.sequence = sequence;
+        }
+    }
+
+    private static final class PendingTouchOutput {
+        final long sequence;
+        final KeySlot keySlot;
+        final String value;
+        final float x;
+        final float y;
+
+        PendingTouchOutput(long sequence, KeySlot keySlot, String value, float x, float y) {
+            this.sequence = sequence;
+            this.keySlot = keySlot;
+            this.value = value;
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    private static final class KeySlot implements TouchResolver.Target {
+        final GestureKey key;
+        final RectF bounds;
+        final boolean primaryBottomControl;
+        final boolean compactSpecialColumn;
+        final float visualGap;
+
+        KeySlot(
+                GestureKey key,
+                RectF bounds,
+                boolean primaryBottomControl,
+                boolean compactSpecialColumn,
+                float visualGap) {
+            this.key = key;
+            this.bounds = bounds;
+            this.primaryBottomControl = primaryBottomControl;
+            this.compactSpecialColumn = compactSpecialColumn;
+            this.visualGap = Math.max(0f, visualGap);
+        }
+
+        RectF visualBounds() {
+            float insetX = Math.min(visualGap / 2f, bounds.width() * 0.18f);
+            float insetY = Math.min(visualGap / 2f, bounds.height() * 0.18f);
+            return new RectF(
+                    bounds.left + insetX,
+                    bounds.top + insetY,
+                    bounds.right - insetX,
+                    bounds.bottom - insetY);
+        }
+
+        @Override
+        public boolean contains(float x, float y) {
+            return bounds.contains(x, y);
+        }
+
+        @Override
+        public boolean expandedContains(float x, float y, float slop) {
+            return x >= bounds.left - slop
+                    && x <= bounds.right + slop
+                    && y >= bounds.top - slop
+                    && y <= bounds.bottom + slop;
+        }
+
+        @Override
+        public float distanceSquaredTo(float x, float y) {
+            float nearestX = Math.max(bounds.left, Math.min(bounds.right, x));
+            float nearestY = Math.max(bounds.top, Math.min(bounds.bottom, y));
+            float dx = x - nearestX;
+            float dy = y - nearestY;
+            return dx * dx + dy * dy;
+        }
+
+        @Override
+        public boolean isPrimaryBottomControl() {
+            return primaryBottomControl;
+        }
+    }
+
+    private static final class TouchSample {
+        final float offsetXDp;
+        final float offsetYDp;
+        final long timeMs;
+
+        TouchSample(float offsetXDp, float offsetYDp, long timeMs) {
+            this.offsetXDp = offsetXDp;
+            this.offsetYDp = offsetYDp;
+            this.timeMs = timeMs;
+        }
+    }
+}

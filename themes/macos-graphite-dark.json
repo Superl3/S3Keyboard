@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "macOS Graphite Dark",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#30343A",
+    "functionKey": "#3B414A",
+    "primaryFunctionKey": "#252B32",
+    "accentKey": "#252B32",
+    "keyPressed": "#596271",
+    "keyboardBackground": "#20242A",
+    "border": "#15191F",
+    "depth": "#15191F",
+    "accent": "#F4F7FA",
+    "secondary": "#AEB7C4"
+  },
+  "shape": {
+    "roundnessDp": 6,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": true,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

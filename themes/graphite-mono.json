@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "Graphite Mono",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#F5F5F5",
+    "functionKey": "#E8E8E8",
+    "primaryFunctionKey": "#DDDDDD",
+    "accentKey": "#DDDDDD",
+    "keyPressed": "#CFCFCF",
+    "keyboardBackground": "#EDEDED",
+    "border": "#B8B8B8",
+    "depth": "#B8B8B8",
+    "accent": "#161616",
+    "secondary": "#686868"
+  },
+  "shape": {
+    "roundnessDp": 4,
+    "keyGapDp": 6,
+    "depthEnabled": true,
+    "depthDp": 1,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "d2coding",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": false,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

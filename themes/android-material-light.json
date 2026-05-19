@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "Android Material Light",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#FFFBFE",
+    "functionKey": "#ECE6F0",
+    "primaryFunctionKey": "#E1DCE8",
+    "accentKey": "#E1DCE8",
+    "keyPressed": "#D0C4DB",
+    "keyboardBackground": "#F3EDF7",
+    "border": "#CAC4D0",
+    "depth": null,
+    "accent": "#1D1B20",
+    "secondary": "#625B71"
+  },
+  "shape": {
+    "roundnessDp": 12,
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": true,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

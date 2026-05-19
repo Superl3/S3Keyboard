@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "Nord Snow",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#F8FAFC",
+    "functionKey": "#EEF2F7",
+    "primaryFunctionKey": "#E4EAF2",
+    "accentKey": "#E4EAF2",
+    "keyPressed": "#D8DEE9",
+    "keyboardBackground": "#E5E9F0",
+    "border": "#B8C2CC",
+    "depth": "#B8C2CC",
+    "accent": "#2E3440",
+    "secondary": "#667085"
+  },
+  "shape": {
+    "roundnessDp": 7,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": true,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}

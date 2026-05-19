@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "High Contrast Light",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#FFFFFF",
+    "functionKey": "#EFEFEF",
+    "primaryFunctionKey": "#E0E0E0",
+    "accentKey": "#E0E0E0",
+    "keyPressed": "#C8D7EA",
+    "keyboardBackground": "#F3F4F6",
+    "border": "#111111",
+    "depth": null,
+    "accent": "#000000",
+    "secondary": "#424242"
+  },
+  "shape": {
+    "roundnessDp": 5,
+    "keyGapDp": 6,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "hints": {
+    "showHangulSlideHints": true,
+    "showEnglishSlideHints": false,
+    "showBeginnerTooltipPreview": true
+  }
+}
