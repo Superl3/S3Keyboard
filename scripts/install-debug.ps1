@@ -1,5 +1,6 @@
 param(
-    [string] $Serial = ""
+    [string] $Serial = "",
+    [switch] $SkipImeSelect
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,4 +20,18 @@ if (-not [string]::IsNullOrWhiteSpace($Serial)) {
 }
 $adbArgs += @("install", "-r", $Apk)
 
-& (Join-Path $env:ANDROID_SDK_ROOT "platform-tools\adb.exe") @adbArgs
+$Adb = Join-Path $env:ANDROID_SDK_ROOT "platform-tools\adb.exe"
+& $Adb @adbArgs
+
+if (-not $SkipImeSelect) {
+    $targetIme = "com.superl3.s3keyboard/.S3KeyboardService"
+    $shellArgs = @()
+    if (-not [string]::IsNullOrWhiteSpace($Serial)) {
+        $shellArgs += @("-s", $Serial)
+    }
+
+    & $Adb @shellArgs "shell" "am" "force-stop" "com.superl3.s3keyboard"
+    & $Adb @shellArgs "shell" "ime" "enable" $targetIme
+    & $Adb @shellArgs "shell" "ime" "set" $targetIme
+    & $Adb @shellArgs "shell" "monkey" "-p" "com.superl3.s3keyboard" "1"
+}
