@@ -33,6 +33,7 @@ public final class KeyboardSettingsTest {
         assertEquals(KeyboardSettings.DEFAULT_PRIMARY_TEXT_ITALIC, settings.primaryTextItalic);
         assertEquals(KeyboardSettings.DEFAULT_SECONDARY_TEXT_BOLD, settings.secondaryTextBold);
         assertEquals(KeyboardSettings.DEFAULT_SECONDARY_TEXT_ITALIC, settings.secondaryTextItalic);
+        assertEquals(KeyboardSettings.DEFAULT_FOLLOW_THEME_TYPOGRAPHY, settings.followThemeTypography);
         assertEquals(KeyboardSettings.DEFAULT_SHOW_HANGUL_SLIDE_HINTS, settings.showHangulSlideHints);
         assertEquals(KeyboardSettings.DEFAULT_SHOW_ENGLISH_SLIDE_HINTS, settings.showEnglishSlideHints);
         assertEquals(LegendStylePreset.DEFAULT, settings.legendStylePreset);

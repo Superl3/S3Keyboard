@@ -595,7 +595,8 @@ function Draw-KeyboardBackground {
         [float] $W,
         [float] $H
     )
-    $brush = [System.Drawing.SolidBrush]::new((Convert-ThemeColor $Theme.colors.keyboardBackground "#EBEBEB"))
+    $panelColor = if ($null -ne $Theme.colors.panelBackground) { $Theme.colors.panelBackground } else { $Theme.colors.keyboardBackground }
+    $brush = [System.Drawing.SolidBrush]::new((Convert-ThemeColor $panelColor "#EBEBEB"))
     $pen = [System.Drawing.Pen]::new((Convert-ThemeColor $Theme.colors.border "#696969"), 1)
     try {
         Draw-RoundRect -Graphics $Graphics -Brush $brush -Pen $pen -X $X -Y $Y -W $W -H $H -Radius 18

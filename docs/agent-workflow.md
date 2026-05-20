@@ -55,6 +55,12 @@ Theme changes usually need all of these:
 5. Mirror static preview behavior in `scripts/render-theme-previews.ps1`.
 6. Add or update tests in `KeyboardThemePresetTest`, `KeyboardThemeJsonTest`, `ThemePreviewSettingsTest`, and focused renderer/classifier tests.
 
+When preview and runtime disagree, treat the current preview as the design target unless the user explicitly says the device rendering is better. Make runtime Canvas rendering, static preview, web builder, and exported theme JSON converge on the same colors and packs.
+
+Typography is a user-level preference by default. Theme selection preserves the user's font family, size, bold, and italic settings unless `followThemeTypography` is enabled. This keeps Noto Sans KR from becoming too thin after applying a theme while still allowing theme-authored typography when explicitly desired.
+
+`colors.panelBackground` is the actual keyboard panel background. If both `keyboardBackground` and `panelBackground` are present in theme JSON, `panelBackground` wins at runtime and in previews.
+
 Do not reintroduce global `LegendStylePreset.DOTS` as a forced renderer. Dot themes are represented as `keyDisplayOverrides`, usually `alpha: { "type": "icon", "value": "dot" }`, with exact `keys` entries when needed.
 
 Override priority is:
@@ -64,6 +70,8 @@ exact key > alpha/modifiers group > default label/icon
 ```
 
 `alpha` includes English letters, Hangul jamo/syllables, Dingul action keys `ㅣ.`, `ㅡㅐ`, the `..`/`. .` key, and punctuation `?`, `.`, `/`. Those keys should receive alpha group display and color overrides.
+
+Dingul alpha foreground should be one coherent alpha color in normal/non-point themes. Only explicitly colorful skins, such as dots or Metropolis point-key styling, should let punctuation/special alpha keys borrow modifier-like foreground colors.
 
 ## Modifier Icon Packs
 

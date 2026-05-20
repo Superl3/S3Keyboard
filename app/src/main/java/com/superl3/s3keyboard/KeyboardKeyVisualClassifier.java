@@ -177,7 +177,7 @@ final class KeyboardKeyVisualClassifier {
                 return color;
             }
         }
-        if (settings.pointKeycapStyleEnabled) {
+        if (usesPunctuationPointOverrides(settings)) {
             if (isDingulEnterLikePunctuationKey(settings, key)) {
                 color = findOverride(settings, "enter");
                 if (color != null) {
@@ -204,6 +204,12 @@ final class KeyboardKeyVisualClassifier {
             }
         }
         return null;
+    }
+
+    private static boolean usesPunctuationPointOverrides(KeyboardSettings settings) {
+        return settings != null
+                && settings.pointKeycapStyleEnabled
+                && ModifierIconCatalog.PACK_METROPOLIS_POINTS.equals(ModifierIconCatalog.effectivePackId(settings));
     }
 
     private static Integer backgroundOverrideColorFor(KeyboardSettings settings, GestureKey key) {
@@ -286,7 +292,7 @@ final class KeyboardKeyVisualClassifier {
                 return color;
             }
         }
-        if (settings.pointKeycapStyleEnabled) {
+        if (usesPunctuationPointOverrides(settings)) {
             if (isDingulEnterLikePunctuationKey(settings, key)) {
                 color = findBackgroundOverride(settings, "enter");
                 if (color != null) {

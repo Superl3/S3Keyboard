@@ -138,9 +138,9 @@ final class KeyboardThemeJson {
             KeyboardSettings themed = layeredBase.withExtendedThemeColors(
                     color(colors, "keyIdle", layeredBase.keyIdleColor),
                     color(colors, "keyPressed", layeredBase.keyPressedColor),
-                    color(colors, "keyboardBackground", color(
+                    color(colors, "panelBackground", color(
                             colors,
-                            "panelBackground",
+                            "keyboardBackground",
                             layeredBase.keyboardBackgroundColor)),
                     color(colors, "accent", layeredBase.accentColor),
                     color(colors, "secondary", layeredBase.secondaryColor),

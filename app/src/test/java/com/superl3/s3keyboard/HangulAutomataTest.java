@@ -49,13 +49,14 @@ public final class HangulAutomataTest {
     }
 
     @Test
-    public void dingulRepeatedVowelDirectionsPromoteSimpleVowels() {
-        assertEquals("갸", type("ㄱㅏㅏ"));
-        assertEquals("겨", type("ㄱㅓㅓ"));
-        assertEquals("교", type("ㄱㅗㅗ"));
-        assertEquals("규", type("ㄱㅜㅜ"));
-        assertEquals("계", type("ㄱㅔㅔ"));
-        assertEquals("걔", type("ㄱㅐㅐ"));
+    public void repeatedSimpleVowelsStayAsRepeatedInput() {
+        assertEquals("가아", type("ㄱㅏㅏ"));
+        assertEquals("거어", type("ㄱㅓㅓ"));
+        assertEquals("고오", type("ㄱㅗㅗ"));
+        assertEquals("구우", type("ㄱㅜㅜ"));
+        assertEquals("게에", type("ㄱㅔㅔ"));
+        assertEquals("개애", type("ㄱㅐㅐ"));
+        assertEquals("ㅜㅜ", type("ㅜㅜ"));
     }
 
     @Test
@@ -73,6 +74,11 @@ public final class HangulAutomataTest {
     @Test
     public void commitsImpossibleInitialClusterAsNewInput() {
         assertEquals("ㄱ나", type("ㄱㄴㅏ"));
+    }
+
+    @Test
+    public void repeatedNieunStaysTwoStandaloneConsonants() {
+        assertEquals("\u3134\u3134", type("\u3134\u3134"));
     }
 
     private String type(String input) {

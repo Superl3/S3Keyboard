@@ -64,12 +64,6 @@ final class HangulAutomata {
         putCompoundVowel('ㅜ', 'ㅔ', 'ㅞ');
         putCompoundVowel('ㅜ', 'ㅣ', 'ㅟ');
         putCompoundVowel('ㅡ', 'ㅣ', 'ㅢ');
-        putCompoundVowel('ㅓ', 'ㅓ', 'ㅕ');
-        putCompoundVowel('ㅏ', 'ㅏ', 'ㅑ');
-        putCompoundVowel('ㅗ', 'ㅗ', 'ㅛ');
-        putCompoundVowel('ㅜ', 'ㅜ', 'ㅠ');
-        putCompoundVowel('ㅔ', 'ㅔ', 'ㅖ');
-        putCompoundVowel('ㅐ', 'ㅐ', 'ㅒ');
 
         putCompoundFinal('ㄱ', 'ㄱ', 'ㄲ');
         putCompoundFinal('ㄱ', 'ㅅ', 'ㄳ');
@@ -258,7 +252,7 @@ final class HangulAutomata {
 
             committed.append(getComposingText());
             vowel = nextVowel;
-            return "";
+            return committed.toString();
         }
 
         if (vowel < 0) {

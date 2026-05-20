@@ -56,6 +56,7 @@ final class KeyboardPreferences {
     static final String PRIMARY_TEXT_ITALIC = "primary_text_italic";
     static final String SECONDARY_TEXT_BOLD = "secondary_text_bold";
     static final String SECONDARY_TEXT_ITALIC = "secondary_text_italic";
+    static final String FOLLOW_THEME_TYPOGRAPHY = "follow_theme_typography";
     static final String SHOW_HANGUL_SLIDE_HINTS = "show_hangul_slide_hints";
     static final String SHOW_ENGLISH_SLIDE_HINTS = "show_english_slide_hints";
     static final String SHOW_HANGUL_CONSONANT_SLIDE_HINTS = "show_hangul_consonant_slide_hints";
@@ -257,6 +258,9 @@ final class KeyboardPreferences {
                         prefs.getBoolean(PRIMARY_TEXT_ITALIC, defaults.primaryTextItalic),
                         prefs.getBoolean(SECONDARY_TEXT_BOLD, defaults.secondaryTextBold),
                         prefs.getBoolean(SECONDARY_TEXT_ITALIC, defaults.secondaryTextItalic))
+                .withFollowThemeTypography(prefs.getBoolean(
+                        FOLLOW_THEME_TYPOGRAPHY,
+                        defaults.followThemeTypography))
                 .withKeyColorOverrides(
                         KeyboardThemeJson.decodeKeyColorOverrides(prefs.getString(KEY_COLOR_OVERRIDES, "")))
                 .withLegendStyle(LegendStylePreset.fromPreference(prefs.getString(
@@ -336,6 +340,7 @@ final class KeyboardPreferences {
                 .putBoolean(PRIMARY_TEXT_ITALIC, settings.primaryTextItalic)
                 .putBoolean(SECONDARY_TEXT_BOLD, settings.secondaryTextBold)
                 .putBoolean(SECONDARY_TEXT_ITALIC, settings.secondaryTextItalic)
+                .putBoolean(FOLLOW_THEME_TYPOGRAPHY, settings.followThemeTypography)
                 .putBoolean(SHOW_HANGUL_SLIDE_HINTS, settings.showHangulSlideHints)
                 .putBoolean(SHOW_ENGLISH_SLIDE_HINTS, settings.showEnglishSlideHints)
                 .putBoolean(SHOW_BEGINNER_TOOLTIP_PREVIEW, settings.showBeginnerTooltipPreview)

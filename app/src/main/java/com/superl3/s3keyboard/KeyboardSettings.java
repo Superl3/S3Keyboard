@@ -63,6 +63,7 @@ final class KeyboardSettings {
     static final boolean DEFAULT_PRIMARY_TEXT_ITALIC = false;
     static final boolean DEFAULT_SECONDARY_TEXT_BOLD = false;
     static final boolean DEFAULT_SECONDARY_TEXT_ITALIC = false;
+    static final boolean DEFAULT_FOLLOW_THEME_TYPOGRAPHY = false;
     static final int MIN_TEXT_SIZE_PERCENT = 70;
     static final int MAX_TEXT_SIZE_PERCENT = 150;
     static final boolean DEFAULT_SHOW_HANGUL_SLIDE_HINTS = true;
@@ -131,6 +132,7 @@ final class KeyboardSettings {
     final boolean primaryTextItalic;
     final boolean secondaryTextBold;
     final boolean secondaryTextItalic;
+    final boolean followThemeTypography;
     final boolean showHangulSlideHints;
     final boolean showEnglishSlideHints;
     final boolean showBeginnerTooltipPreview;
@@ -545,7 +547,8 @@ final class KeyboardSettings {
                 DEFAULT_KEY_DISPLAY_PACK_ID,
                 "",
                 Collections.emptyMap(),
-                KeyboardVisualEffects.DEFAULT);
+                KeyboardVisualEffects.DEFAULT,
+                DEFAULT_FOLLOW_THEME_TYPOGRAPHY);
     }
 
     private KeyboardSettings(
@@ -610,7 +613,8 @@ final class KeyboardSettings {
             String keyDisplayThemePackId,
             String keyDisplayOverridePackId,
             Map<String, KeyDisplayOverride> keyDisplayOverrides,
-            KeyboardVisualEffects visualEffects) {
+            KeyboardVisualEffects visualEffects,
+            boolean followThemeTypography) {
         this.keyboardMode = keyboardMode == null ? KeyboardMode.HANGUL : keyboardMode;
         this.handednessMode = handednessMode == null ? HandednessMode.BALANCED : handednessMode;
         this.leftMarginDp = clamp(leftMarginDp, 0, MAX_MARGIN_DP);
@@ -678,6 +682,7 @@ final class KeyboardSettings {
         this.primaryTextItalic = primaryTextItalic;
         this.secondaryTextBold = secondaryTextBold;
         this.secondaryTextItalic = secondaryTextItalic;
+        this.followThemeTypography = followThemeTypography;
         this.showHangulSlideHints = showHangulSlideHints;
         this.showEnglishSlideHints = showEnglishSlideHints;
         this.showBeginnerTooltipPreview = showBeginnerTooltipPreview;
@@ -857,7 +862,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withKeyboardMode(KeyboardMode mode) {
@@ -1037,7 +1043,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withHeight(int keyboardHeightDp) {
@@ -1115,7 +1122,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withActiveHeight(int keyboardHeightDp) {
@@ -1326,7 +1334,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withRuntimeNumberRowForced(boolean forceNumberRow) {
@@ -1659,7 +1668,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withKeyRoundness(int keyRoundnessDp) {
@@ -1812,7 +1822,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withDepthColor(boolean customDepthColorEnabled, int depthColor) {
@@ -1911,7 +1922,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withHintVisibility(
@@ -1980,7 +1992,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withKeyColorOverrides(Map<String, Integer> keyColorOverrides) {
@@ -2046,7 +2059,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withLegendStyle(LegendStylePreset legendStylePreset) {
@@ -2112,7 +2126,75 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
+    }
+
+    KeyboardSettings withFollowThemeTypography(boolean followThemeTypography) {
+        return new KeyboardSettings(
+                keyboardMode,
+                handednessMode,
+                leftMarginDp,
+                rightMarginDp,
+                hangulKeyboardHeightDp,
+                englishKeyboardHeightDp,
+                showHangulNumberRow,
+                showEnglishNumberRow,
+                forceNumberRow,
+                hapticFeedbackEnabled,
+                hitSlopDp,
+                gestureThresholdDp,
+                touchYOffsetDp,
+                repeatStartDelayMs,
+                repeatIntervalMs,
+                englishDoubleSpacePeriodEnabled,
+                enterKeyLabel,
+                keyIdleColor,
+                keyPressedColor,
+                keyboardBackgroundColor,
+                accentColor,
+                secondaryColor,
+                functionKeyColor,
+                primaryFunctionKeyColor,
+                accentKeyColor,
+                borderColor,
+                keyBorderWidthDp,
+                keyRoundnessDp,
+                keyGapDp,
+                keyDepthEnabled,
+                keyDepthDp,
+                customDepthColorEnabled,
+                depthColor,
+                fontFamily,
+                primaryTextSizePercent,
+                secondaryTextSizePercent,
+                primaryTextBold,
+                primaryTextItalic,
+                secondaryTextBold,
+                secondaryTextItalic,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                showBeginnerTooltipPreview,
+                hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
+                keyColorOverrides,
+                hangulLeftPaddingDp,
+                hangulRightPaddingDp,
+                englishLeftPaddingDp,
+                englishRightPaddingDp,
+                hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
+                keyboardBottomPaddingDp,
+                bottomRowTopPaddingDp,
+                legendStylePreset,
+                pointKeycapStyleEnabled,
+                modifierIconThemePackId,
+                modifierIconOverridePackId,
+                keyDisplayThemePackId,
+                keyDisplayOverridePackId,
+                keyDisplayOverrides,
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withPointKeycapStyle(boolean enabled) {
@@ -2178,7 +2260,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withModifierIconThemePack(String packId) {
@@ -2252,7 +2335,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withKeyDisplayThemePack(String packId) {
@@ -2326,7 +2410,8 @@ final class KeyboardSettings {
                 themePackId,
                 overridePackId,
                 keyDisplayOverrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withKeyDisplayOverrides(Map<String, KeyDisplayOverride> overrides) {
@@ -2392,7 +2477,8 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 overrides,
-                visualEffects);
+                visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withVisualEffects(KeyboardVisualEffects effects) {
@@ -2458,11 +2544,13 @@ final class KeyboardSettings {
                 keyDisplayThemePackId,
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
-                effects);
+                effects,
+                followThemeTypography);
     }
 
     KeyboardSettings withAppearanceFrom(KeyboardSettings appearance) {
         KeyboardSettings theme = appearance == null ? defaults() : appearance;
+        KeyboardSettings typography = followThemeTypography ? theme : this;
         return new KeyboardSettings(
                 keyboardMode,
                 handednessMode,
@@ -2497,13 +2585,13 @@ final class KeyboardSettings {
                 theme.keyDepthDp,
                 theme.customDepthColorEnabled,
                 theme.depthColor,
-                theme.fontFamily,
-                theme.primaryTextSizePercent,
-                theme.secondaryTextSizePercent,
-                theme.primaryTextBold,
-                theme.primaryTextItalic,
-                theme.secondaryTextBold,
-                theme.secondaryTextItalic,
+                typography.fontFamily,
+                typography.primaryTextSizePercent,
+                typography.secondaryTextSizePercent,
+                typography.primaryTextBold,
+                typography.primaryTextItalic,
+                typography.secondaryTextBold,
+                typography.secondaryTextItalic,
                 showHangulSlideHints,
                 showEnglishSlideHints,
                 showBeginnerTooltipPreview,
@@ -2525,7 +2613,8 @@ final class KeyboardSettings {
                 theme.keyDisplayThemePackId,
                 theme.keyDisplayOverridePackId,
                 theme.keyDisplayOverrides,
-                theme.visualEffects);
+                theme.visualEffects,
+                followThemeTypography);
     }
 
     KeyboardSettings withHangulSpecialColumnPercent(int hangulSpecialColumnPercent) {
@@ -2664,6 +2753,7 @@ final class KeyboardSettings {
         return 0xFF000000 | (color & 0x00FFFFFF);
     }
 }
+
 
 
 

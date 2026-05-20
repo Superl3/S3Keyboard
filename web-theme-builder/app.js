@@ -5,6 +5,7 @@ const colorFields = [
   ["accentKey", "\uC804\uCCB4 - \uAC15\uC870 \uD0A4", "\uB529\uAD74 \uAC15\uC870 \uD2B9\uC218 \uD0A4\uB97C \uD3EC\uD568\uD55C \uAC15\uC870 \uADF8\uB8F9 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."],
   ["keyPressed", "\uB20C\uB9BC", "\uD0A4\uB97C \uB204\uB974\uB294 \uB3D9\uC548 \uD45C\uC2DC\uB418\uB294 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."],
   ["keyboardBackground", "\uD0A4\uBCF4\uB4DC \uBC30\uACBD", "\uD0A4 \uC0AC\uC774\uC640 \uD0A4 \uB4A4\uCABD \uC601\uC5ED\uC758 \uC0C9\uC0C1\uC785\uB2C8\uB2E4."],
+  ["panelBackground", "Panel background", "Actual keyboard panel color. This overrides keyboardBackground when exported."],
   ["border", "\uD14C\uB450\uB9AC", "\uD0A4 \uC678\uACFD\uC120 \uC0C9\uC0C1\uC785\uB2C8\uB2E4. \uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1\uC744 \uB530\uB85C \uC9C0\uC815\uD558\uC9C0 \uC54A\uC73C\uBA74 \uC774 \uC0C9\uC0C1\uC744 \uC4F0\uB2C8\uB2E4."],
   ["depth", "\uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1", "\uD0A4 \uC544\uB798\uCABD \uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1\uC785\uB2C8\uB2E4."],
   ["accent", "\uC8FC \uAE00\uC790", "\uC911\uC559 \uAE00\uC790, \uC544\uC774\uCF58, \uBBF8\uB9AC\uBCF4\uAE30 \uD14D\uC2A4\uD2B8 \uC0C9\uC0C1\uC785\uB2C8\uB2E4."],
@@ -378,7 +379,8 @@ function bindStaticControls() {
 function renderForm() {
   ids.name.value = state.name || "Untitled Theme";
   colorFields.forEach(([key]) => {
-    const value = state.colors[key] || "#000000";
+    const value = state.colors[key]
+      || (key === "panelBackground" ? state.colors.keyboardBackground : "#000000");
     document.getElementById(`color-${key}`).value = value === null ? "#000000" : value;
     document.getElementById(`text-${key}`).value = value === null ? "" : value;
   });

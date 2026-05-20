@@ -107,6 +107,7 @@ public final class MainActivity extends Activity {
     private CheckBox doubleSpacePeriodCheckBox;
     private CheckBox keyDepthCheckBox;
     private CheckBox customDepthColorCheckBox;
+    private CheckBox followThemeTypographyCheckBox;
     private CheckBox primaryTextBoldCheckBox;
     private CheckBox primaryTextItalicCheckBox;
     private CheckBox secondaryTextBoldCheckBox;
@@ -822,6 +823,17 @@ public final class MainActivity extends Activity {
         root.addView(label("키보드 폰트"), matchWrapWithTop(12));
         root.addView(fontFamilySpinner, matchWrap());
 
+        followThemeTypographyCheckBox = new CheckBox(this);
+        followThemeTypographyCheckBox.setText("테마 글꼴/굵기/크기 따르기");
+        followThemeTypographyCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                settings = settings.withFollowThemeTypography(isChecked);
+                saveAndSync();
+            }
+        });
+        root.addView(followThemeTypographyCheckBox, matchWrapWithTop(8));
+
         primaryTextSizeValue = label("");
         primaryTextSizeSeekBar = seekBar(
                 KeyboardSettings.MAX_TEXT_SIZE_PERCENT - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
@@ -1303,6 +1315,7 @@ public final class MainActivity extends Activity {
 
         syncing = true;
         styleCheckBox(customDepthColorCheckBox);
+        styleCheckBox(followThemeTypographyCheckBox);
         styleCheckBox(primaryTextBoldCheckBox);
         styleCheckBox(primaryTextItalicCheckBox);
         styleCheckBox(secondaryTextBoldCheckBox);
@@ -1367,6 +1380,7 @@ public final class MainActivity extends Activity {
         borderColorSpinner.setSelection(indexOfColor(settings.borderColor));
         depthColorSpinner.setSelection(indexOfColor(settings.depthColor));
         fontFamilySpinner.setSelection(indexOfFont(settings.fontFamily));
+        followThemeTypographyCheckBox.setChecked(settings.followThemeTypography);
         modifierIconPackSpinner.setSelection(indexOfModifierIconPack(settings.modifierIconOverridePackId, true));
         keyDisplayPackSpinner.setSelection(indexOfKeyDisplayPack(settings.keyDisplayOverridePackId, true));
         additionalNumberRowColorModeSpinner.setSelection(settings.additionalNumberRowColorMode.ordinal());
@@ -1378,6 +1392,14 @@ public final class MainActivity extends Activity {
         primaryTextItalicCheckBox.setChecked(settings.primaryTextItalic);
         secondaryTextBoldCheckBox.setChecked(settings.secondaryTextBold);
         secondaryTextItalicCheckBox.setChecked(settings.secondaryTextItalic);
+        boolean typographyControlsEnabled = !settings.followThemeTypography;
+        fontFamilySpinner.setEnabled(typographyControlsEnabled);
+        primaryTextSizeSeekBar.setEnabled(typographyControlsEnabled);
+        secondaryTextSizeSeekBar.setEnabled(typographyControlsEnabled);
+        primaryTextBoldCheckBox.setEnabled(typographyControlsEnabled);
+        primaryTextItalicCheckBox.setEnabled(typographyControlsEnabled);
+        secondaryTextBoldCheckBox.setEnabled(typographyControlsEnabled);
+        secondaryTextItalicCheckBox.setEnabled(typographyControlsEnabled);
         pointKeycapStyleCheckBox.setChecked(settings.pointKeycapStyleEnabled);
         hangulNumberRowCheckBox.setChecked(settings.showHangulNumberRow);
         englishNumberRowCheckBox.setChecked(settings.showEnglishNumberRow);

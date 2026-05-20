@@ -93,6 +93,21 @@ public final class KeyboardThemeJsonTest {
     }
 
     @Test
+    public void panelBackgroundOverridesKeyboardBackgroundForRuntimePanel() {
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(
+                KeyboardSettings.defaults(),
+                "{"
+                        + "\"schemaVersion\":1,"
+                        + "\"colors\":{"
+                        + "\"keyboardBackground\":\"#111111\","
+                        + "\"panelBackground\":\"#222222\""
+                        + "}"
+                        + "}");
+
+        assertEquals(0xFF222222, imported.keyboardBackgroundColor);
+    }
+
+    @Test
     public void depthNullDisablesCustomDepthColorAndKeepsBorderColor() {
         String json = "{"
                 + "\"schemaVersion\":1,"

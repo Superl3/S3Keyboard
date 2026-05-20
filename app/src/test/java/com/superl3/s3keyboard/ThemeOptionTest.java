@@ -37,6 +37,14 @@ public final class ThemeOptionTest {
         ThemeOption clean = option("ios-clean-light");
         KeyboardSettings contaminated = metropolis.applyTo(KeyboardSettings.defaults())
                 .withHeights(333, 222)
+                .withTypography(
+                        KeyboardSettings.FONT_D2CODING,
+                        116,
+                        91,
+                        true,
+                        false,
+                        true,
+                        false)
                 .withModifierIconOverridePack(ModifierIconCatalog.PACK_DOTS_LINES)
                 .withKeyDisplayOverridePack(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT);
 
@@ -51,6 +59,31 @@ public final class ThemeOptionTest {
         assertEquals(KeyDisplayOverridePackCatalog.PACK_NONE, next.keyDisplayThemePackId);
         assertEquals(KeyDisplayOverridePackCatalog.PACK_THEME_DEFAULT, next.keyDisplayOverridePackId);
         assertFalse(next.visualEffects.blurEnabled);
+        assertEquals(KeyboardSettings.FONT_D2CODING, next.fontFamily);
+        assertEquals(116, next.primaryTextSizePercent);
+        assertEquals(true, next.primaryTextBold);
+    }
+
+    @Test
+    public void themeSelectionCanFollowThemeTypographyWhenEnabled() {
+        ThemeOption metropolis = option("gmk-metropolis");
+        KeyboardSettings custom = KeyboardSettings.defaults()
+                .withTypography(
+                        KeyboardSettings.FONT_NOTO_SANS_KR,
+                        120,
+                        110,
+                        true,
+                        false,
+                        true,
+                        false)
+                .withFollowThemeTypography(true);
+
+        KeyboardSettings themed = metropolis.applyTo(custom);
+
+        assertEquals(KeyboardSettings.FONT_D2CODING, themed.fontFamily);
+        assertEquals(78, themed.primaryTextSizePercent);
+        assertEquals(false, themed.primaryTextBold);
+        assertEquals(true, themed.followThemeTypography);
     }
 
     @Test

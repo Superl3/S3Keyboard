@@ -325,6 +325,21 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
+    public void dingulPunctuationUsesAlphaForegroundUnlessThemeUsesPointIcons() {
+        Map<String, Integer> overrides = new HashMap<>();
+        overrides.put("alpha", 0x00010203);
+        overrides.put("enter", 0x00040506);
+        KeyboardSettings settings = KeyboardSettings.defaults().withKeyColorOverrides(overrides);
+        GestureKey question = new GestureKey("?", "?", "!", "*", "+", KeyboardCommands.CMD_NOOP, null);
+
+        assertEquals(0xFF010203, KeyboardKeyVisualClassifier.textColorFor(settings, question));
+
+        assertEquals(0xFF010203, KeyboardKeyVisualClassifier.textColorFor(
+                settings.withModifierIconThemePack(ModifierIconCatalog.PACK_DOTS_LINES),
+                question));
+    }
+
+    @Test
     public void keyDisplayPackCanReplaceCommandIconsWithText() {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withKeyDisplayThemePack(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT);
