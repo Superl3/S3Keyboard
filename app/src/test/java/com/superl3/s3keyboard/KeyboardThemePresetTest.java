@@ -90,8 +90,8 @@ public final class KeyboardThemePresetTest {
         assertEquals(0xFFFFFFFF, light.keyboardBackgroundColor);
         assertEquals(KeyboardSettings.FONT_NOTO_SANS_KR, dark.fontFamily);
         assertEquals(KeyboardSettings.FONT_NOTO_SANS_KR, light.fontFamily);
-        assertEquals(true, dark.keyColorOverrides.containsKey(".."));
-        assertEquals(true, light.keyColorOverrides.containsKey(".."));
+        assertEquals(false, dark.keyColorOverrides.containsKey(".."));
+        assertEquals(false, light.keyColorOverrides.containsKey(".."));
     }
 
     @Test
@@ -101,8 +101,12 @@ public final class KeyboardThemePresetTest {
         KeyboardSettings light = KeyboardThemePreset.find("gmk-dots-light")
                 .applyTo(KeyboardSettings.defaults());
 
-        assertEquals(LegendStylePreset.DOTS, dark.legendStylePreset);
-        assertEquals(LegendStylePreset.DOTS, light.legendStylePreset);
+        assertEquals(LegendStylePreset.DEFAULT, dark.legendStylePreset);
+        assertEquals(LegendStylePreset.DEFAULT, light.legendStylePreset);
+        assertEquals(ModifierIconCatalog.PACK_DOTS_LINES, dark.modifierIconThemePackId);
+        assertEquals(ModifierIconCatalog.PACK_DOTS_LINES, light.modifierIconThemePackId);
+        assertEquals(ModifierIconCatalog.GLYPH_DOT, dark.keyDisplayOverrides.get("alpha").value);
+        assertEquals(ModifierIconCatalog.GLYPH_DOT, light.keyDisplayOverrides.get("alpha").value);
         assertNotEquals(
                 dark.accentColor,
                 KeyboardKeyVisualClassifier.textColorFor(
@@ -111,8 +115,8 @@ public final class KeyboardThemePresetTest {
         assertNotEquals(
                 light.accentColor,
                 KeyboardKeyVisualClassifier.textColorFor(
-                        light.withKeyboardMode(KeyboardMode.HANGUL),
-                        new GestureKey(
+                light.withKeyboardMode(KeyboardMode.HANGUL),
+                new GestureKey(
                                 "ㅡㅐ",
                                 KeyboardCommands.CMD_DINGUL_WIDE_VOWEL,
                                 "ㅙ",
@@ -120,6 +124,25 @@ public final class KeyboardThemePresetTest {
                                 "ㅔ",
                                 "ㅐ",
                                 null)));
+    }
+
+    @Test
+    public void sampleInspiredThemesSelectMatchingPacksAndMetropolisColors() {
+        KeyboardSettings olivia = KeyboardThemePreset.find("gmk-olivia-light")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings metropolis = KeyboardThemePreset.find("gmk-metropolis")
+                .applyTo(KeyboardSettings.defaults());
+
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT, olivia.keyDisplayThemePackId);
+        assertEquals(ModifierIconCatalog.PACK_METROPOLIS_POINTS, metropolis.modifierIconThemePackId);
+        assertEquals(0xFFE9E2D4, metropolis.keyboardBackgroundColor);
+        assertEquals(0xFF172633, (int) metropolis.keyColorOverrides.get("background:alpha"));
+        assertEquals(0xFFFFB000, (int) metropolis.keyColorOverrides.get("background:backspace"));
+        assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("background:shift"));
+        assertEquals(0xFF66E3C4, (int) metropolis.keyColorOverrides.get("background:enter"));
+        assertEquals(true, metropolis.visualEffects.blurEnabled);
+        assertEquals(true, metropolis.visualEffects.metallicEnabled);
+        assertEquals(true, metropolis.visualEffects.angularPreviewBubble);
     }
 
     @Test
@@ -134,24 +157,10 @@ public final class KeyboardThemePresetTest {
 
     @Test
     public void reportedGmkThemesKeepDingulSpecialLegendsReadable() {
-        KeyboardSettings bento = KeyboardThemePreset.find("gmk-bento")
-                .applyTo(KeyboardSettings.defaults());
-        KeyboardSettings hammerhead = KeyboardThemePreset.find("gmk-hammerhead")
-                .applyTo(KeyboardSettings.defaults());
-        KeyboardSettings gmk8008 = KeyboardThemePreset.find("gmk-8008")
-                .applyTo(KeyboardSettings.defaults());
-        KeyboardSettings modernDolch = KeyboardThemePreset.find("gmk-modern-dolch")
-                .applyTo(KeyboardSettings.defaults());
-
-        assertTrue(bento.keyColorOverrides.containsKey("."));
-        assertTrue(bento.keyColorOverrides.containsKey("/"));
-        assertTrue(hammerhead.keyColorOverrides.containsKey("."));
-        assertTrue(hammerhead.keyColorOverrides.containsKey("/"));
-        assertEquals(gmk8008.keyColorOverrides.get("space"), gmk8008.keyColorOverrides.get("."));
-        assertEquals(gmk8008.keyColorOverrides.get("space"), gmk8008.keyColorOverrides.get("/"));
-        assertEquals(modernDolch.keyColorOverrides.get("reserved"), modernDolch.keyColorOverrides.get("."));
-        assertEquals(modernDolch.keyColorOverrides.get("backspace"), modernDolch.keyColorOverrides.get("language"));
-        assertEquals(modernDolch.keyColorOverrides.get("backspace"), modernDolch.keyColorOverrides.get("settings"));
+        assertSpecialLegendsReadable("gmk-bento");
+        assertSpecialLegendsReadable("gmk-hammerhead");
+        assertSpecialLegendsReadable("gmk-8008");
+        assertSpecialLegendsReadable("gmk-modern-dolch");
     }
 
     @Test
@@ -218,10 +227,31 @@ public final class KeyboardThemePresetTest {
                 settings.keyColorOverrides.containsKey("__dingul_wide_vowel__"));
         assertTrue(presetId + " missing \u3161\u3150",
                 settings.keyColorOverrides.containsKey("\u3161\u3150"));
-        assertTrue(presetId + " missing .",
-                settings.keyColorOverrides.containsKey("."));
-        assertTrue(presetId + " missing /",
-                settings.keyColorOverrides.containsKey("/"));
+    }
+
+    private void assertSpecialLegendsReadable(String presetId) {
+        KeyboardThemePreset preset = KeyboardThemePreset.find(presetId);
+        assertNotNull(preset);
+        KeyboardSettings settings = preset.applyTo(KeyboardSettings.defaults());
+
+        assertSpecialLegendReadable(
+                presetId,
+                settings,
+                new GestureKey(".", ".", "\"", "`", ",", KeyboardCommands.CMD_NOOP, null));
+        assertSpecialLegendReadable(
+                presetId,
+                settings,
+                new GestureKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, null));
+    }
+
+    private void assertSpecialLegendReadable(
+            String presetId,
+            KeyboardSettings settings,
+            GestureKey key) {
+        assertNotEquals(
+                presetId + " special legend should contrast with its background",
+                KeyboardKeyVisualClassifier.colorFor(settings, key),
+                KeyboardKeyVisualClassifier.textColorFor(settings, key));
     }
 
     private String readThemeJson(String id) throws IOException {

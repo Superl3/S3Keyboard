@@ -51,19 +51,19 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
-    public void optionReservedAndLanguageUseFunctionRole() {
+    public void optionReservedAndLanguageUsePointKeyRole() {
         assertEquals(
-                KeyVisualRole.FUNCTION,
+                KeyVisualRole.PRIMARY_FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         KeyboardSettings.defaults(),
                         GestureKey.command("Options", KeyboardCommands.CMD_OPEN_OPTIONS, 3)));
         assertEquals(
-                KeyVisualRole.FUNCTION,
+                KeyVisualRole.PRIMARY_FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         KeyboardSettings.defaults(),
                         GestureKey.command("Reserved", KeyboardCommands.CMD_RESERVED_PHRASES, 2)));
         assertEquals(
-                KeyVisualRole.FUNCTION,
+                KeyVisualRole.PRIMARY_FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         KeyboardSettings.defaults(),
                         GestureKey.command("Language", KeyboardCommands.CMD_TOGGLE_LANGUAGE, 2)));
@@ -84,28 +84,28 @@ public final class KeyboardKeyVisualClassifierTest {
                         settings,
                         GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3)));
         assertEquals(
-                settings.functionKeyColor,
+                settings.primaryFunctionKeyColor,
                 KeyboardKeyVisualClassifier.colorFor(
                         settings,
                         GestureKey.command("Options", KeyboardCommands.CMD_OPEN_OPTIONS, 3)));
         assertEquals(
-                settings.functionKeyColor,
+                settings.primaryFunctionKeyColor,
                 KeyboardKeyVisualClassifier.colorFor(
                         settings,
                         GestureKey.command("Language", KeyboardCommands.CMD_TOGGLE_LANGUAGE, 2)));
     }
 
     @Test
-    public void hangulSemicolonAndSlashSpecialKeysUseAccentRole() {
+    public void hangulSemicolonAndSlashSpecialKeysUsePointKeyRole() {
         KeyboardSettings hangul = KeyboardSettings.defaults();
 
         assertEquals(
-                KeyVisualRole.ACCENT,
+                KeyVisualRole.PRIMARY_FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         hangul,
                         new GestureKey(".", ".", "\"", "`", ",", KeyboardCommands.CMD_NOOP, null)));
         assertEquals(
-                KeyVisualRole.ACCENT,
+                KeyVisualRole.PRIMARY_FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         hangul,
                         new GestureKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, null)));
@@ -125,7 +125,7 @@ public final class KeyboardKeyVisualClassifierTest {
                         hangul.withKeyboardMode(KeyboardMode.ENGLISH),
                         new GestureKey(".", ".", "\"", "`", ",", KeyboardCommands.CMD_NOOP, null)));
         assertEquals(
-                hangul.accentKeyColor,
+                hangul.primaryFunctionKeyColor,
                 KeyboardKeyVisualClassifier.colorFor(
                         hangul,
                         new GestureKey(".", ".", "\"", "`", ",", KeyboardCommands.CMD_NOOP, null)));
@@ -232,5 +232,108 @@ public final class KeyboardKeyVisualClassifierTest {
         KeyboardSettings settings = KeyboardSettings.defaults().withKeyColorOverrides(overrides);
 
         assertEquals(0xFF00A676, KeyboardKeyVisualClassifier.shiftIndicatorColorFor(settings));
+    }
+
+    @Test
+    public void alphaAndModifierGroupOverridesCanColorKeys() {
+        Map<String, Integer> overrides = new HashMap<>();
+        overrides.put("alpha", 0x00010203);
+        overrides.put("background:alpha", 0x00040506);
+        overrides.put("modifiers", 0x00070809);
+        overrides.put("background:modifiers", 0x000A0B0C);
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withKeyColorOverrides(overrides);
+        GestureKey alpha = new GestureKey("q", "q", "Q", "!", null, null, "!", 2);
+        GestureKey enter = GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3);
+
+        assertEquals(0xFF010203, KeyboardKeyVisualClassifier.textColorFor(settings, alpha));
+        assertEquals(0xFF040506, KeyboardKeyVisualClassifier.colorFor(settings, alpha));
+        assertEquals(0xFF070809, KeyboardKeyVisualClassifier.textColorFor(settings, enter));
+        assertEquals(0xFF0A0B0C, KeyboardKeyVisualClassifier.colorFor(settings, enter));
+    }
+
+    @Test
+    public void alphaGroupOverridesApplyToSpecialActionAndPunctuationKeys() {
+        Map<String, KeyDisplayOverride> displayOverrides = new HashMap<>();
+        displayOverrides.put("alpha", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_DOT));
+        displayOverrides.put("..", KeyDisplayOverride.text("two"));
+        KeyboardSettings settings = KeyboardSettings.defaults().withKeyDisplayOverrides(displayOverrides);
+
+        assertEquals(
+                ModifierIconCatalog.GLYPH_DOT,
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        new GestureKey(
+                                "\u3163.",
+                                KeyboardCommands.CMD_DINGUL_CENTER_VOWEL,
+                                "\u3163",
+                                ".",
+                                "\u3163",
+                                ".",
+                                null)).value);
+        assertEquals(
+                ModifierIconCatalog.GLYPH_DOT,
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        new GestureKey(
+                                "\u3161\u3150",
+                                KeyboardCommands.CMD_DINGUL_WIDE_VOWEL,
+                                "\u3161",
+                                "\u3150",
+                                "\u3161",
+                                "\u3150",
+                                null)).value);
+        assertEquals(
+                "two",
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        new GestureKey(". .", ".", null, null, null, null, null)).value);
+        assertEquals(
+                ModifierIconCatalog.GLYPH_DOT,
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        new GestureKey("?", "?", "!", "*", "+", KeyboardCommands.CMD_NOOP, null)).value);
+        assertEquals(
+                ModifierIconCatalog.GLYPH_DOT,
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        new GestureKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, null)).value);
+    }
+
+    @Test
+    public void alphaGroupColorOverridesApplyToSpecialActionAndPunctuationKeys() {
+        Map<String, Integer> overrides = new HashMap<>();
+        overrides.put("alpha", 0x00010203);
+        overrides.put("background:alpha", 0x00040506);
+        overrides.put("background:..", 0x000A0B0C);
+        KeyboardSettings settings = KeyboardSettings.defaults().withKeyColorOverrides(overrides);
+
+        GestureKey centerVowel = new GestureKey(
+                "\u3163.",
+                KeyboardCommands.CMD_DINGUL_CENTER_VOWEL,
+                "\u3163",
+                ".",
+                "\u3163",
+                ".",
+                null);
+        GestureKey dotDot = new GestureKey(". .", ".", null, null, null, null, null);
+
+        assertEquals(0xFF010203, KeyboardKeyVisualClassifier.textColorFor(settings, centerVowel));
+        assertEquals(0xFF040506, KeyboardKeyVisualClassifier.colorFor(settings, centerVowel));
+        assertEquals(0xFF0A0B0C, KeyboardKeyVisualClassifier.colorFor(settings, dotDot));
+    }
+
+    @Test
+    public void keyDisplayPackCanReplaceCommandIconsWithText() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyDisplayThemePack(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT);
+
+        KeyDisplayOverride override = KeyDisplayOverrideResolver.resolve(
+                settings,
+                GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3));
+
+        assertEquals(KeyDisplayOverride.TYPE_TEXT, override.type);
+        assertEquals("hihihi", override.value);
     }
 }

@@ -71,9 +71,9 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   broader immutable `KeyboardSettings` object.
 - `HangulKeyboardView` keeps the preview strip inside the measured keyboard
   height, so preview space does not create a transparent area over the app UI.
-- `TouchBiasStore` learns from immediate deletes. Tap mistakes adjust touch
-  center bias; deleted slide outputs gradually raise the gesture threshold within
-  a small cap.
+- `TouchBiasStore` learns from local input patterns. It stores aggregate touch
+  center and gesture-threshold statistics, and also keeps a capped local raw key
+  event log for future typo analysis. Resetting input correction clears both.
 
 ## Theme Architecture
 
@@ -92,13 +92,35 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 - Both override maps are imported through `KeyboardThemeJson`. Runtime storage
   normalizes background overrides with a `background:` prefix so the renderer can
   keep one immutable override map without mixing foreground and background lookups.
-- `LegendStylePreset.DOTS` hides slide hints and draws the main legend as a
-  Canvas circle instead of drawing text or command icons. Dots themes should
-  provide colorful `keyTextColorOverrides`; the dot renderer uses those colors as
-  the dot fill.
+- Dot-style themes should not use global forced `LegendStylePreset.DOTS`.
+  They should use `keyDisplayOverrides`, usually `alpha: icon:dot`, plus exact
+  key overrides for punctuation or command keys. Exact key overrides win over
+  `alpha` or `modifiers` group overrides.
+- `alpha` display and color overrides apply to letter keys plus Dingul action
+  keys (`ㅣ.`, `ㅡㅐ`, `..`/`. .`) and punctuation keys (`?`, `.`, `/`).
+- `ModifierIconCatalog` owns built-in modifier icon pack ids. Monochrome packs
+  use theme foreground colors; colored packs use intrinsic foreground colors and
+  ignore theme foreground.
+- `KeyDisplayOverridePackCatalog` owns built-in text/icon replacement packs. The
+  simple text pack is separate from a theme and can replace command icons with
+  text-like vector output.
+- `KeyboardThemeJson` accepts imported icon/display pack metadata. In v1,
+  external packs select a built-in renderer through `extends` and can add
+  `keyDisplayOverrides`; future path renderers can consume the preserved glyph
+  authoring metadata. See `docs/icon-pack-import.md`.
+- `KeyboardVisualEffects` carries blur, metal, and angular preview-bubble flags.
+  Android runtime, theme JSON, web builder, and preview scripts should stay in
+  sync when effects change.
 - `ThemeSelectorActivity` persists the applied preset/custom theme id through
   `KeyboardPreferences.SELECTED_THEME_ID`. Avoid relying on card index alone
   because user themes can be added or removed.
+
+## Agent Handoff
+
+The short project-specific handoff is `docs/agent-workflow.md`. Keep it current
+whenever a new cross-cutting theme, icon, preview, input, or settings workflow is
+added. The root `AGENTS.md` includes that document so new Codex contexts can find
+the same source map and verification commands.
 
 ## App Icon Assets
 

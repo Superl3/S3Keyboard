@@ -61,9 +61,11 @@ final class KeyboardThemePreset {
                     bentoTextOverrides(),
                     bentoBackgroundOverrides()),
             theme("gmk-metropolis", "GMK Metropolis Inspired",
-                    "1E3D57", "182F45", "112537", "193344", "254B67",
-                    "0D1B2A", "08131E", "08131E", "7FD7F4", "FFB000",
-                    5, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true),
+                    "172633", "182F45", "112537", "FF4B3E", "254B67",
+                    "E9E2D4", "08131E", "B9B0A5", "70D7E8", "FFB000",
+                    5, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true,
+                    metropolisTextOverrides(),
+                    metropolisBackgroundOverrides()),
             theme("gmk-oblivion", "GMK Oblivion Inspired",
                     "6F787D", "252A2E", "171A1E", "3A4037", "555F64",
                     "101214", "0A0B0D", "0A0B0D", "E8ECEC", "93A0A5",
@@ -396,6 +398,8 @@ final class KeyboardThemePreset {
                         + "},"
                         + numberRowBlock(id)
                         + typographyBlock(id, fontFamily)
+                        + iconPackBlock(id)
+                        + effectsBlock(id)
                         + legendStyleBlock(legendStylePreset)
                         + keyColorOverridesBlock(id, keyColorOverridesJson)
                         + keyBackgroundColorOverridesBlock(keyBackgroundOverridesJson)
@@ -430,7 +434,46 @@ final class KeyboardThemePreset {
         if (preset == null || preset == LegendStylePreset.DEFAULT) {
             return "";
         }
+        if (preset == LegendStylePreset.DOTS) {
+            return ",\"keyDisplayOverrides\":{\"alpha\":{\"type\":\"icon\",\"value\":\"dot\"}}";
+        }
         return ",\"legendStyle\":{\"preset\":\"" + preset.preferenceValue + "\"}";
+    }
+
+    private static String iconPackBlock(String id) {
+        String modifierPack = null;
+        String keyDisplayPack = null;
+        if (id != null && id.startsWith("gmk-olivia")) {
+            keyDisplayPack = KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT;
+        } else if (id != null && id.startsWith("gmk-dots")) {
+            modifierPack = ModifierIconCatalog.PACK_DOTS_LINES;
+        } else if ("gmk-metropolis".equals(id)) {
+            modifierPack = ModifierIconCatalog.PACK_METROPOLIS_POINTS;
+        }
+        if (modifierPack == null && keyDisplayPack == null) {
+            return "";
+        }
+        String json = ",\"icons\":{";
+        boolean hasValue = false;
+        if (modifierPack != null) {
+            json += "\"modifierPackId\":\"" + modifierPack + "\"";
+            hasValue = true;
+        }
+        if (keyDisplayPack != null) {
+            json += (hasValue ? "," : "") + "\"keyDisplayPackId\":\"" + keyDisplayPack + "\"";
+        }
+        return json + "}";
+    }
+
+    private static String effectsBlock(String id) {
+        if ("gmk-metropolis".equals(id)) {
+            return ",\"effects\":{"
+                    + "\"blur\":{\"enabled\":true,\"radiusDp\":10},"
+                    + "\"metal\":{\"enabled\":true,\"strengthPercent\":22},"
+                    + "\"previewBubble\":{\"style\":\"angular\"}"
+                    + "}";
+        }
+        return "";
     }
 
     private static String keyColorOverridesBlock(String id, String json) {
@@ -506,7 +549,7 @@ final class KeyboardThemePreset {
                 "backspace", "F8776C",
                 "options", "F8776C",
                 "reserved", "FFF3E7"),
-                dingulSpecialTextOverrides("2F8CA1", "2F8CA1", "2F8CA1", "F8776C", "F8776C"));
+                dingulVowelTextOverrides("2F8CA1", "2F8CA1", "2F8CA1"));
     }
 
     private static String bentoBackgroundOverrides() {
@@ -518,6 +561,32 @@ final class KeyboardThemePreset {
                 "backspace", "2E6687",
                 "options", "E66D61",
                 "reserved", "2E6687");
+    }
+
+    private static String metropolisTextOverrides() {
+        return mergeJson(json(
+                "shift", "0D1B2A",
+                "language", "0D1B2A",
+                "settings", "0D1B2A",
+                "space", "70D7E8",
+                "enter", "0D1B2A",
+                "backspace", "0D1B2A",
+                "options", "0D1B2A",
+                "reserved", "0D1B2A",
+                "alpha", "66E3C4"),
+                dingulVowelTextOverrides("66E3C4", "66E3C4", "66E3C4"));
+    }
+
+    private static String metropolisBackgroundOverrides() {
+        return json(
+                "alpha", "172633",
+                "shift", "FF4B3E",
+                "language", "66E3C4",
+                "settings", "66E3C4",
+                "enter", "66E3C4",
+                "backspace", "FFB000",
+                "options", "FFB000",
+                "reserved", "FF4B3E");
     }
 
     private static String oblivionTextOverrides() {
@@ -551,7 +620,7 @@ final class KeyboardThemePreset {
                 "backspace", "F05B6C",
                 "options", "F05B6C",
                 "reserved", "181A21"),
-                dingulSpecialTextOverrides("181A21", "181A21", "181A21", "181A21", "181A21"));
+                dingulVowelTextOverrides("181A21", "181A21", "181A21"));
     }
 
     private static String gmk8008BackgroundOverrides() {
@@ -574,7 +643,7 @@ final class KeyboardThemePreset {
                 "backspace", "B9C7CD",
                 "options", "25BFB2",
                 "reserved", "132633"),
-                dingulSpecialTextOverrides("132633", "132633", "132633", "25BFB2", "25BFB2"));
+                dingulVowelTextOverrides("132633", "132633", "132633"));
     }
 
     private static String hammerheadBackgroundOverrides() {
@@ -598,7 +667,7 @@ final class KeyboardThemePreset {
                 "backspace", "D9DFE2",
                 "options", "D9DFE2",
                 "reserved", "F0F3F4"),
-                dingulSpecialTextOverrides("64D4CF", "64D4CF", "64D4CF", "F0F3F4", "F0F3F4"));
+                dingulVowelTextOverrides("64D4CF", "64D4CF", "64D4CF"));
     }
 
     private static String modernDolchBackgroundOverrides() {
@@ -657,7 +726,7 @@ final class KeyboardThemePreset {
                 "tap:z", "tap:x", "tap:c", "tap:v", "tap:b", "tap:n", "tap:m",
                 "tap:\u3131", "tap:\u3134", "tap:\u3162", "tap:\u3139", "tap:\u3141", "tap:\u3163",
                 "__dingul_center_vowel__", "tap:\u3145", "tap:\u3147", "__dingul_wide_vowel__",
-                "tap:\u3148", "tap:\u314E", "\u3163.", "\u3161\u3150",
+                "tap:\u3148", "tap:\u314E", "\u3163.", "\u3161\u3150", "..", ". .",
                 "?", ".", "/", "space", "enter", "backspace", "shift", "language", "options", "reserved"
         };
         StringBuilder builder = new StringBuilder("{");
@@ -675,12 +744,10 @@ final class KeyboardThemePreset {
         return builder.toString();
     }
 
-    private static String dingulSpecialTextOverrides(
+    private static String dingulVowelTextOverrides(
             String topVowel,
             String centerVowel,
-            String wideVowel,
-            String period,
-            String slash) {
+            String wideVowel) {
         return json(
                 "tap:\u3162", topVowel,
                 "\u3162", topVowel,
@@ -690,10 +757,7 @@ final class KeyboardThemePreset {
                 "tap:\u3161", wideVowel,
                 "\u3161", wideVowel,
                 "\u3161\u3150", wideVowel,
-                KeyboardCommands.CMD_DINGUL_WIDE_VOWEL, wideVowel,
-                ".", period,
-                ". .", period,
-                "/", slash);
+                KeyboardCommands.CMD_DINGUL_WIDE_VOWEL, wideVowel);
     }
 
     private static String mergeJson(String first, String second) {
@@ -768,10 +832,6 @@ final class KeyboardThemePreset {
                 + "\"\u3162\":\"#42D68C\","
                 + "\"\u3163.\":\"#42D68C\","
                 + "\"\u3161\u3150\":\"#36E7F4\","
-                + "\"?\":\"#FF5DAE\","
-                + "\".\":\"#DDE868\","
-                + "\". .\":\"#E7D84E\","
-                + "\"/\":\"#4DE4D2\","
                 + "\"shift\":\"#E9D64A\","
                 + "\"options\":\"#FF5DAE\","
                 + "\"reserved\":\"#C75DFF\","
@@ -833,10 +893,6 @@ final class KeyboardThemePreset {
                 + "\"\u3162\":\"#00814E\","
                 + "\"\u3163.\":\"#00814E\","
                 + "\"\u3161\u3150\":\"#007C89\","
-                + "\"?\":\"#C02666\","
-                + "\".\":\"#7E7D00\","
-                + "\". .\":\"#8E7600\","
-                + "\"/\":\"#008B82\","
                 + "\"shift\":\"#8E7600\","
                 + "\"options\":\"#C02666\","
                 + "\"reserved\":\"#7C3CB3\","

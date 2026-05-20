@@ -1,23 +1,22 @@
 const colorFields = [
-  ["keyIdle", "전체 - 기본 키", "일반 입력 키와 스페이스바 배경색입니다."],
-  ["functionKey", "전체 - 기능 키", "옵션, 예약어, 한/영 키 배경색입니다."],
-  ["primaryFunctionKey", "전체 - 주요 기능 키", "시프트, 삭제, 엔터 배경색입니다."],
-  ["accentKey", "전체 - 강조 키", "딩굴 강조 특수 키를 포함한 강조 그룹 배경색입니다."],
-  ["keyPressed", "눌림", "키를 누르는 동안 표시되는 배경색입니다."],
-  ["keyboardBackground", "키보드 배경", "키 사이와 키 뒤쪽 영역의 색상입니다."],
-  ["border", "테두리", "키 외곽선 색상입니다. 입체 효과 색상을 따로 지정하지 않으면 이 색상을 씁니다."],
-  ["depth", "입체 효과 색상", "키 아래쪽 입체 효과 색상입니다."],
-  ["accent", "주 글자", "중앙 글자, 아이콘, 미리보기 텍스트 색상입니다."],
-  ["secondary", "보조 글자", "슬라이드 힌트와 보조 텍스트 색상입니다."]
+  ["keyIdle", "\uC804\uCCB4 - \uAE30\uBCF8 \uD0A4", "\uC77C\uBC18 \uC785\uB825 \uD0A4\uC640 \uC2A4\uD398\uC774\uC2A4\uBC14 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."],
+  ["functionKey", "\uC804\uCCB4 - \uAE30\uB2A5 \uD0A4", "\uC635\uC158, \uC608\uC57D\uC5B4, \uD55C/\uC601 \uD0A4 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."],
+  ["primaryFunctionKey", "\uC804\uCCB4 - \uC8FC\uC694 \uAE30\uB2A5 \uD0A4", "\uC2DC\uD504\uD2B8, \uC0AD\uC81C, \uC5D4\uD130 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."],
+  ["accentKey", "\uC804\uCCB4 - \uAC15\uC870 \uD0A4", "\uB529\uAD74 \uAC15\uC870 \uD2B9\uC218 \uD0A4\uB97C \uD3EC\uD568\uD55C \uAC15\uC870 \uADF8\uB8F9 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."],
+  ["keyPressed", "\uB20C\uB9BC", "\uD0A4\uB97C \uB204\uB974\uB294 \uB3D9\uC548 \uD45C\uC2DC\uB418\uB294 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."],
+  ["keyboardBackground", "\uD0A4\uBCF4\uB4DC \uBC30\uACBD", "\uD0A4 \uC0AC\uC774\uC640 \uD0A4 \uB4A4\uCABD \uC601\uC5ED\uC758 \uC0C9\uC0C1\uC785\uB2C8\uB2E4."],
+  ["border", "\uD14C\uB450\uB9AC", "\uD0A4 \uC678\uACFD\uC120 \uC0C9\uC0C1\uC785\uB2C8\uB2E4. \uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1\uC744 \uB530\uB85C \uC9C0\uC815\uD558\uC9C0 \uC54A\uC73C\uBA74 \uC774 \uC0C9\uC0C1\uC744 \uC4F0\uB2C8\uB2E4."],
+  ["depth", "\uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1", "\uD0A4 \uC544\uB798\uCABD \uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1\uC785\uB2C8\uB2E4."],
+  ["accent", "\uC8FC \uAE00\uC790", "\uC911\uC559 \uAE00\uC790, \uC544\uC774\uCF58, \uBBF8\uB9AC\uBCF4\uAE30 \uD14D\uC2A4\uD2B8 \uC0C9\uC0C1\uC785\uB2C8\uB2E4."],
+  ["secondary", "\uBCF4\uC870 \uAE00\uC790", "\uC2AC\uB77C\uC774\uB4DC \uD78C\uD2B8\uC640 \uBCF4\uC870 \uD14D\uC2A4\uD2B8 \uC0C9\uC0C1\uC785\uB2C8\uB2E4."]
 ];
 
 const shapeFields = [
-  ["roundnessDp", "둥글기", 0, 24],
-  ["borderWidthDp", "테두리 굵기", 0, 8],
-  ["keyGapDp", "키 사이 시각 간격", 0, 18],
-  ["depthDp", "입체 높이", 0, 8]
+  ["roundnessDp", "\uB465\uAE00\uAE30", 0, 24],
+  ["borderWidthDp", "\uD14C\uB450\uB9AC \uAD75\uAE30", 0, 8],
+  ["keyGapDp", "\uD0A4 \uC0AC\uC774 \uC2DC\uAC01 \uAC04\uACA9", 0, 18],
+  ["depthDp", "\uC785\uCCB4 \uB192\uC774", 0, 8]
 ];
-
 const presets = {
   "ios-clean-light": {
     name: "iOS Clean Light",
@@ -128,7 +127,8 @@ const presets = {
     shape: { roundnessDp: 5, borderWidthDp: 1, keyGapDp: 6, depthEnabled: true, depthDp: 1 },
     typography: defaultTypography(false, false),
     additionalNumberRow: { colorMode: "full_dimmed" },
-    legendStyle: { preset: "dots" },
+    icons: { modifierPackId: "dots-lines" },
+    keyDisplayOverrides: { alpha: { type: "icon", value: "dot" } },
     keyTextColorOverrides: dotTextOverrides(false),
     keyBackgroundColorOverrides: dotBackgroundOverrides(false)
   },
@@ -149,7 +149,8 @@ const presets = {
     shape: { roundnessDp: 5, borderWidthDp: 1, keyGapDp: 6, depthEnabled: true, depthDp: 1 },
     typography: defaultTypography(false, false),
     additionalNumberRow: { colorMode: "full_dimmed" },
-    legendStyle: { preset: "dots" },
+    icons: { modifierPackId: "dots-lines" },
+    keyDisplayOverrides: { alpha: { type: "icon", value: "dot" } },
     keyTextColorOverrides: dotTextOverrides(true),
     keyBackgroundColorOverrides: dotBackgroundOverrides(true)
   }
@@ -220,9 +221,9 @@ function dotTextOverrides(dark) {
     "tap:q", "tap:w", "tap:e", "tap:r", "tap:t", "tap:y", "tap:u", "tap:i", "tap:o", "tap:p",
     "tap:a", "tap:s", "tap:d", "tap:f", "tap:g", "tap:h", "tap:j", "tap:k", "tap:l",
     "tap:z", "tap:x", "tap:c", "tap:v", "tap:b", "tap:n", "tap:m",
-    "tap:ㄱ", "tap:ㄴ", "tap:ㅢ", "tap:ㄹ", "tap:ㅁ", "tap:ㅣ",
-    "__dingul_center_vowel__", "tap:ㅅ", "tap:ㅇ", "__dingul_wide_vowel__",
-    "tap:ㅈ", "tap:ㅎ", "ㅣ.", "ㅡㅐ",
+    "tap:\u3131", "tap:\u3134", "tap:\u3162", "tap:\u3139", "tap:\u3141", "tap:\u3163",
+    "__dingul_center_vowel__", "tap:\u3145", "tap:\u3147", "__dingul_wide_vowel__",
+    "tap:\u3148", "tap:\u314E", "\u3163.", "\u3161\u3150", "..", ". .",
     "?", ".", "/", "space", "enter", "backspace", "shift", "language", "options", "reserved"
   ];
   return keys.reduce((overrides, key, index) => {
@@ -386,6 +387,7 @@ function buildTheme() {
       accentKey: state.colors.accentKey,
       keyPressed: state.colors.keyPressed,
       keyboardBackground: state.colors.keyboardBackground,
+      panelBackground: state.colors.panelBackground || state.colors.keyboardBackground,
       border: state.colors.border,
       depth: ids.customDepth.checked ? state.colors.depth : null,
       accent: state.colors.accent,
@@ -402,8 +404,20 @@ function buildTheme() {
     typography: { ...state.typography },
     keyTextColorOverrides: { ...state.keyTextColorOverrides }
   };
-  if (state.legendStyle?.preset && state.legendStyle.preset !== "default") {
-    theme.legendStyle = { ...state.legendStyle };
+  if (state.icons?.modifierPackId || state.icons?.keyDisplayPackId) {
+    theme.icons = {};
+    if (state.icons.modifierPackId) {
+      theme.icons.modifierPackId = state.icons.modifierPackId;
+    }
+    if (state.icons.keyDisplayPackId) {
+      theme.icons.keyDisplayPackId = state.icons.keyDisplayPackId;
+    }
+  }
+  if (state.effects) {
+    theme.effects = { ...state.effects };
+  }
+  if (Object.keys(state.keyDisplayOverrides || {}).length > 0) {
+    theme.keyDisplayOverrides = { ...state.keyDisplayOverrides };
   }
   if (Object.keys(state.keyBackgroundColorOverrides || {}).length > 0) {
     theme.keyBackgroundColorOverrides = { ...state.keyBackgroundColorOverrides };
@@ -412,7 +426,9 @@ function buildTheme() {
 }
 
 function renderPreview(theme) {
-  ids.preview.style.background = theme.colors.keyboardBackground;
+  ids.preview.style.background = theme.colors.panelBackground || theme.colors.keyboardBackground;
+  ids.preview.style.backdropFilter = theme.effects?.blur?.enabled ? `blur(${theme.effects.blur.radiusDp || 8}px)` : "none";
+  ids.preview.style.boxShadow = theme.effects?.metal?.enabled ? `inset 0 18px 28px rgba(255,255,255,.18), inset 0 -22px 35px rgba(0,0,0,.22)` : "none";
   ids.preview.style.gap = `${theme.shape.keyGapDp}px`;
   ids.preview.style.paddingTop = "16px";
   ids.preview.style.setProperty("--depth-color", theme.colors.depth || theme.colors.border);
@@ -450,12 +466,19 @@ function renderPreview(theme) {
         : textColorFor(label, theme);
       key.style.fontSize = `${14 * theme.typography.primaryTextSizePercent / 100}px`;
       key.style.fontWeight = theme.typography.primaryTextBold ? "700" : "400";
-      key.style.fontStyle = theme.typography.primaryTextItalic ? "italic" : "normal";
-      if (theme.legendStyle?.preset === "dots") {
+      const displayOverride = displayOverrideFor(label, theme);
+      if (displayOverride?.type === "icon" && displayOverride.value === "dot") {
         const mainDot = document.createElement("span");
         mainDot.className = "main-dot";
         mainDot.style.background = textColorFor(label, theme);
         key.appendChild(mainDot);
+      } else if (displayOverride?.type === "text") {
+        key.textContent = displayOverride.value;
+        if (isSimpleTextPack(theme.icons?.keyDisplayPackId)) {
+          key.style.fontWeight = "700";
+        }
+      } else if (iconForPreview(label) && renderModifierPackGlyph(key, label, theme)) {
+        // rendered by helper
       } else {
         key.textContent = label;
       }
@@ -474,7 +497,7 @@ function renderPreview(theme) {
 
 function appendSubLegend(key, label, theme) {
   const sub = subLegendFor(label);
-  if (!sub || !theme.typography.showEnglishSlideHints) {
+  if (!sub || !theme.typography.showEnglishSlideHints || displayOverrideFor(label, theme)) {
     return;
   }
   const item = document.createElement("span");
@@ -483,24 +506,23 @@ function appendSubLegend(key, label, theme) {
   item.style.color = theme.colors.secondary;
   item.style.fontSize = `${10 * theme.typography.secondaryTextSizePercent / 100}px`;
   item.style.fontWeight = theme.typography.secondaryTextBold ? "700" : "400";
-  item.style.fontStyle = theme.typography.secondaryTextItalic ? "italic" : "normal";
   key.appendChild(item);
 }
 
 function subLegendFor(label) {
   const map = {
     q: "1", w: "2", e: "3", r: "4", t: "5", y: "6", u: "7", i: "8", o: "9", p: "0",
-    a: "@", s: "#%", d: "/", f: "*", g: "~^", h: "-_", j: "+=", k: "<>", l: "♥",
+    a: "@", s: "#%", d: "/", f: "*", g: "~^", h: "-_", j: "+=", k: "<>", l: "\u2665",
     z: "()", x: "[]", c: ":", v: "\"", b: "&|", n: "!", m: "?"
   };
   return map[label] || "";
 }
 
 function roleForPreview(label) {
-  if (["Shift", "Bksp", "Enter"].includes(label)) {
+  if (["Shift", "Bksp", "Enter", "Lang", "Options", "Reserved", "Settings", ".", "/"].includes(label)) {
     return "primary";
   }
-  if (["Lang"].includes(label)) {
+  if (["?123"].includes(label)) {
     return "modifier";
   }
   return "alpha";
@@ -552,15 +574,115 @@ function overrideKeyForLabel(label) {
   return label.length === 1 ? `tap:${label.toLowerCase()}` : label.toLowerCase();
 }
 
+function iconForPreview(label) {
+  return ["Shift", "Bksp", "Lang", "Enter"].includes(label);
+}
+
+function displayOverrideFor(label, theme) {
+  const overrides = theme.keyDisplayOverrides || {};
+  const keys = overrides.keys || {};
+  const key = overrideKeyForLabel(label);
+  const exact = keys[key] || keys[label.toLowerCase()] || keys[label];
+  if (exact) {
+    return exact;
+  }
+  const packExact = keyDisplayPackOverrideFor(label, theme.icons?.keyDisplayPackId);
+  if (packExact) {
+    return packExact;
+  }
+  if (iconForPreview(label) && overrides.modifiers) {
+    return overrides.modifiers;
+  }
+  if (isAlphaPreviewLabel(label) && overrides.alpha) {
+    return overrides.alpha;
+  }
+  return null;
+}
+
+function keyDisplayPackOverrideFor(label, pack) {
+  if (!isSimpleTextPack(pack)) {
+    return null;
+  }
+  switch (label) {
+    case "Enter":
+      return { type: "text", value: "hihihi" };
+    case "Bksp":
+      return { type: "text", value: "del" };
+    case "Shift":
+      return { type: "text", value: "shift" };
+    case "Space":
+      return { type: "text", value: "space" };
+    case "Lang":
+      return { type: "text", value: "lang" };
+    default:
+      return null;
+  }
+}
+
+function renderModifierPackGlyph(key, label, theme) {
+  const pack = theme.icons?.modifierPackId || "line-mono";
+  if (pack === "dots-lines") {
+    const line = document.createElement("span");
+    line.className = label === "Space" ? "mod-pack-line wide-line" : "mod-pack-line dotted-line";
+    line.style.background = textColorFor(label, theme);
+    line.style.color = textColorFor(label, theme);
+    key.appendChild(line);
+    return true;
+  }
+  if (pack === "metropolis-points") {
+    const line = document.createElement("span");
+    line.className = "mod-pack-line metro-line";
+    line.style.background = metropolisColorFor(label);
+    line.style.color = metropolisColorFor(label);
+    key.appendChild(line);
+    return true;
+  }
+  return false;
+}
+
+function metropolisColorFor(label) {
+  switch (label) {
+    case "Shift":
+      return "#FF4B3E";
+    case "Bksp":
+      return "#FFB000";
+    case "Enter":
+    case "Lang":
+      return "#66E3C4";
+    default:
+      return "#70D7E8";
+  }
+}
+
+function isSimpleTextPack(pack) {
+  return pack === "simple-text" || pack === "olivia-script-text";
+}
+
+function isAlphaPreviewLabel(label) {
+  return /^[a-z]$/i.test(label) || /^[\u3131-\u318e\uac00-\ud7a3]$/.test(label);
+}
+
+function legacyDisplayOverrides(legendStyle) {
+  return legendStyle?.preset === "dots"
+    ? { alpha: { type: "icon", value: "dot" } }
+    : {};
+}
+
 function textColorFor(label, theme) {
   const key = overrideKeyForLabel(label);
-  return theme.keyTextColorOverrides[key] || theme.colors.accent;
+  return theme.keyTextColorOverrides[key]
+    || (isAlphaPreviewLabel(label) ? theme.keyTextColorOverrides.alpha : null)
+    || (iconForPreview(label) ? theme.keyTextColorOverrides.modifiers : null)
+    || theme.colors.accent;
 }
 
 function backgroundColorFor(label, theme) {
   const key = overrideKeyForLabel(label);
   const overrides = theme.keyBackgroundColorOverrides || {};
-  return overrides[key] || null;
+  return overrides[key]
+    || (isAlphaPreviewLabel(label) ? overrides.alpha : null)
+    || (iconForPreview(label) ? overrides.modifiers : null)
+    || null;
 }
 
 function fontCss(fontFamily) {
@@ -593,15 +715,25 @@ function importJson() {
       throw new Error("Only schemaVersion 1 is supported.");
     }
     const base = cloneTheme(presets["ios-clean-light"]);
+    const icons = { ...(parsed.icons || {}) };
+    if (isSimpleTextPack(icons.modifierPackId)) {
+      icons.keyDisplayPackId = "simple-text";
+      delete icons.modifierPackId;
+    }
+    if (isSimpleTextPack(icons.keyDisplayPackId)) {
+      icons.keyDisplayPackId = "simple-text";
+    }
     state = {
       name: parsed.name || "Imported Theme",
       colors: { ...base.colors, ...(parsed.colors || {}) },
       shape: { ...base.shape, ...(parsed.shape || {}) },
       typography: { ...base.typography, ...(parsed.typography || {}) },
+      effects: parsed.effects || base.effects || {},
+      icons,
       additionalNumberRow: {
         colorMode: parsed.additionalNumberRow?.colorMode || "full_dimmed"
       },
-      legendStyle: parsed.legendStyle || {},
+      keyDisplayOverrides: parsed.keyDisplayOverrides || legacyDisplayOverrides(parsed.legendStyle),
       keyTextColorOverrides: parsed.keyTextColorOverrides || parsed.keyColorOverrides || {},
       keyBackgroundColorOverrides: parsed.keyBackgroundColorOverrides || {}
     };

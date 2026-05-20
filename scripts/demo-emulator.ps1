@@ -17,6 +17,7 @@ param(
         "paper-mono"
     )]
     [string] $ThemeVariant = "default",
+    [string] $ThemePresetId = "",
     [switch] $ShowNumberRow,
     [switch] $CaptureShiftActive
 )
@@ -378,7 +379,12 @@ function Get-ThemeExtras {
 & (Join-Path $PSScriptRoot "build-debug.ps1")
 
 $ApkHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Apk).Hash.Substring(0, 12)
-$SafeThemeName = $ThemeVariant -replace "[^A-Za-z0-9_-]", "-"
+$ThemePresetMode = -not [string]::IsNullOrWhiteSpace($ThemePresetId)
+$SafeThemeName = if ($ThemePresetMode) {
+    $ThemePresetId -replace "[^A-Za-z0-9_-]", "-"
+} else {
+    $ThemeVariant -replace "[^A-Za-z0-9_-]", "-"
+}
 $RunId = "$(Get-Date -Format 'yyyyMMdd-HHmmss-fff')-sp$HangulSpecialColumnPercent-$SafeThemeName-$ApkHash"
 $RunCaptureDir = Join-Path $CaptureDir $RunId
 $DeviceCapture = "/sdcard/hangul_gesture_ime_demo_$RunId.png"
@@ -452,31 +458,40 @@ Write-Host "Enabling and selecting IME"
 
 Write-Host "Launching demo activity"
 & $Adb @AdbTarget shell am force-stop $Package | Out-Null
-& $Adb @AdbTarget shell am start -n $Activity `
-    --ei hangul_special_column_percent $HangulSpecialColumnPercent `
-    --es key_idle_color $KeyIdleColor `
-    --es key_pressed_color $KeyPressedColor `
-    --es keyboard_background_color $KeyboardBackgroundColor `
-    --es accent_color $AccentColor `
-    --es secondary_color $SecondaryColor `
-    --es function_key_color $FunctionKeyColor `
-    --es primary_function_key_color $PrimaryFunctionKeyColor `
-    --es accent_key_color $AccentKeyColor `
-    --es border_color $BorderColor `
-    --ei key_roundness_dp $KeyRoundness `
-    --ei key_gap_dp $KeyGap `
-    --ez key_depth_enabled $KeyDepthEnabled `
-    --ei key_depth_dp $KeyDepth `
-    --ez custom_depth_color_enabled $CustomDepthColorEnabled `
-    --es depth_color $DepthColor `
-    --es font_family $FontFamily `
-    --ez show_hangul_slide_hints true `
-    --ez show_english_slide_hints true `
-    --ez show_beginner_tooltip_preview true `
-    --ez show_hangul_number_row $ShowHangulNumberRowValue `
-    --ez show_english_number_row $ShowEnglishNumberRowValue `
-    --ez demo_settings true `
-    --ez demo_show_keyboard true | Out-Host
+$StartArgs = @(
+    "shell", "am", "start", "-n", $Activity,
+    "--ei", "hangul_special_column_percent", "$HangulSpecialColumnPercent",
+    "--ez", "show_hangul_slide_hints", "true",
+    "--ez", "show_english_slide_hints", "true",
+    "--ez", "show_beginner_tooltip_preview", "true",
+    "--ez", "show_hangul_number_row", "$ShowHangulNumberRowValue",
+    "--ez", "show_english_number_row", "$ShowEnglishNumberRowValue",
+    "--ez", "demo_settings", "true",
+    "--ez", "demo_show_keyboard", "true"
+)
+if ($ThemePresetMode) {
+    $StartArgs += @("--es", "theme_preset_id", $ThemePresetId)
+} else {
+    $StartArgs += @(
+        "--es", "key_idle_color", $KeyIdleColor,
+        "--es", "key_pressed_color", $KeyPressedColor,
+        "--es", "keyboard_background_color", $KeyboardBackgroundColor,
+        "--es", "accent_color", $AccentColor,
+        "--es", "secondary_color", $SecondaryColor,
+        "--es", "function_key_color", $FunctionKeyColor,
+        "--es", "primary_function_key_color", $PrimaryFunctionKeyColor,
+        "--es", "accent_key_color", $AccentKeyColor,
+        "--es", "border_color", $BorderColor,
+        "--ei", "key_roundness_dp", "$KeyRoundness",
+        "--ei", "key_gap_dp", "$KeyGap",
+        "--ez", "key_depth_enabled", "$KeyDepthEnabled",
+        "--ei", "key_depth_dp", "$KeyDepth",
+        "--ez", "custom_depth_color_enabled", "$CustomDepthColorEnabled",
+        "--es", "depth_color", $DepthColor,
+        "--es", "font_family", $FontFamily
+    )
+}
+& $Adb @AdbTarget @StartArgs | Out-Host
 Start-Sleep -Seconds 2
 & $Adb @AdbTarget shell ime set $Ime | Out-Host
 
@@ -521,6 +536,9 @@ if ($CaptureShiftActive) {
 Write-Host "Capture run id: $RunId"
 Write-Host "Hangul special column percent: $HangulSpecialColumnPercent%"
 Write-Host "Theme variant: $ThemeVariant"
+if ($ThemePresetMode) {
+    Write-Host "Theme preset id: $ThemePresetId"
+}
 Write-Host "Hangul number row: $ShowHangulNumberRowValue"
 Write-Host "English number row: $ShowEnglishNumberRowValue"
 Write-Host "Hangul keyboard crop height: $HangulKeyboardCropHeightPx px"

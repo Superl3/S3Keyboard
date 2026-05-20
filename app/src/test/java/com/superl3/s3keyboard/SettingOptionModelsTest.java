@@ -16,7 +16,7 @@ public final class SettingOptionModelsTest {
     @Test
     public void fontOptionsExposeSameValuesWithScreenSpecificLabels() {
         assertEquals("기본", FontOption.BASIC_OPTIONS[0].label);
-        assertEquals("Default", FontOption.EDITOR_OPTIONS[0].label);
+        assertEquals(FontOption.BASIC_OPTIONS[0].label, FontOption.EDITOR_OPTIONS[0].label);
         assertEquals(KeyboardSettings.FONT_DEFAULT, FontOption.BASIC_OPTIONS[0].value);
         assertEquals(FontOption.BASIC_OPTIONS[0].value, FontOption.EDITOR_OPTIONS[0].value);
     }

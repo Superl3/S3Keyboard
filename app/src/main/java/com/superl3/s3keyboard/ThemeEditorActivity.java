@@ -52,6 +52,8 @@ public final class ThemeEditorActivity extends Activity {
     private Spinner borderColorSpinner;
     private Spinner depthColorSpinner;
     private Spinner fontFamilySpinner;
+    private Spinner modifierIconPackSpinner;
+    private Spinner keyDisplayPackSpinner;
     private Spinner selectedKeyColorSpinner;
     private Spinner selectedKeyBackgroundColorSpinner;
     private Button addSelectedKeyOverrideButton;
@@ -470,6 +472,14 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(label("폰트"), matchWrapWithTop(8));
         root.addView(fontFamilySpinner, matchWrap());
 
+        modifierIconPackSpinner = modifierIconPackSpinner();
+        root.addView(label("\uBAA8\uB514\uD30C\uC774\uC5B4 \uC544\uC774\uCF58"), matchWrapWithTop(8));
+        root.addView(modifierIconPackSpinner, matchWrap());
+
+        keyDisplayPackSpinner = keyDisplayPackSpinner();
+        root.addView(label("Key display override pack"), matchWrapWithTop(8));
+        root.addView(keyDisplayPackSpinner, matchWrap());
+
         primaryTextSizeValue = label("");
         primaryTextSizeSeekBar = textSizeSeekBar(progress -> updateSettings(settings.withTypography(
                 settings.fontFamily,
@@ -562,6 +572,8 @@ public final class ThemeEditorActivity extends Activity {
         setSelection(borderColorSpinner, indexOfColor(settings.borderColor));
         setSelection(depthColorSpinner, indexOfColor(settings.depthColor));
         setSelection(fontFamilySpinner, indexOfFont(settings.fontFamily));
+        setSelection(modifierIconPackSpinner, indexOfModifierIconPack(settings.modifierIconThemePackId));
+        setSelection(keyDisplayPackSpinner, indexOfKeyDisplayPack(settings.keyDisplayThemePackId));
         setChecked(keyDepthCheckBox, settings.keyDepthEnabled);
         setChecked(customDepthColorCheckBox, settings.customDepthColorEnabled);
         setChecked(primaryTextBoldCheckBox, settings.primaryTextBold);
@@ -1037,6 +1049,54 @@ public final class ThemeEditorActivity extends Activity {
         return spinner;
     }
 
+    private Spinner modifierIconPackSpinner() {
+        Spinner spinner = new Spinner(this);
+        String[] ids = ModifierIconCatalog.selectablePackIds(false);
+        String[] labels = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            labels[i] = ModifierIconCatalog.displayName(ids[i]);
+        }
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(this, labels);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!syncing) {
+                    updateSettings(settings.withModifierIconThemePack(ids[position]));
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        return spinner;
+    }
+
+    private Spinner keyDisplayPackSpinner() {
+        Spinner spinner = new Spinner(this);
+        String[] ids = KeyDisplayOverridePackCatalog.selectablePackIds(false);
+        String[] labels = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            labels[i] = KeyDisplayOverridePackCatalog.displayName(ids[i]);
+        }
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(this, labels);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!syncing) {
+                    updateSettings(settings.withKeyDisplayThemePack(ids[position]));
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        return spinner;
+    }
+
     private CheckBox checkBox(String label, BooleanChangeListener listener) {
         CheckBox checkBox = new CheckBox(this);
         checkBox.setText(label);
@@ -1160,6 +1220,28 @@ public final class ThemeEditorActivity extends Activity {
         String normalized = KeyboardSettings.normalizeFontFamily(fontFamily);
         for (int i = 0; i < FontOption.EDITOR_OPTIONS.length; i++) {
             if (FontOption.EDITOR_OPTIONS[i].value.equals(normalized)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private int indexOfModifierIconPack(String packId) {
+        String[] ids = ModifierIconCatalog.selectablePackIds(false);
+        String normalized = ModifierIconCatalog.normalizePackId(packId);
+        for (int i = 0; i < ids.length; i++) {
+            if (ids[i].equals(normalized)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private int indexOfKeyDisplayPack(String packId) {
+        String[] ids = KeyDisplayOverridePackCatalog.selectablePackIds(false);
+        String normalized = KeyDisplayOverridePackCatalog.normalizePackId(packId);
+        for (int i = 0; i < ids.length; i++) {
+            if (ids[i].equals(normalized)) {
                 return i;
             }
         }

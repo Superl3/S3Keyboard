@@ -197,6 +197,137 @@ function Get-PreviewIconName {
     }
 }
 
+function Test-DotLegendLabel {
+    param([object] $Theme, [string] $Label)
+    $display = $Theme.keyDisplayOverrides
+    if ($null -ne $display -and $null -ne $display.alpha) {
+        return $display.alpha.type -eq "icon" `
+                -and $display.alpha.value -eq "dot" `
+                -and (Test-AlphaPreviewLabel -Label $Label)
+    }
+    return $null -ne $Theme.legendStyle `
+            -and $Theme.legendStyle.preset -eq "dots" `
+            -and [string]::IsNullOrWhiteSpace((Get-PreviewIconName $Label))
+}
+
+function Test-AlphaPreviewLabel {
+    param([string] $Label)
+    return $Label -match '^[A-Za-z]$' -or $Label -match '^[\u3131-\u318E\uAC00-\uD7A3]$'
+}
+
+function Test-SimpleTextPack {
+    param([string] $PackId)
+    return $PackId -eq "simple-text" -or $PackId -eq "olivia-script-text"
+}
+
+function Get-ModifierPackId {
+    param([object] $Theme)
+    if ($null -ne $Theme.icons -and -not [string]::IsNullOrWhiteSpace([string]$Theme.icons.modifierPackId)) {
+        if ((Test-SimpleTextPack -PackId ([string]$Theme.icons.modifierPackId))) {
+            return "line-mono"
+        }
+        return [string]$Theme.icons.modifierPackId
+    }
+    return "line-mono"
+}
+
+function Get-KeyDisplayPackId {
+    param([object] $Theme)
+    if ($null -ne $Theme.icons -and -not [string]::IsNullOrWhiteSpace([string]$Theme.icons.keyDisplayPackId)) {
+        return [string]$Theme.icons.keyDisplayPackId
+    }
+    if ($null -ne $Theme.icons -and (Test-SimpleTextPack -PackId ([string]$Theme.icons.modifierPackId))) {
+        return "simple-text"
+    }
+    return "none"
+}
+
+function Get-MetropolisPreviewColor {
+    param([string] $Icon)
+    switch ($Icon) {
+        "shift" { return [System.Drawing.Color]::FromArgb(255, 255, 75, 62) }
+        "backspace" { return [System.Drawing.Color]::FromArgb(255, 255, 176, 0) }
+        "enter" { return [System.Drawing.Color]::FromArgb(255, 102, 227, 196) }
+        "language" { return [System.Drawing.Color]::FromArgb(255, 102, 227, 196) }
+        default { return [System.Drawing.Color]::FromArgb(255, 112, 215, 232) }
+    }
+}
+
+function Draw-KeyDisplayPackPreview {
+    param(
+        [System.Drawing.Graphics] $Graphics,
+        [object] $Theme,
+        [string] $Icon,
+        [System.Drawing.Color] $Color,
+        [float] $X,
+        [float] $Y,
+        [float] $W,
+        [float] $H
+    )
+    if (-not (Test-SimpleTextPack -PackId (Get-KeyDisplayPackId -Theme $Theme))) {
+        return $false
+    }
+    $text = switch ($Icon) {
+        "enter" { "hihihi" }
+        "backspace" { "del" }
+        "shift" { "shift" }
+        "space" { "space" }
+        "language" { "lang" }
+        default { "" }
+    }
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $false
+    }
+    $font = [System.Drawing.Font]::new("Segoe UI", [Math]::Max(8, $H * 0.28), [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+    $brush = [System.Drawing.SolidBrush]::new($Color)
+    try {
+        Draw-CenteredText -Graphics $Graphics -Text $text -Font $font -Brush $brush -X $X -Y $Y -W $W -H $H
+    } finally {
+        $brush.Dispose()
+        $font.Dispose()
+    }
+    return $true
+}
+
+function Draw-PackPreviewIcon {
+    param(
+        [System.Drawing.Graphics] $Graphics,
+        [object] $Theme,
+        [string] $Icon,
+        [System.Drawing.Color] $Color,
+        [float] $X,
+        [float] $Y,
+        [float] $W,
+        [float] $H
+    )
+    $pack = Get-ModifierPackId -Theme $Theme
+    if ($pack -eq "dots-lines" -or $pack -eq "metropolis-points") {
+        $drawColor = if ($pack -eq "metropolis-points") { Get-MetropolisPreviewColor -Icon $Icon } else { $Color }
+        $pen = [System.Drawing.Pen]::new($drawColor, [Math]::Max(2, $H * 0.08))
+        $brush = [System.Drawing.SolidBrush]::new($drawColor)
+        try {
+            $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+            $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+            $y = $Y + $H / 2
+            $left = $X + $W * 0.28
+            $right = $X + $W * 0.72
+            if ($pack -eq "dots-lines" -and $Icon -ne "space") {
+                for ($i = 0; $i -lt 4; $i++) {
+                    $dotX = $left + ($right - $left) * $i / 3.0
+                    $Graphics.FillEllipse($brush, $dotX - $H * 0.035, $y - $H * 0.035, $H * 0.07, $H * 0.07)
+                }
+            } else {
+                $Graphics.DrawLine($pen, $left, $y, $right, $y)
+            }
+        } finally {
+            $pen.Dispose()
+            $brush.Dispose()
+        }
+        return $true
+    }
+    return $false
+}
+
 function Draw-PreviewIcon {
     param(
         [System.Drawing.Graphics] $Graphics,
@@ -363,7 +494,19 @@ function Draw-Key {
                     -Radius ([Math]::Max(0, $Radius - $inset))
         }
         $icon = Get-PreviewIconName $Label
-        if ([string]::IsNullOrWhiteSpace($icon)) {
+        if (Test-DotLegendLabel -Theme $Theme -Label $Label) {
+            $diameter = [Math]::Min($W, $H) * 0.20
+            $Graphics.FillEllipse(
+                    $textBrush,
+                    $X + ($W - $diameter) / 2.0,
+                    $Y + ($H - $diameter) / 2.0,
+                    $diameter,
+                    $diameter)
+        } elseif (-not [string]::IsNullOrWhiteSpace($icon) -and (Draw-KeyDisplayPackPreview -Graphics $Graphics -Theme $Theme -Icon $icon -Color $textColor -X $X -Y $Y -W $W -H $H)) {
+            # rendered by key display pack
+        } elseif (-not [string]::IsNullOrWhiteSpace($icon) -and (Draw-PackPreviewIcon -Graphics $Graphics -Theme $Theme -Icon $icon -Color $textColor -X $X -Y $Y -W $W -H $H)) {
+            # rendered by icon pack
+        } elseif ([string]::IsNullOrWhiteSpace($icon)) {
             Draw-CenteredText -Graphics $Graphics -Text $Label -Font $Font -Brush $textBrush -X $X -Y $Y -W $W -H $H
         } else {
             Draw-PreviewIcon -Graphics $Graphics -Icon $icon -Color $textColor -X $X -Y $Y -W $W -H $H

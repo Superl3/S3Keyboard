@@ -3,6 +3,9 @@ package com.superl3.s3keyboard;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 final class KeyboardPreferences {
     static final String KEYBOARD_MODE_LAST = "keyboard_mode_last";
     static final String HANDEDNESS_MODE = "handedness_mode";
@@ -55,6 +58,9 @@ final class KeyboardPreferences {
     static final String SECONDARY_TEXT_ITALIC = "secondary_text_italic";
     static final String SHOW_HANGUL_SLIDE_HINTS = "show_hangul_slide_hints";
     static final String SHOW_ENGLISH_SLIDE_HINTS = "show_english_slide_hints";
+    static final String SHOW_HANGUL_CONSONANT_SLIDE_HINTS = "show_hangul_consonant_slide_hints";
+    static final String SHOW_HANGUL_VOWEL_SLIDE_HINTS = "show_hangul_vowel_slide_hints";
+    static final String SHOW_SPACEBAR_SLIDE_HINTS = "show_spacebar_slide_hints";
     static final String SHOW_BEGINNER_TOOLTIP_PREVIEW = "show_beginner_tooltip_preview";
     static final String SHOW_CONSONANT_PREVIEW = "show_consonant_preview";
     static final String SHOW_VOWEL_PREVIEW = "show_vowel_preview";
@@ -63,6 +69,14 @@ final class KeyboardPreferences {
     static final String HANGUL_SPECIAL_COLUMN_PERCENT = "hangul_special_column_percent";
     static final String HANGUL_MAIN_KEY_UNITS = "hangul_main_key_units";
     static final String KEY_COLOR_OVERRIDES = "key_color_overrides";
+    static final String LEGEND_STYLE_PRESET = "legend_style_preset";
+    static final String POINT_KEYCAP_STYLE_ENABLED = "point_keycap_style_enabled";
+    static final String MODIFIER_ICON_THEME_PACK_ID = "modifier_icon_theme_pack_id";
+    static final String MODIFIER_ICON_OVERRIDE_PACK_ID = "modifier_icon_override_pack_id";
+    static final String KEY_DISPLAY_THEME_PACK_ID = "key_display_theme_pack_id";
+    static final String KEY_DISPLAY_OVERRIDE_PACK_ID = "key_display_override_pack_id";
+    static final String KEY_DISPLAY_OVERRIDES = "key_display_overrides";
+    static final String VISUAL_EFFECTS = "visual_effects";
     static final String SELECTED_THEME_ID = "selected_theme_id";
     static final String RESERVED_TAP_TEXT = "reserved_tap_text";
     static final String RESERVED_LEFT_TEXT = "reserved_left_text";
@@ -245,6 +259,23 @@ final class KeyboardPreferences {
                         prefs.getBoolean(SECONDARY_TEXT_ITALIC, defaults.secondaryTextItalic))
                 .withKeyColorOverrides(
                         KeyboardThemeJson.decodeKeyColorOverrides(prefs.getString(KEY_COLOR_OVERRIDES, "")))
+                .withLegendStyle(LegendStylePreset.fromPreference(prefs.getString(
+                        LEGEND_STYLE_PRESET,
+                        defaults.legendStylePreset.preferenceValue)))
+                .withPointKeycapStyle(prefs.getBoolean(
+                        POINT_KEYCAP_STYLE_ENABLED,
+                        defaults.pointKeycapStyleEnabled))
+                .withModifierIconPacks(
+                        prefs.getString(MODIFIER_ICON_THEME_PACK_ID, defaults.modifierIconThemePackId),
+                        prefs.getString(MODIFIER_ICON_OVERRIDE_PACK_ID, defaults.modifierIconOverridePackId))
+                .withKeyDisplayPacks(
+                        prefs.getString(KEY_DISPLAY_THEME_PACK_ID, defaults.keyDisplayThemePackId),
+                        prefs.getString(KEY_DISPLAY_OVERRIDE_PACK_ID, defaults.keyDisplayOverridePackId))
+                .withKeyDisplayOverrides(KeyboardThemeJson.decodeKeyDisplayOverrides(jsonObject(
+                        prefs.getString(KEY_DISPLAY_OVERRIDES, ""))))
+                .withVisualEffects(KeyboardThemeJson.decodeVisualEffects(
+                        jsonObject(prefs.getString(VISUAL_EFFECTS, "")),
+                        defaults.visualEffects))
                 .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.fromPreference(prefs.getString(
                         ADDITIONAL_NUMBER_ROW_COLOR_MODE,
                         defaults.additionalNumberRowColorMode.preferenceValue)));
@@ -312,6 +343,18 @@ final class KeyboardPreferences {
                 .putString(
                         KEY_COLOR_OVERRIDES,
                         KeyboardThemeJson.encodeKeyColorOverrides(settings.keyColorOverrides))
+                .putString(LEGEND_STYLE_PRESET, settings.legendStylePreset.preferenceValue)
+                .putBoolean(POINT_KEYCAP_STYLE_ENABLED, settings.pointKeycapStyleEnabled)
+                .putString(MODIFIER_ICON_THEME_PACK_ID, settings.modifierIconThemePackId)
+                .putString(MODIFIER_ICON_OVERRIDE_PACK_ID, settings.modifierIconOverridePackId)
+                .putString(KEY_DISPLAY_THEME_PACK_ID, settings.keyDisplayThemePackId)
+                .putString(KEY_DISPLAY_OVERRIDE_PACK_ID, settings.keyDisplayOverridePackId)
+                .putString(
+                        KEY_DISPLAY_OVERRIDES,
+                        KeyboardThemeJson.encodeKeyDisplayOverridesObject(settings.keyDisplayOverrides).toString())
+                .putString(
+                        VISUAL_EFFECTS,
+                        KeyboardThemeJson.encodeVisualEffectsObject(settings.visualEffects).toString())
                 .apply();
     }
 
@@ -411,6 +454,44 @@ final class KeyboardPreferences {
                 .apply();
     }
 
+    static boolean loadShowHangulConsonantSlideHints(Context context) {
+        SharedPreferences prefs = prefs(context);
+        if (prefs.contains(SHOW_HANGUL_CONSONANT_SLIDE_HINTS)) {
+            return prefs.getBoolean(SHOW_HANGUL_CONSONANT_SLIDE_HINTS, true);
+        }
+        return prefs.getBoolean(SHOW_HANGUL_SLIDE_HINTS, true);
+    }
+
+    static boolean loadShowHangulVowelSlideHints(Context context) {
+        SharedPreferences prefs = prefs(context);
+        if (prefs.contains(SHOW_HANGUL_VOWEL_SLIDE_HINTS)) {
+            return prefs.getBoolean(SHOW_HANGUL_VOWEL_SLIDE_HINTS, true);
+        }
+        return prefs.getBoolean(SHOW_HANGUL_SLIDE_HINTS, true);
+    }
+
+    static boolean loadShowSpacebarSlideHints(Context context) {
+        return prefs(context).getBoolean(SHOW_SPACEBAR_SLIDE_HINTS, true);
+    }
+
+    static void saveShowHangulConsonantSlideHints(Context context, boolean enabled) {
+        prefs(context).edit()
+                .putBoolean(SHOW_HANGUL_CONSONANT_SLIDE_HINTS, enabled)
+                .apply();
+    }
+
+    static void saveShowHangulVowelSlideHints(Context context, boolean enabled) {
+        prefs(context).edit()
+                .putBoolean(SHOW_HANGUL_VOWEL_SLIDE_HINTS, enabled)
+                .apply();
+    }
+
+    static void saveShowSpacebarSlideHints(Context context, boolean enabled) {
+        prefs(context).edit()
+                .putBoolean(SHOW_SPACEBAR_SLIDE_HINTS, enabled)
+                .apply();
+    }
+
     static void saveHandednessPreset(Context context, KeyboardSettings settings) {
         prefs(context).edit()
                 .putString(HANDEDNESS_MODE, settings.handednessMode.preferenceValue)
@@ -439,6 +520,17 @@ final class KeyboardPreferences {
 
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+    }
+
+    private static JSONObject jsonObject(String json) {
+        if (json == null || json.isEmpty()) {
+            return null;
+        }
+        try {
+            return new JSONObject(json);
+        } catch (JSONException exception) {
+            return null;
+        }
     }
 
     private static GestureAction reservedActionForCommand(String command) {

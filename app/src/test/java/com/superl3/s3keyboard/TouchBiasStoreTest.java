@@ -29,7 +29,8 @@ public final class TouchBiasStoreTest {
 
     @Test
     public void biasRoundTripsThroughEncodedStats() {
-        TouchBiasStore.Bias bias = new TouchBiasStore.Bias(1.25f, -2.5f, 3, 4, 5);
+        TouchBiasStore.Bias bias = new TouchBiasStore.Bias(1.25f, -2.5f, 3, 4, 5)
+                .recordTextInput(GestureAction.TAP);
         TouchBiasStore.Bias decoded = TouchBiasStore.Bias.decode(bias.encode());
 
         assertEquals(1.25f, decoded.xDp, 0.001f);
@@ -37,6 +38,8 @@ public final class TouchBiasStoreTest {
         assertEquals(3, decoded.samples);
         assertEquals(4, decoded.gestureThresholdAdjustmentDp);
         assertEquals(5, decoded.gestureSamples);
+        assertEquals(4, decoded.textSamples);
+        assertEquals(3, decoded.correctionSamples);
     }
 
     @Test
@@ -64,5 +67,38 @@ public final class TouchBiasStoreTest {
         assertEquals(-2f, decoded.yDp, 0.001f);
         assertEquals(3, decoded.samples);
         assertEquals(0, decoded.gestureThresholdAdjustmentDp);
+    }
+
+    @Test
+    public void typingPatternStatsTrackInputAndCorrectionRate() {
+        TouchBiasStore.Bias bias = TouchBiasStore.Bias.none()
+                .recordTextInput(GestureAction.TAP)
+                .recordTextInput(GestureAction.LEFT)
+                .recordImmediateDelete(1f, 1f, GestureAction.TAP);
+
+        assertEquals(2, bias.textSamples);
+        assertEquals(1, bias.correctionSamples);
+        assertEquals(500, bias.correctionRatePermille());
+    }
+
+    @Test
+    public void typingPatternLogKeepsRawTextForLocalLearning() {
+        String log = TouchBiasStore.appendTypingEvent(
+                "",
+                "input",
+                "ㄱ",
+                GestureAction.TAP,
+                0f,
+                0f);
+        log = TouchBiasStore.appendTypingEvent(
+                log,
+                "correction",
+                "ㄱ",
+                GestureAction.TAP,
+                2f,
+                -1f);
+
+        org.junit.Assert.assertTrue(log.contains("\"text\":\"ㄱ\""));
+        org.junit.Assert.assertTrue(log.contains("\"type\":\"correction\""));
     }
 }

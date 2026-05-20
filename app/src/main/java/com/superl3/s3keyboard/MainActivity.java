@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
@@ -12,6 +13,7 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
@@ -56,6 +58,7 @@ public final class MainActivity extends Activity {
     private static final String EXTRA_SHOW_HANGUL_NUMBER_ROW = "show_hangul_number_row";
     private static final String EXTRA_SHOW_ENGLISH_NUMBER_ROW = "show_english_number_row";
     private static final String EXTRA_DEMO_SETTINGS = "demo_settings";
+    private static final String EXTRA_THEME_PRESET_ID = "theme_preset_id";
 
     private KeyboardSettings settings;
     private boolean syncing;
@@ -75,6 +78,8 @@ public final class MainActivity extends Activity {
     private SeekBar gestureThresholdSeekBar;
     private SeekBar hapticDurationSeekBar;
     private SeekBar hapticGapSeekBar;
+    private SeekBar repeatStartDelaySeekBar;
+    private SeekBar repeatIntervalSeekBar;
     private SeekBar primaryTextSizeSeekBar;
     private SeekBar secondaryTextSizeSeekBar;
     private Spinner themePresetSpinner;
@@ -89,6 +94,8 @@ public final class MainActivity extends Activity {
     private Spinner borderColorSpinner;
     private Spinner depthColorSpinner;
     private Spinner fontFamilySpinner;
+    private Spinner modifierIconPackSpinner;
+    private Spinner keyDisplayPackSpinner;
     private Spinner additionalNumberRowColorModeSpinner;
     private Button deleteThemeButton;
     private CheckBox hangulNumberRowCheckBox;
@@ -104,11 +111,12 @@ public final class MainActivity extends Activity {
     private CheckBox primaryTextItalicCheckBox;
     private CheckBox secondaryTextBoldCheckBox;
     private CheckBox secondaryTextItalicCheckBox;
-    private CheckBox hangulSlideHintsCheckBox;
+    private CheckBox pointKeycapStyleCheckBox;
+    private CheckBox hangulConsonantSlideHintsCheckBox;
+    private CheckBox hangulVowelSlideHintsCheckBox;
     private CheckBox englishSlideHintsCheckBox;
+    private CheckBox spacebarSlideHintsCheckBox;
     private CheckBox beginnerTooltipPreviewCheckBox;
-    private CheckBox consonantPreviewCheckBox;
-    private CheckBox vowelPreviewCheckBox;
     private TextView leftMarginValue;
     private TextView rightMarginValue;
     private TextView hangulHeightValue;
@@ -125,6 +133,8 @@ public final class MainActivity extends Activity {
     private TextView keyGapValue;
     private TextView keyDepthValue;
     private TextView gestureThresholdValue;
+    private TextView repeatStartDelayValue;
+    private TextView repeatIntervalValue;
     private TextView hapticDurationValue;
     private TextView hapticGapValue;
     private TextView primaryTextSizeValue;
@@ -132,6 +142,7 @@ public final class MainActivity extends Activity {
     private LinearLayout themePresetCards;
     private ThemeOption[] themeOptions = new ThemeOption[0];
     private int selectedThemePresetIndex;
+    private EditText gestureTestInput;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,6 +168,27 @@ public final class MainActivity extends Activity {
         syncControls();
     }
 
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN
+                && gestureTestInput != null
+                && gestureTestInput.hasFocus()
+                && isTouchOutsideView(event, gestureTestInput)) {
+            gestureTestInput.clearFocus();
+            InputMethodManager imm = getSystemService(InputMethodManager.class);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(gestureTestInput.getWindowToken(), 0);
+            }
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
+    private boolean isTouchOutsideView(MotionEvent event, View view) {
+        Rect rect = new Rect();
+        view.getGlobalVisibleRect(rect);
+        return !rect.contains(Math.round(event.getRawX()), Math.round(event.getRawY()));
+    }
+
     private void applyIntentOverrides(Intent intent) {
         if (intent == null) {
             return;
@@ -167,6 +199,13 @@ public final class MainActivity extends Activity {
                 && intent.getBooleanExtra(EXTRA_DEMO_SHOW_KEYBOARD, demoShowKeyboard);
         if (!debugDemoIntent || !hasDemoSettingOverride(intent)) {
             return;
+        }
+
+        String themePresetId = intent.getStringExtra(EXTRA_THEME_PRESET_ID);
+        KeyboardThemePreset themePreset = KeyboardThemePreset.find(themePresetId);
+        if (themePreset != null) {
+            settings = settings.withAppearanceFrom(themePreset.applyTo(KeyboardSettings.defaults()));
+            KeyboardPreferences.saveSelectedThemeId(this, themePreset.id);
         }
 
         if (intent.hasExtra(EXTRA_HANGUL_SPECIAL_COLUMN_PERCENT)) {
@@ -262,7 +301,8 @@ public final class MainActivity extends Activity {
                 || intent.hasExtra(EXTRA_SHOW_BEGINNER_TOOLTIP_PREVIEW)
                 || intent.hasExtra(EXTRA_SHOW_NUMBER_ROW)
                 || intent.hasExtra(EXTRA_SHOW_HANGUL_NUMBER_ROW)
-                || intent.hasExtra(EXTRA_SHOW_ENGLISH_NUMBER_ROW);
+                || intent.hasExtra(EXTRA_SHOW_ENGLISH_NUMBER_ROW)
+                || intent.hasExtra(EXTRA_THEME_PRESET_ID);
     }
 
     private String stringExtra(Intent intent, String name, String fallback) {
@@ -310,6 +350,7 @@ public final class MainActivity extends Activity {
         addBodyText(root, getString(R.string.gesture_practice_body), 8);
 
         EditText testInput = new EditText(this);
+        gestureTestInput = testInput;
         testInput.setHint(R.string.gesture_practice_hint);
         testInput.setSingleLine(false);
         testInput.setMinLines(2);
@@ -320,6 +361,7 @@ public final class MainActivity extends Activity {
 
         addThemeQuickControls(root);
         addVisualControls(root);
+        addVisibleVisualControls(root);
 
         LinearLayout layoutSection = addExpandableSection(
                 root,
@@ -565,7 +607,7 @@ public final class MainActivity extends Activity {
     }
 
     private void addThemeQuickControls(LinearLayout root) {
-        addSectionTitle(root, "Theme");
+        addSectionTitle(root, "테마");
         Button openThemeSelectorButton = new Button(this);
         openThemeSelectorButton.setText("테마 선택");
         styleSystemButton(openThemeSelectorButton);
@@ -574,6 +616,48 @@ public final class MainActivity extends Activity {
                 startActivity(new Intent(this, ThemeSelectorActivity.class)));
         root.addView(openThemeSelectorButton, buttonParams());
 
+        Button resetThemeButton = new Button(this);
+        resetThemeButton.setText("\uAE30\uBCF8 \uD14C\uB9C8\uB85C \uBCF5\uC6D0");
+        styleSystemButton(resetThemeButton);
+        setButtonIcon(resetThemeButton, R.drawable.ic_keyboard_reset);
+        resetThemeButton.setOnClickListener(v -> resetThemeAppearanceToDefault());
+        root.addView(resetThemeButton, buttonParams());
+
+    }
+
+    private void resetThemeAppearanceToDefault() {
+        selectedThemePresetIndex = 0;
+        settings = ThemeOption.resetToDefaultAppearance(settings);
+        KeyboardPreferences.saveSelectedThemeId(this, "");
+        saveAndSync();
+    }
+
+    private void addVisibleVisualControls(LinearLayout root) {
+        LinearLayout visualSection = addExpandableSection(root, "\uC2DC\uAC01 \uC635\uC158", false);
+
+        fontFamilySpinner = fontSpinner();
+        visualSection.addView(label("\uD3F0\uD2B8"), matchWrapWithTop(12));
+        visualSection.addView(fontFamilySpinner, matchWrap());
+
+        modifierIconPackSpinner = modifierIconPackSpinner(true);
+        visualSection.addView(label("\uBAA8\uB514\uD30C\uC774\uC5B4 \uC544\uC774\uCF58"), matchWrapWithTop(12));
+        visualSection.addView(modifierIconPackSpinner, matchWrap());
+
+        keyDisplayPackSpinner = keyDisplayPackSpinner(true);
+        visualSection.addView(label("Key display override pack"), matchWrapWithTop(12));
+        visualSection.addView(keyDisplayPackSpinner, matchWrap());
+
+        pointKeycapStyleCheckBox = new CheckBox(this);
+        pointKeycapStyleCheckBox.setText("\uD3EC\uC778\uD2B8 \uD0A4\uCEA1 \uC2A4\uD0C0\uC77C \uC0AC\uC6A9");
+        pointKeycapStyleCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                selectedThemePresetIndex = 0;
+                settings = settings.withPointKeycapStyle(isChecked);
+                saveAndSync();
+            }
+        });
+        visualSection.addView(pointKeycapStyleCheckBox, matchWrapWithTop(8));
     }
 
     private void addVisualControls(LinearLayout root) {
@@ -1007,6 +1091,40 @@ public final class MainActivity extends Activity {
         root.addView(gestureThresholdValue, matchWrapWithTop(12));
         root.addView(gestureThresholdSeekBar, matchWrap());
 
+        repeatStartDelayValue = label("");
+        repeatStartDelaySeekBar = seekBar(
+                KeyboardSettings.MAX_REPEAT_START_DELAY_MS - KeyboardSettings.MIN_REPEAT_START_DELAY_MS);
+        repeatStartDelaySeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && !syncing) {
+                    settings = settings.withRepeatTiming(
+                            KeyboardSettings.MIN_REPEAT_START_DELAY_MS + progress,
+                            settings.repeatIntervalMs);
+                    saveAndSync();
+                }
+            }
+        });
+        root.addView(repeatStartDelayValue, matchWrapWithTop(12));
+        root.addView(repeatStartDelaySeekBar, matchWrap());
+
+        repeatIntervalValue = label("");
+        repeatIntervalSeekBar = seekBar(
+                KeyboardSettings.MAX_REPEAT_INTERVAL_MS - KeyboardSettings.MIN_REPEAT_INTERVAL_MS);
+        repeatIntervalSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && !syncing) {
+                    settings = settings.withRepeatTiming(
+                            settings.repeatStartDelayMs,
+                            KeyboardSettings.MIN_REPEAT_INTERVAL_MS + progress);
+                    saveAndSync();
+                }
+            }
+        });
+        root.addView(repeatIntervalValue, matchWrapWithTop(8));
+        root.addView(repeatIntervalSeekBar, matchWrap());
+
         touchBiasAutoCorrectionCheckBox = new CheckBox(this);
         touchBiasAutoCorrectionCheckBox.setText("터치/슬라이드 보정 학습");
         touchBiasAutoCorrectionCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
@@ -1043,23 +1161,30 @@ public final class MainActivity extends Activity {
         });
         root.addView(doubleSpacePeriodCheckBox, matchWrapWithTop(8));
 
-        hangulSlideHintsCheckBox = new CheckBox(this);
-        hangulSlideHintsCheckBox.setText("한글 슬라이드 힌트 표시");
-        hangulSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+        hangulConsonantSlideHintsCheckBox = new CheckBox(this);
+        hangulConsonantSlideHintsCheckBox.setText("한글 자음 슬라이드 힌트");
+        hangulConsonantSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
-                settings = settings.withHintVisibility(
-                        isChecked,
-                        settings.showEnglishSlideHints,
-                        settings.showBeginnerTooltipPreview);
-                saveAndSync();
+                KeyboardPreferences.saveShowHangulConsonantSlideHints(MainActivity.this, isChecked);
+                syncControls();
             }
         });
-        root.addView(hangulSlideHintsCheckBox, matchWrapWithTop(12));
+        root.addView(hangulConsonantSlideHintsCheckBox, matchWrapWithTop(12));
+
+        hangulVowelSlideHintsCheckBox = new CheckBox(this);
+        hangulVowelSlideHintsCheckBox.setText("한글 모음 슬라이드 힌트");
+        hangulVowelSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                KeyboardPreferences.saveShowHangulVowelSlideHints(MainActivity.this, isChecked);
+                syncControls();
+            }
+        });
+        root.addView(hangulVowelSlideHintsCheckBox, matchWrapWithTop(8));
 
         englishSlideHintsCheckBox = new CheckBox(this);
-        englishSlideHintsCheckBox.setText("영문 슬라이드 힌트 표시");
+        englishSlideHintsCheckBox.setText("영문 슬라이드 힌트");
         englishSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1073,8 +1198,19 @@ public final class MainActivity extends Activity {
         });
         root.addView(englishSlideHintsCheckBox, matchWrapWithTop(8));
 
+        spacebarSlideHintsCheckBox = new CheckBox(this);
+        spacebarSlideHintsCheckBox.setText("스페이스바 슬라이드 힌트");
+        spacebarSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                KeyboardPreferences.saveShowSpacebarSlideHints(MainActivity.this, isChecked);
+                syncControls();
+            }
+        });
+        root.addView(spacebarSlideHintsCheckBox, matchWrapWithTop(8));
+
         beginnerTooltipPreviewCheckBox = new CheckBox(this);
-        beginnerTooltipPreviewCheckBox.setText("초심자 입력 preview tooltip 표시");
+        beginnerTooltipPreviewCheckBox.setText("입력 preview 표시");
         beginnerTooltipPreviewCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1087,28 +1223,6 @@ public final class MainActivity extends Activity {
             }
         });
         root.addView(beginnerTooltipPreviewCheckBox, matchWrapWithTop(8));
-
-        consonantPreviewCheckBox = new CheckBox(this);
-        consonantPreviewCheckBox.setText("자음 입력 preview 표시");
-        consonantPreviewCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                KeyboardPreferences.saveShowConsonantPreview(MainActivity.this, isChecked);
-                syncControls();
-            }
-        });
-        root.addView(consonantPreviewCheckBox, matchWrapWithTop(8));
-
-        vowelPreviewCheckBox = new CheckBox(this);
-        vowelPreviewCheckBox.setText("모음 입력 preview 표시");
-        vowelPreviewCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                KeyboardPreferences.saveShowVowelPreview(MainActivity.this, isChecked);
-                syncControls();
-            }
-        });
-        root.addView(vowelPreviewCheckBox, matchWrapWithTop(4));
 
         Button resetTouchBiasButton = new Button(this);
         resetTouchBiasButton.setText("입력 보정 초기화");
@@ -1193,6 +1307,7 @@ public final class MainActivity extends Activity {
         styleCheckBox(primaryTextItalicCheckBox);
         styleCheckBox(secondaryTextBoldCheckBox);
         styleCheckBox(secondaryTextItalicCheckBox);
+        styleCheckBox(pointKeycapStyleCheckBox);
         styleCheckBox(hangulNumberRowCheckBox);
         styleCheckBox(englishNumberRowCheckBox);
         styleCheckBox(hapticCheckBox);
@@ -1201,11 +1316,11 @@ public final class MainActivity extends Activity {
         styleCheckBox(clipboardHistoryCheckBox);
         styleCheckBox(doubleSpacePeriodCheckBox);
         styleCheckBox(keyDepthCheckBox);
-        styleCheckBox(hangulSlideHintsCheckBox);
+        styleCheckBox(hangulConsonantSlideHintsCheckBox);
+        styleCheckBox(hangulVowelSlideHintsCheckBox);
         styleCheckBox(englishSlideHintsCheckBox);
+        styleCheckBox(spacebarSlideHintsCheckBox);
         styleCheckBox(beginnerTooltipPreviewCheckBox);
-        styleCheckBox(consonantPreviewCheckBox);
-        styleCheckBox(vowelPreviewCheckBox);
         if (themeOptions.length == 0) {
             reloadThemeOptions();
         }
@@ -1235,6 +1350,10 @@ public final class MainActivity extends Activity {
         keyDepthSeekBar.setProgress(settings.keyDepthDp);
         gestureThresholdSeekBar.setProgress(
                 settings.gestureThresholdDp - KeyboardSettings.MIN_GESTURE_THRESHOLD_DP);
+        repeatStartDelaySeekBar.setProgress(
+                settings.repeatStartDelayMs - KeyboardSettings.MIN_REPEAT_START_DELAY_MS);
+        repeatIntervalSeekBar.setProgress(
+                settings.repeatIntervalMs - KeyboardSettings.MIN_REPEAT_INTERVAL_MS);
         int hapticDurationMs = KeyboardPreferences.loadHapticTickDurationMs(this);
         int hapticGapMs = KeyboardPreferences.loadHapticTickGapMs(this);
         hapticDurationSeekBar.setProgress(hapticDurationMs - KeyboardPreferences.MIN_HAPTIC_TICK_DURATION_MS);
@@ -1248,6 +1367,8 @@ public final class MainActivity extends Activity {
         borderColorSpinner.setSelection(indexOfColor(settings.borderColor));
         depthColorSpinner.setSelection(indexOfColor(settings.depthColor));
         fontFamilySpinner.setSelection(indexOfFont(settings.fontFamily));
+        modifierIconPackSpinner.setSelection(indexOfModifierIconPack(settings.modifierIconOverridePackId, true));
+        keyDisplayPackSpinner.setSelection(indexOfKeyDisplayPack(settings.keyDisplayOverridePackId, true));
         additionalNumberRowColorModeSpinner.setSelection(settings.additionalNumberRowColorMode.ordinal());
         primaryTextSizeSeekBar.setProgress(
                 settings.primaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
@@ -1257,6 +1378,7 @@ public final class MainActivity extends Activity {
         primaryTextItalicCheckBox.setChecked(settings.primaryTextItalic);
         secondaryTextBoldCheckBox.setChecked(settings.secondaryTextBold);
         secondaryTextItalicCheckBox.setChecked(settings.secondaryTextItalic);
+        pointKeycapStyleCheckBox.setChecked(settings.pointKeycapStyleEnabled);
         hangulNumberRowCheckBox.setChecked(settings.showHangulNumberRow);
         englishNumberRowCheckBox.setChecked(settings.showEnglishNumberRow);
         hapticCheckBox.setChecked(settings.hapticFeedbackEnabled);
@@ -1270,13 +1392,13 @@ public final class MainActivity extends Activity {
         doubleSpacePeriodCheckBox.setChecked(settings.englishDoubleSpacePeriodEnabled);
         keyDepthCheckBox.setChecked(settings.keyDepthEnabled);
         customDepthColorCheckBox.setChecked(settings.customDepthColorEnabled);
-        hangulSlideHintsCheckBox.setChecked(settings.showHangulSlideHints);
+        hangulConsonantSlideHintsCheckBox.setChecked(
+                KeyboardPreferences.loadShowHangulConsonantSlideHints(this));
+        hangulVowelSlideHintsCheckBox.setChecked(
+                KeyboardPreferences.loadShowHangulVowelSlideHints(this));
         englishSlideHintsCheckBox.setChecked(settings.showEnglishSlideHints);
+        spacebarSlideHintsCheckBox.setChecked(KeyboardPreferences.loadShowSpacebarSlideHints(this));
         beginnerTooltipPreviewCheckBox.setChecked(settings.showBeginnerTooltipPreview);
-        consonantPreviewCheckBox.setChecked(KeyboardPreferences.loadShowConsonantPreview(this));
-        vowelPreviewCheckBox.setChecked(KeyboardPreferences.loadShowVowelPreview(this));
-        consonantPreviewCheckBox.setEnabled(settings.showBeginnerTooltipPreview);
-        vowelPreviewCheckBox.setEnabled(settings.showBeginnerTooltipPreview);
         keyDepthSeekBar.setEnabled(settings.keyDepthEnabled);
         depthColorSpinner.setEnabled(settings.customDepthColorEnabled);
         deleteThemeButton.setEnabled(selectedThemeOption() != null && selectedThemeOption().userThemeId != null);
@@ -1301,6 +1423,9 @@ public final class MainActivity extends Activity {
         hapticGapValue.setText("햅틱 사이 간격: " + hapticGapMs + "ms");
         primaryTextSizeValue.setText("주 글자 크기: " + settings.primaryTextSizePercent + "%");
         secondaryTextSizeValue.setText("보조 힌트 크기: " + settings.secondaryTextSizePercent + "%");
+        repeatStartDelayValue.setText("\uBC18\uBCF5 \uC2DC\uC791 \uC9C0\uC5F0: "
+                + settings.repeatStartDelayMs + "ms");
+        repeatIntervalValue.setText("\uBC18\uBCF5 \uAC04\uACA9: " + settings.repeatIntervalMs + "ms");
         handednessSpinner.post(() -> syncing = false);
     }
 
@@ -1635,6 +1760,58 @@ public final class MainActivity extends Activity {
         return spinner;
     }
 
+    private Spinner modifierIconPackSpinner(boolean includeThemeDefault) {
+        Spinner spinner = new Spinner(this);
+        String[] ids = ModifierIconCatalog.selectablePackIds(includeThemeDefault);
+        String[] labels = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            labels[i] = ids[i].isEmpty() ? "\uD14C\uB9C8 \uAE30\uBCF8\uAC12" : ModifierIconCatalog.displayName(ids[i]);
+        }
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(this, labels);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!syncing) {
+                    settings = settings.withModifierIconOverridePack(ids[position]);
+                    saveAndSync();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        return spinner;
+    }
+
+    private Spinner keyDisplayPackSpinner(boolean includeThemeDefault) {
+        Spinner spinner = new Spinner(this);
+        String[] ids = KeyDisplayOverridePackCatalog.selectablePackIds(includeThemeDefault);
+        String[] labels = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            labels[i] = ids[i].isEmpty()
+                    ? "\uD14C\uB9C8 \uAE30\uBCF8\uAC12"
+                    : KeyDisplayOverridePackCatalog.displayName(ids[i]);
+        }
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(this, labels);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!syncing) {
+                    settings = settings.withKeyDisplayOverridePack(ids[position]);
+                    saveAndSync();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        return spinner;
+    }
+
     private int indexOfColor(int color) {
         int opaqueColor = 0xFF000000 | (color & 0x00FFFFFF);
         for (int i = 0; i < ColorOption.BASIC_OPTIONS.length; i++) {
@@ -1649,6 +1826,35 @@ public final class MainActivity extends Activity {
         String normalized = KeyboardSettings.normalizeFontFamily(fontFamily);
         for (int i = 0; i < FontOption.BASIC_OPTIONS.length; i++) {
             if (FontOption.BASIC_OPTIONS[i].value.equals(normalized)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private int indexOfModifierIconPack(String packId, boolean includeThemeDefault) {
+        String[] ids = ModifierIconCatalog.selectablePackIds(includeThemeDefault);
+        String normalized = packId == null || packId.isEmpty()
+                ? ModifierIconCatalog.PACK_THEME_DEFAULT
+                : ModifierIconCatalog.normalizePackId(packId);
+        for (int i = 0; i < ids.length; i++) {
+            if (ids[i].equals(normalized)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private int indexOfKeyDisplayPack(String packId, boolean includeThemeDefault) {
+        String normalized = packId == null || packId.isEmpty()
+                ? KeyDisplayOverridePackCatalog.PACK_THEME_DEFAULT
+                : KeyDisplayOverridePackCatalog.normalizePackId(packId);
+        String[] ids = KeyDisplayOverridePackCatalog.selectablePackIds(includeThemeDefault);
+        for (int i = 0; i < ids.length; i++) {
+            String candidate = ids[i].isEmpty()
+                    ? KeyDisplayOverridePackCatalog.PACK_THEME_DEFAULT
+                    : KeyDisplayOverridePackCatalog.normalizePackId(ids[i]);
+            if (candidate.equals(normalized)) {
                 return i;
             }
         }

@@ -116,11 +116,11 @@ public final class KeyboardThemeJsonTest {
 
         KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
 
-        assertEquals(KeyboardSettings.FONT_DEFAULT, imported.fontFamily);
+        assertEquals(KeyboardSettings.DEFAULT_FONT_FAMILY, imported.fontFamily);
     }
 
     @Test
-    public void missingKeyColorOverridesClearThemeSpecificOverrides() {
+    public void missingKeyColorOverridesKeepLayeredOverrides() {
         Map<String, Integer> overrides = new HashMap<>();
         overrides.put("tap:q", 0x00ABCDEF);
 
@@ -128,7 +128,7 @@ public final class KeyboardThemeJsonTest {
                 KeyboardSettings.defaults().withKeyColorOverrides(overrides),
                 "{\"schemaVersion\":1}");
 
-        assertEquals(0, imported.keyColorOverrides.size());
+        assertEquals(0xFFABCDEF, (int) imported.keyColorOverrides.get("tap:q"));
     }
 
     @Test
@@ -188,13 +188,74 @@ public final class KeyboardThemeJsonTest {
     }
 
     @Test
-    public void importsAndExportsLegendStyle() {
-        KeyboardSettings settings = KeyboardSettings.defaults().withLegendStyle(LegendStylePreset.DOTS);
+    public void legacyDotsLegendImportsAsKeyDisplayOverrideAndExportsNewShape() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"legendStyle\":{\"preset\":\"dots\"}"
+                + "}";
 
-        String exported = KeyboardThemeJson.exportTheme(settings, "Dots", "local", null);
-        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), exported);
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+        String exported = KeyboardThemeJson.exportTheme(imported, "Dots", "local", null);
 
-        assertEquals(LegendStylePreset.DOTS, imported.legendStylePreset);
+        assertEquals(LegendStylePreset.DEFAULT, imported.legendStylePreset);
+        assertEquals(KeyDisplayOverride.TYPE_ICON, imported.keyDisplayOverrides.get("alpha").type);
+        assertEquals(ModifierIconCatalog.GLYPH_DOT, imported.keyDisplayOverrides.get("alpha").value);
+        assertFalse(exported.contains("\"legendStyle\""));
+    }
+
+    @Test
+    public void importsAndExportsIconsDisplayPacksAndEffects() {
+        Map<String, KeyDisplayOverride> display = new HashMap<>();
+        display.put("alpha", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_DOT));
+        display.put("tap:q", KeyDisplayOverride.text("Q"));
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withModifierIconThemePack(ModifierIconCatalog.PACK_ACCENT_COLOR)
+                .withKeyDisplayThemePack(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT)
+                .withVisualEffects(new KeyboardVisualEffects(true, 12, true, 24, true))
+                .withKeyDisplayOverrides(display);
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(
+                KeyboardSettings.defaults(),
+                KeyboardThemeJson.exportTheme(settings, "Icons", "local", null));
+
+        assertEquals(ModifierIconCatalog.PACK_ACCENT_COLOR, imported.modifierIconThemePackId);
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT, imported.keyDisplayThemePackId);
+        assertEquals(ModifierIconCatalog.GLYPH_DOT, imported.keyDisplayOverrides.get("alpha").value);
+        assertEquals("Q", imported.keyDisplayOverrides.get("tap:q").value);
+        assertEquals(true, imported.visualEffects.blurEnabled);
+        assertEquals(12, imported.visualEffects.blurRadiusDp);
+        assertEquals(true, imported.visualEffects.metallicEnabled);
+        assertEquals(24, imported.visualEffects.metallicStrengthPercent);
+    }
+
+    @Test
+    public void themeLayersApplyInOrderBeforeLocalOverrides() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"layers\":[\"gmk-dots-dark\",\"gmk-metropolis\"],"
+                + "\"colors\":{\"accent\":\"#123456\"},"
+                + "\"keyBackgroundColorOverrides\":{\"alpha\":\"#010203\"}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(0xFF123456, imported.accentColor);
+        assertEquals(ModifierIconCatalog.PACK_METROPOLIS_POINTS, imported.modifierIconThemePackId);
+        assertEquals(0xFF010203, (int) imported.keyColorOverrides.get("background:alpha"));
+        assertEquals(ModifierIconCatalog.GLYPH_DOT, imported.keyDisplayOverrides.get("alpha").value);
+    }
+
+    @Test
+    public void legacySimpleTextModifierIconPackImportsAsKeyDisplayPack() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"icons\":{\"modifierPackId\":\"olivia-script-text\"}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(ModifierIconCatalog.PACK_LINE_MONO, imported.modifierIconThemePackId);
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT, imported.keyDisplayThemePackId);
     }
 
     @Test
@@ -216,6 +277,55 @@ public final class KeyboardThemeJsonTest {
 
         assertEquals(0xFFFF6677, (int) roundTrip.keyColorOverrides.get("background:enter"));
         assertEquals(0xFF112233, (int) roundTrip.keyColorOverrides.get("background:tap:q"));
+    }
+
+    @Test
+    public void importsExternalKeyDisplayPackAsOverrides() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"icons\":{\"keyDisplayPackId\":\"desk-pack\"},"
+                + "\"iconPacks\":{"
+                + "\"keyDisplay\":{"
+                + "\"desk-pack\":{"
+                + "\"overrides\":{"
+                + "\"alpha\":{\"type\":\"icon\",\"value\":\"dot\"},"
+                + "\"keys\":{\"enter\":{\"type\":\"text\",\"value\":\"go\"}}"
+                + "}"
+                + "}"
+                + "}"
+                + "}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_NONE, imported.keyDisplayThemePackId);
+        assertEquals(KeyDisplayOverride.TYPE_ICON, imported.keyDisplayOverrides.get("alpha").type);
+        assertEquals(ModifierIconCatalog.GLYPH_DOT, imported.keyDisplayOverrides.get("alpha").value);
+        assertEquals("go", imported.keyDisplayOverrides.get("enter").value);
+    }
+
+    @Test
+    public void importsExternalModifierPackThroughBuiltinRendererAndOverrides() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"icons\":{\"modifierPackId\":\"wide-dots\"},"
+                + "\"iconPacks\":{"
+                + "\"modifier\":{"
+                + "\"wide-dots\":{"
+                + "\"extends\":\"dots-lines\","
+                + "\"keyDisplayOverrides\":{"
+                + "\"modifiers\":{\"type\":\"icon\",\"value\":\"dot\"}"
+                + "}"
+                + "}"
+                + "}"
+                + "}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(ModifierIconCatalog.PACK_DOTS_LINES, imported.modifierIconThemePackId);
+        assertEquals(KeyDisplayOverride.TYPE_ICON, imported.keyDisplayOverrides.get("modifiers").type);
+        assertEquals(ModifierIconCatalog.GLYPH_DOT, imported.keyDisplayOverrides.get("modifiers").value);
     }
 
     private static Map<String, Integer> sampleKeyOverrides() {

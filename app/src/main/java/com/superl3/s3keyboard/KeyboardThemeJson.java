@@ -1,5 +1,6 @@
 package com.superl3.s3keyboard;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -33,6 +34,7 @@ final class KeyboardThemeJson {
             colors.put("accentKey", colorToString(safeSettings.accentKeyColor));
             colors.put("keyPressed", colorToString(safeSettings.keyPressedColor));
             colors.put("keyboardBackground", colorToString(safeSettings.keyboardBackgroundColor));
+            colors.put("panelBackground", colorToString(safeSettings.keyboardBackgroundColor));
             colors.put("border", colorToString(safeSettings.borderColor));
             colors.put(
                     "depth",
@@ -65,10 +67,18 @@ final class KeyboardThemeJson {
             typography.put("secondaryTextItalic", safeSettings.secondaryTextItalic);
             root.put("typography", typography);
 
-            if (safeSettings.legendStylePreset != LegendStylePreset.DEFAULT) {
-                JSONObject legendStyle = new JSONObject();
-                legendStyle.put("preset", safeSettings.legendStylePreset.preferenceValue);
-                root.put("legendStyle", legendStyle);
+            JSONObject icons = new JSONObject();
+            if (!KeyboardSettings.DEFAULT_MODIFIER_ICON_PACK_ID.equals(safeSettings.modifierIconThemePackId)) {
+                icons.put("modifierPackId", safeSettings.modifierIconThemePackId);
+            }
+            if (!KeyboardSettings.DEFAULT_KEY_DISPLAY_PACK_ID.equals(safeSettings.keyDisplayThemePackId)) {
+                icons.put("keyDisplayPackId", safeSettings.keyDisplayThemePackId);
+            }
+            if (icons.length() > 0) {
+                root.put("icons", icons);
+            }
+            if (safeSettings.visualEffects.hasExportableEffects()) {
+                root.put("effects", encodeVisualEffectsObject(safeSettings.visualEffects));
             }
 
             if (!safeSettings.keyColorOverrides.isEmpty()) {
@@ -80,6 +90,9 @@ final class KeyboardThemeJson {
                 if (backgroundOverrides.length() > 0) {
                     root.put("keyBackgroundColorOverrides", backgroundOverrides);
                 }
+            }
+            if (!safeSettings.keyDisplayOverrides.isEmpty()) {
+                root.put("keyDisplayOverrides", encodeKeyDisplayOverridesObject(safeSettings.keyDisplayOverrides));
             }
 
             return root.toString(2);
@@ -97,10 +110,12 @@ final class KeyboardThemeJson {
                 throw new IllegalArgumentException("Unsupported theme schemaVersion: " + schemaVersion);
             }
 
+            KeyboardSettings layeredBase = importThemeLayers(base, root);
             JSONObject colors = root.optJSONObject("colors");
             JSONObject shape = root.optJSONObject("shape");
             JSONObject typography = root.optJSONObject("typography");
             JSONObject legendStyle = root.optJSONObject("legendStyle");
+            JSONObject icons = root.optJSONObject("icons");
             JSONObject numberRow = root.optJSONObject("additionalNumberRow");
             JSONObject keyColorOverrides = root.optJSONObject("keyTextColorOverrides");
             if (keyColorOverrides == null) {
@@ -108,28 +123,31 @@ final class KeyboardThemeJson {
             }
             JSONObject keyBackgroundColorOverrides = root.optJSONObject("keyBackgroundColorOverrides");
 
-            boolean customDepthColor = base.customDepthColorEnabled;
-            int depthColor = base.depthColor;
+            boolean customDepthColor = layeredBase.customDepthColorEnabled;
+            int depthColor = layeredBase.depthColor;
             if (colors != null && colors.has("depth")) {
                 if (colors.isNull("depth")) {
                     customDepthColor = false;
-                    depthColor = base.borderColor;
+                    depthColor = layeredBase.borderColor;
                 } else {
                     customDepthColor = true;
-                    depthColor = parseColor(colors.optString("depth"), base.depthColor);
+                    depthColor = parseColor(colors.optString("depth"), layeredBase.depthColor);
                 }
             }
 
-            KeyboardSettings themed = base.withExtendedThemeColors(
-                    color(colors, "keyIdle", base.keyIdleColor),
-                    color(colors, "keyPressed", base.keyPressedColor),
-                    color(colors, "keyboardBackground", base.keyboardBackgroundColor),
-                    color(colors, "accent", base.accentColor),
-                    color(colors, "secondary", base.secondaryColor),
-                    color(colors, "functionKey", base.functionKeyColor),
-                    color(colors, "primaryFunctionKey", base.primaryFunctionKeyColor),
-                    color(colors, "accentKey", base.accentKeyColor),
-                    color(colors, "border", base.borderColor),
+            KeyboardSettings themed = layeredBase.withExtendedThemeColors(
+                    color(colors, "keyIdle", layeredBase.keyIdleColor),
+                    color(colors, "keyPressed", layeredBase.keyPressedColor),
+                    color(colors, "keyboardBackground", color(
+                            colors,
+                            "panelBackground",
+                            layeredBase.keyboardBackgroundColor)),
+                    color(colors, "accent", layeredBase.accentColor),
+                    color(colors, "secondary", layeredBase.secondaryColor),
+                    color(colors, "functionKey", layeredBase.functionKeyColor),
+                    color(colors, "primaryFunctionKey", layeredBase.primaryFunctionKeyColor),
+                    color(colors, "accentKey", layeredBase.accentKeyColor),
+                    color(colors, "border", layeredBase.borderColor),
                     customDepthColor,
                     depthColor);
 
@@ -173,14 +191,179 @@ final class KeyboardThemeJson {
                                 "preset",
                                 themed.legendStylePreset.preferenceValue)));
             }
+            if (icons != null) {
+                String modifierPackId = icons.optString(
+                        "modifierPackId",
+                        themed.modifierIconThemePackId);
+                if (KeyDisplayOverridePackCatalog.isKnownNonEmptyPackId(modifierPackId)) {
+                    themed = themed
+                            .withModifierIconThemePack(ModifierIconCatalog.PACK_LINE_MONO)
+                            .withKeyDisplayThemePack(modifierPackId);
+                } else {
+                    String importedBasePackId = importedModifierBasePackId(root, icons, modifierPackId);
+                    themed = themed.withModifierIconThemePack(
+                            importedBasePackId == null ? modifierPackId : importedBasePackId);
+                }
+                String keyDisplayPackId = icons.optString(
+                        "keyDisplayPackId",
+                        themed.keyDisplayThemePackId);
+                if (hasImportedKeyDisplayPack(root, icons, keyDisplayPackId)) {
+                    themed = themed.withKeyDisplayThemePack(KeyDisplayOverridePackCatalog.PACK_NONE);
+                } else {
+                    themed = themed.withKeyDisplayThemePack(keyDisplayPackId);
+                }
+            }
 
-            Map<String, Integer> overrides = decodeKeyColorOverrides(keyColorOverrides);
+            Map<String, Integer> overrides = new HashMap<>(themed.keyColorOverrides);
+            overrides.putAll(decodeKeyColorOverrides(keyColorOverrides));
             overrides.putAll(decodeKeyBackgroundColorOverrides(keyBackgroundColorOverrides));
             themed = themed.withKeyColorOverrides(overrides);
+            Map<String, KeyDisplayOverride> displayOverrides = new HashMap<>(themed.keyDisplayOverrides);
+            Map<String, KeyDisplayOverride> importedDisplayOverrides = decodeKeyDisplayOverrides(
+                    root.optJSONObject("keyDisplayOverrides"));
+            importedDisplayOverrides.putAll(decodeImportedPackDisplayOverrides(root, icons));
+            if (importedDisplayOverrides.isEmpty() && themed.legendStylePreset == LegendStylePreset.DOTS) {
+                importedDisplayOverrides = legacyDotDisplayOverrides();
+            }
+            displayOverrides.putAll(importedDisplayOverrides);
+            JSONObject effects = root.optJSONObject("effects");
+            themed = themed
+                    .withLegendStyle(LegendStylePreset.DEFAULT)
+                    .withKeyDisplayOverrides(displayOverrides)
+                    .withVisualEffects(decodeVisualEffects(effects, themed.visualEffects));
             return themed;
         } catch (JSONException exception) {
             throw new IllegalArgumentException("Invalid theme JSON.", exception);
         }
+    }
+
+    private static Map<String, KeyDisplayOverride> decodeImportedPackDisplayOverrides(
+            JSONObject root,
+            JSONObject icons) {
+        Map<String, KeyDisplayOverride> overrides = new HashMap<>();
+        if (root == null || icons == null) {
+            return overrides;
+        }
+
+        String keyDisplayPackId = icons.optString("keyDisplayPackId", "");
+        JSONObject keyDisplayPack = importedPackObject(root, icons, keyDisplayPackId, "keyDisplay");
+        overrides.putAll(decodeImportedPackOverrides(keyDisplayPack));
+
+        String modifierPackId = icons.optString("modifierPackId", "");
+        JSONObject modifierPack = importedPackObject(root, icons, modifierPackId, "modifier");
+        overrides.putAll(decodeImportedPackOverrides(modifierPack));
+        return overrides;
+    }
+
+    private static Map<String, KeyDisplayOverride> decodeImportedPackOverrides(JSONObject pack) {
+        if (pack == null) {
+            return new HashMap<>();
+        }
+        JSONObject overrides = pack.optJSONObject("overrides");
+        if (overrides == null) {
+            overrides = pack.optJSONObject("keyDisplayOverrides");
+        }
+        if (overrides == null) {
+            overrides = pack.optJSONObject("displayOverrides");
+        }
+        return decodeKeyDisplayOverrides(overrides);
+    }
+
+    private static boolean hasImportedKeyDisplayPack(JSONObject root, JSONObject icons, String packId) {
+        return importedPackObject(root, icons, packId, "keyDisplay") != null;
+    }
+
+    private static String importedModifierBasePackId(JSONObject root, JSONObject icons, String packId) {
+        JSONObject pack = importedPackObject(root, icons, packId, "modifier");
+        if (pack == null) {
+            return null;
+        }
+        String base = pack.optString("extends", "");
+        if (base.isEmpty()) {
+            base = pack.optString("basePackId", "");
+        }
+        if (base.isEmpty()) {
+            base = pack.optString("renderer", "");
+        }
+        if (base.isEmpty()) {
+            base = pack.optString("builtInRenderer", "");
+        }
+        if (base.isEmpty()) {
+            return null;
+        }
+        String normalized = ModifierIconCatalog.normalizePackId(base);
+        return ModifierIconCatalog.PACK_LINE_MONO.equals(normalized)
+                && !ModifierIconCatalog.PACK_LINE_MONO.equals(base)
+                ? null
+                : normalized;
+    }
+
+    private static JSONObject importedPackObject(
+            JSONObject root,
+            JSONObject icons,
+            String packId,
+            String family) {
+        if (root == null || icons == null || packId == null || packId.isEmpty()) {
+            return null;
+        }
+
+        JSONObject embedded = icons.optJSONObject(family + "Pack");
+        if (embedded != null && (!hasPackId(embedded) || matchesPackId(embedded, packId))) {
+            return embedded;
+        }
+
+        JSONObject directCatalog = root.optJSONObject(family + "Packs");
+        JSONObject directPack = objectById(directCatalog, packId);
+        if (directPack != null) {
+            return directPack;
+        }
+
+        JSONObject iconPacks = root.optJSONObject("iconPacks");
+        if (iconPacks == null) {
+            iconPacks = root.optJSONObject("decorativeGlyphCatalog");
+        }
+        if (iconPacks == null) {
+            return null;
+        }
+        JSONObject familyCatalog = iconPacks.optJSONObject(family);
+        if (familyCatalog == null) {
+            familyCatalog = iconPacks.optJSONObject(family + "Packs");
+        }
+        JSONObject familyPack = objectById(familyCatalog, packId);
+        return familyPack == null ? objectById(iconPacks, packId) : familyPack;
+    }
+
+    private static JSONObject objectById(JSONObject catalog, String packId) {
+        if (catalog == null || packId == null || packId.isEmpty()) {
+            return null;
+        }
+        JSONObject direct = catalog.optJSONObject(packId);
+        if (direct != null) {
+            return direct;
+        }
+        JSONArray packs = catalog.optJSONArray("packs");
+        if (packs == null) {
+            return null;
+        }
+        for (int i = 0; i < packs.length(); i++) {
+            JSONObject candidate = packs.optJSONObject(i);
+            if (matchesPackId(candidate, packId)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static boolean matchesPackId(JSONObject object, String packId) {
+        if (object == null || packId == null || packId.isEmpty()) {
+            return false;
+        }
+        return packId.equals(object.optString("id", ""))
+                || packId.equals(object.optString("packId", ""));
+    }
+
+    private static boolean hasPackId(JSONObject object) {
+        return object != null && (object.has("id") || object.has("packId"));
     }
 
     static String colorToString(int color) {
@@ -237,6 +420,179 @@ final class KeyboardThemeJson {
                 overrides.put("background:" + key, parsed);
             }
         }
+        return overrides;
+    }
+
+    static Map<String, KeyDisplayOverride> decodeKeyDisplayOverrides(JSONObject object) {
+        Map<String, KeyDisplayOverride> overrides = new HashMap<>();
+        if (object == null) {
+            return overrides;
+        }
+        putDisplayOverride(overrides, "alpha", object.optJSONObject("alpha"));
+        putDisplayOverride(overrides, "modifiers", object.optJSONObject("modifiers"));
+
+        JSONObject keys = object.optJSONObject("keys");
+        if (keys != null) {
+            Iterator<String> names = keys.keys();
+            while (names.hasNext()) {
+                String key = names.next();
+                putDisplayOverride(overrides, key, keys.optJSONObject(key));
+            }
+        } else {
+            Iterator<String> names = object.keys();
+            while (names.hasNext()) {
+                String key = names.next();
+                if (!"alpha".equals(key) && !"modifiers".equals(key)) {
+                    putDisplayOverride(overrides, key, object.optJSONObject(key));
+                }
+            }
+        }
+        return overrides;
+    }
+
+    private static KeyboardSettings importThemeLayers(KeyboardSettings base, JSONObject root) {
+        KeyboardSettings layered = base;
+        JSONArray layers = root.optJSONArray("layers");
+        if (layers == null) {
+            layers = root.optJSONArray("themeLayers");
+        }
+        if (layers == null) {
+            String baseTheme = root.optString("extends", "");
+            if (baseTheme.isEmpty()) {
+                baseTheme = root.optString("baseTheme", "");
+            }
+            return applyThemeLayer(layered, baseTheme);
+        }
+        for (int i = 0; i < layers.length(); i++) {
+            Object layer = layers.opt(i);
+            if (layer instanceof JSONObject) {
+                layered = importTheme(layered, ((JSONObject) layer).toString());
+            } else if (layer != null) {
+                layered = applyThemeLayer(layered, String.valueOf(layer));
+            }
+        }
+        return layered;
+    }
+
+    private static KeyboardSettings applyThemeLayer(KeyboardSettings base, String layerId) {
+        if (layerId == null || layerId.isEmpty()) {
+            return base;
+        }
+        KeyboardThemePreset preset = KeyboardThemePreset.find(layerId);
+        return preset == null ? base : preset.applyTo(base);
+    }
+
+    static JSONObject encodeKeyDisplayOverridesObject(Map<String, KeyDisplayOverride> overrides) {
+        JSONObject object = new JSONObject();
+        JSONObject keys = new JSONObject();
+        if (overrides == null || overrides.isEmpty()) {
+            return object;
+        }
+        try {
+            for (Map.Entry<String, KeyDisplayOverride> entry : overrides.entrySet()) {
+                String key = entry.getKey();
+                KeyDisplayOverride override = entry.getValue();
+                if (key == null || override == null || override.value.isEmpty()) {
+                    continue;
+                }
+                if ("alpha".equals(key) || "modifiers".equals(key)) {
+                    object.put(key, displayOverrideToJson(override));
+                } else {
+                    keys.put(key, displayOverrideToJson(override));
+                }
+            }
+            if (keys.length() > 0) {
+                object.put("keys", keys);
+            }
+        } catch (JSONException exception) {
+            throw new IllegalStateException("Failed to encode key display overrides.", exception);
+        }
+        return object;
+    }
+
+    private static void putDisplayOverride(
+            Map<String, KeyDisplayOverride> overrides,
+            String key,
+            JSONObject object) {
+        if (object == null) {
+            return;
+        }
+        KeyDisplayOverride override = KeyDisplayOverride.create(
+                object.optString("type", KeyDisplayOverride.TYPE_ICON),
+                object.optString("value", ""));
+        if (override != null) {
+            overrides.put(key, override);
+        }
+    }
+
+    private static JSONObject displayOverrideToJson(KeyDisplayOverride override) throws JSONException {
+        JSONObject object = new JSONObject();
+        object.put("type", override.type);
+        object.put("value", override.value);
+        return object;
+    }
+
+    static JSONObject encodeVisualEffectsObject(KeyboardVisualEffects effects) {
+        KeyboardVisualEffects safeEffects = effects == null ? KeyboardVisualEffects.DEFAULT : effects;
+        JSONObject object = new JSONObject();
+        try {
+            JSONObject blur = new JSONObject();
+            blur.put("enabled", safeEffects.blurEnabled);
+            blur.put("radiusDp", safeEffects.blurRadiusDp);
+            object.put("blur", blur);
+
+            JSONObject metal = new JSONObject();
+            metal.put("enabled", safeEffects.metallicEnabled);
+            metal.put("strengthPercent", safeEffects.metallicStrengthPercent);
+            object.put("metal", metal);
+
+            JSONObject previewBubble = new JSONObject();
+            previewBubble.put("style", safeEffects.angularPreviewBubble ? "angular" : "rounded");
+            object.put("previewBubble", previewBubble);
+        } catch (JSONException exception) {
+            throw new IllegalStateException("Failed to encode visual effects.", exception);
+        }
+        return object;
+    }
+
+    static KeyboardVisualEffects decodeVisualEffects(JSONObject object, KeyboardVisualEffects fallback) {
+        KeyboardVisualEffects safeFallback = fallback == null ? KeyboardVisualEffects.DEFAULT : fallback;
+        if (object == null) {
+            return safeFallback;
+        }
+        JSONObject blur = object.optJSONObject("blur");
+        JSONObject metal = object.optJSONObject("metal");
+        JSONObject previewBubble = object.optJSONObject("previewBubble");
+        boolean blurEnabled = blur == null
+                ? object.optBoolean("blurEnabled", safeFallback.blurEnabled)
+                : blur.optBoolean("enabled", safeFallback.blurEnabled);
+        int blurRadiusDp = blur == null
+                ? object.optInt("blurRadiusDp", safeFallback.blurRadiusDp)
+                : blur.optInt("radiusDp", safeFallback.blurRadiusDp);
+        boolean metallicEnabled = metal == null
+                ? object.optBoolean("metallicEnabled", safeFallback.metallicEnabled)
+                : metal.optBoolean("enabled", safeFallback.metallicEnabled);
+        int metallicStrength = metal == null
+                ? object.optInt("metallicStrengthPercent", safeFallback.metallicStrengthPercent)
+                : metal.optInt("strengthPercent", safeFallback.metallicStrengthPercent);
+        String previewStyle = previewBubble == null
+                ? object.optString(
+                        "previewBubbleStyle",
+                        safeFallback.angularPreviewBubble ? "angular" : "rounded")
+                : previewBubble.optString(
+                        "style",
+                        safeFallback.angularPreviewBubble ? "angular" : "rounded");
+        return new KeyboardVisualEffects(
+                blurEnabled,
+                blurRadiusDp,
+                metallicEnabled,
+                metallicStrength,
+                !"rounded".equals(previewStyle));
+    }
+
+    private static Map<String, KeyDisplayOverride> legacyDotDisplayOverrides() {
+        Map<String, KeyDisplayOverride> overrides = new HashMap<>();
+        overrides.put("alpha", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_DOT));
         return overrides;
     }
 

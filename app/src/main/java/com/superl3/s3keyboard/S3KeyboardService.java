@@ -5,6 +5,7 @@ import android.content.ClipboardManager;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.inputmethodservice.InputMethodService;
 import android.os.Build;
@@ -35,7 +36,7 @@ public final class S3KeyboardService extends InputMethodService
     private FrameLayout inputRoot;
     private TextView previewOverlay;
     private PopupWindow previewPopup;
-    private View quickSettingsView;
+    private PopupWindow quickSettingsPopup;
 
     private FloatingModeController floatingModeController;
     private ClipboardStore clipboardStore;
@@ -792,17 +793,12 @@ public final class S3KeyboardService extends InputMethodService
         if (inputRoot == null) {
             return;
         }
-        if (quickSettingsView != null) {
-            inputRoot.removeView(quickSettingsView);
-            quickSettingsView = null;
+        if (quickSettingsPopup != null && quickSettingsPopup.isShowing()) {
+            dismissQuickSettings();
             return;
         }
 
         SettingsUiPalette ui = SettingsUiPalette.from(this);
-        FrameLayout overlay = new FrameLayout(this);
-        overlay.setBackgroundColor(ui.scrim);
-        overlay.setOnClickListener(v -> dismissQuickSettings());
-
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setPadding(dp(14), dp(12), dp(14), dp(14));
@@ -811,8 +807,6 @@ public final class S3KeyboardService extends InputMethodService
         background.setCornerRadius(dp(12));
         background.setStroke(Math.max(1, dp(1)), ui.border);
         panel.setBackground(background);
-        panel.setOnClickListener(v -> {
-        });
 
         TextView title = new TextView(this);
         title.setText("빠른 설정");
@@ -836,23 +830,23 @@ public final class S3KeyboardService extends InputMethodService
         }), topWrap(6));
         panel.addView(quickButton("클립보드 테마 불러오기", false, v -> importThemeFromClipboard()), topWrap(6));
 
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.BOTTOM);
-        params.setMargins(dp(12), dp(12), dp(12), dp(12));
-        overlay.addView(panel, params);
-        quickSettingsView = overlay;
-        inputRoot.addView(overlay, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT));
+        panel.addView(quickButton("OK", false, v -> dismissQuickSettings()), topWrap(8));
+        quickSettingsPopup = new PopupWindow(
+                panel,
+                Math.max(dp(280), getResources().getDisplayMetrics().widthPixels - dp(24)),
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                true);
+        quickSettingsPopup.setOutsideTouchable(true);
+        quickSettingsPopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        quickSettingsPopup.setClippingEnabled(false);
+        quickSettingsPopup.showAtLocation(inputRoot, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, dp(12));
     }
 
     private void dismissQuickSettings() {
-        if (inputRoot != null && quickSettingsView != null) {
-            inputRoot.removeView(quickSettingsView);
+        if (quickSettingsPopup != null) {
+            quickSettingsPopup.dismiss();
         }
-        quickSettingsView = null;
+        quickSettingsPopup = null;
     }
 
     private Button quickButton(String text, boolean selected, View.OnClickListener listener) {
@@ -1000,13 +994,29 @@ public final class S3KeyboardService extends InputMethodService
         previewOverlay.setText(spec.label);
         previewOverlay.setTextColor(spec.textColor);
         previewOverlay.setTextSize(TypedValue.COMPLEX_UNIT_PX, spec.textSizePx);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(spec.backgroundColor);
-        background.setCornerRadius(spec.cornerRadiusPx);
-        if (spec.borderWidthPx > 0) {
-            background.setStroke(spec.borderWidthPx, spec.borderColor);
+        previewOverlay.setTypeface(KeyboardTypefaceCatalog.typefaceFor(
+                this,
+                settings.fontFamily,
+                settings.primaryTextBold,
+                settings.primaryTextItalic));
+        if (spec.angularBubble) {
+            previewOverlay.setPadding(0, 0, 0, dp(7));
+            previewOverlay.setBackground(new PreviewBubbleDrawable(
+                    spec.backgroundColor,
+                    spec.borderColor,
+                    spec.borderWidthPx,
+                    spec.cornerRadiusPx,
+                    dp(7)));
+        } else {
+            previewOverlay.setPadding(0, 0, 0, 0);
+            GradientDrawable background = new GradientDrawable();
+            background.setColor(spec.backgroundColor);
+            background.setCornerRadius(spec.cornerRadiusPx);
+            if (spec.borderWidthPx > 0) {
+                background.setStroke(spec.borderWidthPx, spec.borderColor);
+            }
+            previewOverlay.setBackground(background);
         }
-        previewOverlay.setBackground(background);
 
         int[] windowLocation = new int[2];
         inputView.getLocationInWindow(windowLocation);

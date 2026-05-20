@@ -2,10 +2,12 @@ package com.superl3.s3keyboard;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.view.MotionEvent;
@@ -24,6 +26,7 @@ public final class HangulKeyboardView extends View {
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint hintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint modifierIconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint depthPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint overlayTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -47,8 +50,9 @@ public final class HangulKeyboardView extends View {
     private boolean englishShiftActive;
     private boolean englishCapsLocked;
     private boolean compactPreviewRendering;
-    private boolean showConsonantPreview = true;
-    private boolean showVowelPreview = true;
+    private boolean showHangulConsonantSlideHints = true;
+    private boolean showHangulVowelSlideHints = true;
+    private boolean showSpacebarSlideHints = true;
     private OnPreviewOverlayListener previewOverlayListener;
     private long nextTouchSequence;
     private TouchSample lastTextTouchSample;
@@ -88,8 +92,11 @@ public final class HangulKeyboardView extends View {
         feedback.reloadPreferences(getContext());
         differentiatedHapticEnabled = KeyboardPreferences.loadDifferentiatedHapticEnabled(getContext());
         touchBiasAutoCorrectionEnabled = KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(getContext());
-        showConsonantPreview = KeyboardPreferences.loadShowConsonantPreview(getContext());
-        showVowelPreview = KeyboardPreferences.loadShowVowelPreview(getContext());
+        showHangulConsonantSlideHints =
+                KeyboardPreferences.loadShowHangulConsonantSlideHints(getContext());
+        showHangulVowelSlideHints =
+                KeyboardPreferences.loadShowHangulVowelSlideHints(getContext());
+        showSpacebarSlideHints = KeyboardPreferences.loadShowSpacebarSlideHints(getContext());
         touchBias = touchBiasStore.load();
         rows = KeyboardLayoutFactory.build(this.settings);
         applyTypeface();
@@ -138,11 +145,64 @@ public final class HangulKeyboardView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        keyPaint.setColor(settings.keyboardBackgroundColor);
-        canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
+        drawKeyboardPanel(canvas);
         for (KeySlot keySlot : keySlots) {
             drawKey(canvas, keySlot);
         }
+    }
+
+    private void drawKeyboardPanel(Canvas canvas) {
+        keyPaint.setShader(null);
+        keyPaint.setColor(settings.keyboardBackgroundColor);
+        keyPaint.setStyle(Paint.Style.FILL);
+        canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
+        if (settings.visualEffects.blurEnabled && settings.visualEffects.blurRadiusDp > 0) {
+            drawPanelBlurWash(canvas);
+        }
+        if (settings.visualEffects.metallicEnabled && settings.visualEffects.metallicStrengthPercent > 0) {
+            drawMetallicReflection(canvas);
+        }
+        keyPaint.setShader(null);
+    }
+
+    private void drawPanelBlurWash(Canvas canvas) {
+        int radius = renderDp(settings.visualEffects.blurRadiusDp);
+        int alpha = Math.min(92, 28 + radius * 2);
+        keyPaint.setShader(new LinearGradient(
+                0,
+                0,
+                0,
+                Math.max(1, getHeight()),
+                new int[] {
+                        withAlpha(lightenColor(settings.keyboardBackgroundColor, 1.16f), alpha),
+                        withAlpha(settings.keyboardBackgroundColor, Math.max(12, alpha / 3)),
+                        withAlpha(darkenColor(settings.keyboardBackgroundColor, 0.76f), Math.max(18, alpha / 2))
+                },
+                new float[] { 0f, 0.46f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
+        keyPaint.setShader(null);
+    }
+
+    private void drawMetallicReflection(Canvas canvas) {
+        int strength = settings.visualEffects.metallicStrengthPercent;
+        int lightAlpha = Math.min(120, 18 + strength);
+        int darkAlpha = Math.min(96, 10 + strength / 2);
+        keyPaint.setShader(new LinearGradient(
+                0,
+                0,
+                Math.max(1, getWidth()),
+                Math.max(1, getHeight()),
+                new int[] {
+                        withAlpha(0xFFFFFFFF, lightAlpha),
+                        withAlpha(0xFFFFFFFF, Math.max(8, lightAlpha / 3)),
+                        withAlpha(0xFF000000, darkAlpha),
+                        withAlpha(0xFFFFFFFF, Math.max(8, lightAlpha / 4))
+                },
+                new float[] { 0f, 0.28f, 0.62f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
+        keyPaint.setShader(null);
     }
 
     @Override
@@ -227,7 +287,9 @@ public final class HangulKeyboardView extends View {
             cancelLongPressTimer(state);
             feedback.slideLock();
             String repeatValue = repeatableValue(state.keySlot.key.valueFor(action));
-            if (previewKeySelectionListener == null && isCursorMove(repeatValue)) {
+            if (previewKeySelectionListener == null
+                    && repeatValue != null
+                    && (isCursorMove(repeatValue) || isInputRepeatKey(state.keySlot.key))) {
                 repeatController.start(
                         repeatValue,
                         settings.repeatStartDelayMs,
@@ -286,7 +348,7 @@ public final class HangulKeyboardView extends View {
                 state.longPressTriggered = true;
                 state.activeAction = GestureAction.LONG_PRESS;
                 feedback.longPress();
-                String repeatValue = repeatableValue(state.keySlot.key);
+                String repeatValue = longPressRepeatValue(state.keySlot.key);
                 if (repeatValue != null) {
                     repeatController.start(repeatValue, settings.repeatIntervalMs, settings.repeatIntervalMs, true);
                 } else {
@@ -328,7 +390,7 @@ public final class HangulKeyboardView extends View {
         if (isDeleteKey(key)) {
             return Math.max(120, Math.min(settings.repeatStartDelayMs, 170));
         }
-        return repeatableValue(key) == null
+        return longPressRepeatValue(key) == null
                 ? ViewConfiguration.getLongPressTimeout()
                 : settings.repeatStartDelayMs;
     }
@@ -395,7 +457,11 @@ public final class HangulKeyboardView extends View {
         }
         float offsetXDp = (x - keySlot.bounds.centerX()) / getResources().getDisplayMetrics().density;
         float offsetYDp = (y - keySlot.bounds.centerY()) / getResources().getDisplayMetrics().density;
-        lastTextTouchSample = new TouchSample(offsetXDp, offsetYDp, action, System.currentTimeMillis());
+        lastTextTouchSample = new TouchSample(value, offsetXDp, offsetYDp, action, System.currentTimeMillis());
+        if (touchBiasAutoCorrectionEnabled) {
+            touchBiasStore.recordTextInput(value, action);
+            touchBias = touchBiasStore.load();
+        }
     }
 
     private void recordImmediateDeleteIfNeeded(String value) {
@@ -414,7 +480,8 @@ public final class HangulKeyboardView extends View {
                 touchBiasStore.recordImmediateDelete(
                         lastTextTouchSample.offsetXDp,
                         lastTextTouchSample.offsetYDp,
-                        lastTextTouchSample.action);
+                        lastTextTouchSample.action,
+                        lastTextTouchSample.value);
                 touchBias = touchBiasStore.load();
             }
         }
@@ -528,9 +595,9 @@ public final class HangulKeyboardView extends View {
         textPaint.setTypeface(primaryTypeface);
         hintPaint.setTypeface(secondaryTypeface);
         overlayTextPaint.setTypeface(primaryTypeface);
-        textPaint.setFakeBoldText(false);
-        hintPaint.setFakeBoldText(false);
-        overlayTextPaint.setFakeBoldText(false);
+        textPaint.setFakeBoldText(settings.primaryTextBold);
+        hintPaint.setFakeBoldText(settings.secondaryTextBold);
+        overlayTextPaint.setFakeBoldText(settings.primaryTextBold);
         textPaint.setTextSkewX(settings.primaryTextItalic ? -0.22f : 0f);
         hintPaint.setTextSkewX(settings.secondaryTextItalic ? -0.22f : 0f);
         overlayTextPaint.setTextSkewX(settings.primaryTextItalic ? -0.22f : 0f);
@@ -570,19 +637,21 @@ public final class HangulKeyboardView extends View {
     private void drawKey(Canvas canvas, KeySlot keySlot) {
         GestureKey key = keySlot.key;
         boolean active = isActiveKey(keySlot);
-        boolean shiftStateActive = isShiftKey(key) && englishShiftActive;
+        boolean shiftOnceActive = isShiftKey(key) && englishShiftActive && !englishCapsLocked;
+        boolean shiftLockedActive = isShiftKey(key) && englishCapsLocked;
         boolean englishLetterKey = isEnglishLetterKey(key);
         RectF visualBounds = keySlot.visualBounds();
         RectF surfaceBounds = keySurfaceBounds(visualBounds, active);
         drawKeyDepth(canvas, visualBounds, active);
-        keyPaint.setColor(active ? settings.keyPressedColor : baseColorForKey(keySlot));
+        keyPaint.setColor(active || shiftOnceActive ? settings.keyPressedColor : baseColorForKey(keySlot));
         drawKeyShape(canvas, surfaceBounds, keyPaint);
         drawBorderShape(canvas, surfaceBounds);
 
         float centerX = surfaceBounds.centerX();
         int icon = iconFor(key);
-        if (settings.legendStylePreset.drawsDotLegend()) {
-            drawDotLegend(canvas, key, surfaceBounds, englishLetterKey);
+        KeyDisplayOverride displayOverride = KeyDisplayOverrideResolver.resolve(settings, key);
+        if (displayOverride != null) {
+            drawDisplayOverride(canvas, displayOverride, key, surfaceBounds, englishLetterKey);
         } else if (icon == KeyIcon.NONE) {
             String label = displayLabelForKey(key);
             textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
@@ -596,12 +665,12 @@ public final class HangulKeyboardView extends View {
             canvas.drawText(paintLabel, centerX, centerY, textPaint);
         } else {
             drawKeyIcon(canvas, key, icon, surfaceBounds, active);
-            if (shiftStateActive) {
-                drawShiftStateIndicator(canvas, surfaceBounds);
+            if (shiftLockedActive) {
+                drawShiftLockIndicator(canvas, surfaceBounds);
             }
         }
 
-        if (shouldShowSlideHints() && shouldDrawSlideHintsForKey(key, icon)) {
+        if (shouldShowSlideHints() && displayOverride == null && shouldDrawSlideHintsForKey(key, icon)) {
             float hintTextSize = (englishLetterKey
                     ? renderSp(8.4f)
                     : (keySlot.compactSpecialColumn ? renderSp(7) : renderSp(8.5f))) * secondaryTextScale();
@@ -643,12 +712,111 @@ public final class HangulKeyboardView extends View {
 
     private void drawDotLegend(Canvas canvas, GestureKey key, RectF surfaceBounds, boolean englishLetterKey) {
         textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
-        float radius = Math.min(surfaceBounds.width(), surfaceBounds.height()) * 0.18f;
-        radius = Math.max(renderDp(5), Math.min(radius, renderDp(10)));
+        float radius = Math.min(surfaceBounds.width(), surfaceBounds.height()) * 0.115f;
+        radius = Math.max(surfaceBounds.height() * 0.075f, Math.min(radius, surfaceBounds.height() * 0.18f));
         float centerY = englishLetterKey
                 ? surfaceBounds.top + surfaceBounds.height() * 0.36f
                 : surfaceBounds.centerY();
         canvas.drawCircle(surfaceBounds.centerX(), centerY, radius, textPaint);
+    }
+
+    private void drawDisplayOverride(
+            Canvas canvas,
+            KeyDisplayOverride override,
+            GestureKey key,
+            RectF surfaceBounds,
+            boolean englishLetterKey) {
+        if (override.isText()) {
+            drawTextDisplayOverride(canvas, override, key, surfaceBounds);
+            return;
+        }
+        if (ModifierIconCatalog.GLYPH_DOT.equals(override.value)) {
+            drawDotLegend(canvas, key, surfaceBounds, englishLetterKey);
+            return;
+        }
+        textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
+        textPaint.setTextSize(textSizeFor(override.value, surfaceBounds, false));
+        float centerY = surfaceBounds.centerY() - textCenterOffset(textPaint);
+        canvas.drawText(override.value, surfaceBounds.centerX(), centerY, textPaint);
+    }
+
+    private void drawTextDisplayOverride(
+            Canvas canvas,
+            KeyDisplayOverride override,
+            GestureKey key,
+            RectF surfaceBounds) {
+        int color = KeyboardKeyVisualClassifier.textColorFor(settings, key);
+        if (KeyDisplayOverridePackCatalog.shouldRenderSimpleText(settings, override)) {
+            if ("hihihi".equals(override.value)) {
+                drawHihihiScriptGlyph(canvas, surfaceBounds, color);
+                return;
+            }
+            modifierIconPaint.reset();
+            modifierIconPaint.setAntiAlias(true);
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            modifierIconPaint.setTextAlign(Paint.Align.CENTER);
+            modifierIconPaint.setColor(color);
+            modifierIconPaint.setTypeface(KeyboardTypefaceCatalog.typefaceFor(
+                    getContext(),
+                    settings.fontFamily,
+                    true,
+                    false));
+            modifierIconPaint.setTextSkewX(0f);
+            modifierIconPaint.setFakeBoldText(true);
+            float textSize = textSizeForPaint(
+                    modifierIconPaint,
+                    override.value,
+                    surfaceBounds.width() * 0.72f,
+                    surfaceBounds.height() * 0.42f,
+                    renderSp(16));
+            modifierIconPaint.setTextSize(textSize);
+            float centerY = surfaceBounds.centerY() - textCenterOffset(modifierIconPaint);
+            canvas.drawText(override.value, surfaceBounds.centerX(), centerY, modifierIconPaint);
+            return;
+        }
+        textPaint.setColor(color);
+        textPaint.setTextSize(textSizeFor(override.value, surfaceBounds, false));
+        float centerY = surfaceBounds.centerY() - textCenterOffset(textPaint);
+        canvas.drawText(override.value, surfaceBounds.centerX(), centerY, textPaint);
+    }
+
+    private void drawHihihiScriptGlyph(Canvas canvas, RectF bounds, int color) {
+        modifierIconPaint.reset();
+        modifierIconPaint.setAntiAlias(true);
+        modifierIconPaint.setStyle(Paint.Style.STROKE);
+        modifierIconPaint.setStrokeCap(Paint.Cap.ROUND);
+        modifierIconPaint.setStrokeJoin(Paint.Join.ROUND);
+        modifierIconPaint.setColor(color);
+        modifierIconPaint.setStrokeWidth(Math.max(bounds.height() * 0.045f, renderDp(1.7f)));
+
+        Path path = new Path();
+        path.moveTo(3f, 19f);
+        path.cubicTo(7f, 5f, 11f, 5f, 9f, 18f);
+        path.cubicTo(12f, 13f, 16f, 12f, 18f, 17f);
+        path.cubicTo(20f, 22f, 15f, 24f, 13f, 19f);
+        path.cubicTo(18f, 20f, 22f, 20f, 26f, 17f);
+        path.cubicTo(29f, 14f, 32f, 14f, 31f, 18f);
+        path.cubicTo(31f, 22f, 25f, 22f, 26f, 17f);
+        path.cubicTo(31f, 20f, 36f, 20f, 40f, 17f);
+        path.cubicTo(44f, 5f, 49f, 5f, 46f, 18f);
+        path.cubicTo(49f, 13f, 54f, 12f, 56f, 17f);
+        path.cubicTo(58f, 22f, 52f, 24f, 51f, 19f);
+        path.cubicTo(56f, 20f, 60f, 20f, 64f, 17f);
+        path.cubicTo(67f, 14f, 70f, 14f, 69f, 18f);
+        path.cubicTo(69f, 22f, 63f, 22f, 64f, 17f);
+        path.cubicTo(69f, 20f, 74f, 20f, 78f, 17f);
+        path.cubicTo(81f, 14f, 84f, 14f, 83f, 18f);
+        path.cubicTo(83f, 22f, 77f, 22f, 78f, 17f);
+        path.cubicTo(83f, 20f, 87f, 20f, 91f, 17f);
+
+        canvas.save();
+        float scale = Math.min(bounds.width() * 0.66f / 94f, bounds.height() * 0.34f / 28f);
+        float left = bounds.centerX() - 94f * scale / 2f;
+        float top = bounds.centerY() - 28f * scale / 2f;
+        canvas.translate(left, top);
+        canvas.scale(scale, scale);
+        canvas.drawPath(path, modifierIconPaint);
+        canvas.restore();
     }
 
     private void drawEnglishSlideHints(
@@ -757,6 +925,24 @@ public final class HangulKeyboardView extends View {
         return a | (clampColor(r) << 16) | (clampColor(g) << 8) | clampColor(b);
     }
 
+    private int lightenColor(int color, float factor) {
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        return 0xFF000000
+                | (clampColor(Math.round(r + (255 - r) * (factor - 1f))) << 16)
+                | (clampColor(Math.round(g + (255 - g) * (factor - 1f))) << 8)
+                | clampColor(Math.round(b + (255 - b) * (factor - 1f)));
+    }
+
+    private int darkenColor(int color, float factor) {
+        return shadeColor(color, factor);
+    }
+
+    private int withAlpha(int color, int alpha) {
+        return (clampColor(alpha) << 24) | (color & 0x00FFFFFF);
+    }
+
     private int clampColor(int value) {
         return Math.max(0, Math.min(255, value));
     }
@@ -848,7 +1034,8 @@ public final class HangulKeyboardView extends View {
                     baseColorForKey(activeTouch.keySlot),
                     settings.borderColor,
                     renderDp(settings.keyBorderWidthDp),
-                    renderDp(6)));
+                    settings.visualEffects.angularPreviewBubble ? renderDp(3) : renderDp(8),
+                    settings.visualEffects.angularPreviewBubble));
         }
     }
 
@@ -859,21 +1046,6 @@ public final class HangulKeyboardView extends View {
     }
 
     private boolean shouldShowPreviewForTouch(TouchState state) {
-        GestureKey key = state == null ? null : state.keySlot.key;
-        if (key == null) {
-            return true;
-        }
-        boolean consonant = hasHangulConsonant(key.valueFor(state.activeAction)) || hasHangulConsonant(key.label);
-        boolean vowel = hasHangulVowel(key.valueFor(state.activeAction)) || hasHangulVowel(key.label);
-        if (isDingulVowelCommand(key.valueFor(state.activeAction)) || isDingulVowelCommand(key.tap)) {
-            vowel = true;
-        }
-        if (vowel && !showVowelPreview) {
-            return false;
-        }
-        if (consonant && !showConsonantPreview) {
-            return false;
-        }
         return true;
     }
 
@@ -952,9 +1124,6 @@ public final class HangulKeyboardView extends View {
     }
 
     private String displayLabelForKey(GestureKey key) {
-        if (settings.legendStylePreset.replacesMainLegend() && key != null && key.icon == KeyIcon.NONE) {
-            return "●";
-        }
         if (englishShiftActive && isEnglishLetterKey(key)) {
             return key.label.toUpperCase(Locale.US);
         }
@@ -985,6 +1154,11 @@ public final class HangulKeyboardView extends View {
     }
 
     private void drawKeyIcon(Canvas canvas, GestureKey key, int icon, RectF bounds, boolean selected) {
+        String packId = ModifierIconCatalog.effectivePackId(settings);
+        if (ModifierIconCatalog.rendersCustomGlyphs(packId)
+                && drawModifierPackIcon(canvas, key, icon, bounds, selected, packId)) {
+            return;
+        }
         float cy = bounds.centerY();
         if (icon == KeyIcon.SPACE) {
             cy += Math.min(renderDp(5), bounds.height() * 0.09f);
@@ -995,23 +1169,183 @@ public final class HangulKeyboardView extends View {
                 bounds.centerX(),
                 cy,
                 keyIconSize(),
-                KeyboardKeyVisualClassifier.iconColorFor(settings, key, selected));
+                ModifierIconCatalog.colorForEffectivePack(
+                        settings,
+                        KeyboardKeyVisualClassifier.iconColorFor(settings, key, selected)));
     }
 
-    private void drawShiftStateIndicator(Canvas canvas, RectF bounds) {
-        float radius = Math.min(renderDp(2.8f), bounds.height() * 0.042f);
+    private boolean drawModifierPackIcon(
+            Canvas canvas,
+            GestureKey key,
+            int icon,
+            RectF bounds,
+            boolean selected,
+            String packId) {
+        int color = KeyboardKeyVisualClassifier.iconColorFor(settings, key, selected);
+        if (ModifierIconCatalog.isDotsLinePack(packId)) {
+            drawDotsLineModifierIcon(canvas, icon, bounds, color);
+            return true;
+        }
+        if (ModifierIconCatalog.isMetropolisPack(packId)) {
+            drawMetropolisModifierIcon(canvas, icon, bounds);
+            return true;
+        }
+        return false;
+    }
+
+    private void drawDotsLineModifierIcon(Canvas canvas, int icon, RectF bounds, int color) {
+        if (icon == KeyIcon.SPACE) {
+            drawDotRow(canvas, bounds, 5, dotRadiusFor(bounds), color, 0.30f);
+            return;
+        }
+        if (isLineDotModifierIcon(icon)) {
+            drawDotRow(canvas, bounds, 4, dotRadiusFor(bounds), color, 0.34f);
+            return;
+        }
+        drawDotRow(canvas, bounds, 3, dotRadiusFor(bounds), color, 0.40f);
+    }
+
+    private boolean isLineDotModifierIcon(int icon) {
+        return icon == KeyIcon.BACKSPACE
+                || icon == KeyIcon.ENTER
+                || icon == KeyIcon.DONE
+                || icon == KeyIcon.NEXT
+                || icon == KeyIcon.SETTINGS
+                || icon == KeyIcon.SHIFT
+                || icon == KeyIcon.CAPS_LOCK;
+    }
+
+    private float dotRadiusFor(RectF bounds) {
+        return Math.max(bounds.height() * 0.055f, Math.min(bounds.height() * 0.075f, bounds.width() * 0.045f));
+    }
+
+    private void drawDotRow(
+            Canvas canvas,
+            RectF bounds,
+            int count,
+            float radius,
+            int color,
+            float sidePaddingRatio) {
+        iconPaint.setColor(color);
+        iconPaint.setStyle(Paint.Style.FILL);
+        float left = bounds.left + bounds.width() * sidePaddingRatio;
+        float right = bounds.right - bounds.width() * sidePaddingRatio;
+        if (count <= 1 || right <= left) {
+            canvas.drawCircle(bounds.centerX(), bounds.centerY(), radius, iconPaint);
+            return;
+        }
+        float step = (right - left) / (count - 1);
+        for (int i = 0; i < count; i++) {
+            canvas.drawCircle(left + step * i, bounds.centerY(), radius, iconPaint);
+        }
+    }
+
+    private void drawMetropolisModifierIcon(Canvas canvas, int icon, RectF bounds) {
+        int color = ModifierIconCatalog.metropolisColorFor(icon);
+        iconPaint.setColor(color);
+        iconPaint.setStyle(Paint.Style.STROKE);
+        iconPaint.setStrokeCap(Paint.Cap.ROUND);
+        iconPaint.setStrokeJoin(Paint.Join.ROUND);
+        float stroke = Math.max(bounds.height() * 0.055f, Math.min(bounds.height() * 0.095f, bounds.width() * 0.055f));
+        iconPaint.setStrokeWidth(stroke);
+        float cx = bounds.centerX();
+        float cy = bounds.centerY();
+        float left = bounds.left + bounds.width() * 0.32f;
+        float right = bounds.right - bounds.width() * 0.32f;
+        if (icon == KeyIcon.SPACE) {
+            drawDotRow(canvas, bounds, 5, dotRadiusFor(bounds), color, 0.30f);
+            return;
+        }
+        if (icon == KeyIcon.LANGUAGE || icon == KeyIcon.SEARCH || icon == KeyIcon.SETTINGS || icon == KeyIcon.KEYBOARD) {
+            iconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx, cy, Math.min(bounds.width(), bounds.height()) * 0.10f, iconPaint);
+            iconPaint.setStyle(Paint.Style.STROKE);
+            canvas.drawCircle(cx, cy, Math.min(bounds.width(), bounds.height()) * 0.18f, iconPaint);
+            return;
+        }
+        if (icon == KeyIcon.SHIFT || icon == KeyIcon.CAPS_LOCK) {
+            canvas.drawLine(left, cy + bounds.height() * 0.12f, cx, cy - bounds.height() * 0.16f, iconPaint);
+            canvas.drawLine(cx, cy - bounds.height() * 0.16f, right, cy + bounds.height() * 0.12f, iconPaint);
+            canvas.drawLine(cx, cy - bounds.height() * 0.16f, cx, cy + bounds.height() * 0.22f, iconPaint);
+            return;
+        }
+        if (icon == KeyIcon.ENTER || icon == KeyIcon.DONE || icon == KeyIcon.NEXT) {
+            canvas.drawLine(left, cy, right, cy, iconPaint);
+            canvas.drawLine(right - bounds.width() * 0.12f, cy - bounds.height() * 0.10f, right, cy, iconPaint);
+            canvas.drawLine(right - bounds.width() * 0.12f, cy + bounds.height() * 0.10f, right, cy, iconPaint);
+            drawMetropolisEndDots(canvas, left, cy, color);
+            return;
+        }
+        if (icon == KeyIcon.BACKSPACE || icon == KeyIcon.HIDE || icon == KeyIcon.MOVE_LEFT || icon == KeyIcon.MOVE_RIGHT) {
+            canvas.drawLine(left, cy, right, cy, iconPaint);
+            float tip = icon == KeyIcon.MOVE_RIGHT ? right : left;
+            float tail = icon == KeyIcon.MOVE_RIGHT ? right - bounds.width() * 0.12f : left + bounds.width() * 0.12f;
+            canvas.drawLine(tail, cy - bounds.height() * 0.10f, tip, cy, iconPaint);
+            canvas.drawLine(tail, cy + bounds.height() * 0.10f, tip, cy, iconPaint);
+            drawMetropolisEndDots(canvas, icon == KeyIcon.MOVE_RIGHT ? left : right, cy, color);
+            return;
+        }
+        canvas.drawLine(left, cy, right, cy, iconPaint);
+        drawMetropolisEndDots(canvas, left, cy, color);
+        drawMetropolisEndDots(canvas, right, cy, color);
+    }
+
+    private void drawDottedLine(Canvas canvas, float left, float right, float cy, float radius, int color) {
+        iconPaint.setStyle(Paint.Style.FILL);
+        iconPaint.setColor(color);
+        int count = Math.max(3, Math.round((right - left) / Math.max(renderDp(7), radius * 3.4f)));
+        if (count == 1) {
+            canvas.drawCircle((left + right) / 2f, cy, radius, iconPaint);
+            return;
+        }
+        for (int i = 0; i < count; i++) {
+            float t = count == 1 ? 0.5f : (float) i / (float) (count - 1);
+            canvas.drawCircle(left + (right - left) * t, cy, radius, iconPaint);
+        }
+        iconPaint.setStyle(Paint.Style.STROKE);
+    }
+
+    private void drawMetropolisEndDots(Canvas canvas, float x, float y, int color) {
+        iconPaint.setStyle(Paint.Style.FILL);
+        iconPaint.setColor(color);
+        float radius = renderDp(2.2f);
+        canvas.drawCircle(x, y, radius, iconPaint);
+        iconPaint.setStyle(Paint.Style.STROKE);
+    }
+
+    private float textSizeForPaint(Paint paint, String text, float maxWidth, float maxHeight, float startSize) {
+        float minSize = renderSp(8);
+        float size = startSize;
+        while (size > minSize) {
+            paint.setTextSize(size);
+            Paint.FontMetrics metrics = paint.getFontMetrics();
+            if (paint.measureText(text) <= maxWidth && metrics.descent - metrics.ascent <= maxHeight) {
+                return size;
+            }
+            size -= 1f;
+        }
+        return minSize;
+    }
+
+    private void drawShiftLockIndicator(Canvas canvas, RectF bounds) {
+        float radius = Math.min(renderDp(5.2f), bounds.height() * 0.085f);
         float cx = (bounds.centerX() + bounds.right) / 2f;
-        cx = Math.min(bounds.right - radius - renderDp(5), cx);
-        float cy = bounds.centerY() - keyIconSize() * 1.18f - renderDp(1);
-        cy = Math.max(bounds.top + radius + Math.min(renderDp(2), bounds.height() * 0.04f), cy);
+        cx = Math.min(bounds.right - radius - renderDp(6), cx);
+        float cy = bounds.centerY() - keyIconSize() * 1.08f - renderDp(1);
+        cy = Math.max(bounds.top + radius + Math.min(renderDp(4), bounds.height() * 0.07f), cy);
         iconPaint.setStyle(Paint.Style.FILL);
         iconPaint.setColor(KeyboardKeyVisualClassifier.shiftIndicatorColorFor(settings));
         canvas.drawCircle(cx, cy, radius, iconPaint);
-        iconPaint.setStyle(Paint.Style.STROKE);
-        float strokeWidth = Math.min(renderDp(1.1f), Math.max(1f, radius * 0.28f));
-        iconPaint.setStrokeWidth(strokeWidth);
-        iconPaint.setColor(settings.keyIdleColor);
-        canvas.drawCircle(cx, cy, radius + strokeWidth, iconPaint);
+        iconPaint.setColor(contrastColor(KeyboardKeyVisualClassifier.shiftIndicatorColorFor(settings)));
+        canvas.drawCircle(cx, cy, Math.max(1f, radius * 0.38f), iconPaint);
+    }
+
+    private int contrastColor(int color) {
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        int luminance = (r * 299 + g * 587 + b * 114) / 1000;
+        return luminance > 150 ? 0xFF111827 : 0xFFFFFFFF;
     }
 
     private void drawIconCentered(
@@ -1252,17 +1586,46 @@ public final class HangulKeyboardView extends View {
                 dp(touchBias.yDp));
     }
 
-    private String repeatableValue(GestureKey key) {
+    private String longPressRepeatValue(GestureKey key) {
+        if (key == null) {
+            return null;
+        }
+        if (isDeleteKey(key)) {
+            return KeyboardCommands.CMD_DELETE;
+        }
+        if (!isInputRepeatKey(key)) {
+            return null;
+        }
+        String longPressValue = key.valueFor(GestureAction.LONG_PRESS);
+        if (isRepeatableInputText(longPressValue)) {
+            return longPressValue;
+        }
         return repeatableValue(key.tap);
     }
 
     private String repeatableValue(String value) {
         if (KeyboardCommands.CMD_DELETE.equals(value)
                 || KeyboardCommands.CMD_MOVE_LEFT.equals(value)
-                || KeyboardCommands.CMD_MOVE_RIGHT.equals(value)) {
+                || KeyboardCommands.CMD_MOVE_RIGHT.equals(value)
+                || KeyboardCommands.CMD_DINGUL_CENTER_VOWEL.equals(value)
+                || KeyboardCommands.CMD_DINGUL_WIDE_VOWEL.equals(value)) {
+            return value;
+        }
+        if (isRepeatableInputText(value)) {
             return value;
         }
         return null;
+    }
+
+    private boolean isInputRepeatKey(GestureKey key) {
+        return key != null
+                && (isRepeatableInputText(key.tap)
+                || KeyboardCommands.CMD_DINGUL_CENTER_VOWEL.equals(key.tap)
+                || KeyboardCommands.CMD_DINGUL_WIDE_VOWEL.equals(key.tap));
+    }
+
+    private boolean isRepeatableInputText(String value) {
+        return value != null && !value.isEmpty() && !KeyboardCommands.isCommand(value);
     }
 
     private boolean isCursorMove(String value) {
@@ -1275,9 +1638,6 @@ public final class HangulKeyboardView extends View {
     }
 
     private boolean shouldShowSlideHints() {
-        if (settings.legendStylePreset.hidesSlideHints()) {
-            return false;
-        }
         return settings.keyboardMode == KeyboardMode.ENGLISH
                 ? settings.showEnglishSlideHints
                 : settings.showHangulSlideHints;
@@ -1287,6 +1647,19 @@ public final class HangulKeyboardView extends View {
         if (key == null) {
             return false;
         }
+        if (isSpaceKey(key)) {
+            return showSpacebarSlideHints;
+        }
+        if (settings.keyboardMode == KeyboardMode.HANGUL) {
+            boolean vowelKey = isHangulVowelHintKey(key);
+            boolean consonantKey = isHangulConsonantHintKey(key);
+            if (vowelKey && !showHangulVowelSlideHints) {
+                return false;
+            }
+            if (consonantKey && !showHangulConsonantSlideHints) {
+                return false;
+            }
+        }
         if (icon == KeyIcon.NONE) {
             return true;
         }
@@ -1294,6 +1667,31 @@ public final class HangulKeyboardView extends View {
                 || hasVisibleSlideHint(key.downSlide)
                 || hasVisibleSlideHint(key.leftSlide)
                 || hasVisibleSlideHint(key.rightSlide);
+    }
+
+    private boolean isHangulVowelHintKey(GestureKey key) {
+        return key != null
+                && (isDingulVowelCommand(key.tap)
+                || isDingulVowelCommand(key.upSlide)
+                || isDingulVowelCommand(key.downSlide)
+                || isDingulVowelCommand(key.leftSlide)
+                || isDingulVowelCommand(key.rightSlide)
+                || hasHangulVowel(key.label)
+                || hasHangulVowel(key.tap)
+                || hasHangulVowel(key.upSlide)
+                || hasHangulVowel(key.downSlide)
+                || hasHangulVowel(key.leftSlide)
+                || hasHangulVowel(key.rightSlide));
+    }
+
+    private boolean isHangulConsonantHintKey(GestureKey key) {
+        return key != null
+                && (hasHangulConsonant(key.label)
+                || hasHangulConsonant(key.tap)
+                || hasHangulConsonant(key.upSlide)
+                || hasHangulConsonant(key.downSlide)
+                || hasHangulConsonant(key.leftSlide)
+                || hasHangulConsonant(key.rightSlide));
     }
 
     private boolean hasVisibleSlideHint(String value) {
@@ -1434,6 +1832,7 @@ public final class HangulKeyboardView extends View {
         final int borderColor;
         final int borderWidthPx;
         final int cornerRadiusPx;
+        final boolean angularBubble;
 
         PreviewOverlaySpec(
                 String label,
@@ -1446,7 +1845,8 @@ public final class HangulKeyboardView extends View {
                 int backgroundColor,
                 int borderColor,
                 int borderWidthPx,
-                int cornerRadiusPx) {
+                int cornerRadiusPx,
+                boolean angularBubble) {
             this.label = label;
             this.x = x;
             this.y = y;
@@ -1458,6 +1858,7 @@ public final class HangulKeyboardView extends View {
             this.borderColor = borderColor;
             this.borderWidthPx = borderWidthPx;
             this.cornerRadiusPx = cornerRadiusPx;
+            this.angularBubble = angularBubble;
         }
     }
 
@@ -1567,12 +1968,14 @@ public final class HangulKeyboardView extends View {
     }
 
     private static final class TouchSample {
+        final String value;
         final float offsetXDp;
         final float offsetYDp;
         final GestureAction action;
         final long timeMs;
 
-        TouchSample(float offsetXDp, float offsetYDp, GestureAction action, long timeMs) {
+        TouchSample(String value, float offsetXDp, float offsetYDp, GestureAction action, long timeMs) {
+            this.value = value == null ? "" : value;
             this.offsetXDp = offsetXDp;
             this.offsetYDp = offsetYDp;
             this.action = action == null ? GestureAction.TAP : action;

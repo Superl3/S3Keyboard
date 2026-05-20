@@ -8,14 +8,16 @@ final class KeyboardKeyVisualClassifier {
         if (key == null) {
             return KeyVisualRole.NORMAL;
         }
-        if (isHangulAccentKey(settings, key)) {
-            return KeyVisualRole.ACCENT;
-        }
         if (isPrimaryFunctionKey(key)) {
             return KeyVisualRole.PRIMARY_FUNCTION;
         }
         if (isDingulVowelCommandKey(key)) {
             return KeyVisualRole.NORMAL;
+        }
+        if (settings != null && isPointKeycapCandidate(settings, key)) {
+            return settings.pointKeycapStyleEnabled
+                    ? KeyVisualRole.PRIMARY_FUNCTION
+                    : KeyVisualRole.FUNCTION;
         }
         if (key.icon != KeyIcon.NONE || KeyboardCommands.isCommand(key.tap)) {
             return KeyVisualRole.FUNCTION;
@@ -78,6 +80,13 @@ final class KeyboardKeyVisualClassifier {
         return override == null ? 0xFF06B6D4 : override;
     }
 
+    static boolean drawsDotLegendFor(KeyboardSettings settings, GestureKey key) {
+        KeyDisplayOverride override = KeyDisplayOverrideResolver.resolve(settings, key);
+        return override != null
+                && override.isIcon()
+                && ModifierIconCatalog.GLYPH_DOT.equals(override.value);
+    }
+
     static boolean isPrimaryFunctionKey(GestureKey key) {
         if (key == null) {
             return false;
@@ -108,6 +117,12 @@ final class KeyboardKeyVisualClassifier {
         if (color != null) {
             return color;
         }
+        if (". .".equals(key.label)) {
+            color = findOverride(settings, "..");
+            if (color != null) {
+                return color;
+            }
+        }
         if (key.icon != KeyIcon.NONE) {
             color = findOverride(settings, "icon:" + key.icon);
             if (color != null) {
@@ -115,28 +130,78 @@ final class KeyboardKeyVisualClassifier {
             }
         }
         if (KeyboardCommands.CMD_SPACE.equals(key.tap)) {
-            return findOverride(settings, "space");
+            color = findOverride(settings, "space");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_DELETE.equals(key.tap)) {
-            return findOverride(settings, "backspace");
+            color = findOverride(settings, "backspace");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_ENTER.equals(key.tap)) {
-            return findOverride(settings, "enter");
+            color = findOverride(settings, "enter");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_SHIFT_ONCE.equals(key.tap)) {
-            return findOverride(settings, "shift");
+            color = findOverride(settings, "shift");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)) {
-            return findOverride(settings, "language");
+            color = findOverride(settings, "language");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_SETTINGS.equals(key.tap)) {
-            return findOverride(settings, "settings");
+            color = findOverride(settings, "settings");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)) {
-            return findOverride(settings, "options");
+            color = findOverride(settings, "options");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_RESERVED_PHRASES.equals(key.tap)) {
-            return findOverride(settings, "reserved");
+            color = findOverride(settings, "reserved");
+            if (color != null) {
+                return color;
+            }
+        }
+        if (settings.pointKeycapStyleEnabled) {
+            if (isDingulEnterLikePunctuationKey(settings, key)) {
+                color = findOverride(settings, "enter");
+                if (color != null) {
+                    return color;
+                }
+            }
+            if (isDingulShiftLikePunctuationKey(settings, key)) {
+                color = findOverride(settings, "shift");
+                if (color != null) {
+                    return color;
+                }
+            }
+        }
+        if (KeyDisplayOverrideResolver.isAlphaKey(key)) {
+            color = findOverride(settings, "alpha");
+            if (color != null) {
+                return color;
+            }
+        }
+        if (KeyDisplayOverrideResolver.isModifierKey(key)) {
+            color = findOverride(settings, "modifiers");
+            if (color != null) {
+                return color;
+            }
         }
         return null;
     }
@@ -161,6 +226,12 @@ final class KeyboardKeyVisualClassifier {
         if (color != null) {
             return color;
         }
+        if (". .".equals(key.label)) {
+            color = findBackgroundOverride(settings, "..");
+            if (color != null) {
+                return color;
+            }
+        }
         if (key.icon != KeyIcon.NONE) {
             color = findBackgroundOverride(settings, "icon:" + key.icon);
             if (color != null) {
@@ -168,28 +239,78 @@ final class KeyboardKeyVisualClassifier {
             }
         }
         if (KeyboardCommands.CMD_SPACE.equals(key.tap)) {
-            return findBackgroundOverride(settings, "space");
+            color = findBackgroundOverride(settings, "space");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_DELETE.equals(key.tap)) {
-            return findBackgroundOverride(settings, "backspace");
+            color = findBackgroundOverride(settings, "backspace");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_ENTER.equals(key.tap)) {
-            return findBackgroundOverride(settings, "enter");
+            color = findBackgroundOverride(settings, "enter");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_SHIFT_ONCE.equals(key.tap)) {
-            return findBackgroundOverride(settings, "shift");
+            color = findBackgroundOverride(settings, "shift");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)) {
-            return findBackgroundOverride(settings, "language");
+            color = findBackgroundOverride(settings, "language");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_SETTINGS.equals(key.tap)) {
-            return findBackgroundOverride(settings, "settings");
+            color = findBackgroundOverride(settings, "settings");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)) {
-            return findBackgroundOverride(settings, "options");
+            color = findBackgroundOverride(settings, "options");
+            if (color != null) {
+                return color;
+            }
         }
         if (KeyboardCommands.CMD_RESERVED_PHRASES.equals(key.tap)) {
-            return findBackgroundOverride(settings, "reserved");
+            color = findBackgroundOverride(settings, "reserved");
+            if (color != null) {
+                return color;
+            }
+        }
+        if (settings.pointKeycapStyleEnabled) {
+            if (isDingulEnterLikePunctuationKey(settings, key)) {
+                color = findBackgroundOverride(settings, "enter");
+                if (color != null) {
+                    return color;
+                }
+            }
+            if (isDingulShiftLikePunctuationKey(settings, key)) {
+                color = findBackgroundOverride(settings, "shift");
+                if (color != null) {
+                    return color;
+                }
+            }
+        }
+        if (KeyDisplayOverrideResolver.isAlphaKey(key)) {
+            color = findBackgroundOverride(settings, "alpha");
+            if (color != null) {
+                return color;
+            }
+        }
+        if (KeyDisplayOverrideResolver.isModifierKey(key)) {
+            color = findBackgroundOverride(settings, "modifiers");
+            if (color != null) {
+                return color;
+            }
         }
         return null;
     }
@@ -206,15 +327,44 @@ final class KeyboardKeyVisualClassifier {
         return settings.keyColorOverrides.get(KeyboardSettings.normalizeKeyOverrideName("bg:" + key));
     }
 
-    private static boolean isHangulAccentKey(KeyboardSettings settings, GestureKey key) {
-        return settings != null
-                && settings.keyboardMode == KeyboardMode.HANGUL
-                && (".".equals(key.label) || "/".equals(key.label));
-    }
-
     private static boolean isDingulVowelCommandKey(GestureKey key) {
         return KeyboardCommands.CMD_DINGUL_CENTER_VOWEL.equals(key.tap)
                 || KeyboardCommands.CMD_DINGUL_WIDE_VOWEL.equals(key.tap);
+    }
+
+    private static boolean isPointKeycapCandidate(KeyboardSettings settings, GestureKey key) {
+        return isDingulModifierPunctuationKey(settings, key) || isMetaModifierCommandKey(key);
+    }
+
+    private static boolean isMetaModifierCommandKey(GestureKey key) {
+        if (key == null) {
+            return false;
+        }
+        return KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)
+                || KeyboardCommands.CMD_RESERVED_PHRASES.equals(key.tap)
+                || KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)
+                || KeyboardCommands.CMD_SETTINGS.equals(key.tap)
+                || KeyboardCommands.CMD_INPUT_PICKER.equals(key.tap)
+                || KeyboardCommands.CMD_QUICK_SETTINGS.equals(key.tap)
+                || KeyboardCommands.CMD_HIDE.equals(key.tap)
+                || KeyboardCommands.CMD_HAND_LEFT.equals(key.tap)
+                || KeyboardCommands.CMD_HAND_RIGHT.equals(key.tap)
+                || KeyboardCommands.CMD_HAND_BALANCED.equals(key.tap);
+    }
+
+    private static boolean isDingulModifierPunctuationKey(KeyboardSettings settings, GestureKey key) {
+        if (settings == null || key == null || settings.keyboardMode != KeyboardMode.HANGUL) {
+            return false;
+        }
+        return ".".equals(key.label) || "/".equals(key.label);
+    }
+
+    private static boolean isDingulEnterLikePunctuationKey(KeyboardSettings settings, GestureKey key) {
+        return isDingulModifierPunctuationKey(settings, key) && ".".equals(key.label);
+    }
+
+    private static boolean isDingulShiftLikePunctuationKey(KeyboardSettings settings, GestureKey key) {
+        return isDingulModifierPunctuationKey(settings, key) && "/".equals(key.label);
     }
 
     private static boolean isAdditionalNumberRowKey(GestureKey key) {

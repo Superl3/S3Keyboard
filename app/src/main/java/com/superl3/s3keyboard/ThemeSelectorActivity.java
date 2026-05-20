@@ -63,6 +63,14 @@ public final class ThemeSelectorActivity extends Activity {
         editorButton.setOnClickListener(v -> startActivity(new Intent(this, ThemeEditorActivity.class)));
         root.addView(editorButton, topParams(12));
 
+        Button resetButton = new Button(this);
+        resetButton.setText("\uAE30\uBCF8\uAC12\uC73C\uB85C \uBCF5\uC6D0");
+        styleSystemButton(resetButton, false);
+        resetButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_keyboard_reset, 0, 0, 0);
+        resetButton.setCompoundDrawablePadding(dp(8));
+        resetButton.setOnClickListener(v -> resetThemeToDefault());
+        root.addView(resetButton, topParams(8));
+
         LinearLayout previewModeRow = new LinearLayout(this);
         previewModeRow.setOrientation(LinearLayout.HORIZONTAL);
         dingulPreviewButton = previewModeButton("Dingul", KeyboardMode.HANGUL);
@@ -187,6 +195,14 @@ public final class ThemeSelectorActivity extends Activity {
         selectedIndex = index;
         settings = themeOptions[index].applyTo(settings);
         KeyboardPreferences.saveSelectedThemeId(this, themeOptions[index].stableId());
+        KeyboardPreferences.saveSettings(this, settings);
+        rebuildCards();
+    }
+
+    private void resetThemeToDefault() {
+        selectedIndex = -1;
+        settings = ThemeOption.resetToDefaultAppearance(settings);
+        KeyboardPreferences.saveSelectedThemeId(this, "");
         KeyboardPreferences.saveSettings(this, settings);
         rebuildCards();
     }

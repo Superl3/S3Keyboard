@@ -206,13 +206,6 @@ final class HangulAutomata {
         }
 
         if (vowel < 0) {
-            String sequence = "" + INITIAL_CHARS[initial] + ch;
-            Integer doubled = DOUBLE_INITIAL_BY_SEQUENCE.get(sequence);
-            if (doubled != null) {
-                initial = doubled;
-                return "";
-            }
-
             committed.append(getComposingText());
             initial = nextInitial;
             return committed.toString();
@@ -234,7 +227,7 @@ final class HangulAutomata {
 
         String sequence = "" + FINAL_CHARS[finalConsonant] + ch;
         Integer compound = COMPOUND_FINAL_BY_SEQUENCE.get(sequence);
-        if (compound != null) {
+        if (compound != null && FINAL_CHARS[finalConsonant] != ch) {
             finalConsonant = compound;
             return "";
         }

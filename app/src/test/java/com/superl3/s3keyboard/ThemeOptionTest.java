@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
@@ -28,5 +29,54 @@ public final class ThemeOptionTest {
         assertEquals(KeyboardThemePreset.PRESETS.length, options.length);
         assertNotNull(options[0].preset);
         assertEquals(KeyboardThemePreset.PRESETS[0].id, options[0].stableId());
+    }
+
+    @Test
+    public void themeSelectionDoesNotCarryPreviousThemeAppearance() {
+        ThemeOption metropolis = option("gmk-metropolis");
+        ThemeOption clean = option("ios-clean-light");
+        KeyboardSettings contaminated = metropolis.applyTo(KeyboardSettings.defaults())
+                .withHeights(333, 222)
+                .withModifierIconOverridePack(ModifierIconCatalog.PACK_DOTS_LINES)
+                .withKeyDisplayOverridePack(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT);
+
+        KeyboardSettings next = clean.applyTo(contaminated);
+
+        assertEquals(333, next.hangulKeyboardHeightDp);
+        assertEquals(222, next.englishKeyboardHeightDp);
+        assertEquals(0xFFFBFBFD, next.keyIdleColor);
+        assertFalse(next.keyColorOverrides.containsKey("background:alpha"));
+        assertEquals(ModifierIconCatalog.PACK_LINE_MONO, next.modifierIconThemePackId);
+        assertEquals(ModifierIconCatalog.PACK_THEME_DEFAULT, next.modifierIconOverridePackId);
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_NONE, next.keyDisplayThemePackId);
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_THEME_DEFAULT, next.keyDisplayOverridePackId);
+        assertFalse(next.visualEffects.blurEnabled);
+    }
+
+    @Test
+    public void resetToDefaultRestoresDefaultAppearanceOnly() {
+        KeyboardSettings themed = option("gmk-metropolis")
+                .applyTo(KeyboardSettings.defaults().withHeights(333, 222));
+
+        KeyboardSettings reset = ThemeOption.resetToDefaultAppearance(themed);
+
+        assertEquals(333, reset.hangulKeyboardHeightDp);
+        assertEquals(222, reset.englishKeyboardHeightDp);
+        assertEquals(KeyboardSettings.DEFAULT_KEY_IDLE_COLOR, reset.keyIdleColor);
+        assertEquals(KeyboardSettings.DEFAULT_KEYBOARD_BACKGROUND_COLOR, reset.keyboardBackgroundColor);
+        assertEquals(ModifierIconCatalog.PACK_LINE_MONO, reset.modifierIconThemePackId);
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_NONE, reset.keyDisplayThemePackId);
+        assertFalse(reset.visualEffects.blurEnabled);
+        assertFalse(reset.visualEffects.metallicEnabled);
+    }
+
+    private ThemeOption option(String id) {
+        ThemeOption[] options = ThemeOption.buildOptions(null, false);
+        for (ThemeOption option : options) {
+            if (id.equals(option.stableId())) {
+                return option;
+            }
+        }
+        throw new AssertionError("Missing theme option: " + id);
     }
 }

@@ -54,10 +54,21 @@ This runs the Hangul automata unit tests and rebuilds the debug APK.
 For direct local Gradle use with an existing Android SDK/JDK, see
 `docs\development.md`.
 
+Before pushing theme/icon work, also run:
+
+```powershell
+rtk node --check web-theme-builder/app.js
+rtk powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\render-theme-previews.ps1
+rtk git diff --check
+```
+
 ## Web Theme Builder
 
 Open `web-theme-builder\index.html` in a browser to edit schemaVersion 1 theme
 JSON that can be imported by the app theme editor.
+
+External modifier/display icon pack authoring is documented in
+`docs\icon-pack-import.md`.
 
 ## Icon Assets
 
@@ -107,8 +118,16 @@ The smoke script opens the local practice field and captures input-method state 
 - Clean-room generated vector icon pipeline for command keys and settings action buttons
 - Conventional keyboard usability hacks: hit slop, touch Y offset, locked slide direction, haptic feedback, delete/cursor repeat, spacebar cursor movement, contextual Enter labels, and English double-space period
 - Queued haptic ticks with adjustable duration/gap, plus bounded touch/slide correction learned from immediate deletes
+- Local typing pattern logging for future typo correction experiments; data stays on device and resets with input correction
+- Theme system with per-key foreground/background overrides, key display overrides, modifier icon packs, imported icon/display pack metadata, visual effects, and preview parity scripts
 - Launcher settings for handedness, left/right margins, keyboard height, per-language number row, theme colors, key roundness/gap, Android input-method settings, and input-method picker
 - Closed beta trust work: local privacy notice, Play Data safety draft, ASCII-capable IME subtype, explicit field policies, `TYPE_NULL` raw-key fallback, debug-gated demo overrides, and release build hardening
+
+## Agent Handoff
+
+Future coding contexts should start with `AGENTS.md` and `docs\agent-workflow.md`.
+They describe the source map, theme/icon workflow, test expectations, and device
+install flow.
 
 ## Closed Beta Notes
 

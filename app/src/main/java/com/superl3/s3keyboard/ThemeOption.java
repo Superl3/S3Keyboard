@@ -42,13 +42,24 @@ final class ThemeOption {
     }
 
     KeyboardSettings applyTo(KeyboardSettings settings) {
+        KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings appearance = appearanceSettings();
+        return appearance == null ? base : base.withAppearanceFrom(appearance);
+    }
+
+    KeyboardSettings appearanceSettings() {
         if (preset != null) {
-            return preset.applyTo(settings);
+            return preset.applyTo(KeyboardSettings.defaults());
         }
         if (userThemeJson != null && !userThemeJson.isEmpty()) {
-            return KeyboardThemeJson.importTheme(settings, userThemeJson);
+            return KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), userThemeJson);
         }
-        return settings;
+        return null;
+    }
+
+    static KeyboardSettings resetToDefaultAppearance(KeyboardSettings settings) {
+        KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
+        return base.withAppearanceFrom(KeyboardSettings.defaults());
     }
 
     String stableId() {

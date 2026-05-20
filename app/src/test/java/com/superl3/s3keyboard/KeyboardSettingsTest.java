@@ -137,7 +137,7 @@ public final class KeyboardSettingsTest {
     @Test
     public void unsupportedFontFallsBackToDefault() {
         assertEquals(
-                KeyboardSettings.FONT_DEFAULT,
+                KeyboardSettings.DEFAULT_FONT_FAMILY,
                 KeyboardSettings.defaults().withFontFamily("unknown").fontFamily);
     }
 

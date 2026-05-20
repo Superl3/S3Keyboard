@@ -4,18 +4,20 @@ This draft matches the current closed-beta implementation and should be reviewed
 
 ## Collection
 
-- Collects user data: No.
+- Collects user data: No, under the Google Play definition of collection, because app data is not transmitted off the user's device.
 - Shares user data: No.
 - Data transmitted off device: No.
 - Network permission: No `android.permission.INTERNET` permission is declared.
 
-Under Google Play Data safety guidance, collection means transmitting data off the user's device. This app keeps keyboard settings and touch correction statistics locally.
+Under Google Play Data safety guidance, collection means transmitting data off the user's device. This app keeps keyboard settings, local input-learning data, and optional clipboard history on device.
 
 ## Local data handled by the app
 
 - Keyboard preferences: mode, handedness, margins, height, visual theme, haptic setting, number-row settings.
 - Touch correction statistics: aggregate touch offset bias after immediate delete patterns.
-- No typed content, passwords, personal identifiers, account information, contacts, location, photos, files, microphone, or camera data.
+- Typing pattern log: recent local key input and correction events, including raw typed key values, gesture action, and correction metadata. This is capped and reset with input correction.
+- Optional clipboard history: recent clipboard text when the clipboard history setting is enabled.
+- No typed content, clipboard content, passwords, personal identifiers, account information, contacts, location, photos, files, microphone, or camera data is transmitted off device.
 
 ## Security practices
 
@@ -26,10 +28,10 @@ Under Google Play Data safety guidance, collection means transmitting data off t
 
 ## Play Console answers to confirm
 
-- Data collection: No.
+- Data collection: No, if the final artifact still has no data transmission.
 - Data sharing: No.
 - Data encryption in transit: Not applicable because no data is transmitted.
-- Users can request data deletion: Not applicable for server-side data; local data can be deleted by resetting touch correction, clearing app storage, or uninstalling.
+- Users can request data deletion: Not applicable for server-side data; local data can be deleted by resetting touch correction, clearing clipboard history, clearing app storage, or uninstalling.
 - Privacy policy: Required for Play closed/open/production testing, even if no user data is collected.
 
 References:
