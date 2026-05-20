@@ -9,7 +9,7 @@ public final class SettingOptionModelsTest {
     @Test
     public void colorOptionsKeepBasicAndEditorScopesSeparate() {
         assertEquals("기본 버튼", ColorOption.BASIC_OPTIONS[0].label);
-        assertEquals("Key idle", ColorOption.EDITOR_OPTIONS[0].label);
+        assertEquals("기본 키", ColorOption.EDITOR_OPTIONS[0].label);
         assertTrue(ColorOption.EDITOR_OPTIONS.length > ColorOption.BASIC_OPTIONS.length);
     }
 

@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -102,6 +103,23 @@ public final class KeyboardThemePresetTest {
 
         assertEquals(LegendStylePreset.DOTS, dark.legendStylePreset);
         assertEquals(LegendStylePreset.DOTS, light.legendStylePreset);
+        assertNotEquals(
+                dark.accentColor,
+                KeyboardKeyVisualClassifier.textColorFor(
+                        dark.withKeyboardMode(KeyboardMode.ENGLISH),
+                        new GestureKey("q", "q", "Q", "!", null, null, "!", 2)));
+        assertNotEquals(
+                light.accentColor,
+                KeyboardKeyVisualClassifier.textColorFor(
+                        light.withKeyboardMode(KeyboardMode.HANGUL),
+                        new GestureKey(
+                                "ㅡㅐ",
+                                KeyboardCommands.CMD_DINGUL_WIDE_VOWEL,
+                                "ㅙ",
+                                "ㅞ",
+                                "ㅔ",
+                                "ㅐ",
+                                null)));
     }
 
     @Test

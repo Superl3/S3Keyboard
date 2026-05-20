@@ -17,24 +17,24 @@ final class ColorOption {
     };
 
     static final ColorOption[] EDITOR_OPTIONS = {
-            new ColorOption("Key idle", KeyboardSettings.DEFAULT_KEY_IDLE_COLOR),
-            new ColorOption("Background", KeyboardSettings.DEFAULT_KEYBOARD_BACKGROUND_COLOR),
-            new ColorOption("Pressed gray", KeyboardSettings.DEFAULT_KEY_PRESSED_COLOR),
-            new ColorOption("Secondary gray", KeyboardSettings.DEFAULT_SECONDARY_COLOR),
-            new ColorOption("Black", KeyboardSettings.DEFAULT_ACCENT_COLOR),
-            new ColorOption("White", 0xFFFFFFFF),
-            new ColorOption("Neutral outline", 0xFF45484F),
-            new ColorOption("Neutral depth", 0xFF2F3339),
-            new ColorOption("Warm outline", 0xFF9F9488),
-            new ColorOption("Warm depth", 0xFFB7AA9B),
-            new ColorOption("Blue", 0xFF3F6EDB),
-            new ColorOption("Green", 0xFF2E7D57),
-            new ColorOption("Teal", 0xFF00897B),
-            new ColorOption("Coral", 0xFFE76F51),
-            new ColorOption("Yellow", 0xFFE9C46A),
-            new ColorOption("Marigold cyan", 0xFF4DE4D2),
-            new ColorOption("Marigold pink", 0xFFFF5DAE),
-            new ColorOption("Marigold orange", 0xFFFF9F32)
+            new ColorOption("기본 키", KeyboardSettings.DEFAULT_KEY_IDLE_COLOR),
+            new ColorOption("키보드 배경", KeyboardSettings.DEFAULT_KEYBOARD_BACKGROUND_COLOR),
+            new ColorOption("눌림 회색", KeyboardSettings.DEFAULT_KEY_PRESSED_COLOR),
+            new ColorOption("보조 회색", KeyboardSettings.DEFAULT_SECONDARY_COLOR),
+            new ColorOption("검정", KeyboardSettings.DEFAULT_ACCENT_COLOR),
+            new ColorOption("흰색", 0xFFFFFFFF),
+            new ColorOption("중립 테두리", 0xFF45484F),
+            new ColorOption("중립 입체", 0xFF2F3339),
+            new ColorOption("웜 테두리", 0xFF9F9488),
+            new ColorOption("웜 입체", 0xFFB7AA9B),
+            new ColorOption("파랑", 0xFF3F6EDB),
+            new ColorOption("초록", 0xFF2E7D57),
+            new ColorOption("청록", 0xFF00897B),
+            new ColorOption("코랄", 0xFFE76F51),
+            new ColorOption("노랑", 0xFFE9C46A),
+            new ColorOption("메리골드 청록", 0xFF4DE4D2),
+            new ColorOption("메리골드 핑크", 0xFFFF5DAE),
+            new ColorOption("메리골드 오렌지", 0xFFFF9F32)
     };
 
     final String label;
@@ -47,7 +47,7 @@ final class ColorOption {
 
     @Override
     public String toString() {
-        return label + "  " + hex();
+        return label;
     }
 
     String hex() {

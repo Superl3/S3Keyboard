@@ -1,21 +1,21 @@
 const colorFields = [
-  ["keyIdle", "Global - Alpha", "Regular text keys and the spacebar background."],
-  ["functionKey", "Global - Modifier", "Options, reserved phrase, and language command backgrounds."],
-  ["primaryFunctionKey", "Global - Primary", "Shift, backspace, and enter backgrounds."],
-  ["accentKey", "Global - Accent", "Accent key group background, including Dingul accent special keys."],
-  ["keyPressed", "Pressed", "Temporary key background while a key is pressed."],
-  ["keyboardBackground", "Keyboard background", "Area behind and between keys."],
-  ["border", "Border", "Key outline color. Depth falls back to this when custom depth is off."],
-  ["depth", "Depth", "Optional pseudo-block lower edge color."],
-  ["accent", "Text primary", "Main text, icons, shift indicator fallback, and preview text."],
-  ["secondary", "Text secondary", "Slide hints and secondary text."]
+  ["keyIdle", "전체 - 기본 키", "일반 입력 키와 스페이스바 배경색입니다."],
+  ["functionKey", "전체 - 기능 키", "옵션, 예약어, 한/영 키 배경색입니다."],
+  ["primaryFunctionKey", "전체 - 주요 기능 키", "시프트, 삭제, 엔터 배경색입니다."],
+  ["accentKey", "전체 - 강조 키", "딩굴 강조 특수 키를 포함한 강조 그룹 배경색입니다."],
+  ["keyPressed", "눌림", "키를 누르는 동안 표시되는 배경색입니다."],
+  ["keyboardBackground", "키보드 배경", "키 사이와 키 뒤쪽 영역의 색상입니다."],
+  ["border", "테두리", "키 외곽선 색상입니다. 입체 효과 색상을 따로 지정하지 않으면 이 색상을 씁니다."],
+  ["depth", "입체 효과 색상", "키 아래쪽 입체 효과 색상입니다."],
+  ["accent", "주 글자", "중앙 글자, 아이콘, 미리보기 텍스트 색상입니다."],
+  ["secondary", "보조 글자", "슬라이드 힌트와 보조 텍스트 색상입니다."]
 ];
 
 const shapeFields = [
-  ["roundnessDp", "Roundness", 0, 24],
-  ["borderWidthDp", "Outline density", 0, 8],
-  ["keyGapDp", "Visual key gap", 0, 18],
-  ["depthDp", "Depth height", 0, 8]
+  ["roundnessDp", "둥글기", 0, 24],
+  ["borderWidthDp", "테두리 굵기", 0, 8],
+  ["keyGapDp", "키 사이 시각 간격", 0, 18],
+  ["depthDp", "입체 높이", 0, 8]
 ];
 
 const presets = {
@@ -110,6 +110,48 @@ const presets = {
       "enter": "#FF9F32"
     },
     keyBackgroundColorOverrides: {}
+  },
+  "gmk-dots-light": {
+    name: "GMK Dots Light Inspired",
+    colors: {
+      keyIdle: "#F6F3EA",
+      functionKey: "#E8E4D9",
+      primaryFunctionKey: "#D8D4CA",
+      accentKey: "#CFCBC0",
+      keyPressed: "#E2DED3",
+      keyboardBackground: "#ECE8DD",
+      border: "#C3BEB3",
+      depth: "#C3BEB3",
+      accent: "#1D2430",
+      secondary: "#6C7480"
+    },
+    shape: { roundnessDp: 5, borderWidthDp: 1, keyGapDp: 6, depthEnabled: true, depthDp: 1 },
+    typography: defaultTypography(false, false),
+    additionalNumberRow: { colorMode: "full_dimmed" },
+    legendStyle: { preset: "dots" },
+    keyTextColorOverrides: dotTextOverrides(false),
+    keyBackgroundColorOverrides: dotBackgroundOverrides(false)
+  },
+  "gmk-dots-dark": {
+    name: "GMK Dots Dark Inspired",
+    colors: {
+      keyIdle: "#20242C",
+      functionKey: "#1B1F27",
+      primaryFunctionKey: "#15181E",
+      accentKey: "#181C23",
+      keyPressed: "#2C313C",
+      keyboardBackground: "#101318",
+      border: "#0B0E12",
+      depth: "#0B0E12",
+      accent: "#F4F6FA",
+      secondary: "#AAB4C2"
+    },
+    shape: { roundnessDp: 5, borderWidthDp: 1, keyGapDp: 6, depthEnabled: true, depthDp: 1 },
+    typography: defaultTypography(false, false),
+    additionalNumberRow: { colorMode: "full_dimmed" },
+    legendStyle: { preset: "dots" },
+    keyTextColorOverrides: dotTextOverrides(true),
+    keyBackgroundColorOverrides: dotBackgroundOverrides(true)
   }
 };
 
@@ -167,6 +209,37 @@ function defaultTypography(hangulHints, englishHints) {
     secondaryTextItalic: false,
     showHangulSlideHints: hangulHints,
     showEnglishSlideHints: englishHints
+  };
+}
+
+function dotTextOverrides(dark) {
+  const palette = dark
+    ? ["#EF476F", "#FFD166", "#06D6A0", "#4CC9F0", "#B5179E", "#F77F00"]
+    : ["#E63946", "#F4A261", "#2A9D8F", "#457B9D", "#7B2CBF", "#FF6B6B"];
+  const keys = [
+    "tap:q", "tap:w", "tap:e", "tap:r", "tap:t", "tap:y", "tap:u", "tap:i", "tap:o", "tap:p",
+    "tap:a", "tap:s", "tap:d", "tap:f", "tap:g", "tap:h", "tap:j", "tap:k", "tap:l",
+    "tap:z", "tap:x", "tap:c", "tap:v", "tap:b", "tap:n", "tap:m",
+    "tap:ㄱ", "tap:ㄴ", "tap:ㅢ", "tap:ㄹ", "tap:ㅁ", "tap:ㅣ",
+    "__dingul_center_vowel__", "tap:ㅅ", "tap:ㅇ", "__dingul_wide_vowel__",
+    "tap:ㅈ", "tap:ㅎ", "ㅣ.", "ㅡㅐ",
+    "?", ".", "/", "space", "enter", "backspace", "shift", "language", "options", "reserved"
+  ];
+  return keys.reduce((overrides, key, index) => {
+    overrides[key] = palette[index % palette.length];
+    return overrides;
+  }, { shiftIndicator: dark ? "#4CC9F0" : "#457B9D" });
+}
+
+function dotBackgroundOverrides(dark) {
+  return {
+    space: dark ? "#1B1F27" : "#E8E4D9",
+    enter: dark ? "#252B34" : "#D8D4CA",
+    backspace: dark ? "#252B34" : "#D8D4CA",
+    shift: dark ? "#252B34" : "#D8D4CA",
+    language: dark ? "#252B34" : "#D8D4CA",
+    options: dark ? "#252B34" : "#D8D4CA",
+    reserved: dark ? "#252B34" : "#D8D4CA"
   };
 }
 
@@ -329,6 +402,9 @@ function buildTheme() {
     typography: { ...state.typography },
     keyTextColorOverrides: { ...state.keyTextColorOverrides }
   };
+  if (state.legendStyle?.preset && state.legendStyle.preset !== "default") {
+    theme.legendStyle = { ...state.legendStyle };
+  }
   if (Object.keys(state.keyBackgroundColorOverrides || {}).length > 0) {
     theme.keyBackgroundColorOverrides = { ...state.keyBackgroundColorOverrides };
   }
@@ -375,7 +451,14 @@ function renderPreview(theme) {
       key.style.fontSize = `${14 * theme.typography.primaryTextSizePercent / 100}px`;
       key.style.fontWeight = theme.typography.primaryTextBold ? "700" : "400";
       key.style.fontStyle = theme.typography.primaryTextItalic ? "italic" : "normal";
-      key.textContent = label;
+      if (theme.legendStyle?.preset === "dots") {
+        const mainDot = document.createElement("span");
+        mainDot.className = "main-dot";
+        mainDot.style.background = textColorFor(label, theme);
+        key.appendChild(mainDot);
+      } else {
+        key.textContent = label;
+      }
       appendSubLegend(key, label, theme);
       if (label === "Shift") {
         const dot = document.createElement("span");
@@ -518,6 +601,7 @@ function importJson() {
       additionalNumberRow: {
         colorMode: parsed.additionalNumberRow?.colorMode || "full_dimmed"
       },
+      legendStyle: parsed.legendStyle || {},
       keyTextColorOverrides: parsed.keyTextColorOverrides || parsed.keyColorOverrides || {},
       keyBackgroundColorOverrides: parsed.keyBackgroundColorOverrides || {}
     };

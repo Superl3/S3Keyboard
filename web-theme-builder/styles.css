@@ -193,6 +193,13 @@ textarea {
   pointer-events: none;
 }
 
+.main-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  display: block;
+}
+
 .shift-dot {
   position: absolute;
   top: 6px;

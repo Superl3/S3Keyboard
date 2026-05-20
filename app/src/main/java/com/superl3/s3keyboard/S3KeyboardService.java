@@ -815,7 +815,7 @@ public final class S3KeyboardService extends InputMethodService
         });
 
         TextView title = new TextView(this);
-        title.setText("Quick settings");
+        title.setText("빠른 설정");
         title.setTextColor(ui.textPrimary);
         title.setTextSize(16);
         title.setTypeface(Typeface.DEFAULT_BOLD);
@@ -824,12 +824,11 @@ public final class S3KeyboardService extends InputMethodService
         panel.addView(quickButton(numberRowToggleLabel(), activeNumberRowVisible(), v -> toggleActiveNumberRow()), topWrap(8));
         LinearLayout handRow = new LinearLayout(this);
         handRow.setOrientation(LinearLayout.HORIZONTAL);
-        handRow.addView(handednessLabelView(ui), weightedQuickParams(0, 4));
         handRow.addView(handednessButton("왼쪽", HandednessMode.LEFT), weightedQuickParams(0, 4));
-        handRow.addView(handednessButton("비활성화", HandednessMode.BALANCED), weightedQuickParams(0, 4));
+        handRow.addView(handednessButton("양손", HandednessMode.BALANCED), weightedQuickParams(0, 4));
         handRow.addView(handednessButton("오른쪽", HandednessMode.RIGHT), weightedQuickParams(0, 0));
         panel.addView(handRow, topWrap(6));
-        panel.addView(quickButton("Skin settings", false, v -> {
+        panel.addView(quickButton("테마 선택", false, v -> {
             dismissQuickSettings();
             Intent intent = new Intent(this, ThemeSelectorActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -877,15 +876,6 @@ public final class S3KeyboardService extends InputMethodService
         return button;
     }
 
-    private TextView handednessLabelView(SettingsUiPalette ui) {
-        TextView label = new TextView(this);
-        label.setText("한손모드");
-        label.setTextColor(ui.textSecondary);
-        label.setGravity(Gravity.CENTER_VERTICAL);
-        label.setTextSize(13);
-        return label;
-    }
-
     private void styleQuickButton(Button button, boolean selected) {
         SettingsUiPalette ui = SettingsUiPalette.from(this);
         button.setAllCaps(false);
@@ -907,7 +897,7 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private String numberRowToggleLabel() {
-        String layout = settings.keyboardMode == KeyboardMode.ENGLISH ? "QWERTY" : "Dingul";
+        String layout = settings.keyboardMode == KeyboardMode.ENGLISH ? "쿼티" : "딩굴";
         return layout + " number row: " + (activeNumberRowVisible() ? "on" : "off");
     }
 
