@@ -12,7 +12,6 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public final class ThemeSelectorActivity extends Activity {
     private KeyboardSettings settings;
@@ -189,7 +188,6 @@ public final class ThemeSelectorActivity extends Activity {
         settings = themeOptions[index].applyTo(settings);
         KeyboardPreferences.saveSelectedThemeId(this, themeOptions[index].stableId());
         KeyboardPreferences.saveSettings(this, settings);
-        Toast.makeText(this, "테마 적용: " + themeOptions[index].label, Toast.LENGTH_SHORT).show();
         rebuildCards();
     }
 
