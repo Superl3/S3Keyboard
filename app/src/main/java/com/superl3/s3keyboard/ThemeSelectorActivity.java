@@ -232,6 +232,10 @@ public final class ThemeSelectorActivity extends Activity {
     private void styleSystemButton(Button button, boolean selected) {
         SettingsUiPalette ui = SettingsUiPalette.from(this);
         button.setTextColor(selected ? ui.selectedText : ui.controlText);
+        button.setAllCaps(false);
+        button.setMinHeight(dp(44));
+        button.setPadding(dp(18), 0, dp(18), 0);
+        button.setGravity(Gravity.CENTER);
         GradientDrawable background = new GradientDrawable();
         background.setColor(selected ? ui.selectedFill : ui.controlFill);
         background.setCornerRadius(dp(8));

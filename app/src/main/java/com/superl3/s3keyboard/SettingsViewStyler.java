@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.view.Gravity;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -20,6 +21,9 @@ final class SettingsViewStyler {
         SettingsUiPalette ui = SettingsUiPalette.from(context);
         button.setAllCaps(false);
         button.setTextColor(selected ? ui.selectedText : ui.controlText);
+        button.setGravity(Gravity.CENTER);
+        button.setMinHeight(dp(context, 44));
+        button.setPadding(dp(context, 18), 0, dp(context, 18), 0);
         GradientDrawable background = new GradientDrawable();
         background.setColor(selected ? ui.selectedFill : ui.controlFill);
         background.setCornerRadius(dp(context, 8));
@@ -61,17 +65,13 @@ final class SettingsViewStyler {
         SettingsUiPalette ui = SettingsUiPalette.from(context);
         input.setTextColor(ui.textPrimary);
         input.setHintTextColor(ui.textSecondary);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            input.setBackgroundTintList(new ColorStateList(
-                    new int[][] {
-                            new int[] { android.R.attr.state_focused },
-                            new int[] {}
-                    },
-                    new int[] {
-                            ui.specialForeground,
-                            ui.border
-                    }));
-        }
+        input.setMinHeight(dp(context, 44));
+        input.setPadding(dp(context, 14), 0, dp(context, 14), 0);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(ui.surfaceRaised);
+        background.setCornerRadius(dp(context, 8));
+        background.setStroke(Math.max(1, dp(context, 1)), ui.border);
+        input.setBackground(background);
     }
 
     private static int dp(Context context, int value) {

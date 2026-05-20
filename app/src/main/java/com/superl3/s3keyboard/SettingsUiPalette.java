@@ -85,9 +85,9 @@ final class SettingsUiPalette {
                     0xFF1D4E55,
                     0xFFECFFFC,
                     0xFF5ED4D0,
-                    0xFF20232A,
+                    0xFF303640,
                     0xFFF0ECE4,
-                    0xFF3A3F48,
+                    0xFF59616E,
                     0x99000000);
         }
         return new SettingsUiPalette(

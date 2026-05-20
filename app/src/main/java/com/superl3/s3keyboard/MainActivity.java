@@ -1133,6 +1133,7 @@ public final class MainActivity extends Activity {
         EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setHint("비우면 입력하지 않음");
+        SettingsViewStyler.editText(input, this);
         input.setText(KeyboardPreferences.loadReservedPhrase(this, action));
         input.addTextChangedListener(new TextWatcher() {
             @Override
