@@ -50,14 +50,14 @@ public final class ThemeSelectorActivity extends Activity {
         root.setPadding(dp(20), dp(20), dp(20), dp(24));
         scrollView.addView(root);
 
-        TextView title = label("Theme Selector");
+        TextView title = label("테마 선택");
         title.setTextColor(ui.textPrimary);
         title.setTextSize(22);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         root.addView(title, matchWrap());
 
         Button editorButton = new Button(this);
-        editorButton.setText("Open Theme Editor");
+        editorButton.setText("테마 편집기 열기");
         styleSystemButton(editorButton, false);
         editorButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_keyboard_settings, 0, 0, 0);
         editorButton.setCompoundDrawablePadding(dp(8));
@@ -143,7 +143,7 @@ public final class ThemeSelectorActivity extends Activity {
     }
 
     private TextView selectedBadge(SettingsUiPalette ui) {
-        TextView badge = label("Selected");
+        TextView badge = label("선택됨");
         badge.setTextColor(ui.selectedText);
         badge.setTextSize(12);
         badge.setTypeface(Typeface.DEFAULT_BOLD);
@@ -189,7 +189,7 @@ public final class ThemeSelectorActivity extends Activity {
         settings = themeOptions[index].applyTo(settings);
         KeyboardPreferences.saveSelectedThemeId(this, themeOptions[index].stableId());
         KeyboardPreferences.saveSettings(this, settings);
-        Toast.makeText(this, "Theme applied: " + themeOptions[index].label, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "테마 적용: " + themeOptions[index].label, Toast.LENGTH_SHORT).show();
         rebuildCards();
     }
 

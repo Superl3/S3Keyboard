@@ -33,21 +33,22 @@ public class ClipboardView extends LinearLayout {
         setOrientation(VERTICAL);
         SettingsUiPalette ui = SettingsUiPalette.from(context);
         setBackgroundColor(ui.background);
-        setPadding(20, 20, 20, 20);
+        setPadding(dp(20), dp(20), dp(20), dp(20));
 
         LinearLayout header = new LinearLayout(context);
         header.setOrientation(HORIZONTAL);
         header.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         TextView title = new TextView(context);
-        title.setText("Clipboard");
+        title.setText("클립보드");
         title.setTextSize(18);
         title.setTextColor(ui.textPrimary);
         title.setGravity(Gravity.CENTER_VERTICAL);
         header.addView(title, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
 
         Button closeBtn = new Button(context);
-        closeBtn.setText("Close");
+        closeBtn.setText("닫기");
+        SettingsViewStyler.button(closeBtn, context, false);
         closeBtn.setOnClickListener(v -> onClose.run());
         header.addView(closeBtn);
 
@@ -68,9 +69,9 @@ public class ClipboardView extends LinearLayout {
         List<String> entries = store.getEntries();
         if (entries.isEmpty()) {
             TextView emptyText = new TextView(getContext());
-            emptyText.setText("Clipboard history is empty.");
+            emptyText.setText("클립보드 기록이 비어 있습니다.");
             emptyText.setTextColor(SettingsUiPalette.from(getContext()).textSecondary);
-            emptyText.setPadding(20, 40, 20, 40);
+            emptyText.setPadding(dp(20), dp(40), dp(20), dp(40));
             emptyText.setGravity(Gravity.CENTER);
             listContent.addView(emptyText);
             return;
@@ -81,10 +82,10 @@ public class ClipboardView extends LinearLayout {
             item.setText(entry);
             item.setTextSize(16);
             item.setTextColor(SettingsUiPalette.from(getContext()).textPrimary);
-            item.setPadding(20, 30, 20, 30);
+            item.setPadding(dp(20), dp(30), dp(20), dp(30));
             item.setBackground(itemBackground());
             LayoutParams itemParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-            itemParams.setMargins(0, 0, 0, 10);
+            itemParams.setMargins(0, 0, 0, dp(10));
             item.setLayoutParams(itemParams);
 
             item.setOnClickListener(v -> {
@@ -100,8 +101,12 @@ public class ClipboardView extends LinearLayout {
         SettingsUiPalette ui = SettingsUiPalette.from(getContext());
         GradientDrawable background = new GradientDrawable();
         background.setColor(ui.surfaceRaised);
-        background.setCornerRadius(10);
-        background.setStroke(1, ui.border);
+        background.setCornerRadius(dp(10));
+        background.setStroke(Math.max(1, dp(1)), ui.border);
         return background;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }

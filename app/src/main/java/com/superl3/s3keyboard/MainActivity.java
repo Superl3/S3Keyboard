@@ -567,7 +567,7 @@ public final class MainActivity extends Activity {
     private void addThemeQuickControls(LinearLayout root) {
         addSectionTitle(root, "Theme");
         Button openThemeSelectorButton = new Button(this);
-        openThemeSelectorButton.setText("Open Theme Selector");
+        openThemeSelectorButton.setText("테마 선택");
         styleSystemButton(openThemeSelectorButton);
         setButtonIcon(openThemeSelectorButton, R.drawable.ic_keyboard_keyboard);
         openThemeSelectorButton.setOnClickListener(v ->
@@ -582,7 +582,7 @@ public final class MainActivity extends Activity {
         root = hiddenLegacyControls;
 
         Button saveThemeButton = new Button(this);
-        saveThemeButton.setText("Save current theme");
+        saveThemeButton.setText("현재 테마 저장");
         setButtonIcon(saveThemeButton, R.drawable.ic_keyboard_settings);
         saveThemeButton.setOnClickListener(v -> {
             UserThemeStore.UserTheme saved = UserThemeStore.saveCurrent(this, settings);
@@ -594,7 +594,7 @@ public final class MainActivity extends Activity {
         root.addView(saveThemeButton, buttonParams());
 
         deleteThemeButton = new Button(this);
-        deleteThemeButton.setText("Delete selected custom theme");
+        deleteThemeButton.setText("선택한 사용자 테마 삭제");
         setButtonIcon(deleteThemeButton, R.drawable.ic_keyboard_backspace);
         deleteThemeButton.setOnClickListener(v -> {
             ThemeOption option = selectedThemeOption();
@@ -715,7 +715,7 @@ public final class MainActivity extends Activity {
         root.addView(borderColorSpinner, matchWrap());
 
         customDepthColorCheckBox = new CheckBox(this);
-        customDepthColorCheckBox.setText("Depth 색상 직접 지정");
+        customDepthColorCheckBox.setText("입체 효과 색상 직접 지정");
         customDepthColorCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -785,7 +785,7 @@ public final class MainActivity extends Activity {
         root.addView(secondaryTextSizeSeekBar, matchWrap());
 
         primaryTextBoldCheckBox = new CheckBox(this);
-        primaryTextBoldCheckBox.setText("Primary legend bold");
+        primaryTextBoldCheckBox.setText("주 글자 굵게");
         primaryTextBoldCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -804,7 +804,7 @@ public final class MainActivity extends Activity {
         root.addView(primaryTextBoldCheckBox, matchWrapWithTop(8));
 
         primaryTextItalicCheckBox = new CheckBox(this);
-        primaryTextItalicCheckBox.setText("Primary legend italic");
+        primaryTextItalicCheckBox.setText("주 글자 기울임");
         primaryTextItalicCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -823,7 +823,7 @@ public final class MainActivity extends Activity {
         root.addView(primaryTextItalicCheckBox, matchWrapWithTop(4));
 
         secondaryTextBoldCheckBox = new CheckBox(this);
-        secondaryTextBoldCheckBox.setText("Secondary hint bold");
+        secondaryTextBoldCheckBox.setText("보조 힌트 굵게");
         secondaryTextBoldCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -842,7 +842,7 @@ public final class MainActivity extends Activity {
         root.addView(secondaryTextBoldCheckBox, matchWrapWithTop(8));
 
         secondaryTextItalicCheckBox = new CheckBox(this);
-        secondaryTextItalicCheckBox.setText("Secondary hint italic");
+        secondaryTextItalicCheckBox.setText("보조 힌트 기울임");
         secondaryTextItalicCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -946,7 +946,7 @@ public final class MainActivity extends Activity {
         root.addView(hapticCheckBox, matchWrapWithTop(8));
 
         differentiatedHapticCheckBox = new CheckBox(this);
-        differentiatedHapticCheckBox.setText("Differentiated haptics");
+        differentiatedHapticCheckBox.setText("입력 종류별 햅틱 구분");
         differentiatedHapticCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1008,7 +1008,7 @@ public final class MainActivity extends Activity {
         root.addView(gestureThresholdSeekBar, matchWrap());
 
         touchBiasAutoCorrectionCheckBox = new CheckBox(this);
-        touchBiasAutoCorrectionCheckBox.setText("Learn touch/slide corrections");
+        touchBiasAutoCorrectionCheckBox.setText("터치/슬라이드 보정 학습");
         touchBiasAutoCorrectionCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1019,7 +1019,7 @@ public final class MainActivity extends Activity {
         root.addView(touchBiasAutoCorrectionCheckBox, matchWrapWithTop(8));
 
         clipboardHistoryCheckBox = new CheckBox(this);
-        clipboardHistoryCheckBox.setText("Clipboard history");
+        clipboardHistoryCheckBox.setText("클립보드 기록");
         clipboardHistoryCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1282,16 +1282,16 @@ public final class MainActivity extends Activity {
         deleteThemeButton.setEnabled(selectedThemeOption() != null && selectedThemeOption().userThemeId != null);
         leftMarginValue.setText("왼쪽 패딩: " + settings.leftMarginDp + "dp");
         rightMarginValue.setText("오른쪽 패딩: " + settings.rightMarginDp + "dp");
-        hangulHeightValue.setText("Dingul height: " + settings.hangulKeyboardHeightDp + "dp"
+        hangulHeightValue.setText("딩굴 높이: " + settings.hangulKeyboardHeightDp + "dp"
                 + (settings.keyboardMode == KeyboardMode.HANGUL && settings.showNumberRow ? " + num row" : ""));
-        englishHeightValue.setText("QWERTY height: " + settings.englishKeyboardHeightDp + "dp"
+        englishHeightValue.setText("쿼티 높이: " + settings.englishKeyboardHeightDp + "dp"
                 + (settings.keyboardMode == KeyboardMode.ENGLISH && settings.showNumberRow ? " + num row" : ""));
         hangulSpecialColumnValue.setText("한글 오른쪽 특수열 폭: "
                 + settings.hangulSpecialColumnPercent + "%");
-        keyboardTopPaddingValue.setText("Keyboard top padding: " + settings.keyboardTopPaddingDp + "dp");
-        keyboardBottomPaddingValue.setText("Keyboard bottom padding: " + settings.keyboardBottomPaddingDp + "dp");
+        keyboardTopPaddingValue.setText("키보드 상단 패딩: " + settings.keyboardTopPaddingDp + "dp");
+        keyboardBottomPaddingValue.setText("키보드 하단 패딩: " + settings.keyboardBottomPaddingDp + "dp");
         roundnessValue.setText("버튼 roundness: " + settings.keyRoundnessDp + "dp");
-        keyBorderWidthValue.setText("Outline density: " + settings.keyBorderWidthDp + "dp");
+        keyBorderWidthValue.setText("테두리 굵기: " + settings.keyBorderWidthDp + "dp");
         keyGapValue.setText("버튼 간 시각 간격: " + settings.keyGapDp + "dp");
         keyDepthValue.setText("입체 높이: " + settings.keyDepthDp + "dp"
                 + (settings.keyDepthEnabled ? "" : " (flat)"));
@@ -1299,8 +1299,8 @@ public final class MainActivity extends Activity {
                 + "dp (낮을수록 민감)");
         hapticDurationValue.setText("햅틱 길이: " + hapticDurationMs + "ms");
         hapticGapValue.setText("햅틱 사이 간격: " + hapticGapMs + "ms");
-        primaryTextSizeValue.setText("Primary legend size: " + settings.primaryTextSizePercent + "%");
-        secondaryTextSizeValue.setText("Secondary hint size: " + settings.secondaryTextSizePercent + "%");
+        primaryTextSizeValue.setText("주 글자 크기: " + settings.primaryTextSizePercent + "%");
+        secondaryTextSizeValue.setText("보조 힌트 크기: " + settings.secondaryTextSizePercent + "%");
         handednessSpinner.post(() -> syncing = false);
     }
 
