@@ -712,8 +712,8 @@ public final class HangulKeyboardView extends View {
 
     private void drawDotLegend(Canvas canvas, GestureKey key, RectF surfaceBounds, boolean englishLetterKey) {
         textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
-        float radius = Math.min(surfaceBounds.width(), surfaceBounds.height()) * 0.115f;
-        radius = Math.max(surfaceBounds.height() * 0.075f, Math.min(radius, surfaceBounds.height() * 0.18f));
+        float radius = Math.min(surfaceBounds.height() * 0.115f, surfaceBounds.width() * 0.24f);
+        radius = Math.max(surfaceBounds.height() * 0.085f, Math.min(radius, surfaceBounds.height() * 0.18f));
         float centerY = englishLetterKey
                 ? surfaceBounds.top + surfaceBounds.height() * 0.36f
                 : surfaceBounds.centerY();
@@ -1198,6 +1198,10 @@ public final class HangulKeyboardView extends View {
             drawDotRow(canvas, bounds, 5, dotRadiusFor(bounds), color, 0.30f);
             return;
         }
+        if (isSingleDotModifierIcon(icon)) {
+            drawDotRow(canvas, bounds, 1, dotRadiusFor(bounds), color, 0.40f);
+            return;
+        }
         if (isLineDotModifierIcon(icon)) {
             drawDotRow(canvas, bounds, 4, dotRadiusFor(bounds), color, 0.34f);
             return;
@@ -1213,6 +1217,11 @@ public final class HangulKeyboardView extends View {
                 || icon == KeyIcon.SETTINGS
                 || icon == KeyIcon.SHIFT
                 || icon == KeyIcon.CAPS_LOCK;
+    }
+
+    private boolean isSingleDotModifierIcon(int icon) {
+        return icon == KeyIcon.LANGUAGE
+                || icon == KeyIcon.RESERVED;
     }
 
     private float dotRadiusFor(RectF bounds) {

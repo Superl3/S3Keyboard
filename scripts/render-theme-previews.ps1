@@ -179,6 +179,35 @@ function Get-KeyOverrideColor {
             return Convert-ThemeColor $property.Value "#F8F8F8"
         }
     }
+    if ((Test-AlphaPreviewLabel -Label $Label) -and $null -ne $overrides.alpha) {
+        return Convert-ThemeColor $overrides.alpha "#F8F8F8"
+    }
+    return $null
+}
+
+function Get-KeyBackgroundOverrideColor {
+    param([object] $Theme, [string] $Label)
+    $overrides = $Theme.keyBackgroundColorOverrides
+    if ($null -eq $overrides -or [string]::IsNullOrWhiteSpace($Label)) {
+        return $null
+    }
+    $normalizedLabel = $Label.ToLowerInvariant() -replace "\s+", ""
+    $candidates = @(
+        $normalizedLabel,
+        "label:$normalizedLabel",
+        "tap:$normalizedLabel"
+    )
+    foreach ($candidate in $candidates) {
+        $property = $overrides.PSObject.Properties |
+                Where-Object { ($_.Name.ToLowerInvariant() -replace "\s+", "") -eq $candidate } |
+                Select-Object -First 1
+        if ($null -ne $property) {
+            return Convert-ThemeColor $property.Value "#F8F8F8"
+        }
+    }
+    if ((Test-AlphaPreviewLabel -Label $Label) -and $null -ne $overrides.alpha) {
+        return Convert-ThemeColor $overrides.alpha "#F8F8F8"
+    }
     return $null
 }
 
@@ -212,7 +241,12 @@ function Test-DotLegendLabel {
 
 function Test-AlphaPreviewLabel {
     param([string] $Label)
-    return $Label -match '^[A-Za-z]$' -or $Label -match '^[\u3131-\u318E\uAC00-\uD7A3]$'
+    return $Label -match '^[A-Za-z]$' `
+            -or $Label -match '^[\u3131-\u318E\uAC00-\uD7A3]$' `
+            -or $Label -eq "?" `
+            -or $Label -eq "." `
+            -or $Label -eq "/" `
+            -or $Label -eq ".."
 }
 
 function Test-SimpleTextPack {
@@ -311,10 +345,24 @@ function Draw-PackPreviewIcon {
             $y = $Y + $H / 2
             $left = $X + $W * 0.28
             $right = $X + $W * 0.72
-            if ($pack -eq "dots-lines" -and $Icon -ne "space") {
-                for ($i = 0; $i -lt 4; $i++) {
-                    $dotX = $left + ($right - $left) * $i / 3.0
-                    $Graphics.FillEllipse($brush, $dotX - $H * 0.035, $y - $H * 0.035, $H * 0.07, $H * 0.07)
+            if ($pack -eq "dots-lines") {
+                $count = 3
+                if ($Icon -eq "space") {
+                    $count = 5
+                    $left = $X + $W * 0.30
+                    $right = $X + $W * 0.70
+                } elseif ($Icon -eq "language" -or $Icon -eq "reserved") {
+                    $count = 1
+                } elseif ($Icon -eq "backspace" -or $Icon -eq "enter" -or $Icon -eq "shift") {
+                    $count = 4
+                }
+                if ($count -eq 1) {
+                    $Graphics.FillEllipse($brush, $X + $W / 2 - $H * 0.045, $y - $H * 0.045, $H * 0.09, $H * 0.09)
+                } else {
+                    for ($i = 0; $i -lt $count; $i++) {
+                        $dotX = $left + ($right - $left) * $i / ($count - 1.0)
+                        $Graphics.FillEllipse($brush, $dotX - $H * 0.035, $y - $H * 0.035, $H * 0.07, $H * 0.07)
+                    }
                 }
             } else {
                 $Graphics.DrawLine($pen, $left, $y, $right, $y)
@@ -455,7 +503,8 @@ function Draw-Key {
     )
 
     $border = Convert-ThemeColor $Theme.colors.border "#696969"
-    $fill = Get-RoleColor -Theme $Theme -Role $Role
+    $overrideFill = Get-KeyBackgroundOverrideColor -Theme $Theme -Label $Label
+    $fill = if ($null -ne $overrideFill) { $overrideFill } else { Get-RoleColor -Theme $Theme -Role $Role }
     $accent = Convert-ThemeColor $Theme.colors.accent "#232323"
     $overrideText = Get-KeyOverrideColor -Theme $Theme -Label $Label
     $textColor = if ($null -ne $overrideText) { $overrideText } else { $accent }
@@ -495,7 +544,7 @@ function Draw-Key {
         }
         $icon = Get-PreviewIconName $Label
         if (Test-DotLegendLabel -Theme $Theme -Label $Label) {
-            $diameter = [Math]::Min($W, $H) * 0.20
+            $diameter = [Math]::Min($H * 0.24, $W * 0.48)
             $Graphics.FillEllipse(
                     $textBrush,
                     $X + ($W - $diameter) / 2.0,

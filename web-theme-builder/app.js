@@ -224,7 +224,7 @@ function dotTextOverrides(dark) {
     "tap:\u3131", "tap:\u3134", "tap:\u3162", "tap:\u3139", "tap:\u3141", "tap:\u3163",
     "__dingul_center_vowel__", "tap:\u3145", "tap:\u3147", "__dingul_wide_vowel__",
     "tap:\u3148", "tap:\u314E", "\u3163.", "\u3161\u3150", "..", ". .",
-    "?", ".", "/", "space", "enter", "backspace", "shift", "language", "options", "reserved"
+    "?", ".", "/", "space", "enter", "backspace", "shift", "language", "settings", "options", "reserved"
   ];
   return keys.reduce((overrides, key, index) => {
     overrides[key] = palette[index % palette.length];
@@ -239,6 +239,7 @@ function dotBackgroundOverrides(dark) {
     backspace: dark ? "#252B34" : "#D8D4CA",
     shift: dark ? "#252B34" : "#D8D4CA",
     language: dark ? "#252B34" : "#D8D4CA",
+    settings: dark ? "#252B34" : "#D8D4CA",
     options: dark ? "#252B34" : "#D8D4CA",
     reserved: dark ? "#252B34" : "#D8D4CA"
   };
@@ -623,7 +624,13 @@ function renderModifierPackGlyph(key, label, theme) {
   const pack = theme.icons?.modifierPackId || "line-mono";
   if (pack === "dots-lines") {
     const line = document.createElement("span");
-    line.className = label === "Space" ? "mod-pack-line wide-line" : "mod-pack-line dotted-line";
+    if (label === "Space") {
+      line.className = "mod-pack-line five-dot-line";
+    } else if (label === "Lang" || label === "Reserved") {
+      line.className = "mod-pack-line single-dot-line";
+    } else {
+      line.className = "mod-pack-line dotted-line";
+    }
     line.style.background = textColorFor(label, theme);
     line.style.color = textColorFor(label, theme);
     key.appendChild(line);
@@ -659,7 +666,9 @@ function isSimpleTextPack(pack) {
 }
 
 function isAlphaPreviewLabel(label) {
-  return /^[a-z]$/i.test(label) || /^[\u3131-\u318e\uac00-\ud7a3]$/.test(label);
+  return /^[a-z]$/i.test(label)
+    || /^[\u3131-\u318e\uac00-\ud7a3]$/.test(label)
+    || ["?", ".", "/", ".."].includes(label);
 }
 
 function legacyDisplayOverrides(legendStyle) {

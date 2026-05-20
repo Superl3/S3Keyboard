@@ -135,8 +135,10 @@ public final class KeyboardThemePresetTest {
 
         assertEquals(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT, olivia.keyDisplayThemePackId);
         assertEquals(ModifierIconCatalog.PACK_METROPOLIS_POINTS, metropolis.modifierIconThemePackId);
-        assertEquals(0xFFE9E2D4, metropolis.keyboardBackgroundColor);
-        assertEquals(0xFF172633, (int) metropolis.keyColorOverrides.get("background:alpha"));
+        assertEquals(0xFF090D12, metropolis.keyboardBackgroundColor);
+        assertEquals(0xFF10151B, (int) metropolis.keyColorOverrides.get("background:alpha"));
+        assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("tap:1"));
+        assertEquals(0xFF10151B, (int) metropolis.keyColorOverrides.get("background:tap:1"));
         assertEquals(0xFFFFB000, (int) metropolis.keyColorOverrides.get("background:backspace"));
         assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("background:shift"));
         assertEquals(0xFF66E3C4, (int) metropolis.keyColorOverrides.get("background:enter"));

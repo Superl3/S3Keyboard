@@ -168,6 +168,7 @@ public final class ThemeEditorActivity extends Activity {
         LinearLayout globalSection = addExpandableSection(editorRoot, "전체", true);
         addColorControls(addExpandableSection(globalSection, "색상", true));
         addShapeControls(addExpandableSection(globalSection, "형태", false));
+        addIconPackControls(addExpandableSection(globalSection, "Icon packs", true));
         addTypographyControls(addExpandableSection(globalSection, "글꼴", false));
         addSelectedKeyInspector(editorRoot);
         return root;
@@ -472,14 +473,6 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(label("폰트"), matchWrapWithTop(8));
         root.addView(fontFamilySpinner, matchWrap());
 
-        modifierIconPackSpinner = modifierIconPackSpinner();
-        root.addView(label("\uBAA8\uB514\uD30C\uC774\uC5B4 \uC544\uC774\uCF58"), matchWrapWithTop(8));
-        root.addView(modifierIconPackSpinner, matchWrap());
-
-        keyDisplayPackSpinner = keyDisplayPackSpinner();
-        root.addView(label("Key display override pack"), matchWrapWithTop(8));
-        root.addView(keyDisplayPackSpinner, matchWrap());
-
         primaryTextSizeValue = label("");
         primaryTextSizeSeekBar = textSizeSeekBar(progress -> updateSettings(settings.withTypography(
                 settings.fontFamily,
@@ -540,6 +533,16 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(primaryTextItalicCheckBox, matchWrapWithTop(4));
         root.addView(secondaryTextBoldCheckBox, matchWrapWithTop(8));
         root.addView(secondaryTextItalicCheckBox, matchWrapWithTop(4));
+    }
+
+    private void addIconPackControls(LinearLayout root) {
+        modifierIconPackSpinner = modifierIconPackSpinner();
+        root.addView(label("\uBAA8\uB514\uD30C\uC774\uC5B4 \uC544\uC774\uCF58"), matchWrapWithTop(8));
+        root.addView(modifierIconPackSpinner, matchWrap());
+
+        keyDisplayPackSpinner = keyDisplayPackSpinner();
+        root.addView(label("Key display override pack"), matchWrapWithTop(8));
+        root.addView(keyDisplayPackSpinner, matchWrap());
     }
 
     private void updateSettings(KeyboardSettings next) {

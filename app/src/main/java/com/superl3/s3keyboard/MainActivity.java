@@ -633,19 +633,19 @@ public final class MainActivity extends Activity {
     }
 
     private void addVisibleVisualControls(LinearLayout root) {
-        LinearLayout visualSection = addExpandableSection(root, "\uC2DC\uAC01 \uC635\uC158", false);
+        root.addView(label("\uBAA8\uB514\uD30C\uC774\uC5B4 \uC544\uC774\uCF58"), matchWrapWithTop(12));
+        modifierIconPackSpinner = modifierIconPackSpinner(true);
+        root.addView(modifierIconPackSpinner, matchWrap());
+
+        root.addView(label("Key display override pack"), matchWrapWithTop(12));
+        keyDisplayPackSpinner = keyDisplayPackSpinner(true);
+        root.addView(keyDisplayPackSpinner, matchWrap());
+
+        LinearLayout visualSection = addExpandableSection(root, "\uC2DC\uAC01 \uC635\uC158", true);
 
         fontFamilySpinner = fontSpinner();
         visualSection.addView(label("\uD3F0\uD2B8"), matchWrapWithTop(12));
         visualSection.addView(fontFamilySpinner, matchWrap());
-
-        modifierIconPackSpinner = modifierIconPackSpinner(true);
-        visualSection.addView(label("\uBAA8\uB514\uD30C\uC774\uC5B4 \uC544\uC774\uCF58"), matchWrapWithTop(12));
-        visualSection.addView(modifierIconPackSpinner, matchWrap());
-
-        keyDisplayPackSpinner = keyDisplayPackSpinner(true);
-        visualSection.addView(label("Key display override pack"), matchWrapWithTop(12));
-        visualSection.addView(keyDisplayPackSpinner, matchWrap());
 
         pointKeycapStyleCheckBox = new CheckBox(this);
         pointKeycapStyleCheckBox.setText("\uD3EC\uC778\uD2B8 \uD0A4\uCEA1 \uC2A4\uD0C0\uC77C \uC0AC\uC6A9");

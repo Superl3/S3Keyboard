@@ -61,8 +61,8 @@ final class KeyboardThemePreset {
                     bentoTextOverrides(),
                     bentoBackgroundOverrides()),
             theme("gmk-metropolis", "GMK Metropolis Inspired",
-                    "172633", "182F45", "112537", "FF4B3E", "254B67",
-                    "E9E2D4", "08131E", "B9B0A5", "70D7E8", "FFB000",
+                    "10151B", "151B22", "161D25", "28161C", "26313B",
+                    "090D12", "313A44", "05070A", "66E3C4", "FFB000",
                     5, 5, true, 2, KeyboardSettings.FONT_D2CODING, true, true,
                     metropolisTextOverrides(),
                     metropolisBackgroundOverrides()),
@@ -573,13 +573,33 @@ final class KeyboardThemePreset {
                 "backspace", "0D1B2A",
                 "options", "0D1B2A",
                 "reserved", "0D1B2A",
-                "alpha", "66E3C4"),
+                "alpha", "66E3C4",
+                "tap:1", "FF4B3E",
+                "tap:2", "FFB000",
+                "tap:3", "FF4B3E",
+                "tap:4", "FFB000",
+                "tap:5", "FF4B3E",
+                "tap:6", "FFB000",
+                "tap:7", "FF4B3E",
+                "tap:8", "FFB000",
+                "tap:9", "FF4B3E",
+                "tap:0", "FFB000"),
                 dingulVowelTextOverrides("66E3C4", "66E3C4", "66E3C4"));
     }
 
     private static String metropolisBackgroundOverrides() {
         return json(
-                "alpha", "172633",
+                "alpha", "10151B",
+                "tap:1", "10151B",
+                "tap:2", "10151B",
+                "tap:3", "10151B",
+                "tap:4", "10151B",
+                "tap:5", "10151B",
+                "tap:6", "10151B",
+                "tap:7", "10151B",
+                "tap:8", "10151B",
+                "tap:9", "10151B",
+                "tap:0", "10151B",
                 "shift", "FF4B3E",
                 "language", "66E3C4",
                 "settings", "66E3C4",
@@ -712,6 +732,7 @@ final class KeyboardThemePreset {
                 "backspace", dark ? "252B34" : "D8D4CA",
                 "shift", dark ? "252B34" : "D8D4CA",
                 "language", dark ? "252B34" : "D8D4CA",
+                "settings", dark ? "252B34" : "D8D4CA",
                 "options", dark ? "252B34" : "D8D4CA",
                 "reserved", dark ? "252B34" : "D8D4CA");
     }
@@ -727,7 +748,7 @@ final class KeyboardThemePreset {
                 "tap:\u3131", "tap:\u3134", "tap:\u3162", "tap:\u3139", "tap:\u3141", "tap:\u3163",
                 "__dingul_center_vowel__", "tap:\u3145", "tap:\u3147", "__dingul_wide_vowel__",
                 "tap:\u3148", "tap:\u314E", "\u3163.", "\u3161\u3150", "..", ". .",
-                "?", ".", "/", "space", "enter", "backspace", "shift", "language", "options", "reserved"
+                "?", ".", "/", "space", "enter", "backspace", "shift", "language", "settings", "options", "reserved"
         };
         StringBuilder builder = new StringBuilder("{");
         for (int i = 0; i < keys.length; i++) {

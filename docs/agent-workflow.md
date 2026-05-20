@@ -78,6 +78,7 @@ Dot sizing rules currently live in `HangulKeyboardView`:
 
 - alpha dot legend scales from the real key surface bounds.
 - `space` uses five dots with generous horizontal padding.
+- Dots pack `language` and `reserved` use a single dot, not a line-dot motif.
 - `backspace`, `enter`, `settings`, `shift`, and related command variants use line-dot treatment.
 - metropolis icons must also scale to the actual key bounds and keep large margins.
 
