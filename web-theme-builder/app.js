@@ -601,23 +601,39 @@ function displayOverrideFor(label, theme) {
 }
 
 function keyDisplayPackOverrideFor(label, pack) {
-  if (!isSimpleTextPack(pack)) {
-    return null;
+  if (isSimpleTextPack(pack)) {
+    switch (label) {
+      case "Enter":
+        return { type: "text", value: "hihihi" };
+      case "Bksp":
+        return { type: "text", value: "del" };
+      case "Shift":
+        return { type: "text", value: "shift" };
+      case "Space":
+        return { type: "text", value: "space" };
+      case "Lang":
+        return { type: "text", value: "lang" };
+      default:
+        return null;
+    }
   }
-  switch (label) {
-    case "Enter":
-      return { type: "text", value: "hihihi" };
-    case "Bksp":
-      return { type: "text", value: "del" };
-    case "Shift":
-      return { type: "text", value: "shift" };
-    case "Space":
-      return { type: "text", value: "space" };
-    case "Lang":
-      return { type: "text", value: "lang" };
-    default:
-      return null;
+  if (isGitCommandPack(pack)) {
+    switch (label) {
+      case "Enter":
+        return { type: "text", value: "exec" };
+      case "Bksp":
+        return { type: "text", value: "reset" };
+      case "Shift":
+        return { type: "text", value: "rebase" };
+      case "Space":
+        return { type: "text", value: "pull" };
+      case "Lang":
+        return { type: "text", value: "fetch" };
+      default:
+        return null;
+    }
   }
+  return null;
 }
 
 function renderModifierPackGlyph(key, label, theme) {
@@ -663,6 +679,10 @@ function metropolisColorFor(label) {
 
 function isSimpleTextPack(pack) {
   return pack === "simple-text" || pack === "olivia-script-text";
+}
+
+function isGitCommandPack(pack) {
+  return pack === "git-commands";
 }
 
 function isAlphaPreviewLabel(label) {

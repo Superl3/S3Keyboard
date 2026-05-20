@@ -8,10 +8,13 @@ final class KeyDisplayOverridePackCatalog {
     static final String PACK_THEME_DEFAULT = "";
     static final String PACK_NONE = "none";
     static final String PACK_SIMPLE_TEXT = "simple-text";
+    static final String PACK_GIT_COMMANDS = "git-commands";
     static final String LEGACY_PACK_OLIVIA_SCRIPT_TEXT = "olivia-script-text";
 
-    private static final Map<String, KeyDisplayOverride> OLIVIA_SCRIPT_OVERRIDES =
+    private static final Map<String, KeyDisplayOverride> SIMPLE_TEXT_OVERRIDES =
             createSimpleTextOverrides();
+    private static final Map<String, KeyDisplayOverride> GIT_COMMAND_OVERRIDES =
+            createGitCommandOverrides();
 
     private KeyDisplayOverridePackCatalog() {
     }
@@ -19,6 +22,9 @@ final class KeyDisplayOverridePackCatalog {
     static String normalizePackId(String packId) {
         if (PACK_SIMPLE_TEXT.equals(packId) || LEGACY_PACK_OLIVIA_SCRIPT_TEXT.equals(packId)) {
             return PACK_SIMPLE_TEXT;
+        }
+        if (PACK_GIT_COMMANDS.equals(packId)) {
+            return PACK_GIT_COMMANDS;
         }
         return PACK_NONE;
     }
@@ -41,7 +47,8 @@ final class KeyDisplayOverridePackCatalog {
     }
 
     static boolean isKnownNonEmptyPackId(String packId) {
-        return PACK_SIMPLE_TEXT.equals(normalizePackId(packId));
+        String normalized = normalizePackId(packId);
+        return PACK_SIMPLE_TEXT.equals(normalized) || PACK_GIT_COMMANDS.equals(normalized);
     }
 
     static boolean isSimpleTextPack(String packId) {
@@ -59,16 +66,23 @@ final class KeyDisplayOverridePackCatalog {
     }
 
     static Map<String, KeyDisplayOverride> overridesForPack(String packId) {
-        if (!PACK_SIMPLE_TEXT.equals(normalizePackId(packId))) {
-            return Collections.emptyMap();
+        String normalized = normalizePackId(packId);
+        if (PACK_SIMPLE_TEXT.equals(normalized)) {
+            return SIMPLE_TEXT_OVERRIDES;
         }
-        return OLIVIA_SCRIPT_OVERRIDES;
+        if (PACK_GIT_COMMANDS.equals(normalized)) {
+            return GIT_COMMAND_OVERRIDES;
+        }
+        return Collections.emptyMap();
     }
 
     static String displayName(String packId) {
         String normalized = normalizePackId(packId);
         if (PACK_SIMPLE_TEXT.equals(normalized)) {
             return "Simple Text";
+        }
+        if (PACK_GIT_COMMANDS.equals(normalized)) {
+            return "Git Commands";
         }
         return "None";
     }
@@ -78,12 +92,14 @@ final class KeyDisplayOverridePackCatalog {
             return new String[] {
                     PACK_THEME_DEFAULT,
                     PACK_NONE,
-                    PACK_SIMPLE_TEXT
+                    PACK_SIMPLE_TEXT,
+                    PACK_GIT_COMMANDS
             };
         }
         return new String[] {
                 PACK_NONE,
-                PACK_SIMPLE_TEXT
+                PACK_SIMPLE_TEXT,
+                PACK_GIT_COMMANDS
         };
     }
 
@@ -113,6 +129,36 @@ final class KeyDisplayOverridePackCatalog {
         putIconText(overrides, KeyIcon.KEYBOARD, "kbd");
         putIconText(overrides, KeyIcon.MOVE_LEFT, "left");
         putIconText(overrides, KeyIcon.MOVE_RIGHT, "right");
+        putIconText(overrides, KeyIcon.RESET, "reset");
+        return Collections.unmodifiableMap(overrides);
+    }
+
+    private static Map<String, KeyDisplayOverride> createGitCommandOverrides() {
+        Map<String, KeyDisplayOverride> overrides = new HashMap<>();
+        putIconText(overrides, KeyIcon.ENTER, "exec");
+        putIconText(overrides, KeyIcon.DONE, "exec");
+        putIconText(overrides, KeyIcon.NEXT, "exec");
+        putText(overrides, "enter", "exec");
+        putIconText(overrides, KeyIcon.BACKSPACE, "reset");
+        putText(overrides, "backspace", "reset");
+        putIconText(overrides, KeyIcon.SHIFT, "rebase");
+        putIconText(overrides, KeyIcon.CAPS_LOCK, "rebase");
+        putText(overrides, "shift", "rebase");
+        putIconText(overrides, KeyIcon.SPACE, "pull");
+        putText(overrides, "space", "pull");
+        putIconText(overrides, KeyIcon.LANGUAGE, "fetch");
+        putText(overrides, "language", "fetch");
+        putIconText(overrides, KeyIcon.OPTIONS, "stash");
+        putText(overrides, "options", "stash");
+        putIconText(overrides, KeyIcon.SETTINGS, "config");
+        putText(overrides, "settings", "config");
+        putIconText(overrides, KeyIcon.RESERVED, "commit");
+        putText(overrides, "reserved", "commit");
+        putIconText(overrides, KeyIcon.SEARCH, "grep");
+        putIconText(overrides, KeyIcon.HIDE, "hide");
+        putIconText(overrides, KeyIcon.KEYBOARD, "branch");
+        putIconText(overrides, KeyIcon.MOVE_LEFT, "prev");
+        putIconText(overrides, KeyIcon.MOVE_RIGHT, "next");
         putIconText(overrides, KeyIcon.RESET, "reset");
         return Collections.unmodifiableMap(overrides);
     }

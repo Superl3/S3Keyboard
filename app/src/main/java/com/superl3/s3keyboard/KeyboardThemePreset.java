@@ -104,13 +104,13 @@ final class KeyboardThemePreset {
                     "F2EDE8", "242126", "242126", "E8A5AE", "E2D8D4",
                     "ECE6E2", "BBAFB0", "BBAFB0", "2B2528", "E8A5AE",
                     5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
-                    oliviaTextOverrides(),
+                    oliviaTextOverrides(false),
                     oliviaBackgroundOverrides()),
             theme("gmk-olivia-dark", "GMK Olivia Dark Inspired",
                     "3A3438", "171619", "171619", "D9A3AA", "4B4248",
                     "111114", "111114", "111114", "F4E7E2", "D9A3AA",
                     5, 5, true, 2, KeyboardSettings.FONT_NOTO_SANS_KR, true, true,
-                    oliviaTextOverrides(),
+                    oliviaTextOverrides(true),
                     oliviaDarkBackgroundOverrides()),
             theme("gmk-dots-light", "GMK Dots Light Inspired",
                     "F6F3EA", "E8E4D9", "D8D4CA", "CFCBC0", "E2DED3",
@@ -445,6 +445,8 @@ final class KeyboardThemePreset {
         String keyDisplayPack = null;
         if (id != null && id.startsWith("gmk-olivia")) {
             keyDisplayPack = KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT;
+        } else if (id != null && id.startsWith("gmk-oblivion")) {
+            keyDisplayPack = KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS;
         } else if (id != null && id.startsWith("gmk-dots")) {
             modifierPack = ModifierIconCatalog.PACK_DOTS_LINES;
         } else if ("gmk-metropolis".equals(id)) {
@@ -701,12 +703,18 @@ final class KeyboardThemePreset {
                 "reserved", "B95A68");
     }
 
-    private static String oliviaTextOverrides() {
+    private static String oliviaTextOverrides(boolean dark) {
+        String darkOnPink = "211F23";
+        String lightOnDark = dark ? "F4E7E2" : "F2EDE8";
         return json(
-                "enter", "211F23",
-                "space", "211F23",
-                "options", "211F23",
-                "reserved", "211F23");
+                "shift", lightOnDark,
+                "backspace", lightOnDark,
+                "language", lightOnDark,
+                "settings", lightOnDark,
+                "enter", darkOnPink,
+                "space", darkOnPink,
+                "options", darkOnPink,
+                "reserved", darkOnPink);
     }
 
     private static String oliviaBackgroundOverrides() {

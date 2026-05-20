@@ -61,6 +61,38 @@ public final class ModifierIconCatalogTest {
     }
 
     @Test
+    public void gitCommandPackIsAKeyDisplayOverridePack() {
+        assertEquals(
+                KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS,
+                KeyDisplayOverridePackCatalog.normalizePackId(
+                        KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS));
+        assertEquals(
+                "exec",
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS)
+                        .get("enter")
+                        .value);
+        assertEquals(
+                "fetch",
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS)
+                        .get("language")
+                        .value);
+        assertEquals(
+                "pull",
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS)
+                        .get("space")
+                        .value);
+        assertEquals(
+                "rebase",
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS)
+                        .get("shift")
+                        .value);
+    }
+
+    @Test
     public void metropolisPackUsesIntrinsicPointColors() {
         assertEquals(true, ModifierIconCatalog.isColoredPack(ModifierIconCatalog.PACK_METROPOLIS_POINTS));
         assertEquals(0xFFFFB000, ModifierIconCatalog.metropolisColorFor(KeyIcon.BACKSPACE));

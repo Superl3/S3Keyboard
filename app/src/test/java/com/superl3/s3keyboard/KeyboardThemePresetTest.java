@@ -130,10 +130,19 @@ public final class KeyboardThemePresetTest {
     public void sampleInspiredThemesSelectMatchingPacksAndMetropolisColors() {
         KeyboardSettings olivia = KeyboardThemePreset.find("gmk-olivia-light")
                 .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings oliviaDark = KeyboardThemePreset.find("gmk-olivia-dark")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings oblivion = KeyboardThemePreset.find("gmk-oblivion")
+                .applyTo(KeyboardSettings.defaults());
         KeyboardSettings metropolis = KeyboardThemePreset.find("gmk-metropolis")
                 .applyTo(KeyboardSettings.defaults());
 
         assertEquals(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT, olivia.keyDisplayThemePackId);
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS, oblivion.keyDisplayThemePackId);
+        assertEquals(0xFFF2EDE8, (int) olivia.keyColorOverrides.get("shift"));
+        assertEquals(0xFF211F23, (int) olivia.keyColorOverrides.get("enter"));
+        assertEquals(0xFFF4E7E2, (int) oliviaDark.keyColorOverrides.get("shift"));
+        assertEquals(0xFF211F23, (int) oliviaDark.keyColorOverrides.get("enter"));
         assertEquals(ModifierIconCatalog.PACK_METROPOLIS_POINTS, metropolis.modifierIconThemePackId);
         assertEquals(0xFF090D12, metropolis.keyboardBackgroundColor);
         assertEquals(0xFF10151B, (int) metropolis.keyColorOverrides.get("background:alpha"));

@@ -254,6 +254,11 @@ function Test-SimpleTextPack {
     return $PackId -eq "simple-text" -or $PackId -eq "olivia-script-text"
 }
 
+function Test-GitCommandPack {
+    param([string] $PackId)
+    return $PackId -eq "git-commands"
+}
+
 function Get-ModifierPackId {
     param([object] $Theme)
     if ($null -ne $Theme.icons -and -not [string]::IsNullOrWhiteSpace([string]$Theme.icons.modifierPackId)) {
@@ -298,16 +303,28 @@ function Draw-KeyDisplayPackPreview {
         [float] $W,
         [float] $H
     )
-    if (-not (Test-SimpleTextPack -PackId (Get-KeyDisplayPackId -Theme $Theme))) {
+    $packId = Get-KeyDisplayPackId -Theme $Theme
+    if (-not (Test-SimpleTextPack -PackId $packId) -and -not (Test-GitCommandPack -PackId $packId)) {
         return $false
     }
-    $text = switch ($Icon) {
-        "enter" { "hihihi" }
-        "backspace" { "del" }
-        "shift" { "shift" }
-        "space" { "space" }
-        "language" { "lang" }
-        default { "" }
+    if (Test-GitCommandPack -PackId $packId) {
+        $text = switch ($Icon) {
+            "enter" { "exec" }
+            "backspace" { "reset" }
+            "shift" { "rebase" }
+            "space" { "pull" }
+            "language" { "fetch" }
+            default { "" }
+        }
+    } else {
+        $text = switch ($Icon) {
+            "enter" { "hihihi" }
+            "backspace" { "del" }
+            "shift" { "shift" }
+            "space" { "space" }
+            "language" { "lang" }
+            default { "" }
+        }
     }
     if ([string]::IsNullOrWhiteSpace($text)) {
         return $false

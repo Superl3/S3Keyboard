@@ -336,4 +336,41 @@ public final class KeyboardKeyVisualClassifierTest {
         assertEquals(KeyDisplayOverride.TYPE_TEXT, override.type);
         assertEquals("hihihi", override.value);
     }
+
+    @Test
+    public void gitCommandPackCanReplaceCommandIconsWithGitText() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyDisplayThemePack(KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS);
+
+        assertEquals(
+                "exec",
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3)).value);
+        assertEquals(
+                "fetch",
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        GestureKey.command(
+                                "Language",
+                                KeyboardCommands.CMD_TOGGLE_LANGUAGE,
+                                null,
+                                2,
+                                KeyIcon.LANGUAGE)).value);
+        assertEquals(
+                "pull",
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        GestureKey.command("Space", KeyboardCommands.CMD_SPACE, null, 10, KeyIcon.SPACE)).value);
+        assertEquals(
+                "rebase",
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        GestureKey.command(
+                                "Shift",
+                                KeyboardCommands.CMD_SHIFT_ONCE,
+                                KeyboardCommands.CMD_SHIFT_LOCK,
+                                3,
+                                KeyIcon.SHIFT)).value);
+    }
 }

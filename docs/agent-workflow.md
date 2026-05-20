@@ -95,6 +95,8 @@ Display packs replace labels or command icons with either:
 
 The simple text pack is separate from Olivia as a theme. `hihihi` is rendered as a vector path in `HangulKeyboardView`, not as a font string, so keep script-like replacements in the renderer or a future imported vector renderer.
 
+The `git-commands` display pack is used by Oblivion-style themes. It replaces modifier keys with short Git/workflow labels such as `exec`, `fetch`, `pull`, `rebase`, `reset`, and `commit`.
+
 ## Visual Effects
 
 `KeyboardVisualEffects` is part of `KeyboardSettings` and `KeyboardThemeJson`.
