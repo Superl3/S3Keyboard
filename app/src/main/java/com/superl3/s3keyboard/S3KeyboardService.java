@@ -835,6 +835,7 @@ public final class S3KeyboardService extends InputMethodService
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
         }), topWrap(6));
+        panel.addView(quickButton("클립보드 테마 불러오기", false, v -> importThemeFromClipboard()), topWrap(6));
 
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -923,6 +924,48 @@ public final class S3KeyboardService extends InputMethodService
         }
         Toast.makeText(this, numberRowToggleLabel(), Toast.LENGTH_SHORT).show();
         dismissQuickSettings();
+    }
+
+    private void importThemeFromClipboard() {
+        String json = currentClipboardText();
+        if (json.isEmpty()) {
+            Toast.makeText(this, "클립보드에 테마 JSON이 없습니다", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            settings = KeyboardThemeJson.importTheme(settings, json)
+                    .withEnterKeyLabel(enterAction.label)
+                    .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
+            KeyboardPreferences.saveSelectedThemeId(this, "");
+            KeyboardPreferences.saveSettings(this, settings);
+            applyCurrentSettingsToInputView();
+            Toast.makeText(this, "클립보드 테마를 불러왔습니다", Toast.LENGTH_SHORT).show();
+            dismissQuickSettings();
+        } catch (IllegalArgumentException exception) {
+            Toast.makeText(this, "유효한 테마 JSON이 아닙니다", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String currentClipboardText() {
+        if (clipboardManager == null || !clipboardManager.hasPrimaryClip()) {
+            return "";
+        }
+        ClipData clip = clipboardManager.getPrimaryClip();
+        if (clip == null || clip.getItemCount() == 0) {
+            return "";
+        }
+        CharSequence text = clip.getItemAt(0).coerceToText(this);
+        return text == null ? "" : text.toString().trim();
+    }
+
+    private void applyCurrentSettingsToInputView() {
+        if (toolbarLayout != null) {
+            toolbarLayout.setBackgroundColor(settings.keyboardBackgroundColor);
+        }
+        if (inputView != null) {
+            inputView.setSettings(settings);
+            updateShiftStateView();
+        }
     }
 
     private LinearLayout.LayoutParams matchWrap() {
