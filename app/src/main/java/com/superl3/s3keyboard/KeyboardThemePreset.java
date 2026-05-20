@@ -115,13 +115,15 @@ final class KeyboardThemePreset {
                     "ECE8DD", "C3BEB3", "C3BEB3", "1D2430", "6C7480",
                     5, 6, true, 1, KeyboardSettings.FONT_NOTO_SANS_KR, false, false,
                     dotsColorOverrides(false),
-                    dotsBackgroundOverrides(false)),
+                    dotsBackgroundOverrides(false),
+                    LegendStylePreset.DOTS),
             theme("gmk-dots-dark", "GMK Dots Dark Inspired",
                     "20242C", "1B1F27", "15181E", "181C23", "2C313C",
                     "101318", "0B0E12", "0B0E12", "F4F6FA", "AAB4C2",
                     5, 6, true, 1, KeyboardSettings.FONT_NOTO_SANS_KR, false, false,
                     dotsColorOverrides(true),
-                    dotsBackgroundOverrides(true)),
+                    dotsBackgroundOverrides(true),
+                    LegendStylePreset.DOTS),
             theme("marigold-fiesta-dark", "Marigold Fiesta Dark",
                     "202225", "2A2C31", "111318", "111318", "3C4048",
                     "111214", "45484F", "2F3339", "F8F1DF", "B8A9BF",
@@ -496,14 +498,15 @@ final class KeyboardThemePreset {
     }
 
     private static String bentoTextOverrides() {
-        return json(
+        return mergeJson(json(
                 "shift", "F8776C",
                 "language", "F8776C",
                 "space", "F8776C",
                 "enter", "FFF3E7",
                 "backspace", "F8776C",
                 "options", "F8776C",
-                "reserved", "FFF3E7");
+                "reserved", "FFF3E7"),
+                dingulSpecialTextOverrides("2F8CA1", "2F8CA1", "2F8CA1", "F8776C", "F8776C"));
     }
 
     private static String bentoBackgroundOverrides() {
@@ -540,14 +543,15 @@ final class KeyboardThemePreset {
     }
 
     private static String gmk8008TextOverrides() {
-        return json(
+        return mergeJson(json(
                 "shift", "F05B6C",
                 "language", "F05B6C",
                 "space", "181A21",
                 "enter", "181A21",
                 "backspace", "F05B6C",
                 "options", "F05B6C",
-                "reserved", "181A21");
+                "reserved", "181A21"),
+                dingulSpecialTextOverrides("181A21", "181A21", "181A21", "181A21", "181A21"));
     }
 
     private static String gmk8008BackgroundOverrides() {
@@ -562,14 +566,15 @@ final class KeyboardThemePreset {
     }
 
     private static String hammerheadTextOverrides() {
-        return json(
+        return mergeJson(json(
                 "shift", "25BFB2",
                 "language", "25BFB2",
                 "space", "132633",
                 "enter", "132633",
                 "backspace", "B9C7CD",
                 "options", "25BFB2",
-                "reserved", "132633");
+                "reserved", "132633"),
+                dingulSpecialTextOverrides("132633", "132633", "132633", "25BFB2", "25BFB2"));
     }
 
     private static String hammerheadBackgroundOverrides() {
@@ -584,14 +589,16 @@ final class KeyboardThemePreset {
     }
 
     private static String modernDolchTextOverrides() {
-        return json(
+        return mergeJson(json(
                 "shift", "D65E72",
-                "language", "64D4CF",
+                "language", "D9DFE2",
+                "settings", "D9DFE2",
                 "space", "F0F3F4",
                 "enter", "F0F3F4",
                 "backspace", "D9DFE2",
-                "options", "64D4CF",
-                "reserved", "F0F3F4");
+                "options", "D9DFE2",
+                "reserved", "F0F3F4"),
+                dingulSpecialTextOverrides("64D4CF", "64D4CF", "64D4CF", "F0F3F4", "F0F3F4"));
     }
 
     private static String modernDolchBackgroundOverrides() {
@@ -666,6 +673,39 @@ final class KeyboardThemePreset {
         }
         builder.append('}');
         return builder.toString();
+    }
+
+    private static String dingulSpecialTextOverrides(
+            String topVowel,
+            String centerVowel,
+            String wideVowel,
+            String period,
+            String slash) {
+        return json(
+                "tap:\u3162", topVowel,
+                "\u3162", topVowel,
+                "tap:\u3163", centerVowel,
+                "\u3163.", centerVowel,
+                KeyboardCommands.CMD_DINGUL_CENTER_VOWEL, centerVowel,
+                "tap:\u3161", wideVowel,
+                "\u3161", wideVowel,
+                "\u3161\u3150", wideVowel,
+                KeyboardCommands.CMD_DINGUL_WIDE_VOWEL, wideVowel,
+                ".", period,
+                ". .", period,
+                "/", slash);
+    }
+
+    private static String mergeJson(String first, String second) {
+        if (first == null || first.length() <= 2) {
+            return second;
+        }
+        if (second == null || second.length() <= 2) {
+            return first;
+        }
+        return first.substring(0, first.length() - 1)
+                + ","
+                + second.substring(1);
     }
 
     private static String json(String... keyColors) {

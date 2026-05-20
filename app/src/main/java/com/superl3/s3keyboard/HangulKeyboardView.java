@@ -643,8 +643,8 @@ public final class HangulKeyboardView extends View {
 
     private void drawDotLegend(Canvas canvas, GestureKey key, RectF surfaceBounds, boolean englishLetterKey) {
         textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
-        float radius = Math.min(surfaceBounds.width(), surfaceBounds.height()) * 0.13f;
-        radius = Math.max(renderDp(4), Math.min(radius, renderDp(8)));
+        float radius = Math.min(surfaceBounds.width(), surfaceBounds.height()) * 0.18f;
+        radius = Math.max(renderDp(5), Math.min(radius, renderDp(10)));
         float centerY = englishLetterKey
                 ? surfaceBounds.top + surfaceBounds.height() * 0.36f
                 : surfaceBounds.centerY();

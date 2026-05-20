@@ -129,6 +129,9 @@ final class KeyboardKeyVisualClassifier {
         if (KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)) {
             return findOverride(settings, "language");
         }
+        if (KeyboardCommands.CMD_SETTINGS.equals(key.tap)) {
+            return findOverride(settings, "settings");
+        }
         if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)) {
             return findOverride(settings, "options");
         }
@@ -178,6 +181,9 @@ final class KeyboardKeyVisualClassifier {
         }
         if (KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)) {
             return findBackgroundOverride(settings, "language");
+        }
+        if (KeyboardCommands.CMD_SETTINGS.equals(key.tap)) {
+            return findBackgroundOverride(settings, "settings");
         }
         if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)) {
             return findBackgroundOverride(settings, "options");

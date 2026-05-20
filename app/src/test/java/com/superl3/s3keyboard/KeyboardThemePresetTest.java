@@ -100,27 +100,40 @@ public final class KeyboardThemePresetTest {
         KeyboardSettings light = KeyboardThemePreset.find("gmk-dots-light")
                 .applyTo(KeyboardSettings.defaults());
 
-        assertEquals(LegendStylePreset.DEFAULT, dark.legendStylePreset);
-        assertEquals(LegendStylePreset.DEFAULT, light.legendStylePreset);
+        assertEquals(LegendStylePreset.DOTS, dark.legendStylePreset);
+        assertEquals(LegendStylePreset.DOTS, light.legendStylePreset);
     }
 
     @Test
     public void colorfulDingulPresetsTintAllVowelLegends() {
-        KeyboardSettings dark = KeyboardThemePreset.find("marigold-fiesta-dark")
+        assertDingulVowelOverrides("marigold-fiesta-dark");
+        assertDingulVowelOverrides("marigold-fiesta-light");
+        assertDingulVowelOverrides("gmk-bento");
+        assertDingulVowelOverrides("gmk-hammerhead");
+        assertDingulVowelOverrides("gmk-8008");
+        assertDingulVowelOverrides("gmk-modern-dolch");
+    }
+
+    @Test
+    public void reportedGmkThemesKeepDingulSpecialLegendsReadable() {
+        KeyboardSettings bento = KeyboardThemePreset.find("gmk-bento")
                 .applyTo(KeyboardSettings.defaults());
-        KeyboardSettings light = KeyboardThemePreset.find("marigold-fiesta-light")
+        KeyboardSettings hammerhead = KeyboardThemePreset.find("gmk-hammerhead")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings gmk8008 = KeyboardThemePreset.find("gmk-8008")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings modernDolch = KeyboardThemePreset.find("gmk-modern-dolch")
                 .applyTo(KeyboardSettings.defaults());
 
-        assertTrue(dark.keyColorOverrides.containsKey("tap:ㅢ"));
-        assertTrue(dark.keyColorOverrides.containsKey("__dingul_center_vowel__"));
-        assertTrue(dark.keyColorOverrides.containsKey("__dingul_wide_vowel__"));
-        assertTrue(dark.keyColorOverrides.containsKey("ㅣ."));
-        assertTrue(dark.keyColorOverrides.containsKey("ㅡㅐ"));
-        assertTrue(light.keyColorOverrides.containsKey("tap:ㅢ"));
-        assertTrue(light.keyColorOverrides.containsKey("__dingul_center_vowel__"));
-        assertTrue(light.keyColorOverrides.containsKey("__dingul_wide_vowel__"));
-        assertTrue(light.keyColorOverrides.containsKey("ㅣ."));
-        assertTrue(light.keyColorOverrides.containsKey("ㅡㅐ"));
+        assertTrue(bento.keyColorOverrides.containsKey("."));
+        assertTrue(bento.keyColorOverrides.containsKey("/"));
+        assertTrue(hammerhead.keyColorOverrides.containsKey("."));
+        assertTrue(hammerhead.keyColorOverrides.containsKey("/"));
+        assertEquals(gmk8008.keyColorOverrides.get("space"), gmk8008.keyColorOverrides.get("."));
+        assertEquals(gmk8008.keyColorOverrides.get("space"), gmk8008.keyColorOverrides.get("/"));
+        assertEquals(modernDolch.keyColorOverrides.get("reserved"), modernDolch.keyColorOverrides.get("."));
+        assertEquals(modernDolch.keyColorOverrides.get("backspace"), modernDolch.keyColorOverrides.get("language"));
+        assertEquals(modernDolch.keyColorOverrides.get("backspace"), modernDolch.keyColorOverrides.get("settings"));
     }
 
     @Test
@@ -168,6 +181,29 @@ public final class KeyboardThemePresetTest {
         assertEquals("Override mismatch: " + key,
                 builtIn.keyColorOverrides.get(normalized),
                 external.keyColorOverrides.get(normalized));
+    }
+
+    private void assertDingulVowelOverrides(String presetId) {
+        KeyboardThemePreset preset = KeyboardThemePreset.find(presetId);
+        assertNotNull(preset);
+        KeyboardSettings settings = preset.applyTo(KeyboardSettings.defaults());
+
+        assertTrue(presetId + " missing tap:\u3162",
+                settings.keyColorOverrides.containsKey("tap:\u3162"));
+        assertTrue(presetId + " missing \u3162",
+                settings.keyColorOverrides.containsKey("\u3162"));
+        assertTrue(presetId + " missing center vowel command",
+                settings.keyColorOverrides.containsKey("__dingul_center_vowel__"));
+        assertTrue(presetId + " missing \u3163.",
+                settings.keyColorOverrides.containsKey("\u3163."));
+        assertTrue(presetId + " missing wide vowel command",
+                settings.keyColorOverrides.containsKey("__dingul_wide_vowel__"));
+        assertTrue(presetId + " missing \u3161\u3150",
+                settings.keyColorOverrides.containsKey("\u3161\u3150"));
+        assertTrue(presetId + " missing .",
+                settings.keyColorOverrides.containsKey("."));
+        assertTrue(presetId + " missing /",
+                settings.keyColorOverrides.containsKey("/"));
     }
 
     private String readThemeJson(String id) throws IOException {
