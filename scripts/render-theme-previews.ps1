@@ -765,6 +765,18 @@ $themeOrder = @(
     "lavender-focus.json",
     "graphite-mono.json",
     "high-contrast-light.json",
+    "gmk-bento.json",
+    "gmk-metropolis.json",
+    "gmk-oblivion.json",
+    "gmk-oblivion-hagoromo.json",
+    "gmk-8008.json",
+    "gmk-hammerhead.json",
+    "gmk-dracula.json",
+    "gmk-modern-dolch.json",
+    "gmk-olivia-light.json",
+    "gmk-olivia-dark.json",
+    "gmk-dots-light.json",
+    "gmk-dots-dark.json",
     "marigold-fiesta-dark.json",
     "marigold-fiesta-light.json"
 )

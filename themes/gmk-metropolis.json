@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "name": "GMK Metropolis Inspired",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#10151B",
+    "functionKey": "#151B22",
+    "primaryFunctionKey": "#161D25",
+    "accentKey": "#28161C",
+    "keyPressed": "#26313B",
+    "keyboardBackground": "#090D12",
+    "border": "#313A44",
+    "depth": "#05070A",
+    "accent": "#66E3C4",
+    "secondary": "#FFB000"
+  },
+  "shape": {
+    "roundnessDp": 5,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_dimmed"
+  },
+  "typography": {
+    "fontFamily": "d2coding",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "icons": {
+    "modifierPackId": "metropolis-points"
+  },
+  "effects": {
+    "blur": {
+      "enabled": true,
+      "radiusDp": 10
+    },
+    "metal": {
+      "enabled": true,
+      "strengthPercent": 22
+    },
+    "previewBubble": {
+      "style": "angular"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shift": "#0D1B2A",
+    "language": "#0D1B2A",
+    "settings": "#0D1B2A",
+    "space": "#70D7E8",
+    "enter": "#0D1B2A",
+    "backspace": "#0D1B2A",
+    "options": "#0D1B2A",
+    "reserved": "#0D1B2A",
+    "alpha": "#66E3C4",
+    "tap:1": "#FF4B3E",
+    "tap:2": "#FFB000",
+    "tap:3": "#FF4B3E",
+    "tap:4": "#FFB000",
+    "tap:5": "#FF4B3E",
+    "tap:6": "#FFB000",
+    "tap:7": "#FF4B3E",
+    "tap:8": "#FFB000",
+    "tap:9": "#FF4B3E",
+    "tap:0": "#FFB000",
+    "tap:ㅢ": "#66E3C4",
+    "ㅢ": "#66E3C4",
+    "tap:ㅣ": "#66E3C4",
+    "ㅣ.": "#66E3C4",
+    "__dingul_center_vowel__": "#66E3C4",
+    "tap:ㅡ": "#66E3C4",
+    "ㅡ": "#66E3C4",
+    "ㅡㅐ": "#66E3C4",
+    "__dingul_wide_vowel__": "#66E3C4",
+    "shiftIndicator": "#FFB000"
+  },
+  "keyBackgroundColorOverrides": {
+    "alpha": "#10151B",
+    "tap:1": "#10151B",
+    "tap:2": "#10151B",
+    "tap:3": "#10151B",
+    "tap:4": "#10151B",
+    "tap:5": "#10151B",
+    "tap:6": "#10151B",
+    "tap:7": "#10151B",
+    "tap:8": "#10151B",
+    "tap:9": "#10151B",
+    "tap:0": "#10151B",
+    "shift": "#FF4B3E",
+    "language": "#66E3C4",
+    "settings": "#66E3C4",
+    "enter": "#66E3C4",
+    "backspace": "#FFB000",
+    "options": "#FFB000",
+    "reserved": "#FF4B3E"
+  }
+}

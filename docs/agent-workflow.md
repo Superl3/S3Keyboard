@@ -117,6 +117,7 @@ The raw log is local SharedPreferences data and is reset by the same input corre
 ## Settings And Quick UI
 
 - Quick settings in the IME should use `PopupWindow`, be focusable, be outside-touch dismissible, and have an explicit OK close action.
+- The bottom-row options key opens quick settings on tap; the full settings activity is the long-press fallback.
 - The launcher instant keyboard test should hide the IME when tapping outside the test `EditText`.
 - Spinner/dropdown rows must use `SettingsArrayAdapter`; platform default rows can render black text/icons on dark system UI.
 

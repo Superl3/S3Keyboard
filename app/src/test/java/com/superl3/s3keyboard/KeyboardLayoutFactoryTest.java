@@ -312,11 +312,11 @@ public final class KeyboardLayoutFactoryTest {
     public void optionsKeySlidesSwitchHandednessModes() {
         GestureKey options = findKey(KeyboardLayoutFactory.build(KeyboardSettings.defaults()), "옵션");
 
-        assertEquals(KeyboardCommands.CMD_OPEN_OPTIONS, options.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_QUICK_SETTINGS, options.valueFor(GestureAction.TAP));
         assertEquals(KeyboardCommands.CMD_HAND_LEFT, options.valueFor(GestureAction.LEFT));
         assertEquals(KeyboardCommands.CMD_HAND_RIGHT, options.valueFor(GestureAction.RIGHT));
         assertEquals(KeyboardCommands.CMD_HAND_BALANCED, options.valueFor(GestureAction.UP));
-        assertEquals(KeyboardCommands.CMD_QUICK_SETTINGS, options.valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_OPEN_OPTIONS, options.valueFor(GestureAction.LONG_PRESS));
     }
 
     private GestureKey findKey(List<KeyboardRow> rows, String label) {

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "name": "GMK Oblivion Inspired",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#6F787D",
+    "functionKey": "#252A2E",
+    "primaryFunctionKey": "#171A1E",
+    "accentKey": "#3A4037",
+    "keyPressed": "#555F64",
+    "keyboardBackground": "#101214",
+    "border": "#0A0B0D",
+    "depth": "#0A0B0D",
+    "accent": "#E8ECEC",
+    "secondary": "#93A0A5"
+  },
+  "shape": {
+    "roundnessDp": 4,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_dimmed"
+  },
+  "typography": {
+    "fontFamily": "d2coding",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "icons": {
+    "keyDisplayPackId": "git-commands"
+  },
+  "keyTextColorOverrides": {
+    "shift": "#E3C247",
+    "language": "#49A6C8",
+    "space": "#49A6C8",
+    "enter": "#9ACB5A",
+    "backspace": "#C3CCD0",
+    "options": "#E24F3D",
+    "reserved": "#9ACB5A",
+    "shiftIndicator": "#6CBF84"
+  },
+  "keyBackgroundColorOverrides": {
+    "shift": "#1A1D20",
+    "language": "#1A1D20",
+    "space": "#6F787D",
+    "enter": "#24282C",
+    "backspace": "#24282C",
+    "options": "#24282C",
+    "reserved": "#24282C"
+  }
+}

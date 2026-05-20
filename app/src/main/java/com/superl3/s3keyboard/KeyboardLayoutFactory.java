@@ -148,12 +148,12 @@ final class KeyboardLayoutFactory {
         List<GestureKey> rightHandOrder = Arrays.asList(
                 new GestureKey(
                         "옵션",
-                        KeyboardCommands.CMD_OPEN_OPTIONS,
+                        KeyboardCommands.CMD_QUICK_SETTINGS,
                         KeyboardCommands.CMD_HAND_BALANCED,
                         null,
                         KeyboardCommands.CMD_HAND_LEFT,
                         KeyboardCommands.CMD_HAND_RIGHT,
-                        KeyboardCommands.CMD_QUICK_SETTINGS,
+                        KeyboardCommands.CMD_OPEN_OPTIONS,
                         3,
                         KeyIcon.OPTIONS),
                 new GestureKey(

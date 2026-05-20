@@ -156,6 +156,21 @@ const presets = {
   }
 };
 
+const externalPresetFiles = [
+  "gmk-bento",
+  "gmk-metropolis",
+  "gmk-oblivion",
+  "gmk-oblivion-hagoromo",
+  "gmk-8008",
+  "gmk-hammerhead",
+  "gmk-dracula",
+  "gmk-modern-dolch",
+  "gmk-olivia-light",
+  "gmk-olivia-dark",
+  "gmk-dots-light",
+  "gmk-dots-dark"
+].map(id => ({ id, url: `../themes/${id}.json` }));
+
 let state = cloneTheme(presets["ios-clean-light"]);
 
 const ids = {
@@ -185,7 +200,8 @@ const ids = {
 
 init();
 
-function init() {
+async function init() {
+  await loadExternalPresets();
   Object.entries(presets).forEach(([id, preset]) => {
     const option = document.createElement("option");
     option.value = id;
@@ -197,6 +213,25 @@ function init() {
   bindStaticControls();
   renderForm();
   update();
+}
+
+async function loadExternalPresets() {
+  const loaded = await Promise.all(externalPresetFiles.map(async ({ id, url }) => {
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        return null;
+      }
+      return [id, themeJsonToPreset(await response.json())];
+    } catch (error) {
+      return null;
+    }
+  }));
+  loaded
+      .filter(Boolean)
+      .forEach(([id, preset]) => {
+        presets[id] = preset;
+      });
 }
 
 function defaultTypography(hangulHints, englishHints) {
@@ -737,35 +772,43 @@ function validateTheme(theme) {
   return "Valid schemaVersion 1 theme JSON.";
 }
 
+function themeJsonToPreset(parsed) {
+  const base = cloneTheme(presets["ios-clean-light"]);
+  return {
+    name: parsed.name || "Imported Theme",
+    colors: { ...base.colors, ...(parsed.colors || {}) },
+    shape: { ...base.shape, ...(parsed.shape || {}) },
+    typography: { ...base.typography, ...(parsed.typography || {}) },
+    effects: parsed.effects || base.effects || {},
+    icons: normalizedIconPacks(parsed.icons || {}),
+    additionalNumberRow: {
+      colorMode: parsed.additionalNumberRow?.colorMode || "full_dimmed"
+    },
+    keyDisplayOverrides: parsed.keyDisplayOverrides || legacyDisplayOverrides(parsed.legendStyle),
+    keyTextColorOverrides: parsed.keyTextColorOverrides || parsed.keyColorOverrides || {},
+    keyBackgroundColorOverrides: parsed.keyBackgroundColorOverrides || {}
+  };
+}
+
+function normalizedIconPacks(rawIcons) {
+  const icons = { ...rawIcons };
+  if (isSimpleTextPack(icons.modifierPackId)) {
+    icons.keyDisplayPackId = "simple-text";
+    delete icons.modifierPackId;
+  }
+  if (isSimpleTextPack(icons.keyDisplayPackId)) {
+    icons.keyDisplayPackId = "simple-text";
+  }
+  return icons;
+}
+
 function importJson() {
   try {
     const parsed = JSON.parse(ids.output.value);
     if (parsed.schemaVersion !== 1) {
       throw new Error("Only schemaVersion 1 is supported.");
     }
-    const base = cloneTheme(presets["ios-clean-light"]);
-    const icons = { ...(parsed.icons || {}) };
-    if (isSimpleTextPack(icons.modifierPackId)) {
-      icons.keyDisplayPackId = "simple-text";
-      delete icons.modifierPackId;
-    }
-    if (isSimpleTextPack(icons.keyDisplayPackId)) {
-      icons.keyDisplayPackId = "simple-text";
-    }
-    state = {
-      name: parsed.name || "Imported Theme",
-      colors: { ...base.colors, ...(parsed.colors || {}) },
-      shape: { ...base.shape, ...(parsed.shape || {}) },
-      typography: { ...base.typography, ...(parsed.typography || {}) },
-      effects: parsed.effects || base.effects || {},
-      icons,
-      additionalNumberRow: {
-        colorMode: parsed.additionalNumberRow?.colorMode || "full_dimmed"
-      },
-      keyDisplayOverrides: parsed.keyDisplayOverrides || legacyDisplayOverrides(parsed.legendStyle),
-      keyTextColorOverrides: parsed.keyTextColorOverrides || parsed.keyColorOverrides || {},
-      keyBackgroundColorOverrides: parsed.keyBackgroundColorOverrides || {}
-    };
+    state = themeJsonToPreset(parsed);
     renderForm();
     update();
     ids.status.textContent = "Imported JSON.";

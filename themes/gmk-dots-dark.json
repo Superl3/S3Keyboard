@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "name": "GMK Dots Dark Inspired",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#20242C",
+    "functionKey": "#1B1F27",
+    "primaryFunctionKey": "#15181E",
+    "accentKey": "#181C23",
+    "keyPressed": "#2C313C",
+    "keyboardBackground": "#101318",
+    "border": "#0B0E12",
+    "depth": "#0B0E12",
+    "accent": "#F4F6FA",
+    "secondary": "#AAB4C2"
+  },
+  "shape": {
+    "roundnessDp": 5,
+    "borderWidthDp": 1,
+    "keyGapDp": 6,
+    "depthEnabled": true,
+    "depthDp": 1
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_dimmed"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "icons": {
+    "modifierPackId": "dots-lines"
+  },
+  "keyDisplayOverrides": {
+    "alpha": {
+      "type": "icon",
+      "value": "dot"
+    }
+  },
+  "keyTextColorOverrides": {
+    "tap:q": "#EF476F",
+    "tap:w": "#FFD166",
+    "tap:e": "#06D6A0",
+    "tap:r": "#4CC9F0",
+    "tap:t": "#B5179E",
+    "tap:y": "#F77F00",
+    "tap:u": "#EF476F",
+    "tap:i": "#FFD166",
+    "tap:o": "#06D6A0",
+    "tap:p": "#4CC9F0",
+    "tap:a": "#B5179E",
+    "tap:s": "#F77F00",
+    "tap:d": "#EF476F",
+    "tap:f": "#FFD166",
+    "tap:g": "#06D6A0",
+    "tap:h": "#4CC9F0",
+    "tap:j": "#B5179E",
+    "tap:k": "#F77F00",
+    "tap:l": "#EF476F",
+    "tap:z": "#FFD166",
+    "tap:x": "#06D6A0",
+    "tap:c": "#4CC9F0",
+    "tap:v": "#B5179E",
+    "tap:b": "#F77F00",
+    "tap:n": "#EF476F",
+    "tap:m": "#FFD166",
+    "tap:ㄱ": "#06D6A0",
+    "tap:ㄴ": "#4CC9F0",
+    "tap:ㅢ": "#B5179E",
+    "tap:ㄹ": "#F77F00",
+    "tap:ㅁ": "#EF476F",
+    "tap:ㅣ": "#FFD166",
+    "__dingul_center_vowel__": "#06D6A0",
+    "tap:ㅅ": "#4CC9F0",
+    "tap:ㅇ": "#B5179E",
+    "__dingul_wide_vowel__": "#F77F00",
+    "tap:ㅈ": "#EF476F",
+    "tap:ㅎ": "#FFD166",
+    "ㅣ.": "#06D6A0",
+    "ㅡㅐ": "#4CC9F0",
+    "..": "#B5179E",
+    ". .": "#F77F00",
+    "?": "#EF476F",
+    ".": "#FFD166",
+    "/": "#06D6A0",
+    "space": "#4CC9F0",
+    "enter": "#B5179E",
+    "backspace": "#F77F00",
+    "shift": "#EF476F",
+    "language": "#FFD166",
+    "settings": "#06D6A0",
+    "options": "#4CC9F0",
+    "reserved": "#B5179E",
+    "shiftIndicator": "#FFFFFF"
+  },
+  "keyBackgroundColorOverrides": {
+    "space": "#1B1F27",
+    "enter": "#252B34",
+    "backspace": "#252B34",
+    "shift": "#252B34",
+    "language": "#252B34",
+    "settings": "#252B34",
+    "options": "#252B34",
+    "reserved": "#252B34"
+  }
+}

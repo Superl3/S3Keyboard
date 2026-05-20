@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "name": "GMK Dracula Inspired",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#44475A",
+    "functionKey": "#343746",
+    "primaryFunctionKey": "#282A36",
+    "accentKey": "#363949",
+    "keyPressed": "#50546A",
+    "keyboardBackground": "#1E2029",
+    "border": "#191B22",
+    "depth": "#191B22",
+    "accent": "#F8F8F2",
+    "secondary": "#BD93F9"
+  },
+  "shape": {
+    "roundnessDp": 5,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_dimmed"
+  },
+  "typography": {
+    "fontFamily": "d2coding",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#8BE9FD"
+  }
+}

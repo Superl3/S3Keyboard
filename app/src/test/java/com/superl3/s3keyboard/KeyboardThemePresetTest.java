@@ -180,6 +180,27 @@ public final class KeyboardThemePresetTest {
         assertExternalThemeMatchesPreset("marigold-fiesta-light");
     }
 
+    @Test
+    public void gmkExternalThemeFilesMatchBuiltInPresetIdentity() throws IOException {
+        String[] ids = {
+                "gmk-bento",
+                "gmk-metropolis",
+                "gmk-oblivion",
+                "gmk-oblivion-hagoromo",
+                "gmk-8008",
+                "gmk-hammerhead",
+                "gmk-dracula",
+                "gmk-modern-dolch",
+                "gmk-olivia-light",
+                "gmk-olivia-dark",
+                "gmk-dots-light",
+                "gmk-dots-dark"
+        };
+        for (String id : ids) {
+            assertExternalThemeBasicMatchesPreset(id);
+        }
+    }
+
     private void assertExternalThemeMatchesPreset(String id) throws IOException {
         KeyboardThemePreset preset = KeyboardThemePreset.find(id);
         assertNotNull(preset);
@@ -205,6 +226,32 @@ public final class KeyboardThemePresetTest {
         assertOverrideMatches(builtIn, external, "ㅣ.");
         assertOverrideMatches(builtIn, external, "ㅡㅐ");
         assertOverrideMatches(builtIn, external, "shiftIndicator");
+    }
+
+    private void assertExternalThemeBasicMatchesPreset(String id) throws IOException {
+        KeyboardThemePreset preset = KeyboardThemePreset.find(id);
+        assertNotNull(preset);
+
+        KeyboardSettings base = KeyboardSettings.defaults();
+        KeyboardSettings builtIn = preset.applyTo(base);
+        KeyboardSettings external = KeyboardThemeJson.importTheme(base, readThemeJson(id));
+
+        assertEquals(id, builtIn.keyIdleColor, external.keyIdleColor);
+        assertEquals(id, builtIn.functionKeyColor, external.functionKeyColor);
+        assertEquals(id, builtIn.primaryFunctionKeyColor, external.primaryFunctionKeyColor);
+        assertEquals(id, builtIn.accentKeyColor, external.accentKeyColor);
+        assertEquals(id, builtIn.keyPressedColor, external.keyPressedColor);
+        assertEquals(id, builtIn.keyboardBackgroundColor, external.keyboardBackgroundColor);
+        assertEquals(id, builtIn.borderColor, external.borderColor);
+        assertEquals(id, builtIn.depthColor, external.depthColor);
+        assertEquals(id, builtIn.modifierIconThemePackId, external.modifierIconThemePackId);
+        assertEquals(id, builtIn.keyDisplayThemePackId, external.keyDisplayThemePackId);
+        assertEquals(id, builtIn.visualEffects.blurEnabled, external.visualEffects.blurEnabled);
+        assertEquals(id, builtIn.visualEffects.metallicEnabled, external.visualEffects.metallicEnabled);
+        assertEquals(id, builtIn.visualEffects.angularPreviewBubble, external.visualEffects.angularPreviewBubble);
+        assertEquals(id,
+                builtIn.keyColorOverrides.get("shiftIndicator"),
+                external.keyColorOverrides.get("shiftIndicator"));
     }
 
     private void assertOverrideMatches(

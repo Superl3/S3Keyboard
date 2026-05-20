@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "name": "GMK Olivia Dark Inspired",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#3A3438",
+    "functionKey": "#171619",
+    "primaryFunctionKey": "#171619",
+    "accentKey": "#D9A3AA",
+    "keyPressed": "#4B4248",
+    "keyboardBackground": "#111114",
+    "border": "#111114",
+    "depth": "#111114",
+    "accent": "#F4E7E2",
+    "secondary": "#D9A3AA"
+  },
+  "shape": {
+    "roundnessDp": 5,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_dimmed"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "icons": {
+    "keyDisplayPackId": "simple-text"
+  },
+  "keyTextColorOverrides": {
+    "shift": "#F4E7E2",
+    "backspace": "#F4E7E2",
+    "language": "#F4E7E2",
+    "settings": "#F4E7E2",
+    "enter": "#211F23",
+    "space": "#211F23",
+    "options": "#211F23",
+    "reserved": "#211F23",
+    "shiftIndicator": "#D9A3AA"
+  },
+  "keyBackgroundColorOverrides": {
+    "enter": "#D9A3AA",
+    "space": "#D9A3AA",
+    "options": "#D9A3AA",
+    "reserved": "#D9A3AA"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "name": "GMK HammerHead Inspired",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#B9C7CD",
+    "functionKey": "#132633",
+    "primaryFunctionKey": "#0B1720",
+    "accentKey": "#27AFA3",
+    "keyPressed": "#8EA2A9",
+    "keyboardBackground": "#DDE4DE",
+    "border": "#7C8D93",
+    "depth": "#7C8D93",
+    "accent": "#122430",
+    "secondary": "#0AA29A"
+  },
+  "shape": {
+    "roundnessDp": 5,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_dimmed"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "keyTextColorOverrides": {
+    "shift": "#25BFB2",
+    "language": "#25BFB2",
+    "space": "#132633",
+    "enter": "#132633",
+    "backspace": "#B9C7CD",
+    "options": "#25BFB2",
+    "reserved": "#132633",
+    "tap:ㅢ": "#132633",
+    "ㅢ": "#132633",
+    "tap:ㅣ": "#132633",
+    "ㅣ.": "#132633",
+    "__dingul_center_vowel__": "#132633",
+    "tap:ㅡ": "#132633",
+    "ㅡ": "#132633",
+    "ㅡㅐ": "#132633",
+    "__dingul_wide_vowel__": "#132633",
+    "shiftIndicator": "#39D4C8"
+  },
+  "keyBackgroundColorOverrides": {
+    "shift": "#132633",
+    "language": "#132633",
+    "space": "#B9C7CD",
+    "enter": "#27AFA3",
+    "backspace": "#132633",
+    "options": "#132633",
+    "reserved": "#27AFA3"
+  }
+}

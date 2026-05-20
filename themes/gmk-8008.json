@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "name": "GMK 8008 Inspired",
+  "author": "local",
+  "colors": {
+    "keyIdle": "#8C929D",
+    "functionKey": "#1E2028",
+    "primaryFunctionKey": "#161820",
+    "accentKey": "#B94D61",
+    "keyPressed": "#5A606A",
+    "keyboardBackground": "#111216",
+    "border": "#0E0F13",
+    "depth": "#0E0F13",
+    "accent": "#F05B6C",
+    "secondary": "#A9ADB8"
+  },
+  "shape": {
+    "roundnessDp": 5,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_dimmed"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "keyTextColorOverrides": {
+    "shift": "#F05B6C",
+    "language": "#F05B6C",
+    "space": "#181A21",
+    "enter": "#181A21",
+    "backspace": "#F05B6C",
+    "options": "#F05B6C",
+    "reserved": "#181A21",
+    "tap:ㅢ": "#181A21",
+    "ㅢ": "#181A21",
+    "tap:ㅣ": "#181A21",
+    "ㅣ.": "#181A21",
+    "__dingul_center_vowel__": "#181A21",
+    "tap:ㅡ": "#181A21",
+    "ㅡ": "#181A21",
+    "ㅡㅐ": "#181A21",
+    "__dingul_wide_vowel__": "#181A21",
+    "shiftIndicator": "#7DBBE8"
+  },
+  "keyBackgroundColorOverrides": {
+    "shift": "#1E2028",
+    "language": "#1E2028",
+    "space": "#F05B6C",
+    "enter": "#F05B6C",
+    "backspace": "#1E2028",
+    "options": "#1E2028",
+    "reserved": "#F05B6C"
+  }
+}
