@@ -1,7 +1,12 @@
 package com.superl3.s3keyboard;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -10,6 +15,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -17,6 +23,7 @@ import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +55,7 @@ public final class ThemeEditorActivity extends Activity {
     private Spinner handednessSpinner;
     private Spinner additionalNumberRowColorModeSpinner;
     private Spinner selectedKeyColorSpinner;
+    private Spinner selectedKeyBackgroundColorSpinner;
     private Button deleteThemeButton;
     private Button resetSelectedKeyButton;
     private RadioGroup modeGroup;
@@ -174,9 +182,8 @@ public final class ThemeEditorActivity extends Activity {
 
         addThemeSaveControls(editorRoot);
         addSelectedKeyInspector(editorRoot);
-        addColorControls(addExpandableSection(editorRoot, "Colors", true));
-        addShapeControls(addExpandableSection(editorRoot, "Shape", false));
-        addLayoutControls(addExpandableSection(editorRoot, "User Layout (not theme)", false));
+        addColorControls(addExpandableSection(editorRoot, "Global Colors", true));
+        addShapeControls(addExpandableSection(editorRoot, "Global Shape", false));
         addTypographyControls(addExpandableSection(editorRoot, "Typography", false));
         return root;
     }
@@ -193,6 +200,18 @@ public final class ThemeEditorActivity extends Activity {
             syncControls();
         });
         root.addView(saveThemeButton, buttonParams());
+
+        Button exportJsonButton = new Button(this);
+        exportJsonButton.setText("Copy theme JSON");
+        styleSystemButton(exportJsonButton);
+        exportJsonButton.setOnClickListener(v -> copyThemeJsonToClipboard());
+        root.addView(exportJsonButton, buttonParams());
+
+        Button importJsonButton = new Button(this);
+        importJsonButton.setText("Import theme JSON");
+        styleSystemButton(importJsonButton);
+        importJsonButton.setOnClickListener(v -> showThemeJsonImportDialog());
+        root.addView(importJsonButton, buttonParams());
     }
 
     private void addPresetControls(LinearLayout root) {
@@ -254,14 +273,14 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private void addSelectedKeyInspector(LinearLayout root) {
-        LinearLayout section = addExpandableSection(root, "Per-Key Legends", true);
+        LinearLayout section = addExpandableSection(root, "Per-Key Overrides", true);
         selectedKeyLabel = label("No key selected");
         section.addView(selectedKeyLabel, matchWrapWithTop(8));
 
         editScopeGroup = new RadioGroup(this);
         editScopeGroup.setOrientation(RadioGroup.HORIZONTAL);
         editScopeGroup.addView(radio(EDIT_GLOBAL_ID, "Global style"));
-        editScopeGroup.addView(radio(EDIT_KEY_TEXT_ID, "This key legend color"));
+        editScopeGroup.addView(radio(EDIT_KEY_TEXT_ID, "This key override"));
         editScopeGroup.check(EDIT_GLOBAL_ID);
         editScopeGroup.setOnCheckedChangeListener((group, checkedId) -> syncSelectedKeyInspector());
         section.addView(editScopeGroup, matchWrapWithTop(8));
@@ -275,11 +294,23 @@ public final class ThemeEditorActivity extends Activity {
             selectedThemePresetIndex = 0;
             updateSettings(settings.withKeyColorOverrides(overrides));
         });
-        section.addView(label("Selected key legend/icon color"), matchWrapWithTop(8));
+        section.addView(label("Selected key text/icon color"), matchWrapWithTop(8));
         section.addView(selectedKeyColorSpinner, matchWrap());
 
+        selectedKeyBackgroundColorSpinner = colorSpinner(color -> {
+            if (selectedOverrideKey.isEmpty() || editScopeGroup.getCheckedRadioButtonId() != EDIT_KEY_TEXT_ID) {
+                return;
+            }
+            Map<String, Integer> overrides = new HashMap<>(settings.keyColorOverrides);
+            overrides.put(backgroundOverrideKey(selectedOverrideKey), color);
+            selectedThemePresetIndex = 0;
+            updateSettings(settings.withKeyColorOverrides(overrides));
+        });
+        section.addView(label("Selected key background color"), matchWrapWithTop(8));
+        section.addView(selectedKeyBackgroundColorSpinner, matchWrap());
+
         resetSelectedKeyButton = new Button(this);
-        resetSelectedKeyButton.setText("Reset this key");
+        resetSelectedKeyButton.setText("Reset selected key override");
         styleSystemButton(resetSelectedKeyButton);
         resetSelectedKeyButton.setOnClickListener(v -> {
             if (selectedOverrideKey.isEmpty()) {
@@ -287,6 +318,7 @@ public final class ThemeEditorActivity extends Activity {
             }
             Map<String, Integer> overrides = new HashMap<>(settings.keyColorOverrides);
             overrides.remove(KeyboardSettings.normalizeKeyOverrideName(selectedOverrideKey));
+            overrides.remove(KeyboardSettings.normalizeKeyOverrideName(backgroundOverrideKey(selectedOverrideKey)));
             selectedThemePresetIndex = 0;
             updateSettings(settings.withKeyColorOverrides(overrides));
         });
@@ -300,7 +332,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 settings.secondaryColor)));
-        root.addView(label("Key idle"), matchWrapWithTop(8));
+        addColorHeader(root, "Key idle", "Default background for letter, vowel, symbol, and space keys.");
         root.addView(keyIdleColorSpinner, matchWrap());
 
         accentKeyColorSpinner = colorSpinner(color -> updateSettings(settings.withExtendedThemeColors(
@@ -315,7 +347,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.borderColor,
                 settings.customDepthColorEnabled,
                 settings.depthColor)));
-        root.addView(label("Accent key"), matchWrapWithTop(8));
+        addColorHeader(root, "Accent key", "Background for Dingul accent/special keys and theme-highlighted groups.");
         root.addView(accentKeyColorSpinner, matchWrap());
 
         keyPressedColorSpinner = colorSpinner(color -> updateSettings(settings.withThemeColors(
@@ -324,7 +356,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 settings.secondaryColor)));
-        root.addView(label("Pressed"), matchWrapWithTop(8));
+        addColorHeader(root, "Pressed", "Temporary key surface while a touch is active.");
         root.addView(keyPressedColorSpinner, matchWrap());
 
         keyboardBackgroundColorSpinner = colorSpinner(color -> updateSettings(settings.withThemeColors(
@@ -333,7 +365,7 @@ public final class ThemeEditorActivity extends Activity {
                 color,
                 settings.accentColor,
                 settings.secondaryColor)));
-        root.addView(label("Keyboard background"), matchWrapWithTop(8));
+        addColorHeader(root, "Keyboard background", "Area behind and between keys; not an app/page background.");
         root.addView(keyboardBackgroundColorSpinner, matchWrap());
 
         borderColorSpinner = colorSpinner(color -> updateSettings(settings.withExtendedThemeColors(
@@ -348,7 +380,7 @@ public final class ThemeEditorActivity extends Activity {
                 color,
                 settings.customDepthColorEnabled,
                 settings.depthColor)));
-        root.addView(label("Outline"), matchWrapWithTop(8));
+        addColorHeader(root, "Outline", "Stroke around each key. Depth uses this when custom depth color is off.");
         root.addView(borderColorSpinner, matchWrap());
 
         customDepthColorCheckBox = checkBox("Use custom depth color", checked ->
@@ -356,7 +388,7 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(customDepthColorCheckBox, matchWrapWithTop(12));
 
         depthColorSpinner = colorSpinner(color -> updateSettings(settings.withDepthColor(true, color)));
-        root.addView(label("Depth color"), matchWrapWithTop(8));
+        addColorHeader(root, "Depth color", "Pseudo-3D lower edge color. Ignored when depth effect is off.");
         root.addView(depthColorSpinner, matchWrap());
 
         accentColorSpinner = colorSpinner(color -> updateSettings(settings.withThemeColors(
@@ -365,7 +397,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.keyboardBackgroundColor,
                 color,
                 settings.secondaryColor)));
-        root.addView(label("Accent text"), matchWrapWithTop(8));
+        addColorHeader(root, "Accent text", "Main key labels, icons, selected indicators, and active preview text.");
         root.addView(accentColorSpinner, matchWrap());
 
         secondaryColorSpinner = colorSpinner(color -> updateSettings(settings.withThemeColors(
@@ -374,7 +406,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 color)));
-        root.addView(label("Secondary text"), matchWrapWithTop(8));
+        addColorHeader(root, "Secondary text", "Slide hints, secondary labels, and inactive icon details.");
         root.addView(secondaryColorSpinner, matchWrap());
     }
 
@@ -642,7 +674,7 @@ public final class ThemeEditorActivity extends Activity {
             themePresetSpinner.setSelection(selectedThemePresetIndex);
         }
         modeGroup.check(settings.keyboardMode == KeyboardMode.ENGLISH ? MODE_ENGLISH_ID : MODE_HANGUL_ID);
-        handednessSpinner.setSelection(settings.handednessMode.ordinal());
+        setSelection(handednessSpinner, settings.handednessMode.ordinal());
         setProgress(hangulHeightSeekBar, settings.hangulKeyboardHeightDp - KeyboardSettings.MIN_HEIGHT_DP);
         setProgress(englishHeightSeekBar, settings.englishKeyboardHeightDp - KeyboardSettings.MIN_HEIGHT_DP);
         setProgress(hangulLeftPaddingSeekBar, settings.hangulLeftPaddingDp);
@@ -689,35 +721,35 @@ public final class ThemeEditorActivity extends Activity {
         if (beginnerTooltipPreviewCheckBox != null) {
             setChecked(beginnerTooltipPreviewCheckBox, settings.showBeginnerTooltipPreview);
         }
-        depthColorSpinner.setEnabled(settings.customDepthColorEnabled);
-        keyDepthSeekBar.setEnabled(settings.keyDepthEnabled);
+        setEnabled(depthColorSpinner, settings.customDepthColorEnabled);
+        setEnabled(keyDepthSeekBar, settings.keyDepthEnabled);
         if (deleteThemeButton != null) {
             deleteThemeButton.setEnabled(selectedThemeOption() != null && selectedThemeOption().userThemeId != null);
         }
 
-        hangulHeightValue.setText("Dingul height: " + settings.hangulKeyboardHeightDp + "dp");
-        englishHeightValue.setText("QWERTY height: " + settings.englishKeyboardHeightDp + "dp");
-        hangulLeftPaddingValue.setText("Dingul left padding: " + settings.hangulLeftPaddingDp + "dp");
-        hangulRightPaddingValue.setText("Dingul right padding: " + settings.hangulRightPaddingDp + "dp");
-        englishLeftPaddingValue.setText("QWERTY left padding: " + settings.englishLeftPaddingDp + "dp");
-        englishRightPaddingValue.setText("QWERTY right padding: " + settings.englishRightPaddingDp + "dp");
-        hangulSpecialColumnValue.setText("Hangul special column: " + settings.hangulSpecialColumnPercent + "%");
-        hangulMainSpecialGapValue.setText("Dingul main/special gap: "
+        setText(hangulHeightValue, "Dingul height: " + settings.hangulKeyboardHeightDp + "dp");
+        setText(englishHeightValue, "QWERTY height: " + settings.englishKeyboardHeightDp + "dp");
+        setText(hangulLeftPaddingValue, "Dingul left padding: " + settings.hangulLeftPaddingDp + "dp");
+        setText(hangulRightPaddingValue, "Dingul right padding: " + settings.hangulRightPaddingDp + "dp");
+        setText(englishLeftPaddingValue, "QWERTY left padding: " + settings.englishLeftPaddingDp + "dp");
+        setText(englishRightPaddingValue, "QWERTY right padding: " + settings.englishRightPaddingDp + "dp");
+        setText(hangulSpecialColumnValue, "Hangul special column: " + settings.hangulSpecialColumnPercent + "%");
+        setText(hangulMainSpecialGapValue, "Dingul main/special gap: "
                 + settings.hangulMainSpecialGapDp + "dp");
-        keyboardTopPaddingValue.setText("Keyboard top padding: " + settings.keyboardTopPaddingDp + "dp");
-        bottomRowTopPaddingValue.setText("Bottom row top padding: " + settings.bottomRowTopPaddingDp + "dp");
-        keyboardBottomPaddingValue.setText("Keyboard bottom padding: " + settings.keyboardBottomPaddingDp + "dp");
-        roundnessValue.setText("Roundness: " + settings.keyRoundnessDp + "dp");
-        keyBorderWidthValue.setText("Outline density: " + settings.keyBorderWidthDp + "dp");
-        keyGapValue.setText("Visual key gap: " + settings.keyGapDp + "dp");
-        keyDepthValue.setText("Depth height: " + settings.keyDepthDp + "dp"
+        setText(keyboardTopPaddingValue, "Keyboard top padding: " + settings.keyboardTopPaddingDp + "dp");
+        setText(bottomRowTopPaddingValue, "Bottom row top padding: " + settings.bottomRowTopPaddingDp + "dp");
+        setText(keyboardBottomPaddingValue, "Keyboard bottom padding: " + settings.keyboardBottomPaddingDp + "dp");
+        setText(roundnessValue, "Roundness: " + settings.keyRoundnessDp + "dp");
+        setText(keyBorderWidthValue, "Outline density: " + settings.keyBorderWidthDp + "dp");
+        setText(keyGapValue, "Visual key gap: " + settings.keyGapDp + "dp");
+        setText(keyDepthValue, "Depth height: " + settings.keyDepthDp + "dp"
                 + (settings.keyDepthEnabled ? "" : " (flat)"));
-        primaryTextSizeValue.setText("Primary legend size: " + settings.primaryTextSizePercent + "%");
-        secondaryTextSizeValue.setText("Secondary hint size: " + settings.secondaryTextSizePercent + "%");
+        setText(primaryTextSizeValue, "Primary text size: " + settings.primaryTextSizePercent + "%");
+        setText(secondaryTextSizeValue, "Secondary hint size: " + settings.secondaryTextSizePercent + "%");
         previewMeta.setText((settings.keyboardMode == KeyboardMode.ENGLISH ? "QWERTY" : "Dingul")
-                + " user layout preview / "
+                + " preview / "
                 + settings.measuredHeightDp()
-                + "dp / tap a key to edit its legend color");
+                + "dp / tap a key to edit its override");
         updatePreviewHeight();
         preview.setSettings(settings);
         syncSelectedKeyInspector();
@@ -727,19 +759,41 @@ public final class ThemeEditorActivity extends Activity {
     private void syncSelectedKeyInspector() {
         boolean keySelected = selectedKey != null && !selectedOverrideKey.isEmpty();
         boolean keyEdit = keySelected && editScopeGroup.getCheckedRadioButtonId() == EDIT_KEY_TEXT_ID;
+        KeyVisualRole role = keySelected
+                ? KeyboardKeyVisualClassifier.roleFor(settings, selectedKey)
+                : KeyVisualRole.NORMAL;
         selectedKeyLabel.setText(keySelected
-                ? "Selected: " + displayKeyName(selectedKey) + " / override key: " + selectedOverrideKey
+                ? "Selected: " + displayKeyName(selectedKey)
+                        + " / group: " + role.name().toLowerCase()
+                        + " / key: " + selectedOverrideKey
                 : "No key selected");
         selectedKeyColorSpinner.setEnabled(keyEdit);
-        resetSelectedKeyButton.setEnabled(keyEdit && settings.keyColorOverrides.containsKey(
-                KeyboardSettings.normalizeKeyOverrideName(selectedOverrideKey)));
+        selectedKeyBackgroundColorSpinner.setEnabled(keyEdit);
+        boolean hasTextOverride = keySelected && settings.keyColorOverrides.containsKey(
+                KeyboardSettings.normalizeKeyOverrideName(selectedOverrideKey));
+        boolean hasBackgroundOverride = keySelected && settings.keyColorOverrides.containsKey(
+                KeyboardSettings.normalizeKeyOverrideName(backgroundOverrideKey(selectedOverrideKey)));
+        resetSelectedKeyButton.setEnabled(keyEdit && (hasTextOverride || hasBackgroundOverride));
         Integer override = keySelected
                 ? settings.keyColorOverrides.get(KeyboardSettings.normalizeKeyOverrideName(selectedOverrideKey))
+                : null;
+        Integer backgroundOverride = keySelected
+                ? settings.keyColorOverrides.get(KeyboardSettings.normalizeKeyOverrideName(
+                        backgroundOverrideKey(selectedOverrideKey)))
                 : null;
         boolean wasSyncing = syncing;
         syncing = true;
         setSelection(selectedKeyColorSpinner, indexOfColor(override == null ? settings.accentColor : override));
+        setSelection(
+                selectedKeyBackgroundColorSpinner,
+                indexOfColor(backgroundOverride == null
+                        ? KeyboardKeyVisualClassifier.colorFor(settings, selectedKey)
+                        : backgroundOverride));
         syncing = wasSyncing;
+    }
+
+    private String backgroundOverrideKey(String key) {
+        return "background:" + key;
     }
 
     private void updatePreviewHeight() {
@@ -803,6 +857,84 @@ public final class ThemeEditorActivity extends Activity {
 
     private void setExpandableTitle(TextView title, String text, boolean expanded) {
         title.setText((expanded ? "- " : "+ ") + text);
+    }
+
+    private void addColorHeader(LinearLayout root, String title, String description) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        TextView label = label(title);
+        row.addView(label, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        Button info = new Button(this);
+        info.setText("i");
+        info.setAllCaps(false);
+        styleSystemButton(info);
+        info.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(description)
+                .setPositiveButton("OK", null)
+                .show());
+        row.addView(info, new LinearLayout.LayoutParams(dp(44), dp(36)));
+        root.addView(row, matchWrapWithTop(8));
+    }
+
+    private void copyThemeJsonToClipboard() {
+        String json = KeyboardThemeJson.exportTheme(settings, "Current Theme", "local", null);
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText("New Dingul theme JSON", json));
+        }
+        Toast.makeText(this, "Theme JSON copied", Toast.LENGTH_SHORT).show();
+    }
+
+    private void showThemeJsonImportDialog() {
+        EditText editor = new EditText(this);
+        editor.setMinLines(8);
+        editor.setGravity(Gravity.TOP | Gravity.START);
+        editor.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        String clipboardText = currentClipboardText();
+        if (!clipboardText.isEmpty()) {
+            editor.setText(clipboardText);
+            editor.setSelection(editor.length());
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Import theme JSON")
+                .setView(editor)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Import", (dialog, which) -> importThemeJson(editor.getText().toString()))
+                .show();
+    }
+
+    private String currentClipboardText() {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard == null || !clipboard.hasPrimaryClip() || clipboard.getPrimaryClip() == null
+                || clipboard.getPrimaryClip().getItemCount() == 0) {
+            return "";
+        }
+        CharSequence text = clipboard.getPrimaryClip().getItemAt(0).coerceToText(this);
+        return text == null ? "" : text.toString();
+    }
+
+    private void importThemeJson(String json) {
+        try {
+            settings = KeyboardThemeJson.importTheme(settings, json);
+            selectedThemePresetIndex = 0;
+            selectedKey = null;
+            selectedOverrideKey = "";
+            KeyboardPreferences.saveSelectedThemeId(this, "");
+            KeyboardPreferences.saveSettings(this, settings);
+            syncControls();
+            Toast.makeText(this, "Theme JSON imported", Toast.LENGTH_SHORT).show();
+        } catch (IllegalArgumentException exception) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Theme JSON import failed")
+                    .setMessage(exception.getMessage())
+                    .setPositiveButton("OK", null)
+                    .show();
+        }
     }
 
     private Spinner colorSpinner(final ColorChangeListener listener) {
@@ -967,6 +1099,18 @@ public final class ThemeEditorActivity extends Activity {
     private void setChecked(CheckBox checkBox, boolean checked) {
         if (checkBox != null) {
             checkBox.setChecked(checked);
+        }
+    }
+
+    private void setText(TextView view, String text) {
+        if (view != null) {
+            view.setText(text);
+        }
+    }
+
+    private void setEnabled(View view, boolean enabled) {
+        if (view != null) {
+            view.setEnabled(enabled);
         }
     }
 

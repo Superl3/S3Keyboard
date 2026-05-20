@@ -47,6 +47,10 @@ final class ColorOption {
 
     @Override
     public String toString() {
-        return label;
+        return label + "  " + hex();
+    }
+
+    String hex() {
+        return String.format("#%06X", color & 0x00FFFFFF);
     }
 }
