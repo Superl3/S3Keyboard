@@ -887,7 +887,11 @@ public final class S3KeyboardService extends InputMethodService
 
     private void styleQuickButton(Button button, boolean selected) {
         SettingsUiPalette ui = SettingsUiPalette.from(this);
+        button.setAllCaps(false);
         button.setTextColor(selected ? ui.selectedText : ui.controlText);
+        button.setGravity(Gravity.CENTER);
+        button.setMinHeight(dp(44));
+        button.setPadding(dp(24), 0, dp(24), 0);
         GradientDrawable background = new GradientDrawable();
         background.setColor(selected ? ui.selectedFill : ui.controlFill);
         background.setCornerRadius(dp(8));

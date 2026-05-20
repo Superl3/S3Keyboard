@@ -82,11 +82,12 @@ public final class KeyboardThemeJsonTest {
         assertEquals(KeyboardSettings.DEFAULT_ENGLISH_LEFT_PADDING_DP, imported.englishLeftPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_ENGLISH_RIGHT_PADDING_DP, imported.englishRightPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_HANGUL_MAIN_SPECIAL_GAP_DP, imported.hangulMainSpecialGapDp);
-        assertEquals(11, imported.keyboardTopPaddingDp);
+        assertEquals(KeyboardSettings.DEFAULT_KEYBOARD_TOP_PADDING_DP, imported.keyboardTopPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_KEYBOARD_BOTTOM_PADDING_DP, imported.keyboardBottomPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_BOTTOM_ROW_TOP_PADDING_DP, imported.bottomRowTopPaddingDp);
         assertFalse(exported.contains("\"layout\""));
         assertFalse(exported.contains("\"hints\""));
+        assertFalse(exported.contains("\"keyboardTopPaddingDp\""));
         assertEquals(0xFFE95420, imported.keyColorOverrides.get("tap:a").intValue());
         assertEquals(0xFF00A676, imported.keyColorOverrides.get("space").intValue());
     }

@@ -515,11 +515,13 @@ public final class HangulKeyboardView extends View {
         if (textPaint == null) {
             return;
         }
-        Typeface primaryTypeface = typefaceFor(
+        Typeface primaryTypeface = KeyboardTypefaceCatalog.typefaceFor(
+                getContext(),
                 settings.fontFamily,
                 settings.primaryTextBold,
                 settings.primaryTextItalic);
-        Typeface secondaryTypeface = typefaceFor(
+        Typeface secondaryTypeface = KeyboardTypefaceCatalog.typefaceFor(
+                getContext(),
                 settings.fontFamily,
                 settings.secondaryTextBold,
                 settings.secondaryTextItalic);
@@ -532,26 +534,6 @@ public final class HangulKeyboardView extends View {
         textPaint.setTextSkewX(settings.primaryTextItalic ? -0.22f : 0f);
         hintPaint.setTextSkewX(settings.secondaryTextItalic ? -0.22f : 0f);
         overlayTextPaint.setTextSkewX(settings.primaryTextItalic ? -0.22f : 0f);
-    }
-
-    private Typeface typefaceFor(String fontFamily, boolean bold, boolean italic) {
-        int style = Typeface.NORMAL;
-        if (bold) {
-            style |= Typeface.BOLD;
-        }
-        if (italic) {
-            style |= Typeface.ITALIC;
-        }
-        switch (KeyboardSettings.normalizeFontFamily(fontFamily)) {
-            case KeyboardSettings.FONT_NOTO_SERIF_KR:
-                return Typeface.create("serif", style);
-            case KeyboardSettings.FONT_D2CODING:
-                return Typeface.create("monospace", style);
-            case KeyboardSettings.FONT_NOTO_SANS_KR:
-            case KeyboardSettings.FONT_DEFAULT:
-            default:
-                return Typeface.create("sans-serif", style);
-        }
     }
 
     private void layoutKeys(int width, int height) {

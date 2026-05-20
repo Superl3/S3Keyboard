@@ -8,10 +8,35 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 
 public final class ProductionReadinessConfigTest {
+    private static final String[] MOJIBAKE_MARKERS = {
+            "\uFFFD",
+            "?ㅻ",
+            "袁",
+            "湲",
+            "媛",
+            "蹂",
+            "寃",
+            "뚯",
+            "덉",
+            "쒖",
+            "珥",
+            "紐",
+            "쇱",
+            "ㅻ",
+            "⑤",
+            "곸",
+            "낅",
+            "젰",
+            "꾩",
+            "슦"
+    };
+
     @Test
     public void subtypeDeclaresAsciiCapableWithLegacyExtraValue() throws Exception {
         String methodXml = readWorkspaceFile("app/src/main/res/xml/method.xml");
@@ -21,15 +46,20 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
-    public void stringResourcesDoNotContainKnownMojibakeMarkers() throws Exception {
-        String stringsXml = readWorkspaceFile("app/src/main/res/values/strings.xml");
+    public void mainTextSourcesDoNotContainKnownMojibakeMarkers() throws Exception {
+        Path root = findWorkspaceRoot();
+        List<Path> files = new ArrayList<>();
+        collectTextFiles(root.resolve("app/src/main/java"), files);
+        collectTextFiles(root.resolve("app/src/main/res/values"), files);
 
-        assertFalse(stringsXml.contains("\uFFFD"));
-        assertFalse(stringsXml.contains("?ㅻ"));
-        assertFalse(stringsXml.contains("袁"));
-        assertFalse(stringsXml.contains("湲"));
-        assertFalse(stringsXml.contains("媛"));
-        assertFalse(stringsXml.contains("蹂"));
+        for (Path file : files) {
+            String text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+            for (String marker : MOJIBAKE_MARKERS) {
+                assertFalse(
+                        "Mojibake marker '" + marker + "' found in " + root.relativize(file),
+                        text.contains(marker));
+            }
+        }
     }
 
     @Test
@@ -64,6 +94,20 @@ public final class ProductionReadinessConfigTest {
     private String readWorkspaceFile(String relativePath) throws IOException {
         Path root = findWorkspaceRoot();
         return new String(Files.readAllBytes(root.resolve(relativePath)), StandardCharsets.UTF_8);
+    }
+
+    private void collectTextFiles(Path directory, List<Path> files) throws IOException {
+        if (!Files.isDirectory(directory)) {
+            return;
+        }
+        try (java.util.stream.Stream<Path> stream = Files.walk(directory)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String name = path.getFileName().toString();
+                        return name.endsWith(".java") || name.endsWith(".xml");
+                    })
+                    .forEach(files::add);
+        }
     }
 
     private Path findWorkspaceRoot() {

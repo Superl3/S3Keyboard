@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>S3Keyboard Theme Builder</title>
+  <title>New Dingul Theme Builder</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     <section class="editor">
       <header class="titlebar">
         <div>
-          <h1>S3Keyboard Theme Builder</h1>
+          <h1>New Dingul Theme Builder</h1>
           <p>Builds schemaVersion 1 theme JSON for the Android importer.</p>
         </div>
         <button id="copyJson" type="button">Copy JSON</button>
@@ -72,9 +72,15 @@
       </div>
 
       <section class="panel">
-        <h2>Key Text Overrides</h2>
+        <h2>Per-Key Text/Icon Overrides</h2>
         <p class="hint">One per line: <code>tap:q = #C75DFF</code>, <code>space = #F7EEDB</code>, <code>__dingul_center_vowel__ = #FFD25A</code>.</p>
-        <textarea id="overridesText" spellcheck="false"></textarea>
+        <textarea id="textOverridesText" spellcheck="false"></textarea>
+      </section>
+
+      <section class="panel">
+        <h2>Per-Key Background Overrides</h2>
+        <p class="hint">Optional. One per line: <code>enter = #F59E0B</code>, <code>backspace = #FBCFE8</code>, <code>tap:q = #222222</code>.</p>
+        <textarea id="backgroundOverridesText" spellcheck="false"></textarea>
       </section>
     </section>
 

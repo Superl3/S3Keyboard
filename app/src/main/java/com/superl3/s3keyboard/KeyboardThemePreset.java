@@ -390,8 +390,7 @@ final class KeyboardThemePreset {
                         + "\"borderWidthDp\":" + KeyboardSettings.DEFAULT_KEY_BORDER_WIDTH_DP + ","
                         + "\"keyGapDp\":" + keyGapDp + ","
                         + "\"depthEnabled\":" + depthEnabled + ","
-                        + "\"depthDp\":" + depthDp + ","
-                        + "\"keyboardTopPaddingDp\":" + KeyboardSettings.DEFAULT_KEYBOARD_TOP_PADDING_DP
+                        + "\"depthDp\":" + depthDp
                         + "},"
                         + numberRowBlock(id)
                         + typographyBlock(id, fontFamily)

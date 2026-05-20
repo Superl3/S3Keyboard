@@ -49,7 +49,6 @@ final class KeyboardThemeJson {
             shape.put("keyGapDp", safeSettings.keyGapDp);
             shape.put("depthEnabled", safeSettings.keyDepthEnabled);
             shape.put("depthDp", safeSettings.keyDepthDp);
-            shape.put("keyboardTopPaddingDp", safeSettings.keyboardTopPaddingDp);
             root.put("shape", shape);
 
             JSONObject numberRow = new JSONObject();
@@ -144,11 +143,6 @@ final class KeyboardThemeJson {
                         .withKeyDepth(
                                 shape.optBoolean("depthEnabled", themed.keyDepthEnabled),
                                 shape.optInt("depthDp", themed.keyDepthDp));
-                themed = themed.withLayoutSpacing(
-                        themed.hangulMainSpecialGapDp,
-                        shape.optInt("keyboardTopPaddingDp", themed.keyboardTopPaddingDp),
-                        themed.keyboardBottomPaddingDp,
-                        themed.bottomRowTopPaddingDp);
             }
 
             if (typography != null) {

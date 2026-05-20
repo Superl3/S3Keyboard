@@ -23,7 +23,7 @@ final class SettingsViewStyler {
         button.setTextColor(selected ? ui.selectedText : ui.controlText);
         button.setGravity(Gravity.CENTER);
         button.setMinHeight(dp(context, 44));
-        button.setPadding(dp(context, 18), 0, dp(context, 18), 0);
+        button.setPadding(dp(context, 24), 0, dp(context, 24), 0);
         GradientDrawable background = new GradientDrawable();
         background.setColor(selected ? ui.selectedFill : ui.controlFill);
         background.setCornerRadius(dp(context, 8));

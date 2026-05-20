@@ -1,22 +1,21 @@
 const colorFields = [
-  ["keyIdle", "Default key"],
-  ["functionKey", "Function key"],
-  ["primaryFunctionKey", "Primary function"],
-  ["accentKey", "Accent key"],
-  ["keyPressed", "Pressed"],
-  ["keyboardBackground", "Keyboard bg"],
-  ["border", "Border"],
-  ["depth", "Depth"],
-  ["accent", "Text accent"],
-  ["secondary", "Secondary text"]
+  ["keyIdle", "Global - Alpha", "Regular text keys and the spacebar background."],
+  ["functionKey", "Global - Modifier", "Options, reserved phrase, and language command backgrounds."],
+  ["primaryFunctionKey", "Global - Primary", "Shift, backspace, and enter backgrounds."],
+  ["accentKey", "Global - Accent", "Accent key group background, including Dingul accent special keys."],
+  ["keyPressed", "Pressed", "Temporary key background while a key is pressed."],
+  ["keyboardBackground", "Keyboard background", "Area behind and between keys."],
+  ["border", "Border", "Key outline color. Depth falls back to this when custom depth is off."],
+  ["depth", "Depth", "Optional pseudo-block lower edge color."],
+  ["accent", "Text primary", "Main text, icons, shift indicator fallback, and preview text."],
+  ["secondary", "Text secondary", "Slide hints and secondary text."]
 ];
 
 const shapeFields = [
   ["roundnessDp", "Roundness", 0, 24],
-  ["borderWidthDp", "Border width", 0, 8],
-  ["keyGapDp", "Key gap", 0, 18],
-  ["depthDp", "Depth", 0, 8],
-  ["keyboardTopPaddingDp", "Top padding", 0, 48]
+  ["borderWidthDp", "Outline density", 0, 8],
+  ["keyGapDp", "Visual key gap", 0, 18],
+  ["depthDp", "Depth height", 0, 8]
 ];
 
 const presets = {
@@ -34,12 +33,11 @@ const presets = {
       accent: "#111827",
       secondary: "#707780"
     },
-    shape: { roundnessDp: 5, borderWidthDp: 1, keyGapDp: 5, depthEnabled: false, depthDp: 0, keyboardTopPaddingDp: 6 },
+    shape: { roundnessDp: 5, borderWidthDp: 1, keyGapDp: 5, depthEnabled: false, depthDp: 0 },
     typography: defaultTypography(false, false),
     additionalNumberRow: { colorMode: "full_dimmed" },
-    keyTextColorOverrides: {
-      "shiftIndicator": "#2563EB"
-    }
+    keyTextColorOverrides: { shiftIndicator: "#2563EB" },
+    keyBackgroundColorOverrides: {}
   },
   "marigold-fiesta-light": {
     name: "Marigold Fiesta Light",
@@ -55,7 +53,7 @@ const presets = {
       accent: "#25201C",
       secondary: "#64605A"
     },
-    shape: { roundnessDp: 4, borderWidthDp: 1, keyGapDp: 5, depthEnabled: true, depthDp: 2, keyboardTopPaddingDp: 6 },
+    shape: { roundnessDp: 4, borderWidthDp: 1, keyGapDp: 5, depthEnabled: true, depthDp: 2 },
     typography: defaultTypography(true, true),
     additionalNumberRow: { colorMode: "center_dimmed" },
     keyTextColorOverrides: {
@@ -63,12 +61,19 @@ const presets = {
       "tap:w": "#008B82",
       "tap:e": "#B85F19",
       "tap:r": "#C02666",
+      "tap:t": "#4B8B2C",
+      "tap:y": "#F08A00",
+      "tap:u": "#8B5FBF",
+      "tap:i": "#D94686",
+      "tap:o": "#007C89",
+      "tap:p": "#F06423",
       "shiftIndicator": "#008B82",
       "__dingul_center_vowel__": "#C98900",
       "__dingul_wide_vowel__": "#007C89",
       "space": "#2B2D31",
       "enter": "#A95B00"
-    }
+    },
+    keyBackgroundColorOverrides: {}
   },
   "marigold-fiesta-dark": {
     name: "Marigold Fiesta Dark",
@@ -84,7 +89,7 @@ const presets = {
       accent: "#F8F1DF",
       secondary: "#B8A9BF"
     },
-    shape: { roundnessDp: 4, borderWidthDp: 1, keyGapDp: 5, depthEnabled: true, depthDp: 2, keyboardTopPaddingDp: 6 },
+    shape: { roundnessDp: 4, borderWidthDp: 1, keyGapDp: 5, depthEnabled: true, depthDp: 2 },
     typography: defaultTypography(true, true),
     additionalNumberRow: { colorMode: "center_dimmed" },
     keyTextColorOverrides: {
@@ -92,12 +97,19 @@ const presets = {
       "tap:w": "#4DE4D2",
       "tap:e": "#FF9B48",
       "tap:r": "#FF5DAE",
+      "tap:t": "#9BE564",
+      "tap:y": "#FFD25A",
+      "tap:u": "#A78BFA",
+      "tap:i": "#F472B6",
+      "tap:o": "#36E7F4",
+      "tap:p": "#FF9F32",
       "shiftIndicator": "#36E7F4",
       "__dingul_center_vowel__": "#FFD25A",
       "__dingul_wide_vowel__": "#36E7F4",
       "space": "#F7EEDB",
       "enter": "#FF9F32"
-    }
+    },
+    keyBackgroundColorOverrides: {}
   }
 };
 
@@ -121,7 +133,8 @@ const ids = {
   secondaryBold: document.getElementById("secondaryTextBold"),
   secondaryItalic: document.getElementById("secondaryTextItalic"),
   numberRow: document.getElementById("numberRowMode"),
-  overrides: document.getElementById("overridesText"),
+  textOverrides: document.getElementById("textOverridesText"),
+  backgroundOverrides: document.getElementById("backgroundOverridesText"),
   output: document.getElementById("jsonOutput"),
   preview: document.getElementById("keyboardPreview"),
   status: document.getElementById("status")
@@ -158,11 +171,20 @@ function defaultTypography(hangulHints, englishHints) {
 }
 
 function buildColorControls() {
-  colorFields.forEach(([key, label]) => {
+  colorFields.forEach(([key, label, description]) => {
     const row = document.createElement("label");
     row.className = "color-row";
-    row.innerHTML = `<span>${label}</span><input id="color-${key}" type="color"><input id="text-${key}" type="text">`;
+    row.innerHTML = `
+      <span>${label}</span>
+      <button class="info" type="button" aria-label="${label} help">i</button>
+      <input id="color-${key}" type="color">
+      <input id="text-${key}" type="text">
+    `;
     ids.colors.appendChild(row);
+    row.querySelector(".info").addEventListener("click", event => {
+      event.preventDefault();
+      alert(description);
+    });
     row.querySelector(`#color-${key}`).addEventListener("input", event => {
       state.colors[key] = event.target.value.toUpperCase();
       document.getElementById(`text-${key}`).value = state.colors[key];
@@ -230,8 +252,12 @@ function bindStaticControls() {
     state.additionalNumberRow.colorMode = ids.numberRow.value;
     update();
   });
-  ids.overrides.addEventListener("input", () => {
-    state.keyTextColorOverrides = parseOverrides(ids.overrides.value);
+  ids.textOverrides.addEventListener("input", () => {
+    state.keyTextColorOverrides = parseOverrides(ids.textOverrides.value);
+    update();
+  });
+  ids.backgroundOverrides.addEventListener("input", () => {
+    state.keyBackgroundColorOverrides = parseOverrides(ids.backgroundOverrides.value);
     update();
   });
   document.getElementById("copyJson").addEventListener("click", copyJson);
@@ -259,7 +285,8 @@ function renderForm() {
   ids.secondaryBold.checked = Boolean(state.typography.secondaryTextBold);
   ids.secondaryItalic.checked = Boolean(state.typography.secondaryTextItalic);
   ids.numberRow.value = state.additionalNumberRow.colorMode;
-  ids.overrides.value = formatOverrides(state.keyTextColorOverrides);
+  ids.textOverrides.value = formatOverrides(state.keyTextColorOverrides);
+  ids.backgroundOverrides.value = formatOverrides(state.keyBackgroundColorOverrides);
 }
 
 function update() {
@@ -275,7 +302,7 @@ function update() {
 }
 
 function buildTheme() {
-  return {
+  const theme = {
     schemaVersion: 1,
     name: ids.name.value.trim() || "Untitled Theme",
     author: ids.author.value.trim() || "local",
@@ -291,18 +318,29 @@ function buildTheme() {
       accent: state.colors.accent,
       secondary: state.colors.secondary
     },
-    shape: { ...state.shape },
+    shape: {
+      roundnessDp: state.shape.roundnessDp,
+      borderWidthDp: state.shape.borderWidthDp,
+      keyGapDp: state.shape.keyGapDp,
+      depthEnabled: Boolean(state.shape.depthEnabled),
+      depthDp: state.shape.depthDp
+    },
     additionalNumberRow: { colorMode: state.additionalNumberRow.colorMode },
     typography: { ...state.typography },
     keyTextColorOverrides: { ...state.keyTextColorOverrides }
   };
+  if (Object.keys(state.keyBackgroundColorOverrides || {}).length > 0) {
+    theme.keyBackgroundColorOverrides = { ...state.keyBackgroundColorOverrides };
+  }
+  return theme;
 }
 
 function renderPreview(theme) {
   ids.preview.style.background = theme.colors.keyboardBackground;
   ids.preview.style.gap = `${theme.shape.keyGapDp}px`;
-  ids.preview.style.paddingTop = `${10 + theme.shape.keyboardTopPaddingDp}px`;
+  ids.preview.style.paddingTop = "16px";
   ids.preview.style.setProperty("--depth-color", theme.colors.depth || theme.colors.border);
+  ids.preview.style.fontFamily = fontCss(theme.typography.fontFamily);
   ids.preview.innerHTML = "";
 
   const rows = [
@@ -316,18 +354,17 @@ function renderPreview(theme) {
   rows.forEach(row => {
     const rowEl = document.createElement("div");
     rowEl.className = "key-row";
-    rowEl.style.gridTemplateColumns = row.map(key => key === "Space" ? "2fr" : "1fr").join(" ");
+    rowEl.style.gridTemplateColumns = row.map(key => key === "Space" ? "2.5fr" : "1fr").join(" ");
     row.forEach(label => {
       const key = document.createElement("div");
-      const control = ["Shift", "Bksp", "Lang", "Space", "Enter"].includes(label);
+      const role = roleForPreview(label);
       const number = /^[0-9]$/.test(label);
-      key.className = "key";
-      key.textContent = label;
       const numberAccent = number && numberRowUsesAccent(theme.additionalNumberRow.colorMode, label);
-      key.style.background = number
-        ? (numberAccent ? theme.colors.accentKey : theme.colors.keyIdle)
-        : (control ? theme.colors.accentKey : theme.colors.keyIdle);
+      const bgOverride = backgroundColorFor(label, theme);
+      key.className = "key";
+      key.style.background = bgOverride || backgroundForRole(role, theme, numberAccent);
       key.style.borderColor = theme.colors.border;
+      key.style.borderWidth = `${theme.shape.borderWidthDp}px`;
       key.style.borderRadius = `${theme.shape.roundnessDp}px`;
       key.style.boxShadow = theme.shape.depthEnabled
         ? `inset 0 -${theme.shape.depthDp}px ${theme.colors.depth || theme.colors.border}`
@@ -335,6 +372,11 @@ function renderPreview(theme) {
       key.style.color = number
         ? (numberAccent ? theme.colors.secondary : theme.colors.accent)
         : textColorFor(label, theme);
+      key.style.fontSize = `${14 * theme.typography.primaryTextSizePercent / 100}px`;
+      key.style.fontWeight = theme.typography.primaryTextBold ? "700" : "400";
+      key.style.fontStyle = theme.typography.primaryTextItalic ? "italic" : "normal";
+      key.textContent = label;
+      appendSubLegend(key, label, theme);
       if (label === "Shift") {
         const dot = document.createElement("span");
         dot.className = "shift-dot";
@@ -347,6 +389,57 @@ function renderPreview(theme) {
   });
 }
 
+function appendSubLegend(key, label, theme) {
+  const sub = subLegendFor(label);
+  if (!sub || !theme.typography.showEnglishSlideHints) {
+    return;
+  }
+  const item = document.createElement("span");
+  item.className = "sublegend";
+  item.textContent = sub;
+  item.style.color = theme.colors.secondary;
+  item.style.fontSize = `${10 * theme.typography.secondaryTextSizePercent / 100}px`;
+  item.style.fontWeight = theme.typography.secondaryTextBold ? "700" : "400";
+  item.style.fontStyle = theme.typography.secondaryTextItalic ? "italic" : "normal";
+  key.appendChild(item);
+}
+
+function subLegendFor(label) {
+  const map = {
+    q: "1", w: "2", e: "3", r: "4", t: "5", y: "6", u: "7", i: "8", o: "9", p: "0",
+    a: "@", s: "#%", d: "/", f: "*", g: "~^", h: "-_", j: "+=", k: "<>", l: "♥",
+    z: "()", x: "[]", c: ":", v: "\"", b: "&|", n: "!", m: "?"
+  };
+  return map[label] || "";
+}
+
+function roleForPreview(label) {
+  if (["Shift", "Bksp", "Enter"].includes(label)) {
+    return "primary";
+  }
+  if (["Lang"].includes(label)) {
+    return "modifier";
+  }
+  return "alpha";
+}
+
+function backgroundForRole(role, theme, numberAccent) {
+  if (numberAccent) {
+    return theme.colors.accentKey;
+  }
+  switch (role) {
+    case "primary":
+      return theme.colors.primaryFunctionKey;
+    case "modifier":
+      return theme.colors.functionKey;
+    case "accent":
+      return theme.colors.accentKey;
+    case "alpha":
+    default:
+      return theme.colors.keyIdle;
+  }
+}
+
 function numberRowUsesAccent(mode, label) {
   if (mode === "full_default") {
     return false;
@@ -357,13 +450,52 @@ function numberRowUsesAccent(mode, label) {
   return true;
 }
 
+function overrideKeyForLabel(label) {
+  if (label === "Shift") {
+    return "shift";
+  }
+  if (label === "Bksp") {
+    return "backspace";
+  }
+  if (label === "Lang") {
+    return "language";
+  }
+  if (label === "Space") {
+    return "space";
+  }
+  if (label === "Enter") {
+    return "enter";
+  }
+  return label.length === 1 ? `tap:${label.toLowerCase()}` : label.toLowerCase();
+}
+
 function textColorFor(label, theme) {
-  const key = label.length === 1 ? `tap:${label.toLowerCase()}` : label.toLowerCase();
+  const key = overrideKeyForLabel(label);
   return theme.keyTextColorOverrides[key] || theme.colors.accent;
 }
 
+function backgroundColorFor(label, theme) {
+  const key = overrideKeyForLabel(label);
+  const overrides = theme.keyBackgroundColorOverrides || {};
+  return overrides[key] || null;
+}
+
+function fontCss(fontFamily) {
+  switch (fontFamily) {
+    case "noto_serif_kr":
+      return `"Noto Serif KR", Georgia, serif`;
+    case "d2coding":
+      return `"D2Coding", "Cascadia Mono", Consolas, monospace`;
+    case "noto_sans_kr":
+      return `"Noto Sans KR", "Segoe UI", sans-serif`;
+    case "default":
+    default:
+      return `"Segoe UI", system-ui, sans-serif`;
+  }
+}
+
 function validateTheme(theme) {
-  const required = ["keyIdle", "keyPressed", "keyboardBackground", "accent", "secondary", "accentKey"];
+  const required = ["keyIdle", "functionKey", "primaryFunctionKey", "keyPressed", "keyboardBackground", "border", "accent", "secondary", "accentKey"];
   const missing = required.filter(key => !normalizeColor(theme.colors[key]));
   if (missing.length) {
     return `Missing or invalid colors: ${missing.join(", ")}`;
@@ -377,15 +509,17 @@ function importJson() {
     if (parsed.schemaVersion !== 1) {
       throw new Error("Only schemaVersion 1 is supported.");
     }
+    const base = cloneTheme(presets["ios-clean-light"]);
     state = {
       name: parsed.name || "Imported Theme",
-      colors: { ...cloneTheme(presets["ios-clean-light"]).colors, ...(parsed.colors || {}) },
-      shape: { ...cloneTheme(presets["ios-clean-light"]).shape, ...(parsed.shape || {}) },
-      typography: { ...cloneTheme(presets["ios-clean-light"]).typography, ...(parsed.typography || {}) },
+      colors: { ...base.colors, ...(parsed.colors || {}) },
+      shape: { ...base.shape, ...(parsed.shape || {}) },
+      typography: { ...base.typography, ...(parsed.typography || {}) },
       additionalNumberRow: {
         colorMode: parsed.additionalNumberRow?.colorMode || "full_dimmed"
       },
-      keyTextColorOverrides: parsed.keyTextColorOverrides || parsed.keyColorOverrides || {}
+      keyTextColorOverrides: parsed.keyTextColorOverrides || parsed.keyColorOverrides || {},
+      keyBackgroundColorOverrides: parsed.keyBackgroundColorOverrides || {}
     };
     renderForm();
     update();

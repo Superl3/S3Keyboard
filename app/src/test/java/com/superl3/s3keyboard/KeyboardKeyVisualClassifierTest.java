@@ -27,19 +27,19 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
-    public void enterUsesAccentRoleWhileOtherFunctionKeysUseModifierRole() {
+    public void primaryInputControlKeysUsePrimaryFunctionRole() {
         assertEquals(
-                KeyVisualRole.FUNCTION,
+                KeyVisualRole.PRIMARY_FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         KeyboardSettings.defaults(),
                         GestureKey.command("Delete", KeyboardCommands.CMD_DELETE, 3)));
         assertEquals(
-                KeyVisualRole.ACCENT,
+                KeyVisualRole.PRIMARY_FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         KeyboardSettings.defaults(),
                         GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3)));
         assertEquals(
-                KeyVisualRole.FUNCTION,
+                KeyVisualRole.PRIMARY_FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         KeyboardSettings.defaults().withKeyboardMode(KeyboardMode.ENGLISH),
                         GestureKey.command(
@@ -74,12 +74,12 @@ public final class KeyboardKeyVisualClassifierTest {
         KeyboardSettings settings = KeyboardSettings.defaults();
 
         assertEquals(
-                settings.functionKeyColor,
+                settings.primaryFunctionKeyColor,
                 KeyboardKeyVisualClassifier.colorFor(
                         settings,
                         GestureKey.command("Delete", KeyboardCommands.CMD_DELETE, 3)));
         assertEquals(
-                settings.accentKeyColor,
+                settings.primaryFunctionKeyColor,
                 KeyboardKeyVisualClassifier.colorFor(
                         settings,
                         GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3)));

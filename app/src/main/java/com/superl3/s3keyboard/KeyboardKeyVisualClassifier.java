@@ -8,11 +8,11 @@ final class KeyboardKeyVisualClassifier {
         if (key == null) {
             return KeyVisualRole.NORMAL;
         }
-        if (isAccentFunctionKey(key)) {
-            return KeyVisualRole.ACCENT;
-        }
         if (isHangulAccentKey(settings, key)) {
             return KeyVisualRole.ACCENT;
+        }
+        if (isPrimaryFunctionKey(key)) {
+            return KeyVisualRole.PRIMARY_FUNCTION;
         }
         if (isDingulVowelCommandKey(key)) {
             return KeyVisualRole.NORMAL;
@@ -31,6 +31,9 @@ final class KeyboardKeyVisualClassifier {
         KeyVisualRole role = roleFor(settings, key);
         if (role == KeyVisualRole.ACCENT) {
             return settings.accentKeyColor;
+        }
+        if (role == KeyVisualRole.PRIMARY_FUNCTION) {
+            return settings.primaryFunctionKeyColor;
         }
         if (isAdditionalNumberRowKey(key)) {
             return additionalNumberRowColor(settings, key);
@@ -75,11 +78,14 @@ final class KeyboardKeyVisualClassifier {
         return override == null ? 0xFF06B6D4 : override;
     }
 
-    static boolean isAccentFunctionKey(GestureKey key) {
+    static boolean isPrimaryFunctionKey(GestureKey key) {
         if (key == null) {
             return false;
         }
-        return KeyboardCommands.CMD_ENTER.equals(key.tap);
+        return KeyboardCommands.CMD_DELETE.equals(key.tap)
+                || KeyboardCommands.CMD_ENTER.equals(key.tap)
+                || KeyboardCommands.CMD_SHIFT_ONCE.equals(key.tap)
+                || KeyboardCommands.CMD_SHIFT_LOCK.equals(key.tap);
     }
 
     private static Integer overrideColorFor(KeyboardSettings settings, GestureKey key) {

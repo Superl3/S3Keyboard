@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
@@ -53,6 +54,7 @@ public final class ThemeEditorActivity extends Activity {
     private Spinner fontFamilySpinner;
     private Spinner selectedKeyColorSpinner;
     private Spinner selectedKeyBackgroundColorSpinner;
+    private Button addSelectedKeyOverrideButton;
     private Button resetSelectedKeyButton;
     private RadioGroup modeGroup;
     private RadioGroup editScopeGroup;
@@ -76,6 +78,18 @@ public final class ThemeEditorActivity extends Activity {
     private TextView keyDepthValue;
     private TextView primaryTextSizeValue;
     private TextView secondaryTextSizeValue;
+    private View keyIdleColorSwatch;
+    private View functionKeyColorSwatch;
+    private View primaryFunctionKeyColorSwatch;
+    private View accentKeyColorSwatch;
+    private View keyPressedColorSwatch;
+    private View keyboardBackgroundColorSwatch;
+    private View borderColorSwatch;
+    private View depthColorSwatch;
+    private View accentColorSwatch;
+    private View secondaryColorSwatch;
+    private View selectedKeyColorSwatch;
+    private View selectedKeyBackgroundColorSwatch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,10 +162,11 @@ public final class ThemeEditorActivity extends Activity {
                 1f));
 
         addThemeSaveControls(editorRoot);
+        LinearLayout globalSection = addExpandableSection(editorRoot, "Global", true);
+        addColorControls(addExpandableSection(globalSection, "Colors", true));
+        addShapeControls(addExpandableSection(globalSection, "Shape", false));
+        addTypographyControls(addExpandableSection(globalSection, "Typography", false));
         addSelectedKeyInspector(editorRoot);
-        addColorControls(addExpandableSection(editorRoot, "전체 색상", true));
-        addShapeControls(addExpandableSection(editorRoot, "전체 형태", false));
-        addTypographyControls(addExpandableSection(editorRoot, "글자 스타일", false));
         return root;
     }
 
@@ -201,6 +216,7 @@ public final class ThemeEditorActivity extends Activity {
             updateSettings(settings.withKeyColorOverrides(overrides));
         });
         section.addView(label("선택 키 글자/아이콘 색상"), matchWrapWithTop(8));
+        selectedKeyColorSwatch = addInlineSwatch(section, settings.accentColor);
         section.addView(selectedKeyColorSpinner, matchWrap());
 
         selectedKeyBackgroundColorSpinner = colorSpinner(color -> {
@@ -212,7 +228,26 @@ public final class ThemeEditorActivity extends Activity {
             updateSettings(settings.withKeyColorOverrides(overrides));
         });
         section.addView(label("선택 키 배경색"), matchWrapWithTop(8));
+        selectedKeyBackgroundColorSwatch = addInlineSwatch(section, settings.keyIdleColor);
         section.addView(selectedKeyBackgroundColorSpinner, matchWrap());
+
+        addSelectedKeyOverrideButton = new Button(this);
+        addSelectedKeyOverrideButton.setText("+ 선택 키 재정의 추가");
+        styleSystemButton(addSelectedKeyOverrideButton);
+        addSelectedKeyOverrideButton.setOnClickListener(v -> {
+            if (selectedOverrideKey.isEmpty()) {
+                return;
+            }
+            Map<String, Integer> overrides = new HashMap<>(settings.keyColorOverrides);
+            overrides.put(
+                    selectedOverrideKey,
+                    KeyboardKeyVisualClassifier.textColorFor(settings, selectedKey));
+            overrides.put(
+                    backgroundOverrideKey(selectedOverrideKey),
+                    KeyboardKeyVisualClassifier.colorFor(settings, selectedKey));
+            updateSettings(settings.withKeyColorOverrides(overrides));
+        });
+        section.addView(addSelectedKeyOverrideButton, buttonParams());
 
         resetSelectedKeyButton = new Button(this);
         resetSelectedKeyButton.setText("선택 키 재정의 초기화");
@@ -236,8 +271,50 @@ public final class ThemeEditorActivity extends Activity {
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 settings.secondaryColor)));
-        addColorHeader(root, "기본 키", "글자, 모음, 기호, 스페이스 키의 기본 배경색입니다.");
+        keyIdleColorSwatch = addColorControl(
+                root,
+                "Global - Alpha / 기본 키",
+                "글자, 모음, 기호, 스페이스처럼 일반 입력 키의 기본 배경색입니다.",
+                keyIdleColorSpinner);
         root.addView(keyIdleColorSpinner, matchWrap());
+
+        functionKeyColorSpinner = colorSpinner(color -> updateSettings(settings.withExtendedThemeColors(
+                settings.keyIdleColor,
+                settings.keyPressedColor,
+                settings.keyboardBackgroundColor,
+                settings.accentColor,
+                settings.secondaryColor,
+                color,
+                settings.primaryFunctionKeyColor,
+                settings.accentKeyColor,
+                settings.borderColor,
+                settings.customDepthColorEnabled,
+                settings.depthColor)));
+        functionKeyColorSwatch = addColorControl(
+                root,
+                "Global - Modifier / 기능 키",
+                "옵션, 예약어, 한/영처럼 입력 보조 동작을 실행하는 키의 배경색입니다.",
+                functionKeyColorSpinner);
+        root.addView(functionKeyColorSpinner, matchWrap());
+
+        primaryFunctionKeyColorSpinner = colorSpinner(color -> updateSettings(settings.withExtendedThemeColors(
+                settings.keyIdleColor,
+                settings.keyPressedColor,
+                settings.keyboardBackgroundColor,
+                settings.accentColor,
+                settings.secondaryColor,
+                settings.functionKeyColor,
+                color,
+                settings.accentKeyColor,
+                settings.borderColor,
+                settings.customDepthColorEnabled,
+                settings.depthColor)));
+        primaryFunctionKeyColorSwatch = addColorControl(
+                root,
+                "Global - Primary / 주요 기능 키",
+                "Shift, Backspace, Enter처럼 입력 흐름을 직접 바꾸는 주요 기능 키의 배경색입니다.",
+                primaryFunctionKeyColorSpinner);
+        root.addView(primaryFunctionKeyColorSpinner, matchWrap());
 
         accentKeyColorSpinner = colorSpinner(color -> updateSettings(settings.withExtendedThemeColors(
                 settings.keyIdleColor,
@@ -251,7 +328,11 @@ public final class ThemeEditorActivity extends Activity {
                 settings.borderColor,
                 settings.customDepthColorEnabled,
                 settings.depthColor)));
-        addColorHeader(root, "강조 키", "딩굴 특수열과 테마에서 강조되는 키 그룹의 배경색입니다.");
+        accentKeyColorSwatch = addColorControl(
+                root,
+                "Global - Accent / 강조 키",
+                "딩굴 특수열과 테마에서 강조되는 키 그룹의 배경색입니다.",
+                accentKeyColorSpinner);
         root.addView(accentKeyColorSpinner, matchWrap());
 
         keyPressedColorSpinner = colorSpinner(color -> updateSettings(settings.withThemeColors(
@@ -260,7 +341,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 settings.secondaryColor)));
-        addColorHeader(root, "눌림", "키를 누르고 있는 동안 잠시 표시되는 키 배경색입니다.");
+        keyPressedColorSwatch = addColorControl(root, "Pressed / 눌림", "키를 누르고 있는 동안 잠시 표시되는 키 배경색입니다.", keyPressedColorSpinner);
         root.addView(keyPressedColorSpinner, matchWrap());
 
         keyboardBackgroundColorSpinner = colorSpinner(color -> updateSettings(settings.withThemeColors(
@@ -269,7 +350,7 @@ public final class ThemeEditorActivity extends Activity {
                 color,
                 settings.accentColor,
                 settings.secondaryColor)));
-        addColorHeader(root, "키보드 배경", "키 사이와 키 뒤쪽 영역의 색상입니다.");
+        keyboardBackgroundColorSwatch = addColorControl(root, "Keyboard background / 키보드 배경", "키 사이와 키 뒤쪽 영역의 색상입니다.", keyboardBackgroundColorSpinner);
         root.addView(keyboardBackgroundColorSpinner, matchWrap());
 
         borderColorSpinner = colorSpinner(color -> updateSettings(settings.withExtendedThemeColors(
@@ -284,7 +365,7 @@ public final class ThemeEditorActivity extends Activity {
                 color,
                 settings.customDepthColorEnabled,
                 settings.depthColor)));
-        addColorHeader(root, "테두리", "각 키 외곽선 색상입니다. 입체 효과 색상을 따로 지정하지 않으면 이 색상을 기준으로 씁니다.");
+        borderColorSwatch = addColorControl(root, "Border / 테두리", "각 키 외곽선 색상입니다. 입체 효과 색상을 따로 지정하지 않으면 이 색상을 기준으로 씁니다.", borderColorSpinner);
         root.addView(borderColorSpinner, matchWrap());
 
         customDepthColorCheckBox = checkBox("입체 효과 색상 직접 지정", checked ->
@@ -292,7 +373,7 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(customDepthColorCheckBox, matchWrapWithTop(12));
 
         depthColorSpinner = colorSpinner(color -> updateSettings(settings.withDepthColor(true, color)));
-        addColorHeader(root, "입체 효과 색상", "키 아래쪽 입체 효과에 쓰는 색상입니다. 입체 효과가 꺼져 있으면 적용되지 않습니다.");
+        depthColorSwatch = addColorControl(root, "Depth / 입체 효과 색상", "키 아래쪽 입체 효과에 쓰는 색상입니다. 입체 효과가 꺼져 있으면 적용되지 않습니다.", depthColorSpinner);
         root.addView(depthColorSpinner, matchWrap());
 
         accentColorSpinner = colorSpinner(color -> updateSettings(settings.withThemeColors(
@@ -301,7 +382,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.keyboardBackgroundColor,
                 color,
                 settings.secondaryColor)));
-        addColorHeader(root, "주 글자", "키 중앙 글자, 아이콘, 선택 표시, 입력 미리보기의 기본 색상입니다.");
+        accentColorSwatch = addColorControl(root, "Text primary / 주 글자", "키 중앙 글자, 아이콘, 선택 표시, 입력 미리보기의 기본 색상입니다.", accentColorSpinner);
         root.addView(accentColorSpinner, matchWrap());
 
         secondaryColorSpinner = colorSpinner(color -> updateSettings(settings.withThemeColors(
@@ -310,7 +391,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 color)));
-        addColorHeader(root, "보조 글자", "슬라이드 힌트, 보조 라벨, 비활성 아이콘 디테일의 색상입니다.");
+        secondaryColorSwatch = addColorControl(root, "Text secondary / 보조 글자", "슬라이드 힌트, 보조 라벨, 비활성 아이콘 디테일의 색상입니다.", secondaryColorSpinner);
         root.addView(secondaryColorSpinner, matchWrap());
     }
 
@@ -431,6 +512,8 @@ public final class ThemeEditorActivity extends Activity {
         setProgress(primaryTextSizeSeekBar, settings.primaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
         setProgress(secondaryTextSizeSeekBar, settings.secondaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
         setSelection(keyIdleColorSpinner, indexOfColor(settings.keyIdleColor));
+        setSelection(functionKeyColorSpinner, indexOfColor(settings.functionKeyColor));
+        setSelection(primaryFunctionKeyColorSpinner, indexOfColor(settings.primaryFunctionKeyColor));
         setSelection(accentKeyColorSpinner, indexOfColor(settings.accentKeyColor));
         setSelection(keyPressedColorSpinner, indexOfColor(settings.keyPressedColor));
         setSelection(keyboardBackgroundColorSpinner, indexOfColor(settings.keyboardBackgroundColor));
@@ -447,6 +530,16 @@ public final class ThemeEditorActivity extends Activity {
         setChecked(secondaryTextItalicCheckBox, settings.secondaryTextItalic);
         setEnabled(depthColorSpinner, settings.customDepthColorEnabled);
         setEnabled(keyDepthSeekBar, settings.keyDepthEnabled);
+        setSwatch(keyIdleColorSwatch, settings.keyIdleColor);
+        setSwatch(functionKeyColorSwatch, settings.functionKeyColor);
+        setSwatch(primaryFunctionKeyColorSwatch, settings.primaryFunctionKeyColor);
+        setSwatch(accentKeyColorSwatch, settings.accentKeyColor);
+        setSwatch(keyPressedColorSwatch, settings.keyPressedColor);
+        setSwatch(keyboardBackgroundColorSwatch, settings.keyboardBackgroundColor);
+        setSwatch(borderColorSwatch, settings.borderColor);
+        setSwatch(depthColorSwatch, settings.customDepthColorEnabled ? settings.depthColor : settings.borderColor);
+        setSwatch(accentColorSwatch, settings.accentColor);
+        setSwatch(secondaryColorSwatch, settings.secondaryColor);
 
         setText(roundnessValue, "둥글기: " + settings.keyRoundnessDp + "dp");
         setText(keyBorderWidthValue, "테두리 굵기: " + settings.keyBorderWidthDp + "dp");
@@ -473,11 +566,12 @@ public final class ThemeEditorActivity extends Activity {
                 : KeyVisualRole.NORMAL;
         selectedKeyLabel.setText(keySelected
                 ? "선택: " + displayKeyName(selectedKey)
-                        + " / 그룹: " + role.name().toLowerCase()
+                        + " / 그룹: " + visualRoleLabel(role)
                         + " / 키: " + selectedOverrideKey
                 : "선택된 키 없음");
         selectedKeyColorSpinner.setEnabled(keyEdit);
         selectedKeyBackgroundColorSpinner.setEnabled(keyEdit);
+        addSelectedKeyOverrideButton.setEnabled(keyEdit);
         boolean hasTextOverride = keySelected && settings.keyColorOverrides.containsKey(
                 KeyboardSettings.normalizeKeyOverrideName(selectedOverrideKey));
         boolean hasBackgroundOverride = keySelected && settings.keyColorOverrides.containsKey(
@@ -493,11 +587,17 @@ public final class ThemeEditorActivity extends Activity {
         boolean wasSyncing = syncing;
         syncing = true;
         setSelection(selectedKeyColorSpinner, indexOfColor(override == null ? settings.accentColor : override));
+        setSwatch(selectedKeyColorSwatch, override == null ? settings.accentColor : override);
         setSelection(
                 selectedKeyBackgroundColorSpinner,
                 indexOfColor(backgroundOverride == null
                         ? KeyboardKeyVisualClassifier.colorFor(settings, selectedKey)
                         : backgroundOverride));
+        setSwatch(
+                selectedKeyBackgroundColorSwatch,
+                backgroundOverride == null
+                        ? KeyboardKeyVisualClassifier.colorFor(settings, selectedKey)
+                        : backgroundOverride);
         syncing = wasSyncing;
     }
 
@@ -546,6 +646,23 @@ public final class ThemeEditorActivity extends Activity {
         return key.tap == null ? "" : key.tap;
     }
 
+    private String visualRoleLabel(KeyVisualRole role) {
+        if (role == null) {
+            return "alpha";
+        }
+        switch (role) {
+            case ACCENT:
+                return "accent";
+            case PRIMARY_FUNCTION:
+                return "primary";
+            case FUNCTION:
+                return "modifier";
+            case NORMAL:
+            default:
+                return "alpha";
+        }
+    }
+
     private LinearLayout addExpandableSection(LinearLayout root, String text, boolean expandedByDefault) {
         TextView title = label("");
         title.setTextSize(17);
@@ -568,12 +685,17 @@ public final class ThemeEditorActivity extends Activity {
         title.setText((expanded ? "- " : "+ ") + text);
     }
 
-    private void addColorHeader(LinearLayout root, String title, String description) {
+    private View addColorControl(LinearLayout root, String title, String description, Spinner spinner) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         TextView label = label(title);
         row.addView(label, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        View swatch = colorSwatch();
+        LinearLayout.LayoutParams swatchParams = new LinearLayout.LayoutParams(dp(42), dp(28));
+        swatchParams.leftMargin = dp(8);
+        row.addView(swatch, swatchParams);
 
         Button info = new Button(this);
         info.setText("i");
@@ -584,8 +706,43 @@ public final class ThemeEditorActivity extends Activity {
                 .setMessage(description)
                 .setPositiveButton("OK", null)
                 .show());
-        row.addView(info, new LinearLayout.LayoutParams(dp(44), dp(36)));
+        LinearLayout.LayoutParams infoParams = new LinearLayout.LayoutParams(dp(44), dp(36));
+        infoParams.leftMargin = dp(8);
+        row.addView(info, infoParams);
         root.addView(row, matchWrapWithTop(8));
+        if (spinner != null) {
+            spinner.setContentDescription(title);
+        }
+        return swatch;
+    }
+
+    private View addInlineSwatch(LinearLayout root, int color) {
+        View swatch = colorSwatch();
+        setSwatch(swatch, color);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(18));
+        params.topMargin = dp(4);
+        params.bottomMargin = dp(4);
+        root.addView(swatch, params);
+        return swatch;
+    }
+
+    private View colorSwatch() {
+        View swatch = new View(this);
+        swatch.setMinimumHeight(dp(18));
+        return swatch;
+    }
+
+    private void setSwatch(View swatch, int color) {
+        if (swatch == null) {
+            return;
+        }
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(0xFF000000 | (color & 0x00FFFFFF));
+        background.setCornerRadius(dp(6));
+        background.setStroke(Math.max(1, dp(1)), SettingsUiPalette.from(this).border);
+        swatch.setBackground(background);
     }
 
     private void copyThemeJsonToClipboard() {
