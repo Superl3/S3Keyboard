@@ -76,6 +76,9 @@ final class KeyboardSettings {
     static final boolean DEFAULT_POINT_KEYCAP_STYLE_ENABLED = true;
     static final String DEFAULT_MODIFIER_ICON_PACK_ID = ModifierIconCatalog.PACK_LINE_MONO;
     static final String DEFAULT_KEY_DISPLAY_PACK_ID = KeyDisplayOverridePackCatalog.PACK_NONE;
+    static final boolean DEFAULT_REMOTE_MODE_ENABLED = false;
+    static final RemoteKeyPreset DEFAULT_REMOTE_KEY_PRESET = RemoteKeyPreset.PC_KEYBOARD;
+    static final RemoteImeShortcut DEFAULT_REMOTE_IME_SHORTCUT = RemoteImeShortcut.ALT_SHIFT;
     static final boolean DEFAULT_SHOW_HANGUL_NUMBER_ROW = false;
     static final boolean DEFAULT_SHOW_ENGLISH_NUMBER_ROW = true;
     static final AdditionalNumberRowColorMode DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE =
@@ -153,6 +156,9 @@ final class KeyboardSettings {
     final String keyDisplayOverridePackId;
     final Map<String, KeyDisplayOverride> keyDisplayOverrides;
     final KeyboardVisualEffects visualEffects;
+    final boolean remoteModeEnabled;
+    final RemoteKeyPreset remoteKeyPreset;
+    final RemoteImeShortcut remoteImeShortcut;
 
     KeyboardSettings(
             KeyboardMode keyboardMode,
@@ -544,7 +550,10 @@ final class KeyboardSettings {
                 "",
                 Collections.emptyMap(),
                 KeyboardVisualEffects.DEFAULT,
-                DEFAULT_FOLLOW_THEME_TYPOGRAPHY);
+                DEFAULT_FOLLOW_THEME_TYPOGRAPHY,
+                DEFAULT_REMOTE_MODE_ENABLED,
+                DEFAULT_REMOTE_KEY_PRESET,
+                DEFAULT_REMOTE_IME_SHORTCUT);
     }
 
     private KeyboardSettings(
@@ -610,7 +619,10 @@ final class KeyboardSettings {
             String keyDisplayOverridePackId,
             Map<String, KeyDisplayOverride> keyDisplayOverrides,
             KeyboardVisualEffects visualEffects,
-            boolean followThemeTypography) {
+            boolean followThemeTypography,
+            boolean remoteModeEnabled,
+            RemoteKeyPreset remoteKeyPreset,
+            RemoteImeShortcut remoteImeShortcut) {
         this.keyboardMode = keyboardMode == null ? KeyboardMode.HANGUL : keyboardMode;
         this.handednessMode = handednessMode == null ? HandednessMode.BALANCED : handednessMode;
         this.leftMarginDp = clamp(leftMarginDp, 0, MAX_MARGIN_DP);
@@ -715,6 +727,9 @@ final class KeyboardSettings {
                 KeyDisplayOverridePackCatalog.normalizeOverridePackId(keyDisplayOverridePackId);
         this.keyDisplayOverrides = normalizeKeyDisplayOverrides(keyDisplayOverrides);
         this.visualEffects = visualEffects == null ? KeyboardVisualEffects.DEFAULT : visualEffects;
+        this.remoteModeEnabled = remoteModeEnabled;
+        this.remoteKeyPreset = remoteKeyPreset == null ? DEFAULT_REMOTE_KEY_PRESET : remoteKeyPreset;
+        this.remoteImeShortcut = remoteImeShortcut == null ? DEFAULT_REMOTE_IME_SHORTCUT : remoteImeShortcut;
     }
 
     static KeyboardSettings defaults() {
@@ -861,7 +876,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withKeyboardMode(KeyboardMode mode) {
@@ -891,6 +909,79 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyGapDp,
                 hangulSpecialColumnPercent);
+    }
+
+    KeyboardSettings withRemoteOptions(
+            boolean remoteModeEnabled,
+            RemoteKeyPreset remoteKeyPreset,
+            RemoteImeShortcut remoteImeShortcut) {
+        return new KeyboardSettings(
+                keyboardMode,
+                handednessMode,
+                leftMarginDp,
+                rightMarginDp,
+                hangulKeyboardHeightDp,
+                englishKeyboardHeightDp,
+                showHangulNumberRow,
+                showEnglishNumberRow,
+                forceNumberRow,
+                hapticFeedbackEnabled,
+                hitSlopDp,
+                gestureThresholdDp,
+                touchYOffsetDp,
+                repeatStartDelayMs,
+                repeatIntervalMs,
+                englishDoubleSpacePeriodEnabled,
+                enterKeyLabel,
+                keyIdleColor,
+                keyPressedColor,
+                keyboardBackgroundColor,
+                accentColor,
+                secondaryColor,
+                functionKeyColor,
+                accentKeyColor,
+                borderColor,
+                keyBorderWidthDp,
+                keyRoundnessDp,
+                keyGapDp,
+                keyDepthEnabled,
+                keyDepthDp,
+                customDepthColorEnabled,
+                depthColor,
+                fontFamily,
+                primaryTextSizePercent,
+                secondaryTextSizePercent,
+                primaryTextBold,
+                primaryTextItalic,
+                secondaryTextBold,
+                secondaryTextItalic,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                showBeginnerTooltipPreview,
+                hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
+                keyColorOverrides,
+                hangulLeftPaddingDp,
+                hangulRightPaddingDp,
+                englishLeftPaddingDp,
+                englishRightPaddingDp,
+                hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
+                keyboardBottomPaddingDp,
+                bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
+                legendStylePreset,
+                pointKeycapStyleEnabled,
+                modifierIconThemePackId,
+                modifierIconOverridePackId,
+                keyDisplayThemePackId,
+                keyDisplayOverridePackId,
+                keyDisplayOverrides,
+                visualEffects,
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withMargins(int leftMarginDp, int rightMarginDp) {
@@ -1053,7 +1144,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withNumberRowBottomGap(int numberRowBottomGapDp) {
@@ -1120,7 +1214,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withHeight(int keyboardHeightDp) {
@@ -1199,7 +1296,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withActiveHeight(int keyboardHeightDp) {
@@ -1411,7 +1511,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withRuntimeNumberRowForced(boolean forceNumberRow) {
@@ -1772,7 +1875,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withKeyRoundness(int keyRoundnessDp) {
@@ -1926,7 +2032,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withDepthColor(boolean customDepthColorEnabled, int depthColor) {
@@ -2025,7 +2134,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withHintVisibility(
@@ -2095,7 +2207,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withKeyColorOverrides(Map<String, Integer> keyColorOverrides) {
@@ -2162,7 +2277,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withLegendStyle(LegendStylePreset legendStylePreset) {
@@ -2229,7 +2347,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withFollowThemeTypography(boolean followThemeTypography) {
@@ -2296,7 +2417,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withPointKeycapStyle(boolean enabled) {
@@ -2363,7 +2487,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withModifierIconThemePack(String packId) {
@@ -2438,7 +2565,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withKeyDisplayThemePack(String packId) {
@@ -2513,7 +2643,10 @@ final class KeyboardSettings {
                 overridePackId,
                 keyDisplayOverrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withKeyDisplayOverrides(Map<String, KeyDisplayOverride> overrides) {
@@ -2580,7 +2713,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 overrides,
                 visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withVisualEffects(KeyboardVisualEffects effects) {
@@ -2647,7 +2783,10 @@ final class KeyboardSettings {
                 keyDisplayOverridePackId,
                 keyDisplayOverrides,
                 effects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withAppearanceFrom(KeyboardSettings appearance) {
@@ -2716,7 +2855,10 @@ final class KeyboardSettings {
                 theme.keyDisplayOverridePackId,
                 theme.keyDisplayOverrides,
                 theme.visualEffects,
-                followThemeTypography);
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withHangulSpecialColumnPercent(int hangulSpecialColumnPercent) {

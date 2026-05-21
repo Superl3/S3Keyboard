@@ -1680,6 +1680,7 @@ public final class HangulKeyboardView extends View {
 
     private String repeatableValue(String value) {
         if (KeyboardCommands.CMD_DELETE.equals(value)
+                || KeyboardCommands.CMD_SPACE.equals(value)
                 || KeyboardCommands.CMD_MOVE_LEFT.equals(value)
                 || KeyboardCommands.CMD_MOVE_RIGHT.equals(value)
                 || KeyboardCommands.CMD_DINGUL_CENTER_VOWEL.equals(value)
@@ -1695,6 +1696,7 @@ public final class HangulKeyboardView extends View {
     private boolean isInputRepeatKey(GestureKey key) {
         return key != null
                 && (isRepeatableInputText(key.tap)
+                || KeyboardCommands.CMD_SPACE.equals(key.tap)
                 || KeyboardCommands.CMD_DINGUL_CENTER_VOWEL.equals(key.tap)
                 || KeyboardCommands.CMD_DINGUL_WIDE_VOWEL.equals(key.tap));
     }

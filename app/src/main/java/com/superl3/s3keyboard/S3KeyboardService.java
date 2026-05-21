@@ -35,8 +35,10 @@ public final class S3KeyboardService extends InputMethodService
     private HangulKeyboardView inputView;
     private FrameLayout inputRoot;
     private TextView previewOverlay;
+    private TextView remoteIndicator;
     private PopupWindow previewPopup;
     private PopupWindow quickSettingsPopup;
+    private int pendingRemoteMetaState;
 
     private FloatingModeController floatingModeController;
     private ClipboardStore clipboardStore;
@@ -102,7 +104,16 @@ public final class S3KeyboardService extends InputMethodService
         btnParams.weight = 0;
         clipboardBtn.setLayoutParams(btnParams);
 
+        remoteIndicator = new TextView(this);
+        remoteIndicator.setText("REMOTE");
+        remoteIndicator.setTextSize(12);
+        remoteIndicator.setTypeface(Typeface.DEFAULT_BOLD);
+        remoteIndicator.setTextColor(contrastColor(settings.keyboardBackgroundColor));
+        remoteIndicator.setGravity(Gravity.CENTER);
+        remoteIndicator.setPadding(dp(10), 0, dp(10), 0);
+
         toolbarLayout.addView(spacer1);
+        toolbarLayout.addView(remoteIndicator);
         toolbarLayout.addView(dragHandle);
         toolbarLayout.addView(spacer2);
         toolbarLayout.addView(clipboardBtn);
@@ -170,10 +181,15 @@ public final class S3KeyboardService extends InputMethodService
         if (toolbarLayout != null && floatingModeController != null && clipboardStore != null) {
             boolean floatingEnabled = false;
             boolean clipboardEnabled = clipboardStore.isEnabled() && !editorPolicy.password;
-            boolean showToolbar = floatingEnabled || clipboardEnabled;
+            boolean remoteEnabled = settings.remoteModeEnabled;
+            boolean showToolbar = floatingEnabled || clipboardEnabled || remoteEnabled;
             toolbarLayout.setVisibility(showToolbar ? View.VISIBLE : View.GONE);
             dragHandle.setVisibility(floatingEnabled ? View.VISIBLE : View.INVISIBLE);
             clipboardBtn.setVisibility(clipboardEnabled ? View.VISIBLE : View.GONE);
+            if (remoteIndicator != null) {
+                remoteIndicator.setVisibility(remoteEnabled ? View.VISIBLE : View.GONE);
+                remoteIndicator.setTextColor(contrastColor(settings.keyboardBackgroundColor));
+            }
             if (!clipboardEnabled && clipboardView != null) {
                 clipboardView.setVisibility(View.GONE);
             }
@@ -267,6 +283,7 @@ public final class S3KeyboardService extends InputMethodService
         automata.reset();
         doubleSpacePeriodState.reset();
         englishShiftState.reset();
+        pendingRemoteMetaState = 0;
         updateShiftStateView();
     }
 
@@ -281,6 +298,7 @@ public final class S3KeyboardService extends InputMethodService
         }
         automata.reset();
         englishShiftState.reset();
+        pendingRemoteMetaState = 0;
         super.onFinishInput();
     }
 
@@ -389,6 +407,10 @@ public final class S3KeyboardService extends InputMethodService
                 requestHideSelf(0);
                 return;
             default:
+                if (KeyboardCommands.isRemoteCommand(value)) {
+                    handleRemoteCommand(inputConnection, value);
+                    return;
+                }
                 inputText(inputConnection, value);
         }
     }
@@ -534,6 +556,14 @@ public final class S3KeyboardService extends InputMethodService
 
     private void inputText(InputConnection inputConnection, String text) {
         doubleSpacePeriodState.reset();
+        if (settings.remoteModeEnabled && pendingRemoteMetaState != 0) {
+            int remoteKeyCode = remotePrintableKeyCode(text);
+            if (remoteKeyCode != 0) {
+                commitCurrent(inputConnection);
+                sendRemoteKey(inputConnection, remoteKeyCode, 0);
+                return;
+            }
+        }
         if (editorPolicy.rawKeyInput) {
             automata.reset();
             String rawText = settings.keyboardMode == KeyboardMode.ENGLISH
@@ -638,7 +668,7 @@ public final class S3KeyboardService extends InputMethodService
 
     private void commitSpace(InputConnection inputConnection) {
         commitCurrent(inputConnection);
-        if (editorPolicy.rawKeyInput) {
+        if (settings.remoteModeEnabled || editorPolicy.rawKeyInput) {
             doubleSpacePeriodState.reset();
             sendKeyChar(' ');
             return;
@@ -657,7 +687,7 @@ public final class S3KeyboardService extends InputMethodService
 
     private void performEnter(InputConnection inputConnection) {
         commitCurrent(inputConnection);
-        if (editorPolicy.rawKeyInput) {
+        if (settings.remoteModeEnabled || editorPolicy.rawKeyInput) {
             sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER);
             return;
         }
@@ -716,7 +746,7 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void delete(InputConnection inputConnection) {
-        if (editorPolicy.rawKeyInput) {
+        if (settings.remoteModeEnabled || editorPolicy.rawKeyInput) {
             sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);
             return;
         }
@@ -812,6 +842,107 @@ public final class S3KeyboardService extends InputMethodService
         }
     }
 
+    private void handleRemoteCommand(InputConnection inputConnection, String command) {
+        commitCurrent(inputConnection);
+        doubleSpacePeriodState.reset();
+        englishShiftState.reset();
+        updateShiftStateView();
+
+        switch (command) {
+            case KeyboardCommands.CMD_REMOTE_CTRL_LATCH:
+                pendingRemoteMetaState = togglePendingRemoteMeta(KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+                return;
+            case KeyboardCommands.CMD_REMOTE_ALT_LATCH:
+                pendingRemoteMetaState = togglePendingRemoteMeta(KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
+                return;
+            case KeyboardCommands.CMD_REMOTE_SHIFT_TAB:
+                sendRemoteKey(inputConnection, KeyEvent.KEYCODE_TAB, KeyEvent.META_SHIFT_ON);
+                return;
+            case KeyboardCommands.CMD_REMOTE_CTRL_TAB:
+                sendRemoteKey(inputConnection, KeyEvent.KEYCODE_TAB, KeyEvent.META_CTRL_ON);
+                return;
+            case KeyboardCommands.CMD_REMOTE_ALT_TAB:
+                sendRemoteKey(inputConnection, KeyEvent.KEYCODE_TAB, KeyEvent.META_ALT_ON);
+                return;
+            case KeyboardCommands.CMD_REMOTE_CTRL_ENTER:
+                sendRemoteKey(inputConnection, KeyEvent.KEYCODE_ENTER, KeyEvent.META_CTRL_ON);
+                return;
+            case KeyboardCommands.CMD_REMOTE_IME_TOGGLE:
+                sendRemoteImeToggle(inputConnection);
+                return;
+            default:
+                int keyCode = remoteKeyCodeFor(command);
+                if (keyCode != 0) {
+                    sendRemoteKey(inputConnection, keyCode, 0);
+                }
+        }
+    }
+
+    private int togglePendingRemoteMeta(int metaState) {
+        return pendingRemoteMetaState == metaState ? 0 : metaState;
+    }
+
+    private void sendRemoteImeToggle(InputConnection inputConnection) {
+        switch (settings.remoteImeShortcut) {
+            case CTRL_SPACE:
+                sendRemoteKey(inputConnection, KeyEvent.KEYCODE_SPACE, KeyEvent.META_CTRL_ON);
+                return;
+            case WIN_SPACE:
+                sendRemoteKey(inputConnection, KeyEvent.KEYCODE_SPACE, KeyEvent.META_META_ON);
+                return;
+            case LANGUAGE_SWITCH:
+                sendRemoteKey(inputConnection, KeyEvent.KEYCODE_LANGUAGE_SWITCH, 0);
+                return;
+            case ALT_SHIFT:
+            default:
+                pendingRemoteMetaState = 0;
+                inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ALT_LEFT));
+                inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT));
+                inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT));
+                inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ALT_LEFT));
+        }
+    }
+
+    private void sendRemoteKey(InputConnection inputConnection, int keyCode, int metaState) {
+        int combinedMetaState = metaState | pendingRemoteMetaState;
+        pendingRemoteMetaState = 0;
+        inputConnection.sendKeyEvent(new KeyEvent(
+                0,
+                0,
+                KeyEvent.ACTION_DOWN,
+                keyCode,
+                0,
+                combinedMetaState));
+        inputConnection.sendKeyEvent(new KeyEvent(
+                0,
+                0,
+                KeyEvent.ACTION_UP,
+                keyCode,
+                0,
+                combinedMetaState));
+    }
+
+    private int remoteKeyCodeFor(String command) {
+        return RemoteKeyEventMap.keyCodeFor(command);
+    }
+
+    private int remotePrintableKeyCode(String text) {
+        if (text == null || text.length() != 1) {
+            return 0;
+        }
+        char ch = Character.toLowerCase(text.charAt(0));
+        if (ch >= 'a' && ch <= 'z') {
+            return KeyEvent.KEYCODE_A + (ch - 'a');
+        }
+        if (ch >= '1' && ch <= '9') {
+            return KeyEvent.KEYCODE_1 + (ch - '1');
+        }
+        if (ch == '0') {
+            return KeyEvent.KEYCODE_0;
+        }
+        return 0;
+    }
+
     private void showInputPicker() {
         InputMethodManager imm = getSystemService(InputMethodManager.class);
         if (imm != null) {
@@ -870,6 +1001,7 @@ public final class S3KeyboardService extends InputMethodService
         title.setTypeface(Typeface.DEFAULT_BOLD);
         panel.addView(title, matchWrap());
 
+        panel.addView(quickButton(remoteModeToggleLabel(), settings.remoteModeEnabled, v -> toggleRemoteMode()), topWrap(8));
         panel.addView(quickButton(numberRowToggleLabel(), activeNumberRowVisible(), v -> toggleActiveNumberRow()), topWrap(8));
         LinearLayout handRow = new LinearLayout(this);
         handRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -948,6 +1080,25 @@ public final class S3KeyboardService extends InputMethodService
     private String numberRowToggleLabel() {
         String layout = settings.keyboardMode == KeyboardMode.ENGLISH ? "쿼티" : "딩굴";
         return layout + " number row: " + (activeNumberRowVisible() ? "on" : "off");
+    }
+
+    private String remoteModeToggleLabel() {
+        return "Remote mode: " + (settings.remoteModeEnabled ? "on" : "off");
+    }
+
+    private void toggleRemoteMode() {
+        settings = settings
+                .withRemoteOptions(
+                        !settings.remoteModeEnabled,
+                        settings.remoteKeyPreset,
+                        settings.remoteImeShortcut)
+                .withEnterKeyLabel(enterAction.label)
+                .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
+        pendingRemoteMetaState = 0;
+        KeyboardPreferences.saveSettings(this, settings);
+        applyCurrentSettingsToInputView();
+        updateToolbarVisibility();
+        dismissQuickSettings();
     }
 
     private void toggleActiveNumberRow() {

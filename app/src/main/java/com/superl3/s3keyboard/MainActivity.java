@@ -97,6 +97,8 @@ public final class MainActivity extends Activity {
     private Spinner modifierIconPackSpinner;
     private Spinner keyDisplayPackSpinner;
     private Spinner additionalNumberRowColorModeSpinner;
+    private Spinner remoteKeyPresetSpinner;
+    private Spinner remoteImeShortcutSpinner;
     private Button deleteThemeButton;
     private CheckBox hangulNumberRowCheckBox;
     private CheckBox englishNumberRowCheckBox;
@@ -113,6 +115,7 @@ public final class MainActivity extends Activity {
     private CheckBox secondaryTextBoldCheckBox;
     private CheckBox secondaryTextItalicCheckBox;
     private CheckBox pointKeycapStyleCheckBox;
+    private CheckBox remoteModeCheckBox;
     private CheckBox hangulConsonantSlideHintsCheckBox;
     private CheckBox hangulVowelSlideHintsCheckBox;
     private CheckBox englishSlideHintsCheckBox;
@@ -385,6 +388,12 @@ public final class MainActivity extends Activity {
                 "\uC608\uC57D\uC5B4",
                 false);
         addReservedPhraseControls(reservedSection);
+
+        LinearLayout remoteSection = addExpandableSection(
+                root,
+                "\uC6D0\uACA9 / Windows",
+                false);
+        addRemoteControls(remoteSection);
 
         LinearLayout androidSection = addExpandableSection(
                 root,
@@ -1097,6 +1106,75 @@ public final class MainActivity extends Activity {
         root.addView(input, matchWrap());
     }
 
+    private void addRemoteControls(LinearLayout root) {
+        remoteModeCheckBox = new CheckBox(this);
+        remoteModeCheckBox.setText("\uC6D0\uACA9 \uBAA8\uB4DC");
+        remoteModeCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                settings = settings.withRemoteOptions(
+                        isChecked,
+                        settings.remoteKeyPreset,
+                        settings.remoteImeShortcut);
+                saveAndSync();
+            }
+        });
+        root.addView(remoteModeCheckBox, matchWrapWithTop(8));
+
+        root.addView(label("\uC6D0\uACA9 \uD0A4 \uD504\uB9AC\uC14B"), matchWrapWithTop(12));
+        remoteKeyPresetSpinner = new Spinner(this);
+        remoteKeyPresetSpinner.setAdapter(new SettingsArrayAdapter<>(
+                this,
+                remoteKeyPresetLabels()));
+        remoteKeyPresetSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (syncing) {
+                    return;
+                }
+                settings = settings.withRemoteOptions(
+                        settings.remoteModeEnabled,
+                        RemoteKeyPreset.values()[position],
+                        settings.remoteImeShortcut);
+                saveAndSync();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        root.addView(remoteKeyPresetSpinner, matchWrap());
+
+        root.addView(label("Windows \uD55C\uC601 \uB2E8\uCD95\uD0A4"), matchWrapWithTop(12));
+        remoteImeShortcutSpinner = new Spinner(this);
+        remoteImeShortcutSpinner.setAdapter(new SettingsArrayAdapter<>(
+                this,
+                remoteImeShortcutLabels()));
+        remoteImeShortcutSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (syncing) {
+                    return;
+                }
+                settings = settings.withRemoteOptions(
+                        settings.remoteModeEnabled,
+                        settings.remoteKeyPreset,
+                        RemoteImeShortcut.values()[position]);
+                saveAndSync();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        root.addView(remoteImeShortcutSpinner, matchWrap());
+
+        addBodyText(
+                root,
+                "\uC6D0\uACA9 \uBAA8\uB4DC\uB294 \uD558\uB2E8 mod \uD0A4\uC640 \uC22B\uC790\uC904 long press\uB97C Windows\uC6A9 KeyEvent\uB85C \uBC14\uAFC9\uB2C8\uB2E4. \uC635\uC158 \uD0A4 long press\uB294 \uD56D\uC0C1 \uC124\uC815\uC744 \uC5FD\uB2C8\uB2E4.",
+                12);
+    }
+
     private void addAndroidImeControls(LinearLayout root) {
         Button settingsButton = new Button(this);
         settingsButton.setText(R.string.open_input_settings);
@@ -1119,6 +1197,24 @@ public final class MainActivity extends Activity {
         root.addView(pickerButton, buttonParams());
     }
 
+    private String[] remoteKeyPresetLabels() {
+        RemoteKeyPreset[] values = RemoteKeyPreset.values();
+        String[] labels = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            labels[i] = values[i].displayName;
+        }
+        return labels;
+    }
+
+    private String[] remoteImeShortcutLabels() {
+        RemoteImeShortcut[] values = RemoteImeShortcut.values();
+        String[] labels = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            labels[i] = values[i].displayName;
+        }
+        return labels;
+    }
+
     private void saveAndSync() {
         settings = KeyboardPreferences.applyAccentPlacementPolicy(this, settings);
         KeyboardPreferences.saveSettings(this, settings);
@@ -1137,6 +1233,7 @@ public final class MainActivity extends Activity {
         styleCheckBox(primaryTextItalicCheckBox);
         styleCheckBox(secondaryTextBoldCheckBox);
         styleCheckBox(secondaryTextItalicCheckBox);
+        styleCheckBox(remoteModeCheckBox);
         styleCheckBox(pointKeycapStyleCheckBox);
         styleCheckBox(hangulNumberRowCheckBox);
         styleCheckBox(englishNumberRowCheckBox);
@@ -1214,6 +1311,8 @@ public final class MainActivity extends Activity {
         if (additionalNumberRowColorModeSpinner != null) {
             additionalNumberRowColorModeSpinner.setSelection(settings.additionalNumberRowColorMode.ordinal());
         }
+        remoteKeyPresetSpinner.setSelection(settings.remoteKeyPreset.ordinal());
+        remoteImeShortcutSpinner.setSelection(settings.remoteImeShortcut.ordinal());
         primaryTextSizeSeekBar.setProgress(
                 settings.primaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
         secondaryTextSizeSeekBar.setProgress(
@@ -1251,6 +1350,9 @@ public final class MainActivity extends Activity {
         englishSlideHintsCheckBox.setChecked(settings.showEnglishSlideHints);
         spacebarSlideHintsCheckBox.setChecked(KeyboardPreferences.loadShowSpacebarSlideHints(this));
         beginnerTooltipPreviewCheckBox.setChecked(settings.showBeginnerTooltipPreview);
+        remoteModeCheckBox.setChecked(settings.remoteModeEnabled);
+        remoteKeyPresetSpinner.setEnabled(settings.remoteModeEnabled);
+        remoteImeShortcutSpinner.setEnabled(settings.remoteModeEnabled);
         keyDepthSeekBar.setEnabled(settings.keyDepthEnabled);
         depthColorSpinner.setEnabled(settings.customDepthColorEnabled);
         deleteThemeButton.setEnabled(selectedThemeOption() != null && selectedThemeOption().userThemeId != null);

@@ -223,6 +223,20 @@ public final class KeyboardLayoutFactoryTest {
     }
 
     @Test
+    public void remoteModeKeepsNumberTapAndMapsLongPressToFunctionKeys() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withNumberRow(true)
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
+
+        assertEquals("1", rows.get(0).keys.get(0).valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_F1, rows.get(0).keys.get(0).valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_REMOTE_F10, rows.get(0).keys.get(9).valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_REMOTE_F11, rows.get(0).keys.get(8).valueFor(GestureAction.LEFT));
+        assertEquals(KeyboardCommands.CMD_REMOTE_F12, rows.get(0).keys.get(9).valueFor(GestureAction.RIGHT));
+    }
+
+    @Test
     public void runtimeNumberRowForceSupportsPasswordNumpadWithoutChangingStoredToggles() {
         KeyboardSettings forced = KeyboardSettings.defaults().withRuntimeNumberRowForced(true);
 
@@ -319,6 +333,37 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals(KeyboardCommands.CMD_HAND_RIGHT, options.valueFor(GestureAction.RIGHT));
         assertEquals(KeyboardCommands.CMD_HAND_BALANCED, options.valueFor(GestureAction.UP));
         assertEquals(KeyboardCommands.CMD_OPEN_OPTIONS, options.valueFor(GestureAction.LONG_PRESS));
+    }
+
+    @Test
+    public void remoteModeReplacesBottomModifierCommandsButKeepsOptionsLongPressEscape() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
+        KeyboardRow bottom = rows.get(rows.size() - 1);
+
+        GestureKey options = bottom.keys.get(0);
+        GestureKey reserved = bottom.keys.get(1);
+        GestureKey space = bottom.keys.get(2);
+        GestureKey language = bottom.keys.get(3);
+        GestureKey enter = bottom.keys.get(4);
+
+        assertEquals(KeyboardCommands.CMD_REMOTE_ESC, options.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_HOME, options.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_CTRL_LATCH, options.valueFor(GestureAction.LEFT));
+        assertEquals(KeyboardCommands.CMD_REMOTE_ALT_LATCH, options.valueFor(GestureAction.RIGHT));
+        assertEquals(KeyboardCommands.CMD_OPEN_OPTIONS, options.valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_REMOTE_TAB, reserved.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_SHIFT_TAB, reserved.valueFor(GestureAction.LEFT));
+        assertEquals(KeyboardCommands.CMD_REMOTE_CTRL_TAB, reserved.valueFor(GestureAction.RIGHT));
+        assertEquals(KeyboardCommands.CMD_REMOTE_ALT_TAB, reserved.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_SPACE, space.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_PAGE_UP, space.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_SPACE, space.valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_REMOTE_IME_TOGGLE, language.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_TOGGLE_LANGUAGE, language.valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_ENTER, enter.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_CTRL_ENTER, enter.valueFor(GestureAction.LONG_PRESS));
     }
 
     private GestureKey findKey(List<KeyboardRow> rows, String label) {

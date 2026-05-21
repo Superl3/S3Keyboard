@@ -80,6 +80,9 @@ final class KeyboardPreferences {
     static final String KEY_DISPLAY_OVERRIDE_PACK_ID = "key_display_override_pack_id";
     static final String KEY_DISPLAY_OVERRIDES = "key_display_overrides";
     static final String VISUAL_EFFECTS = "visual_effects";
+    static final String REMOTE_MODE_ENABLED = "remote_mode_enabled";
+    static final String REMOTE_KEY_PRESET = "remote_key_preset";
+    static final String REMOTE_IME_SHORTCUT = "remote_ime_shortcut";
     static final String SELECTED_THEME_ID = "selected_theme_id";
     static final String RESERVED_TAP_TEXT = "reserved_tap_text";
     static final String RESERVED_LEFT_TEXT = "reserved_left_text";
@@ -294,7 +297,15 @@ final class KeyboardPreferences {
                         defaults.visualEffects))
                 .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.fromPreference(prefs.getString(
                         ADDITIONAL_NUMBER_ROW_COLOR_MODE,
-                        defaults.additionalNumberRowColorMode.preferenceValue)));
+                        defaults.additionalNumberRowColorMode.preferenceValue)))
+                .withRemoteOptions(
+                        prefs.getBoolean(REMOTE_MODE_ENABLED, defaults.remoteModeEnabled),
+                        RemoteKeyPreset.fromPreference(prefs.getString(
+                                REMOTE_KEY_PRESET,
+                                defaults.remoteKeyPreset.preferenceValue)),
+                        RemoteImeShortcut.fromPreference(prefs.getString(
+                                REMOTE_IME_SHORTCUT,
+                                defaults.remoteImeShortcut.preferenceValue)));
         return applyAccentPlacementPolicy(context, loaded);
     }
 
@@ -373,6 +384,27 @@ final class KeyboardPreferences {
                 .putString(
                         VISUAL_EFFECTS,
                         KeyboardThemeJson.encodeVisualEffectsObject(settings.visualEffects).toString())
+                .putBoolean(REMOTE_MODE_ENABLED, settings.remoteModeEnabled)
+                .putString(REMOTE_KEY_PRESET, settings.remoteKeyPreset.preferenceValue)
+                .putString(REMOTE_IME_SHORTCUT, settings.remoteImeShortcut.preferenceValue)
+                .apply();
+    }
+
+    static void saveRemoteOptions(
+            Context context,
+            boolean remoteModeEnabled,
+            RemoteKeyPreset remoteKeyPreset,
+            RemoteImeShortcut remoteImeShortcut) {
+        prefs(context).edit()
+                .putBoolean(REMOTE_MODE_ENABLED, remoteModeEnabled)
+                .putString(
+                        REMOTE_KEY_PRESET,
+                        (remoteKeyPreset == null ? KeyboardSettings.DEFAULT_REMOTE_KEY_PRESET : remoteKeyPreset)
+                                .preferenceValue)
+                .putString(
+                        REMOTE_IME_SHORTCUT,
+                        (remoteImeShortcut == null ? KeyboardSettings.DEFAULT_REMOTE_IME_SHORTCUT : remoteImeShortcut)
+                                .preferenceValue)
                 .apply();
     }
 

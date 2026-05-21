@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -42,6 +43,9 @@ public final class KeyboardSettingsTest {
                 settings.showBeginnerTooltipPreview);
         assertEquals(KeyboardSettings.DEFAULT_SHOW_HANGUL_NUMBER_ROW, settings.showHangulNumberRow);
         assertEquals(KeyboardSettings.DEFAULT_SHOW_ENGLISH_NUMBER_ROW, settings.showEnglishNumberRow);
+        assertFalse(settings.remoteModeEnabled);
+        assertEquals(RemoteKeyPreset.PC_KEYBOARD, settings.remoteKeyPreset);
+        assertEquals(RemoteImeShortcut.ALT_SHIFT, settings.remoteImeShortcut);
         assertEquals(KeyboardSettings.DEFAULT_HANGUL_HEIGHT_DP, settings.hangulKeyboardHeightDp);
         assertEquals(KeyboardSettings.DEFAULT_ENGLISH_HEIGHT_DP, settings.englishKeyboardHeightDp);
         assertEquals(KeyboardSettings.DEFAULT_HANGUL_HEIGHT_DP, settings.keyboardHeightDp);
@@ -72,6 +76,19 @@ public final class KeyboardSettingsTest {
         assertEquals(KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP,
                 KeyboardSettings.defaults().withTouchYOffset(-99).touchYOffsetDp);
         assertEquals(-6, KeyboardSettings.defaults().withTouchYOffset(-6).touchYOffsetDp);
+    }
+
+    @Test
+    public void remoteOptionsPersistAcrossOtherSettingCopies() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.WIN_SPACE)
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withKeyGap(9)
+                .withEnterKeyLabel("Enter");
+
+        assertTrue(settings.remoteModeEnabled);
+        assertEquals(RemoteKeyPreset.PC_KEYBOARD, settings.remoteKeyPreset);
+        assertEquals(RemoteImeShortcut.WIN_SPACE, settings.remoteImeShortcut);
     }
 
     @Test

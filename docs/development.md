@@ -69,6 +69,9 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 - `KeyboardFeedback` owns haptic queuing and emits short vibrator pulses in order.
 - `KeyboardPreferences` stores haptic tick duration and gap independently from the
   broader immutable `KeyboardSettings` object.
+- Windows remote mode uses the normal IME path plus Android `KeyEvent` dispatch.
+  See `docs/remote-mode.md` before changing remote key mappings, Windows IME
+  shortcuts, or any Accessibility-based bypass idea.
 - `HangulKeyboardView` keeps the preview strip inside the measured keyboard
   height, so preview space does not create a transparent area over the app UI.
 - `TouchBiasStore` learns from local input patterns. It stores aggregate touch

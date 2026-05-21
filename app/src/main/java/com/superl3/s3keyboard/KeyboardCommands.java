@@ -23,6 +23,31 @@ final class KeyboardCommands {
     static final String CMD_HAND_RIGHT = "__hand_right__";
     static final String CMD_HAND_BALANCED = "__hand_balanced__";
     static final String CMD_QUICK_SETTINGS = "__quick_settings__";
+    static final String CMD_REMOTE_ESC = "__remote_esc__";
+    static final String CMD_REMOTE_TAB = "__remote_tab__";
+    static final String CMD_REMOTE_SHIFT_TAB = "__remote_shift_tab__";
+    static final String CMD_REMOTE_CTRL_TAB = "__remote_ctrl_tab__";
+    static final String CMD_REMOTE_ALT_TAB = "__remote_alt_tab__";
+    static final String CMD_REMOTE_CTRL_LATCH = "__remote_ctrl_latch__";
+    static final String CMD_REMOTE_ALT_LATCH = "__remote_alt_latch__";
+    static final String CMD_REMOTE_IME_TOGGLE = "__remote_ime_toggle__";
+    static final String CMD_REMOTE_HOME = "__remote_home__";
+    static final String CMD_REMOTE_END = "__remote_end__";
+    static final String CMD_REMOTE_PAGE_UP = "__remote_page_up__";
+    static final String CMD_REMOTE_PAGE_DOWN = "__remote_page_down__";
+    static final String CMD_REMOTE_CTRL_ENTER = "__remote_ctrl_enter__";
+    static final String CMD_REMOTE_F1 = "__remote_f1__";
+    static final String CMD_REMOTE_F2 = "__remote_f2__";
+    static final String CMD_REMOTE_F3 = "__remote_f3__";
+    static final String CMD_REMOTE_F4 = "__remote_f4__";
+    static final String CMD_REMOTE_F5 = "__remote_f5__";
+    static final String CMD_REMOTE_F6 = "__remote_f6__";
+    static final String CMD_REMOTE_F7 = "__remote_f7__";
+    static final String CMD_REMOTE_F8 = "__remote_f8__";
+    static final String CMD_REMOTE_F9 = "__remote_f9__";
+    static final String CMD_REMOTE_F10 = "__remote_f10__";
+    static final String CMD_REMOTE_F11 = "__remote_f11__";
+    static final String CMD_REMOTE_F12 = "__remote_f12__";
     static final String CMD_NOOP = "__noop__";
 
     private KeyboardCommands() {
@@ -30,6 +55,10 @@ final class KeyboardCommands {
 
     static boolean isCommand(String value) {
         return value != null && value.startsWith("__") && value.endsWith("__");
+    }
+
+    static boolean isRemoteCommand(String value) {
+        return value != null && value.startsWith("__remote_") && value.endsWith("__");
     }
 
     static String labelFor(String value) {
@@ -77,6 +106,56 @@ final class KeyboardCommands {
                 return null;
             case CMD_QUICK_SETTINGS:
                 return "Quick";
+            case CMD_REMOTE_ESC:
+                return "Esc";
+            case CMD_REMOTE_TAB:
+                return "Tab";
+            case CMD_REMOTE_SHIFT_TAB:
+                return "Shift+Tab";
+            case CMD_REMOTE_CTRL_TAB:
+                return "Ctrl+Tab";
+            case CMD_REMOTE_ALT_TAB:
+                return "Alt+Tab";
+            case CMD_REMOTE_CTRL_LATCH:
+                return "Ctrl";
+            case CMD_REMOTE_ALT_LATCH:
+                return "Alt";
+            case CMD_REMOTE_IME_TOGGLE:
+                return "IME";
+            case CMD_REMOTE_HOME:
+                return "Home";
+            case CMD_REMOTE_END:
+                return "End";
+            case CMD_REMOTE_PAGE_UP:
+                return "PgUp";
+            case CMD_REMOTE_PAGE_DOWN:
+                return "PgDn";
+            case CMD_REMOTE_CTRL_ENTER:
+                return "Ctrl+Enter";
+            case CMD_REMOTE_F1:
+                return "F1";
+            case CMD_REMOTE_F2:
+                return "F2";
+            case CMD_REMOTE_F3:
+                return "F3";
+            case CMD_REMOTE_F4:
+                return "F4";
+            case CMD_REMOTE_F5:
+                return "F5";
+            case CMD_REMOTE_F6:
+                return "F6";
+            case CMD_REMOTE_F7:
+                return "F7";
+            case CMD_REMOTE_F8:
+                return "F8";
+            case CMD_REMOTE_F9:
+                return "F9";
+            case CMD_REMOTE_F10:
+                return "F10";
+            case CMD_REMOTE_F11:
+                return "F11";
+            case CMD_REMOTE_F12:
+                return "F12";
             case CMD_NOOP:
                 return null;
             default:
