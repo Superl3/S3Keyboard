@@ -2,6 +2,22 @@
   "schemaVersion": 1,
   "name": "High Contrast Light",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": true,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "flat",
+      "highContrast",
+      "light"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#FFFFFF",
     "functionKey": "#EFEFEF",
@@ -21,6 +37,9 @@
     "depthDp": 0,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +49,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": true,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#000000",
+      "background": "#FFFFFF"
+    },
+    "mod": {
+      "foreground": "#424242",
+      "background": "#EFEFEF"
+    },
+    "modInv": {
+      "foreground": "#EFEFEF",
+      "background": "#E0E0E0"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#06B6D4"
   }
 }

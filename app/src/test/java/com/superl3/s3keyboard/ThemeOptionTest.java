@@ -53,7 +53,8 @@ public final class ThemeOptionTest {
         assertEquals(333, next.hangulKeyboardHeightDp);
         assertEquals(222, next.englishKeyboardHeightDp);
         assertEquals(0xFFFBFBFD, next.keyIdleColor);
-        assertFalse(next.keyColorOverrides.containsKey("background:alpha"));
+        assertEquals(0xFFFBFBFD, (int) next.keyColorOverrides.get("background:alpha"));
+        assertFalse(next.keyColorOverrides.containsKey("tap:1"));
         assertEquals(ModifierIconCatalog.PACK_LINE_MONO, next.modifierIconThemePackId);
         assertEquals(ModifierIconCatalog.PACK_THEME_DEFAULT, next.modifierIconOverridePackId);
         assertEquals(KeyDisplayOverridePackCatalog.PACK_NONE, next.keyDisplayThemePackId);

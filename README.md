@@ -50,6 +50,8 @@ rtk powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
 ```
 
 This runs the Hangul automata unit tests and rebuilds the debug APK.
+It also validates the built-in theme JSON catalog and checks that the generated
+web theme index is current.
 
 For direct local Gradle use with an existing Android SDK/JDK, see
 `docs\development.md`.
@@ -66,6 +68,16 @@ rtk git diff --check
 
 Open `web-theme-builder\index.html` in a browser to edit schemaVersion 1 theme
 JSON that can be imported by the app theme editor.
+
+Built-in themes use `themes\*.json` as the source of truth. After adding or
+editing one, run:
+
+```powershell
+rtk node tools/sync-themes.mjs --generate --report
+```
+
+This validates theme JSON, regenerates Android built-in presets, and refreshes
+the web builder's generated theme contract and theme index.
 
 External modifier/display icon pack authoring is documented in
 `docs\icon-pack-import.md`.
@@ -119,7 +131,7 @@ The smoke script opens the local practice field and captures input-method state 
 - Conventional keyboard usability hacks: hit slop, touch Y offset, locked slide direction, haptic feedback, delete/cursor repeat, spacebar cursor movement, contextual Enter labels, and English double-space period
 - Queued haptic ticks with adjustable duration/gap, plus bounded touch/slide correction learned from immediate deletes
 - Local typing pattern logging for future typo correction experiments; data stays on device and resets with input correction
-- Theme system with per-key foreground/background overrides, key display overrides, modifier icon packs, imported icon/display pack metadata, visual effects, and preview parity scripts
+- Theme system with JSON-sourced built-in presets, Dingul alpha/mod/mod-inverted role colors, per-key foreground/background overrides, optional number-row alpha/mod/accent styling, key display overrides, modifier icon packs, imported icon/display pack metadata, visual effects, and preview parity scripts
 - Launcher settings for handedness, left/right margins, keyboard height, per-language number row, theme colors, key roundness/gap, Android input-method settings, and input-method picker
 - Closed beta trust work: local privacy notice, Play Data safety draft, ASCII-capable IME subtype, explicit field policies, `TYPE_NULL` raw-key fallback, debug-gated demo overrides, and release build hardening
 

@@ -670,7 +670,10 @@ public final class HangulKeyboardView extends View {
             }
         }
 
-        if (shouldShowSlideHints() && displayOverride == null && shouldDrawSlideHintsForKey(key, icon)) {
+        if (shouldShowSlideHints()
+                && displayOverride == null
+                && !drawsCustomModifierGlyph(key, icon)
+                && shouldDrawSlideHintsForKey(key, icon)) {
             float hintTextSize = (englishLetterKey
                     ? renderSp(8.4f)
                     : (keySlot.compactSpecialColumn ? renderSp(7) : renderSp(8.5f))) * secondaryTextScale();
@@ -712,8 +715,7 @@ public final class HangulKeyboardView extends View {
 
     private void drawDotLegend(Canvas canvas, GestureKey key, RectF surfaceBounds, boolean englishLetterKey) {
         textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
-        float radius = Math.min(surfaceBounds.height() * 0.115f, surfaceBounds.width() * 0.24f);
-        radius = Math.max(surfaceBounds.height() * 0.085f, Math.min(radius, surfaceBounds.height() * 0.18f));
+        float radius = dotsLineWeightFor(surfaceBounds) / 2f;
         float centerY = englishLetterKey
                 ? surfaceBounds.top + surfaceBounds.height() * 0.36f
                 : surfaceBounds.centerY();
@@ -1187,7 +1189,7 @@ public final class HangulKeyboardView extends View {
             return true;
         }
         if (ModifierIconCatalog.isMetropolisPack(packId)) {
-            drawMetropolisModifierIcon(canvas, icon, bounds);
+            drawMetropolisModifierIcon(canvas, icon, bounds, color);
             return true;
         }
         return false;
@@ -1195,18 +1197,14 @@ public final class HangulKeyboardView extends View {
 
     private void drawDotsLineModifierIcon(Canvas canvas, int icon, RectF bounds, int color) {
         if (icon == KeyIcon.SPACE) {
-            drawDotRow(canvas, bounds, 5, dotRadiusFor(bounds), color, 0.30f);
+            drawVividSpacebarDots(canvas, bounds);
             return;
         }
         if (isSingleDotModifierIcon(icon)) {
-            drawDotRow(canvas, bounds, 1, dotRadiusFor(bounds), color, 0.40f);
+            drawSingleModifierDot(canvas, bounds, color);
             return;
         }
-        if (isLineDotModifierIcon(icon)) {
-            drawDotRow(canvas, bounds, 4, dotRadiusFor(bounds), color, 0.34f);
-            return;
-        }
-        drawDotRow(canvas, bounds, 3, dotRadiusFor(bounds), color, 0.40f);
+        drawModifierLine(canvas, bounds, color, 0.30f);
     }
 
     private boolean isLineDotModifierIcon(int icon) {
@@ -1225,7 +1223,12 @@ public final class HangulKeyboardView extends View {
     }
 
     private float dotRadiusFor(RectF bounds) {
-        return Math.max(bounds.height() * 0.055f, Math.min(bounds.height() * 0.075f, bounds.width() * 0.045f));
+        return dotsLineWeightFor(bounds) / 2f;
+    }
+
+    private float dotsLineWeightFor(RectF bounds) {
+        float weight = Math.min(bounds.height() * 0.16f, bounds.width() * 0.12f);
+        return Math.max(renderDp(3.0f), weight);
     }
 
     private void drawDotRow(
@@ -1249,54 +1252,42 @@ public final class HangulKeyboardView extends View {
         }
     }
 
-    private void drawMetropolisModifierIcon(Canvas canvas, int icon, RectF bounds) {
-        int color = ModifierIconCatalog.metropolisColorFor(icon);
+    private void drawModifierLine(Canvas canvas, RectF bounds, int color, float sidePaddingRatio) {
         iconPaint.setColor(color);
         iconPaint.setStyle(Paint.Style.STROKE);
         iconPaint.setStrokeCap(Paint.Cap.ROUND);
-        iconPaint.setStrokeJoin(Paint.Join.ROUND);
-        float stroke = Math.max(bounds.height() * 0.055f, Math.min(bounds.height() * 0.095f, bounds.width() * 0.055f));
-        iconPaint.setStrokeWidth(stroke);
-        float cx = bounds.centerX();
+        iconPaint.setStrokeWidth(dotsLineWeightFor(bounds));
+        float left = bounds.left + bounds.width() * sidePaddingRatio;
+        float right = bounds.right - bounds.width() * sidePaddingRatio;
+        canvas.drawLine(left, bounds.centerY(), right, bounds.centerY(), iconPaint);
+    }
+
+    private void drawSingleModifierDot(Canvas canvas, RectF bounds, int color) {
+        iconPaint.setColor(color);
+        iconPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(bounds.centerX(), bounds.centerY(), dotRadiusFor(bounds), iconPaint);
+    }
+
+    private void drawVividSpacebarDots(Canvas canvas, RectF bounds) {
+        int[] colors = { 0xFFEF476F, 0xFFFFD166, 0xFF06D6A0, 0xFF4CC9F0 };
+        float radius = dotRadiusFor(bounds);
+        float gap = Math.max(radius * 1.35f, renderDp(3.2f));
+        float totalWidth = radius * 2f * colors.length + gap * (colors.length - 1);
+        float x = bounds.centerX() - totalWidth / 2f + radius;
+        iconPaint.setStyle(Paint.Style.FILL);
+        for (int color : colors) {
+            iconPaint.setColor(color);
+            canvas.drawCircle(x, bounds.centerY(), radius, iconPaint);
+            x += radius * 2f + gap;
+        }
+    }
+
+    private void drawMetropolisModifierIcon(Canvas canvas, int icon, RectF bounds, int color) {
         float cy = bounds.centerY();
-        float left = bounds.left + bounds.width() * 0.32f;
-        float right = bounds.right - bounds.width() * 0.32f;
         if (icon == KeyIcon.SPACE) {
-            drawDotRow(canvas, bounds, 5, dotRadiusFor(bounds), color, 0.30f);
-            return;
+            cy += Math.min(renderDp(5), bounds.height() * 0.09f);
         }
-        if (icon == KeyIcon.LANGUAGE || icon == KeyIcon.SEARCH || icon == KeyIcon.SETTINGS || icon == KeyIcon.KEYBOARD) {
-            iconPaint.setStyle(Paint.Style.FILL);
-            canvas.drawCircle(cx, cy, Math.min(bounds.width(), bounds.height()) * 0.10f, iconPaint);
-            iconPaint.setStyle(Paint.Style.STROKE);
-            canvas.drawCircle(cx, cy, Math.min(bounds.width(), bounds.height()) * 0.18f, iconPaint);
-            return;
-        }
-        if (icon == KeyIcon.SHIFT || icon == KeyIcon.CAPS_LOCK) {
-            canvas.drawLine(left, cy + bounds.height() * 0.12f, cx, cy - bounds.height() * 0.16f, iconPaint);
-            canvas.drawLine(cx, cy - bounds.height() * 0.16f, right, cy + bounds.height() * 0.12f, iconPaint);
-            canvas.drawLine(cx, cy - bounds.height() * 0.16f, cx, cy + bounds.height() * 0.22f, iconPaint);
-            return;
-        }
-        if (icon == KeyIcon.ENTER || icon == KeyIcon.DONE || icon == KeyIcon.NEXT) {
-            canvas.drawLine(left, cy, right, cy, iconPaint);
-            canvas.drawLine(right - bounds.width() * 0.12f, cy - bounds.height() * 0.10f, right, cy, iconPaint);
-            canvas.drawLine(right - bounds.width() * 0.12f, cy + bounds.height() * 0.10f, right, cy, iconPaint);
-            drawMetropolisEndDots(canvas, left, cy, color);
-            return;
-        }
-        if (icon == KeyIcon.BACKSPACE || icon == KeyIcon.HIDE || icon == KeyIcon.MOVE_LEFT || icon == KeyIcon.MOVE_RIGHT) {
-            canvas.drawLine(left, cy, right, cy, iconPaint);
-            float tip = icon == KeyIcon.MOVE_RIGHT ? right : left;
-            float tail = icon == KeyIcon.MOVE_RIGHT ? right - bounds.width() * 0.12f : left + bounds.width() * 0.12f;
-            canvas.drawLine(tail, cy - bounds.height() * 0.10f, tip, cy, iconPaint);
-            canvas.drawLine(tail, cy + bounds.height() * 0.10f, tip, cy, iconPaint);
-            drawMetropolisEndDots(canvas, icon == KeyIcon.MOVE_RIGHT ? left : right, cy, color);
-            return;
-        }
-        canvas.drawLine(left, cy, right, cy, iconPaint);
-        drawMetropolisEndDots(canvas, left, cy, color);
-        drawMetropolisEndDots(canvas, right, cy, color);
+        drawIconCentered(canvas, icon, bounds.centerX(), cy, keyIconSize(), color);
     }
 
     private void drawDottedLine(Canvas canvas, float left, float right, float cy, float radius, int color) {
@@ -1650,6 +1641,14 @@ public final class HangulKeyboardView extends View {
         return settings.keyboardMode == KeyboardMode.ENGLISH
                 ? settings.showEnglishSlideHints
                 : settings.showHangulSlideHints;
+    }
+
+    private boolean drawsCustomModifierGlyph(GestureKey key, int icon) {
+        if (key == null || icon == KeyIcon.NONE) {
+            return false;
+        }
+        String pack = ModifierIconCatalog.effectivePackId(settings);
+        return ModifierIconCatalog.rendersCustomGlyphs(pack);
     }
 
     private boolean shouldDrawSlideHintsForKey(GestureKey key, int icon) {

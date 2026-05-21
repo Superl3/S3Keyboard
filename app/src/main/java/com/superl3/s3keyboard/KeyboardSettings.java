@@ -76,7 +76,7 @@ final class KeyboardSettings {
     static final boolean DEFAULT_SHOW_HANGUL_NUMBER_ROW = false;
     static final boolean DEFAULT_SHOW_ENGLISH_NUMBER_ROW = true;
     static final AdditionalNumberRowColorMode DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE =
-            AdditionalNumberRowColorMode.FULL_DIMMED;
+            AdditionalNumberRowColorMode.FULL_MOD;
     static final int DEFAULT_HANGUL_SPECIAL_COLUMN_PERCENT = 17;
     static final int MIN_HANGUL_SPECIAL_COLUMN_PERCENT = 10;
     static final int MAX_HANGUL_SPECIAL_COLUMN_PERCENT = 30;

@@ -2,6 +2,7 @@ package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
@@ -52,12 +53,9 @@ public final class ModifierIconCatalogTest {
                         KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT)
                         .get("enter")
                         .value);
-        assertEquals(
-                "del",
-                KeyDisplayOverridePackCatalog.overridesForPack(
-                        KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT)
-                        .get("backspace")
-                        .value);
+        assertNull(KeyDisplayOverridePackCatalog.overridesForPack(
+                KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT)
+                .get("backspace"));
     }
 
     @Test
@@ -93,11 +91,15 @@ public final class ModifierIconCatalogTest {
     }
 
     @Test
-    public void metropolisPackUsesIntrinsicPointColors() {
+    public void metropolisPackUsesIntrinsicModifierIconColors() {
         assertEquals(true, ModifierIconCatalog.isColoredPack(ModifierIconCatalog.PACK_METROPOLIS_POINTS));
+        assertEquals(0xFFFFB000, ModifierIconCatalog.metropolisColorFor(KeyIcon.OPTIONS));
         assertEquals(0xFFFFB000, ModifierIconCatalog.metropolisColorFor(KeyIcon.BACKSPACE));
         assertEquals(0xFFFF4B3E, ModifierIconCatalog.metropolisColorFor(KeyIcon.SHIFT));
+        assertEquals(0xFFFF4B3E, ModifierIconCatalog.metropolisColorFor(KeyIcon.RESERVED));
         assertEquals(0xFF66E3C4, ModifierIconCatalog.metropolisColorFor(KeyIcon.ENTER));
+        assertEquals(0xFF66E3C4, ModifierIconCatalog.metropolisColorFor(KeyIcon.SETTINGS));
+        assertEquals(0xFF70D7E8, ModifierIconCatalog.metropolisColorFor(KeyIcon.SPACE));
         assertNotEquals(
                 ModifierIconCatalog.metropolisColorFor(KeyIcon.SHIFT),
                 ModifierIconCatalog.metropolisColorFor(KeyIcon.BACKSPACE));

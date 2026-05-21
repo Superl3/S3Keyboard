@@ -2,6 +2,18 @@
   "schemaVersion": 1,
   "name": "GMK Oblivion Hagoromo Inspired",
   "author": "local",
+  "metadata": {
+    "tags": [
+      "dark",
+      "depth",
+      "gmkInspired",
+      "textPack"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "displayPack"
+    ]
+  },
   "colors": {
     "keyIdle": "#EDE8DD",
     "functionKey": "#2A2C2F",
@@ -11,8 +23,8 @@
     "keyboardBackground": "#111214",
     "border": "#0B0C0E",
     "depth": "#0B0C0E",
-    "accent": "#485057",
-    "secondary": "#6FB35D"
+    "accent": "#2A2C2F",
+    "secondary": "#D7D1C5"
   },
   "shape": {
     "roundnessDp": 4,
@@ -22,7 +34,7 @@
     "depthDp": 2
   },
   "additionalNumberRow": {
-    "colorMode": "full_dimmed"
+    "colorMode": "full_mod"
   },
   "typography": {
     "fontFamily": "d2coding",
@@ -37,22 +49,20 @@
     "keyDisplayPackId": "git-commands"
   },
   "keyTextColorOverrides": {
-    "shift": "#E3C247",
-    "language": "#49A6C8",
-    "space": "#49A6C8",
-    "enter": "#9ACB5A",
-    "backspace": "#C3CCD0",
-    "options": "#E24F3D",
-    "reserved": "#9ACB5A",
     "shiftIndicator": "#7BBE64"
   },
-  "keyBackgroundColorOverrides": {
-    "shift": "#1A1D20",
-    "language": "#1A1D20",
-    "space": "#6F787D",
-    "enter": "#24282C",
-    "backspace": "#24282C",
-    "options": "#24282C",
-    "reserved": "#24282C"
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#2A2C2F",
+      "background": "#EDE8DD"
+    },
+    "mod": {
+      "foreground": "#D7D1C5",
+      "background": "#2A2C2F"
+    },
+    "modInv": {
+      "foreground": "#D7D1C5",
+      "background": "#2F3235"
+    }
   }
 }

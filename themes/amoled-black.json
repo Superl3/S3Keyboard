@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "name": "AMOLED Black",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": false,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "dark",
+      "flat"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#050505",
     "functionKey": "#111111",
@@ -21,6 +36,9 @@
     "depthDp": 0,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +48,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": false,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#F7F7F7",
+      "background": "#050505"
+    },
+    "mod": {
+      "foreground": "#A7A7A7",
+      "background": "#111111"
+    },
+    "modInv": {
+      "foreground": "#111111",
+      "background": "#000000"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#06B6D4"
   }
 }

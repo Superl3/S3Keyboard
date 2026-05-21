@@ -2,6 +2,22 @@
   "schemaVersion": 1,
   "name": "GMK Metropolis Inspired",
   "author": "local",
+  "metadata": {
+    "tags": [
+      "dark",
+      "depth",
+      "gmkInspired",
+      "metal"
+    ],
+    "features": [
+      "angularPreviewBubble",
+      "blurEffect",
+      "dingulRoleColors",
+      "heavyPerKeyOverrides",
+      "metalEffect",
+      "modifierIconPack"
+    ]
+  },
   "colors": {
     "keyIdle": "#10151B",
     "functionKey": "#151B22",
@@ -22,7 +38,7 @@
     "depthDp": 2
   },
   "additionalNumberRow": {
-    "colorMode": "full_dimmed"
+    "colorMode": "full_mod"
   },
   "typography": {
     "fontFamily": "d2coding",
@@ -34,7 +50,7 @@
     "secondaryTextItalic": false
   },
   "icons": {
-    "modifierPackId": "metropolis-points"
+    "modifierPackId": "metropolis-graph"
   },
   "effects": {
     "blur": {
@@ -60,15 +76,15 @@
     "reserved": "#0D1B2A",
     "alpha": "#66E3C4",
     "tap:1": "#FF4B3E",
-    "tap:2": "#FFB000",
+    "tap:2": "#FF4B3E",
     "tap:3": "#FF4B3E",
     "tap:4": "#FFB000",
-    "tap:5": "#FF4B3E",
+    "tap:5": "#FFB000",
     "tap:6": "#FFB000",
-    "tap:7": "#FF4B3E",
-    "tap:8": "#FFB000",
+    "tap:7": "#FFB000",
+    "tap:8": "#FF4B3E",
     "tap:9": "#FF4B3E",
-    "tap:0": "#FFB000",
+    "tap:0": "#FF4B3E",
     "tap:ㅢ": "#66E3C4",
     "ㅢ": "#66E3C4",
     "tap:ㅣ": "#66E3C4",
@@ -99,5 +115,19 @@
     "backspace": "#FFB000",
     "options": "#FFB000",
     "reserved": "#FF4B3E"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#66E3C4",
+      "background": "#10151B"
+    },
+    "mod": {
+      "foreground": "#66E3C4",
+      "background": "#151B22"
+    },
+    "modInv": {
+      "foreground": "#66E3C4",
+      "background": "#28161C"
+    }
   }
 }

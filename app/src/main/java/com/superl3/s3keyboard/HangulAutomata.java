@@ -147,6 +147,15 @@ final class HangulAutomata {
         return vowel >= 0 && finalConsonant == 0 ? VOWEL_CHARS[vowel] : '\0';
     }
 
+    boolean replaceCurrentVowelWithoutFinal(char ch) {
+        Integer nextVowel = VOWEL_BY_CHAR.get(ch);
+        if (nextVowel == null || vowel < 0 || finalConsonant != 0) {
+            return false;
+        }
+        vowel = nextVowel;
+        return true;
+    }
+
     static boolean isInitialConsonant(char ch) {
         return INITIAL_BY_CHAR.containsKey(ch);
     }

@@ -2,6 +2,22 @@
   "schemaVersion": 1,
   "name": "macOS Frost Light",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": true,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "depth",
+      "light",
+      "platformInspired"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#F6F7F9",
     "functionKey": "#E7EAEE",
@@ -21,6 +37,9 @@
     "depthDp": 2,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +49,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": true,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#1F2937",
+      "background": "#F6F7F9"
+    },
+    "mod": {
+      "foreground": "#667085",
+      "background": "#E7EAEE"
+    },
+    "modInv": {
+      "foreground": "#E7EAEE",
+      "background": "#DCE2EA"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#0891B2"
   }
 }

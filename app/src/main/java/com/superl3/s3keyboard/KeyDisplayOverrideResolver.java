@@ -20,9 +20,9 @@ final class KeyDisplayOverrideResolver {
         if (exact != null) {
             return exact;
         }
-        if (isAlphaKey(key)) {
-            KeyDisplayOverride group = settings.keyDisplayOverrides.get("alpha");
-            return group == null ? packOverrides.get("alpha") : group;
+        KeyDisplayOverride alphaGroup = alphaOverrideFor(settings, packOverrides, key);
+        if (alphaGroup != null) {
+            return alphaGroup;
         }
         if (isModifierKey(key)) {
             KeyDisplayOverride group = settings.keyDisplayOverrides.get("modifiers");
@@ -31,8 +31,46 @@ final class KeyDisplayOverrideResolver {
         return null;
     }
 
+    private static KeyDisplayOverride alphaOverrideFor(
+            KeyboardSettings settings,
+            Map<String, KeyDisplayOverride> packOverrides,
+            GestureKey key) {
+        KeyDisplayOverride group = settings.keyDisplayOverrides.get("alpha");
+        if (group == null) {
+            group = packOverrides.get("alpha");
+        }
+        if (group == null) {
+            return null;
+        }
+        if (isAlphaKey(key)) {
+            return group;
+        }
+        if (isDingulPunctuationModifierKey(key)
+                && !hasModifierGroupOverride(settings, packOverrides)
+                && isDotGlyph(group)) {
+            return group;
+        }
+        return null;
+    }
+
+    private static boolean hasModifierGroupOverride(
+            KeyboardSettings settings,
+            Map<String, KeyDisplayOverride> packOverrides) {
+        return settings.keyDisplayOverrides.get("modifiers") != null
+                || packOverrides.get("modifiers") != null;
+    }
+
+    private static boolean isDotGlyph(KeyDisplayOverride override) {
+        return override != null
+                && override.isIcon()
+                && ModifierIconCatalog.GLYPH_DOT.equals(override.value);
+    }
+
     static boolean isModifierKey(GestureKey key) {
-        return key != null && (key.icon != KeyIcon.NONE || KeyboardCommands.isCommand(key.tap));
+        return key != null
+                && (key.icon != KeyIcon.NONE
+                || KeyboardCommands.isCommand(key.tap)
+                || isDingulPunctuationModifierKey(key));
     }
 
     static boolean isAlphaKey(GestureKey key) {
@@ -45,13 +83,11 @@ final class KeyDisplayOverrideResolver {
         if (KeyboardCommands.isCommand(key.tap)) {
             return false;
         }
-        if (isPunctuationAlphaKey(key.tap) || isPunctuationAlphaKey(key.label)) {
-            return true;
-        }
         if (key.tap.length() == 1) {
             char c = key.tap.charAt(0);
             return (c >= 'a' && c <= 'z')
                     || (c >= 'A' && c <= 'Z')
+                    || (c >= '0' && c <= '9')
                     || (c >= '\u3131' && c <= '\u318E')
                     || (c >= '\uAC00' && c <= '\uD7A3');
         }
@@ -63,12 +99,16 @@ final class KeyDisplayOverrideResolver {
                 || KeyboardCommands.CMD_DINGUL_WIDE_VOWEL.equals(key.tap)
                 || "\u3163.".equals(key.label)
                 || "\u3161\u3150".equals(key.label)
-                || ". .".equals(key.label)
-                || "..".equals(key.label);
+                || ". .".equals(key.label);
     }
 
-    private static boolean isPunctuationAlphaKey(String value) {
-        return "?".equals(value) || ".".equals(value) || "/".equals(value);
+    private static boolean isDingulPunctuationModifierKey(GestureKey key) {
+        return "?".equals(key.label)
+                || ".".equals(key.label)
+                || "/".equals(key.label)
+                || "?".equals(key.tap)
+                || ".".equals(key.tap)
+                || "/".equals(key.tap);
     }
 
     private static KeyDisplayOverride exactOverride(Map<String, KeyDisplayOverride> overrides, GestureKey key) {

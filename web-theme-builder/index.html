@@ -41,12 +41,7 @@
         <section class="panel">
           <h2>Typography</h2>
           <label>Font
-            <select id="fontFamily">
-              <option value="default">Default</option>
-              <option value="noto_sans_kr">Noto Sans KR</option>
-              <option value="noto_serif_kr">Noto Serif KR</option>
-              <option value="d2coding">D2Coding</option>
-            </select>
+            <select id="fontFamily"></select>
           </label>
           <label>Primary text <input id="primaryTextSizePercent" type="range" min="70" max="150"></label>
           <output id="primaryOut"></output>
@@ -61,13 +56,26 @@
         <section class="panel">
           <h2>Additional Number Row</h2>
           <label>Color mode
-            <select id="numberRowMode">
-              <option value="full_dimmed">Full accent</option>
-              <option value="full_default">Full default</option>
-              <option value="center_dimmed">Accent 4-7</option>
-            </select>
+            <select id="numberRowMode"></select>
           </label>
-          <p class="hint">This is independent of theme colors. It selects which number-row keys receive accent background.</p>
+          <p class="hint">This is independent of whether the number row is shown. It maps outer 123890 and inner 4567 digits to alpha, mod, or accent styling.</p>
+        </section>
+
+        <section class="panel">
+          <h2>Dingul Color Roles</h2>
+          <div id="dingulRoleControls" class="controls"></div>
+          <p class="hint">Default colorway is alpha, mod, and mod inv. Inv swaps foreground/background for accent-style modifier keys.</p>
+        </section>
+
+        <section class="panel">
+          <h2>Icon Packs</h2>
+          <label>Modifier icons
+            <select id="modifierPackId"></select>
+          </label>
+          <label>Display pack
+            <select id="keyDisplayPackId"></select>
+          </label>
+          <p class="hint">Packs come from the shared theme contract, so imported themes and previews use the same ids as Android.</p>
         </section>
       </div>
 
@@ -97,6 +105,8 @@
       </section>
     </aside>
   </main>
+  <script src="theme-contract.generated.js"></script>
+  <script src="theme-index.generated.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

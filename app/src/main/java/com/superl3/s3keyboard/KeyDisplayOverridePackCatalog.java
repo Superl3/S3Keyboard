@@ -109,27 +109,6 @@ final class KeyDisplayOverridePackCatalog {
         putIconText(overrides, KeyIcon.DONE, "hihihi");
         putIconText(overrides, KeyIcon.NEXT, "hihihi");
         putText(overrides, "enter", "hihihi");
-        putIconText(overrides, KeyIcon.BACKSPACE, "del");
-        putText(overrides, "backspace", "del");
-        putIconText(overrides, KeyIcon.SHIFT, "shift");
-        putIconText(overrides, KeyIcon.CAPS_LOCK, "caps");
-        putText(overrides, "shift", "shift");
-        putIconText(overrides, KeyIcon.SPACE, "space");
-        putText(overrides, "space", "space");
-        putIconText(overrides, KeyIcon.LANGUAGE, "lang");
-        putText(overrides, "language", "lang");
-        putIconText(overrides, KeyIcon.OPTIONS, "opts");
-        putText(overrides, "options", "opts");
-        putIconText(overrides, KeyIcon.SETTINGS, "set");
-        putText(overrides, "settings", "set");
-        putIconText(overrides, KeyIcon.RESERVED, "memo");
-        putText(overrides, "reserved", "memo");
-        putIconText(overrides, KeyIcon.SEARCH, "find");
-        putIconText(overrides, KeyIcon.HIDE, "hide");
-        putIconText(overrides, KeyIcon.KEYBOARD, "kbd");
-        putIconText(overrides, KeyIcon.MOVE_LEFT, "left");
-        putIconText(overrides, KeyIcon.MOVE_RIGHT, "right");
-        putIconText(overrides, KeyIcon.RESET, "reset");
         return Collections.unmodifiableMap(overrides);
     }
 
@@ -160,6 +139,8 @@ final class KeyDisplayOverridePackCatalog {
         putIconText(overrides, KeyIcon.MOVE_LEFT, "prev");
         putIconText(overrides, KeyIcon.MOVE_RIGHT, "next");
         putIconText(overrides, KeyIcon.RESET, "reset");
+        putText(overrides, ".", "diff");
+        putText(overrides, "/", "log");
         return Collections.unmodifiableMap(overrides);
     }
 

@@ -1,6 +1,8 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -69,6 +71,40 @@ public final class HangulAutomataTest {
 
         automata.input('ㄴ');
         assertEquals('\0', automata.currentVowelWithoutFinal());
+    }
+
+    @Test
+    public void replacesCurrentOpenVowelForDingulStrokeTap() {
+        HangulAutomata automata = new HangulAutomata();
+
+        automata.input('ㅇ');
+        automata.input('ㅏ');
+
+        assertTrue(automata.replaceCurrentVowelWithoutFinal('ㅑ'));
+        assertEquals("야", automata.flush());
+    }
+
+    @Test
+    public void replacesCurrentOpenVowelForDingulWideTap() {
+        HangulAutomata automata = new HangulAutomata();
+
+        automata.input('ㅇ');
+        automata.input('ㅏ');
+
+        assertTrue(automata.replaceCurrentVowelWithoutFinal('ㅐ'));
+        assertEquals("애", automata.flush());
+    }
+
+    @Test
+    public void doesNotReplaceVowelWhenFinalConsonantExists() {
+        HangulAutomata automata = new HangulAutomata();
+
+        automata.input('ㅇ');
+        automata.input('ㅏ');
+        automata.input('ㄴ');
+
+        assertFalse(automata.replaceCurrentVowelWithoutFinal('ㅑ'));
+        assertEquals("안", automata.flush());
     }
 
     @Test

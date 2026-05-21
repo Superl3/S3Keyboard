@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "name": "GMK Bento Inspired",
   "author": "local",
+  "metadata": {
+    "tags": [
+      "dark",
+      "depth",
+      "gmkInspired"
+    ],
+    "features": [
+      "dingulRoleColors"
+    ]
+  },
   "colors": {
     "keyIdle": "#E8E0D3",
     "functionKey": "#2E6687",
@@ -12,7 +22,7 @@
     "border": "#5C6E72",
     "depth": "#5C6E72",
     "accent": "#234E68",
-    "secondary": "#E66D61"
+    "secondary": "#FFF3E7"
   },
   "shape": {
     "roundnessDp": 5,
@@ -22,7 +32,7 @@
     "depthDp": 2
   },
   "additionalNumberRow": {
-    "colorMode": "full_dimmed"
+    "colorMode": "full_mod"
   },
   "typography": {
     "fontFamily": "noto_sans_kr",
@@ -34,31 +44,29 @@
     "secondaryTextItalic": false
   },
   "keyTextColorOverrides": {
-    "shift": "#F8776C",
-    "language": "#F8776C",
-    "space": "#F8776C",
-    "enter": "#FFF3E7",
-    "backspace": "#F8776C",
-    "options": "#F8776C",
-    "reserved": "#FFF3E7",
-    "tap:ㅢ": "#2F8CA1",
-    "ㅢ": "#2F8CA1",
-    "tap:ㅣ": "#2F8CA1",
-    "ㅣ.": "#2F8CA1",
-    "__dingul_center_vowel__": "#2F8CA1",
-    "tap:ㅡ": "#2F8CA1",
-    "ㅡ": "#2F8CA1",
-    "ㅡㅐ": "#2F8CA1",
-    "__dingul_wide_vowel__": "#2F8CA1",
     "shiftIndicator": "#2F8CA1"
   },
-  "keyBackgroundColorOverrides": {
-    "shift": "#2E6687",
-    "language": "#2E6687",
-    "space": "#E66D61",
-    "enter": "#E66D61",
-    "backspace": "#2E6687",
-    "options": "#E66D61",
-    "reserved": "#2E6687"
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#234E68",
+      "background": "#E8E0D3"
+    },
+    "mod": {
+      "foreground": "#FFF3E7",
+      "background": "#2E6687"
+    },
+    "modInv": {
+      "foreground": "#FFF3E7",
+      "background": "#E66D61"
+    }
+  },
+  "accentPolicy": {
+    "qwerty": [
+      "modCtrl"
+    ],
+    "dingul": [
+      "modEnter",
+      "modShift"
+    ]
   }
 }

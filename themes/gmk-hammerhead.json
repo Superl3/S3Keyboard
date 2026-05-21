@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "name": "GMK HammerHead Inspired",
   "author": "local",
+  "metadata": {
+    "tags": [
+      "depth",
+      "gmkInspired",
+      "light"
+    ],
+    "features": [
+      "dingulRoleColors"
+    ]
+  },
   "colors": {
     "keyIdle": "#B9C7CD",
     "functionKey": "#132633",
@@ -22,7 +32,7 @@
     "depthDp": 2
   },
   "additionalNumberRow": {
-    "colorMode": "full_dimmed"
+    "colorMode": "full_mod"
   },
   "typography": {
     "fontFamily": "noto_sans_kr",
@@ -34,31 +44,29 @@
     "secondaryTextItalic": false
   },
   "keyTextColorOverrides": {
-    "shift": "#25BFB2",
-    "language": "#25BFB2",
-    "space": "#132633",
-    "enter": "#132633",
-    "backspace": "#B9C7CD",
-    "options": "#25BFB2",
-    "reserved": "#132633",
-    "tap:ㅢ": "#132633",
-    "ㅢ": "#132633",
-    "tap:ㅣ": "#132633",
-    "ㅣ.": "#132633",
-    "__dingul_center_vowel__": "#132633",
-    "tap:ㅡ": "#132633",
-    "ㅡ": "#132633",
-    "ㅡㅐ": "#132633",
-    "__dingul_wide_vowel__": "#132633",
     "shiftIndicator": "#39D4C8"
   },
-  "keyBackgroundColorOverrides": {
-    "shift": "#132633",
-    "language": "#132633",
-    "space": "#B9C7CD",
-    "enter": "#27AFA3",
-    "backspace": "#132633",
-    "options": "#132633",
-    "reserved": "#27AFA3"
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#122430",
+      "background": "#B9C7CD"
+    },
+    "mod": {
+      "foreground": "#0AA29A",
+      "background": "#132633"
+    },
+    "modInv": {
+      "foreground": "#132633",
+      "background": "#27AFA3"
+    }
+  },
+  "accentPolicy": {
+    "qwerty": [
+      "modCtrl"
+    ],
+    "dingul": [
+      "modEnter",
+      "modShift"
+    ]
   }
 }

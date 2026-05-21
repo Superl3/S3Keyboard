@@ -44,9 +44,30 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
+    sourceSets {
+        main {
+            java.srcDir "$buildDir/generated/source/themePresets/java"
+        }
+    }
 }
 
 dependencies {
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.json:json:20240303"
+}
+
+def generatedThemePresetDir = file("$buildDir/generated/source/themePresets/java")
+
+tasks.register("generateThemePresets", Exec) {
+    workingDir rootProject.projectDir
+    inputs.files(fileTree(dir: rootProject.file("themes"), include: "*.json"))
+    inputs.file(rootProject.file("tools/sync-themes.mjs"))
+    inputs.file(rootProject.file("tools/theme-contract.mjs"))
+    outputs.dir(generatedThemePresetDir)
+    commandLine "node", "tools/sync-themes.mjs", "--generate-java", generatedThemePresetDir.absolutePath
+}
+
+tasks.named("preBuild") {
+    dependsOn tasks.named("generateThemePresets")
 }

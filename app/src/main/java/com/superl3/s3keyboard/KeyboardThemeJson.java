@@ -122,6 +122,7 @@ final class KeyboardThemeJson {
                 keyColorOverrides = root.optJSONObject("keyColorOverrides");
             }
             JSONObject keyBackgroundColorOverrides = root.optJSONObject("keyBackgroundColorOverrides");
+            JSONObject dingulColors = root.optJSONObject("dingulColors");
 
             boolean customDepthColor = layeredBase.customDepthColorEnabled;
             int depthColor = layeredBase.depthColor;
@@ -215,6 +216,8 @@ final class KeyboardThemeJson {
             }
 
             Map<String, Integer> overrides = new HashMap<>(themed.keyColorOverrides);
+            overrides.putAll(decodeDingulColors(dingulColors, themed));
+            overrides.putAll(decodeAccentPolicy(root.optJSONObject("accentPolicy"), themed, overrides));
             overrides.putAll(decodeKeyColorOverrides(keyColorOverrides));
             overrides.putAll(decodeKeyBackgroundColorOverrides(keyBackgroundColorOverrides));
             themed = themed.withKeyColorOverrides(overrides);
@@ -421,6 +424,181 @@ final class KeyboardThemeJson {
             }
         }
         return overrides;
+    }
+
+    static Map<String, Integer> decodeDingulColors(JSONObject object, KeyboardSettings settings) {
+        Map<String, Integer> overrides = new HashMap<>();
+        if (object == null) {
+            return overrides;
+        }
+        decodeDingulColorRole(object.opt("alpha"), "alpha", overrides, settings);
+        decodeDingulColorRole(object.opt("mod"), "modifiers", overrides, settings);
+        decodeDingulColorRole(object.opt("modifier"), "modifiers", overrides, settings);
+        decodeDingulColorRole(object.opt("modInv"), "modInv", overrides, settings);
+        decodeDingulColorRole(object.opt("mod_inv"), "modInv", overrides, settings);
+        decodeDingulColorRole(object.opt("modifierInverted"), "modInv", overrides, settings);
+        return overrides;
+    }
+
+    static Map<String, Integer> decodeAccentPolicy(
+            JSONObject object,
+            KeyboardSettings settings,
+            Map<String, Integer> inheritedOverrides) {
+        Map<String, Integer> overrides = new HashMap<>();
+        if (object == null) {
+            return overrides;
+        }
+        addAccentTargets(overrides, object.optJSONArray("qwerty"), false, settings, inheritedOverrides);
+        addAccentTargets(overrides, object.optJSONArray("dingul"), true, settings, inheritedOverrides);
+        return overrides;
+    }
+
+    private static void addAccentTargets(
+            Map<String, Integer> overrides,
+            JSONArray targets,
+            boolean dingul,
+            KeyboardSettings settings,
+            Map<String, Integer> inheritedOverrides) {
+        if (targets == null) {
+            return;
+        }
+        int foreground = accentPolicyForeground(settings, inheritedOverrides);
+        int background = settings.accentKeyColor;
+        for (int index = 0; index < targets.length(); index++) {
+            for (String key : accentPolicyKeys(targets.optString(index, ""), dingul)) {
+                overrides.put(key, foreground);
+                overrides.put("background:" + key, background);
+            }
+        }
+    }
+
+    private static int accentPolicyForeground(
+            KeyboardSettings settings,
+            Map<String, Integer> inheritedOverrides) {
+        Integer modInv = inheritedOverrides.get("modInv");
+        if (modInv == null) {
+            modInv = inheritedOverrides.get("modinv");
+        }
+        if (modInv != null) {
+            return modInv;
+        }
+        Integer modifierInverted = inheritedOverrides.get("modifierinverted");
+        if (modifierInverted == null) {
+            modifierInverted = settings.keyColorOverrides.get("modifierinverted");
+        }
+        if (modifierInverted != null) {
+            return modifierInverted;
+        }
+        return settings.accentColor;
+    }
+
+    private static String[] accentPolicyKeys(String target, boolean dingul) {
+        if ("modCtrl".equals(target)) {
+            return new String[]{"settings", "enter"};
+        }
+        if ("modMeta".equals(target)) {
+            return new String[]{"reserved", "language"};
+        }
+        if ("modCommand".equals(target)) {
+            return new String[]{"shift", "backspace"};
+        }
+        if (dingul && "modEnter".equals(target)) {
+            return new String[]{"."};
+        }
+        if (dingul && "modShift".equals(target)) {
+            return new String[]{"/"};
+        }
+        if (dingul && "punctuation".equals(target)) {
+            return new String[]{"?", ".", "/"};
+        }
+        return new String[0];
+    }
+
+    private static void decodeDingulColorRole(
+            Object roleValue,
+            String overrideKey,
+            Map<String, Integer> overrides,
+            KeyboardSettings settings) {
+        if (roleValue == null || roleValue == JSONObject.NULL) {
+            return;
+        }
+        if (roleValue instanceof JSONObject) {
+            JSONObject object = (JSONObject) roleValue;
+            int foreground = parseThemeColor(
+                    firstNonEmpty(
+                            object.optString("foreground", ""),
+                            object.optString("text", ""),
+                            object.optString("fg", "")),
+                    settings,
+                    Integer.MIN_VALUE);
+            if (foreground != Integer.MIN_VALUE) {
+                overrides.put(overrideKey, foreground);
+            }
+            int background = parseThemeColor(
+                    firstNonEmpty(
+                            object.optString("background", ""),
+                            object.optString("key", ""),
+                            object.optString("bg", "")),
+                    settings,
+                    Integer.MIN_VALUE);
+            if (background != Integer.MIN_VALUE) {
+                overrides.put("background:" + overrideKey, background);
+            }
+            return;
+        }
+        int foreground = parseThemeColor(String.valueOf(roleValue), settings, Integer.MIN_VALUE);
+        if (foreground != Integer.MIN_VALUE) {
+            overrides.put(overrideKey, foreground);
+        }
+    }
+
+    private static String firstNonEmpty(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (value != null && !value.isEmpty()) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    private static int parseThemeColor(String value, KeyboardSettings settings, int fallback) {
+        if (value == null || value.isEmpty()) {
+            return fallback;
+        }
+        int parsed = parseColor(value, Integer.MIN_VALUE);
+        if (parsed != Integer.MIN_VALUE) {
+            return parsed;
+        }
+        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
+        switch (value) {
+            case "keyIdle":
+            case "alphaKey":
+                return safeSettings.keyIdleColor;
+            case "functionKey":
+            case "modKey":
+                return safeSettings.functionKeyColor;
+            case "primaryFunctionKey":
+                return safeSettings.primaryFunctionKeyColor;
+            case "accentKey":
+            case "modInvKey":
+                return safeSettings.accentKeyColor;
+            case "accent":
+            case "alpha":
+                return safeSettings.accentColor;
+            case "secondary":
+            case "mod":
+                return safeSettings.secondaryColor;
+            case "keyboardBackground":
+            case "panelBackground":
+                return safeSettings.keyboardBackgroundColor;
+            case "border":
+                return safeSettings.borderColor;
+            default:
+                return fallback;
+        }
     }
 
     static Map<String, KeyDisplayOverride> decodeKeyDisplayOverrides(JSONObject object) {

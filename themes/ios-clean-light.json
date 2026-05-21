@@ -2,6 +2,23 @@
   "schemaVersion": 1,
   "name": "iOS Clean Light",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": false,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "flat",
+      "light",
+      "minimal",
+      "platformInspired"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#FBFBFD",
     "functionKey": "#EEF0F4",
@@ -21,6 +38,9 @@
     "depthDp": 0,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +50,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": false,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#111827",
+      "background": "#FBFBFD"
+    },
+    "mod": {
+      "foreground": "#707780",
+      "background": "#EEF0F4"
+    },
+    "modInv": {
+      "foreground": "#EEF0F4",
+      "background": "#E4E7ED"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#06B6D4"
   }
 }

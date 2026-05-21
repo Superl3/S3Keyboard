@@ -2,6 +2,22 @@
   "schemaVersion": 1,
   "name": "Graphite Mono",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": false,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "depth",
+      "light",
+      "minimal"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#F5F5F5",
     "functionKey": "#E8E8E8",
@@ -21,6 +37,9 @@
     "depthDp": 1,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "d2coding",
     "primaryTextSizePercent": 78,
@@ -30,9 +49,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": false,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#161616",
+      "background": "#F5F5F5"
+    },
+    "mod": {
+      "foreground": "#686868",
+      "background": "#E8E8E8"
+    },
+    "modInv": {
+      "foreground": "#E8E8E8",
+      "background": "#DDDDDD"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#16A34A"
   }
 }

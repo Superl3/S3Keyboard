@@ -2,6 +2,18 @@
   "schemaVersion": 1,
   "name": "GMK Olivia Light Inspired",
   "author": "local",
+  "metadata": {
+    "tags": [
+      "depth",
+      "gmkInspired",
+      "light",
+      "textPack"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "displayPack"
+    ]
+  },
   "colors": {
     "keyIdle": "#F2EDE8",
     "functionKey": "#242126",
@@ -22,7 +34,7 @@
     "depthDp": 2
   },
   "additionalNumberRow": {
-    "colorMode": "full_dimmed"
+    "colorMode": "full_alpha"
   },
   "typography": {
     "fontFamily": "noto_sans_kr",
@@ -37,20 +49,26 @@
     "keyDisplayPackId": "simple-text"
   },
   "keyTextColorOverrides": {
-    "shift": "#F2EDE8",
-    "backspace": "#F2EDE8",
-    "language": "#F2EDE8",
-    "settings": "#F2EDE8",
+    "shift": "#E8A5AE",
+    "backspace": "#E8A5AE",
     "enter": "#211F23",
-    "space": "#211F23",
-    "options": "#211F23",
-    "reserved": "#211F23",
     "shiftIndicator": "#D9A3AA"
   },
   "keyBackgroundColorOverrides": {
-    "enter": "#E8A5AE",
-    "space": "#E8A5AE",
-    "options": "#E8A5AE",
-    "reserved": "#E8A5AE"
+    "enter": "#E8A5AE"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#2B2528",
+      "background": "#F2EDE8"
+    },
+    "mod": {
+      "foreground": "#E8A5AE",
+      "background": "#242126"
+    },
+    "modInv": {
+      "foreground": "#242126",
+      "background": "#E8A5AE"
+    }
   }
 }

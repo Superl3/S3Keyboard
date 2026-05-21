@@ -2,6 +2,22 @@
   "schemaVersion": 1,
   "name": "Paper Mono Flat",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": false,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "flat",
+      "light",
+      "minimal"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#FAFAFA",
     "functionKey": "#EFEFEF",
@@ -21,6 +37,9 @@
     "depthDp": 0,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "d2coding",
     "primaryTextSizePercent": 78,
@@ -30,9 +49,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": false,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#111111",
+      "background": "#FAFAFA"
+    },
+    "mod": {
+      "foreground": "#777777",
+      "background": "#EFEFEF"
+    },
+    "modInv": {
+      "foreground": "#EFEFEF",
+      "background": "#E5E5E5"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#16A34A"
   }
 }

@@ -2,6 +2,23 @@
   "schemaVersion": 1,
   "name": "iOS Clean Dark",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": false,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "dark",
+      "flat",
+      "minimal",
+      "platformInspired"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#2B2D31",
     "functionKey": "#3A3D43",
@@ -21,6 +38,9 @@
     "depthDp": 0,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +50,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": false,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#F8FAFC",
+      "background": "#2B2D31"
+    },
+    "mod": {
+      "foreground": "#B8BEC8",
+      "background": "#3A3D43"
+    },
+    "modInv": {
+      "foreground": "#3A3D43",
+      "background": "#202328"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#06B6D4"
   }
 }

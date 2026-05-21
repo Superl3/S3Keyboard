@@ -12,6 +12,6 @@ final class ThemePreviewSettings {
                 .withKeyboardMode(mode)
                 .withHintVisibility(false, false, false)
                 .withHangulNumberRow(false)
-                .withEnglishNumberRow(false);
+                .withEnglishNumberRow(true);
     }
 }

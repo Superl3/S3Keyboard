@@ -133,6 +133,21 @@ input[type="color"] {
   grid-template-columns: 150px 1fr 52px;
 }
 
+.dingul-role-row {
+  display: grid;
+  grid-template-columns: 82px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dingul-role-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
 .info {
   min-height: 28px;
   width: 30px;
@@ -194,10 +209,26 @@ textarea {
 }
 
 .main-dot {
-  width: 11px;
-  height: 11px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   display: block;
+}
+
+.key-glyph {
+  width: min(52%, 32px);
+  height: min(58%, 26px);
+  display: block;
+  overflow: visible;
+  color: currentColor;
+}
+
+.hihihi-glyph {
+  width: min(74%, 68px);
+  height: min(54%, 24px);
+  display: block;
+  overflow: visible;
+  color: currentColor;
 }
 
 .shift-dot {
@@ -212,33 +243,32 @@ textarea {
 
 .mod-pack-line {
   width: 42%;
-  height: 4px;
+  height: 8px;
   border-radius: 999px;
   display: block;
 }
 
 .mod-pack-line.dotted-line {
-  background: transparent !important;
-  height: 6px;
-  background-image: radial-gradient(currentColor 38%, transparent 42%) !important;
-  background-size: 8px 6px;
-  background-repeat: repeat-x;
+  background: currentColor !important;
   color: inherit;
 }
 
 .mod-pack-line.five-dot-line {
-  width: 58%;
+  width: 50%;
   background: transparent !important;
-  height: 6px;
-  background-image: radial-gradient(currentColor 38%, transparent 42%) !important;
-  background-size: 20% 6px;
-  background-repeat: repeat-x;
+  height: 12px;
+  background-image:
+    radial-gradient(circle at 8% 50%, #EF476F 0 4px, transparent 4.4px),
+    radial-gradient(circle at 36% 50%, #FFD166 0 4px, transparent 4.4px),
+    radial-gradient(circle at 64% 50%, #06D6A0 0 4px, transparent 4.4px),
+    radial-gradient(circle at 92% 50%, #4CC9F0 0 4px, transparent 4.4px) !important;
+  background-repeat: no-repeat;
   color: inherit;
 }
 
 .mod-pack-line.single-dot-line {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 }
 

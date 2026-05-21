@@ -2,6 +2,22 @@
   "schemaVersion": 1,
   "name": "Android Material Light",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": true,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "flat",
+      "light",
+      "platformInspired"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#FFFBFE",
     "functionKey": "#ECE6F0",
@@ -21,6 +37,9 @@
     "depthDp": 0,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +49,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": true,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#1D1B20",
+      "background": "#FFFBFE"
+    },
+    "mod": {
+      "foreground": "#625B71",
+      "background": "#ECE6F0"
+    },
+    "modInv": {
+      "foreground": "#ECE6F0",
+      "background": "#E1DCE8"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#16A34A"
   }
 }

@@ -3,7 +3,6 @@ package com.superl3.s3keyboard;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -24,8 +23,7 @@ public final class KeyboardThemePresetTest {
         assertNotNull(KeyboardThemePreset.find("macos-graphite-dark"));
         assertNotNull(KeyboardThemePreset.find("android-material-light"));
         assertNotNull(KeyboardThemePreset.find("android-material-dark"));
-        assertNull(KeyboardThemePreset.find("mint-air"));
-        assertNull(KeyboardThemePreset.find("lavender-focus"));
+        assertNotNull(KeyboardThemePreset.find("lavender-focus"));
     }
 
     @Test
@@ -88,6 +86,16 @@ public final class KeyboardThemePresetTest {
         assertEquals(0xFFBBB4AA, light.borderColor);
         assertEquals(0xFFD2CCC2, light.depthColor);
         assertEquals(0xFFFFFFFF, light.keyboardBackgroundColor);
+        assertEquals(0xFFECE7DE, light.functionKeyColor);
+        assertEquals(0xFFECE7DE, light.primaryFunctionKeyColor);
+        assertEquals(0xFFFF9F32, dark.accentKeyColor);
+        assertEquals(0xFFECE7DE, light.accentKeyColor);
+        assertEquals(0xFF111318, (int) dark.keyColorOverrides.get("modinv"));
+        assertEquals(0xFFFF9F32, (int) dark.keyColorOverrides.get("background:modinv"));
+        assertEquals(0xFF111318, (int) dark.keyColorOverrides.get("."));
+        assertEquals(0xFF111318, (int) dark.keyColorOverrides.get("/"));
+        assertEquals(0xFF6C5542, (int) light.keyColorOverrides.get("modinv"));
+        assertEquals(0xFFECE7DE, (int) light.keyColorOverrides.get("background:modinv"));
         assertEquals(KeyboardSettings.FONT_NOTO_SANS_KR, dark.fontFamily);
         assertEquals(KeyboardSettings.FONT_NOTO_SANS_KR, light.fontFamily);
         assertEquals(false, dark.keyColorOverrides.containsKey(".."));
@@ -139,14 +147,31 @@ public final class KeyboardThemePresetTest {
 
         assertEquals(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT, olivia.keyDisplayThemePackId);
         assertEquals(KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS, oblivion.keyDisplayThemePackId);
-        assertEquals(0xFFF2EDE8, (int) olivia.keyColorOverrides.get("shift"));
-        assertEquals(0xFF211F23, (int) olivia.keyColorOverrides.get("enter"));
-        assertEquals(0xFFF4E7E2, (int) oliviaDark.keyColorOverrides.get("shift"));
-        assertEquals(0xFF211F23, (int) oliviaDark.keyColorOverrides.get("enter"));
+        assertEquals(0xFFE8A5AE, olivia.accentKeyColor);
+        assertEquals(0xFFD9A3AA, oliviaDark.accentKeyColor);
+        assertEquals(AdditionalNumberRowColorMode.FULL_ALPHA, olivia.additionalNumberRowColorMode);
+        assertEquals(AdditionalNumberRowColorMode.FULL_ALPHA, oliviaDark.additionalNumberRowColorMode);
+        assertEquals(0xFFE8A5AE, (int) olivia.keyColorOverrides.get("shift"));
+        assertEquals(0xFFE8A5AE, (int) olivia.keyColorOverrides.get("backspace"));
+        assertEquals("diff", KeyDisplayOverridePackCatalog
+                .overridesForPack(KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS)
+                .get(".").value);
+        assertEquals("log", KeyDisplayOverridePackCatalog
+                .overridesForPack(KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS)
+                .get("/").value);
         assertEquals(ModifierIconCatalog.PACK_METROPOLIS_POINTS, metropolis.modifierIconThemePackId);
         assertEquals(0xFF090D12, metropolis.keyboardBackgroundColor);
         assertEquals(0xFF10151B, (int) metropolis.keyColorOverrides.get("background:alpha"));
         assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("tap:1"));
+        assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("tap:2"));
+        assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("tap:3"));
+        assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("tap:8"));
+        assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("tap:9"));
+        assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("tap:0"));
+        assertEquals(0xFFFFB000, (int) metropolis.keyColorOverrides.get("tap:4"));
+        assertEquals(0xFFFFB000, (int) metropolis.keyColorOverrides.get("tap:5"));
+        assertEquals(0xFFFFB000, (int) metropolis.keyColorOverrides.get("tap:6"));
+        assertEquals(0xFFFFB000, (int) metropolis.keyColorOverrides.get("tap:7"));
         assertEquals(0xFF10151B, (int) metropolis.keyColorOverrides.get("background:tap:1"));
         assertEquals(0xFFFFB000, (int) metropolis.keyColorOverrides.get("background:backspace"));
         assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("background:shift"));
@@ -157,13 +182,13 @@ public final class KeyboardThemePresetTest {
     }
 
     @Test
-    public void colorfulDingulPresetsTintAllVowelLegends() {
+    public void semanticDingulPresetsUseRoleColorOverrides() {
         assertDingulVowelOverrides("marigold-fiesta-dark");
         assertDingulVowelOverrides("marigold-fiesta-light");
-        assertDingulVowelOverrides("gmk-bento");
-        assertDingulVowelOverrides("gmk-hammerhead");
-        assertDingulVowelOverrides("gmk-8008");
-        assertDingulVowelOverrides("gmk-modern-dolch");
+        assertDingulRoleOverrides("gmk-bento");
+        assertDingulRoleOverrides("gmk-hammerhead");
+        assertDingulRoleOverrides("gmk-8008");
+        assertDingulRoleOverrides("gmk-modern-dolch");
     }
 
     @Test
@@ -181,23 +206,27 @@ public final class KeyboardThemePresetTest {
     }
 
     @Test
-    public void gmkExternalThemeFilesMatchBuiltInPresetIdentity() throws IOException {
-        String[] ids = {
-                "gmk-bento",
-                "gmk-metropolis",
-                "gmk-oblivion",
-                "gmk-oblivion-hagoromo",
-                "gmk-8008",
-                "gmk-hammerhead",
-                "gmk-dracula",
-                "gmk-modern-dolch",
-                "gmk-olivia-light",
-                "gmk-olivia-dark",
-                "gmk-dots-light",
-                "gmk-dots-dark"
-        };
-        for (String id : ids) {
-            assertExternalThemeBasicMatchesPreset(id);
+    public void externalThemeFilesMatchBuiltInPresetIdentity() throws IOException {
+        File themeDir = themeDirectory();
+        File[] files = themeDir.listFiles((dir, name) -> name.endsWith(".json"));
+        assertNotNull(files);
+
+        for (File file : files) {
+            String name = file.getName();
+            assertExternalThemeBasicMatchesPreset(name.substring(0, name.length() - ".json".length()));
+        }
+    }
+
+    @Test
+    public void everyThemeJsonFileHasBuiltInPreset() {
+        File themeDir = themeDirectory();
+        File[] files = themeDir.listFiles((dir, name) -> name.endsWith(".json"));
+        assertNotNull(files);
+
+        for (File file : files) {
+            String name = file.getName();
+            String id = name.substring(0, name.length() - ".json".length());
+            assertNotNull("Missing built-in preset for " + name, KeyboardThemePreset.find(id));
         }
     }
 
@@ -246,6 +275,7 @@ public final class KeyboardThemePresetTest {
         assertEquals(id, builtIn.depthColor, external.depthColor);
         assertEquals(id, builtIn.modifierIconThemePackId, external.modifierIconThemePackId);
         assertEquals(id, builtIn.keyDisplayThemePackId, external.keyDisplayThemePackId);
+        assertEquals(id, builtIn.additionalNumberRowColorMode, external.additionalNumberRowColorMode);
         assertEquals(id, builtIn.visualEffects.blurEnabled, external.visualEffects.blurEnabled);
         assertEquals(id, builtIn.visualEffects.metallicEnabled, external.visualEffects.metallicEnabled);
         assertEquals(id, builtIn.visualEffects.angularPreviewBubble, external.visualEffects.angularPreviewBubble);
@@ -313,12 +343,37 @@ public final class KeyboardThemePresetTest {
     }
 
     private String readThemeJson(String id) throws IOException {
-        File file = new File("themes", id + ".json");
-        if (!file.isFile()) {
-            file = new File("../themes", id + ".json");
-        }
+        File file = new File(themeDirectory(), id + ".json");
         assertTrue("Missing external theme JSON: " + id, file.isFile());
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+    }
+
+    private void assertDingulRoleOverrides(String presetId) {
+        KeyboardThemePreset preset = KeyboardThemePreset.find(presetId);
+        assertNotNull(preset);
+        KeyboardSettings settings = preset.applyTo(KeyboardSettings.defaults());
+
+        assertTrue(presetId + " missing alpha foreground",
+                settings.keyColorOverrides.containsKey("alpha"));
+        assertTrue(presetId + " missing alpha background",
+                settings.keyColorOverrides.containsKey("background:alpha"));
+        assertTrue(presetId + " missing mod foreground",
+                settings.keyColorOverrides.containsKey("modifiers"));
+        assertTrue(presetId + " missing mod background",
+                settings.keyColorOverrides.containsKey("background:modifiers"));
+        assertTrue(presetId + " missing mod inv foreground",
+                settings.keyColorOverrides.containsKey("modinv"));
+        assertTrue(presetId + " missing mod inv background",
+                settings.keyColorOverrides.containsKey("background:modinv"));
+    }
+
+    private File themeDirectory() {
+        File dir = new File("themes");
+        if (!dir.isDirectory()) {
+            dir = new File("../themes");
+        }
+        assertTrue("Missing themes directory", dir.isDirectory());
+        return dir;
     }
 
     private static int brightness(int color) {

@@ -75,17 +75,17 @@ Inline pack objects are also accepted:
 
 - `line-mono`: normal monochrome modifier icons. Uses theme foreground.
 - `accent-color`: normal modifier shapes with intrinsic accent color. Ignores theme foreground.
-- `dots-lines`: proportional dots and line-dot modifier glyphs. Uses theme foreground.
-- `metropolis-points`: colored point-key style glyphs. Ignores theme foreground.
+- `dots-lines`: proportional dot alpha glyphs, solid modifier lines, and a four-color spacebar dot cluster.
+- `metropolis-graph`: recognizable modifier glyph shapes for Metropolis-style command keys. Colored keycaps should pair this with explicit text overrides for contrast. Legacy `metropolis-points` imports normalize to this renderer.
 
-If an imported modifier pack has `extends: "dots-lines"` or `extends: "metropolis-points"`, the app uses that built-in renderer while preserving imported display overrides.
+If an imported modifier pack has `extends: "dots-lines"`, `extends: "metropolis-graph"`, or legacy `extends: "metropolis-points"`, the app uses that built-in renderer while preserving imported display overrides.
 
 ## Override Keys
 
 Priority is exact key, then group, then the default label/icon.
 
-- `alpha`: all letter-like keys, including Hangul action keys `ㅣ.`, `ㅡㅐ`, `..`, plus `?`, `.`, `/`.
-- `modifiers`: command/modifier keys such as shift, enter, backspace, settings, language, space.
+- `alpha`: all letter-like keys, including Hangul action keys `ㅣ.`, `ㅡㅐ`, and `..`.
+- `modifiers`: command/modifier keys such as shift, enter, backspace, settings, language, space, plus Dingul punctuation `?`, `.`, and `/`.
 - `keys`: exact overrides.
 
 Useful exact names:
@@ -104,7 +104,7 @@ Only two override value types render in v1:
 { "type": "text", "value": "hihihi" }
 ```
 
-`icon:dot` is rendered by the active decorative glyph renderer. `text:hihihi` is rendered as an app vector script glyph in the simple text pack path.
+`icon:dot` is rendered by the active decorative glyph renderer. In the built-in simple text pack, only enter-like keys use `text:hihihi`, and it is rendered as an app vector script glyph rather than a font string.
 
 ## Glyph Authoring Metadata
 

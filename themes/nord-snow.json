@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "name": "Nord Snow",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": true,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "depth",
+      "light"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#F8FAFC",
     "functionKey": "#EEF2F7",
@@ -21,6 +36,9 @@
     "depthDp": 2,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +48,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": true,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#2E3440",
+      "background": "#F8FAFC"
+    },
+    "mod": {
+      "foreground": "#667085",
+      "background": "#EEF2F7"
+    },
+    "modInv": {
+      "foreground": "#EEF2F7",
+      "background": "#E4EAF2"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#06B6D4"
   }
 }

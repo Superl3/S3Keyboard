@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "name": "Nord Night",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": true,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "dark",
+      "depth"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#2E3440",
     "functionKey": "#3B4252",
@@ -21,6 +36,9 @@
     "depthDp": 2,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +48,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": true,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#ECEFF4",
+      "background": "#2E3440"
+    },
+    "mod": {
+      "foreground": "#C7D0DC",
+      "background": "#3B4252"
+    },
+    "modInv": {
+      "foreground": "#3B4252",
+      "background": "#252B35"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#06B6D4"
   }
 }

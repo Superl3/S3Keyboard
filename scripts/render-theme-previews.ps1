@@ -13,6 +13,11 @@ if ([string]::IsNullOrWhiteSpace($OutputDir)) {
     $OutputDir = Join-Path $Root "captures\theme-previews"
 }
 
+$DefaultThemeDir = Join-Path $Root "themes"
+if ([System.IO.Path]::GetFullPath($ThemeDir) -eq [System.IO.Path]::GetFullPath($DefaultThemeDir)) {
+    & node (Join-Path $Root "tools\sync-themes.mjs") --check
+}
+
 Add-Type -AssemblyName System.Drawing
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
@@ -156,6 +161,102 @@ function Get-RoleColor {
     }
 }
 
+function Get-RoleTextColor {
+    param([object] $Theme, [string] $Role)
+    switch ($Role) {
+        "normal" { return Convert-ThemeColor $Theme.colors.accent "#232323" }
+        "pressed" { return Convert-ThemeColor $Theme.colors.accent "#232323" }
+        "accent" { return Get-AccentTextColor -Theme $Theme }
+        default { return Convert-ThemeColor $Theme.colors.secondary "#5F6368" }
+    }
+}
+
+function Get-AccentTextColor {
+    param([object] $Theme)
+    if ($null -ne $Theme.dingulColors -and $null -ne $Theme.dingulColors.modInv -and
+            -not [string]::IsNullOrWhiteSpace([string]$Theme.dingulColors.modInv.foreground)) {
+        return Convert-ThemeColor $Theme.dingulColors.modInv.foreground $Theme.colors.accent
+    }
+    return Convert-ThemeColor $Theme.colors.accent "#232323"
+}
+
+function Get-NumberRowRole {
+    param([object] $Theme, [string] $Label)
+    $mode = if ($null -ne $Theme.additionalNumberRow) { [string]$Theme.additionalNumberRow.colorMode } else { "full_mod" }
+    $inner = $Label -ge "4" -and $Label -le "7"
+    switch ($mode) {
+        "full_alpha" { return "normal" }
+        "half_mod_4567" { if ($inner) { return "function" } return "normal" }
+        "alpha_accent" { if ($inner) { return "accent" } return "normal" }
+        "mod_alpha" { if ($inner) { return "normal" } return "function" }
+        "mod_accent" { if ($inner) { return "accent" } return "function" }
+        "accent_alpha" { if ($inner) { return "normal" } return "accent" }
+        "accent_mod" { if ($inner) { return "function" } return "accent" }
+        "full_accent" { return "accent" }
+        default { return "function" }
+    }
+}
+
+function Get-AccentPolicyTargets {
+    param([object] $Theme, [string] $Layout)
+    if ($null -eq $Theme.accentPolicy) {
+        return @()
+    }
+    $property = $Theme.accentPolicy.PSObject.Properties |
+            Where-Object { $_.Name -eq $Layout } |
+            Select-Object -First 1
+    if ($null -eq $property -or $null -eq $property.Value) {
+        return @()
+    }
+    if ($property.Value -is [System.Array]) {
+        return @($property.Value | ForEach-Object { [string]$_ })
+    }
+    return @([string]$property.Value)
+}
+
+function Test-AccentPolicyTarget {
+    param([object] $Theme, [string] $Layout, [string] $Target)
+    if ([string]::IsNullOrWhiteSpace($Target)) {
+        return $false
+    }
+    return (Get-AccentPolicyTargets -Theme $Theme -Layout $Layout) -contains $Target
+}
+
+function Get-SemanticTargetForPreviewKey {
+    param([string] $Layout, [string] $Label)
+    $normalized = $Label.ToLowerInvariant()
+    switch ($normalized) {
+        "settings" { return "modCtrl" }
+        "enter" { return "modCtrl" }
+        "reserved" { return "modMeta" }
+        "res" { return "modMeta" }
+        "language" { return "modMeta" }
+        "lang" { return "modMeta" }
+        "shift" { return "modCommand" }
+        "bksp" { return "modCommand" }
+        "backspace" { return "modCommand" }
+    }
+    if ($Layout -eq "dingul") {
+        if ($Label -eq ".") { return "modEnter" }
+        if ($Label -eq "/") { return "modShift" }
+        if ($Label -eq "?") { return "punctuation" }
+    }
+    return ""
+}
+
+function Resolve-PreviewRole {
+    param([object] $Theme, [string] $Layout, [string] $Label, [string] $BaseRole)
+    if ($BaseRole -eq "pressed") {
+        return $BaseRole
+    }
+    $target = Get-SemanticTargetForPreviewKey -Layout $Layout -Label $Label
+    if ((Test-AccentPolicyTarget -Theme $Theme -Layout $Layout -Target $target) -or
+            ($target -in @("modEnter", "modShift") -and (Test-AccentPolicyTarget -Theme $Theme -Layout $Layout -Target "punctuation"))) {
+        return "accent"
+    }
+    return $BaseRole
+}
+
 function Get-KeyOverrideColor {
     param([object] $Theme, [string] $Label)
     $overrides = $Theme.keyTextColorOverrides
@@ -165,12 +266,7 @@ function Get-KeyOverrideColor {
     if ($null -eq $overrides -or [string]::IsNullOrWhiteSpace($Label)) {
         return $null
     }
-    $normalizedLabel = $Label.ToLowerInvariant() -replace "\s+", ""
-    $candidates = @(
-        $normalizedLabel,
-        "label:$normalizedLabel",
-        "tap:$normalizedLabel"
-    )
+    $candidates = Get-OverrideCandidatesForLabel -Label $Label
     foreach ($candidate in $candidates) {
         $property = $overrides.PSObject.Properties |
                 Where-Object { ($_.Name.ToLowerInvariant() -replace "\s+", "") -eq $candidate } |
@@ -191,12 +287,7 @@ function Get-KeyBackgroundOverrideColor {
     if ($null -eq $overrides -or [string]::IsNullOrWhiteSpace($Label)) {
         return $null
     }
-    $normalizedLabel = $Label.ToLowerInvariant() -replace "\s+", ""
-    $candidates = @(
-        $normalizedLabel,
-        "label:$normalizedLabel",
-        "tap:$normalizedLabel"
-    )
+    $candidates = Get-OverrideCandidatesForLabel -Label $Label
     foreach ($candidate in $candidates) {
         $property = $overrides.PSObject.Properties |
                 Where-Object { ($_.Name.ToLowerInvariant() -replace "\s+", "") -eq $candidate } |
@@ -211,6 +302,26 @@ function Get-KeyBackgroundOverrideColor {
     return $null
 }
 
+function Get-OverrideCandidatesForLabel {
+    param([string] $Label)
+    $normalizedLabel = $Label.ToLowerInvariant() -replace "\s+", ""
+    $semantic = switch ($normalizedLabel) {
+        "bksp" { "backspace" }
+        "opt" { "options" }
+        "res" { "reserved" }
+        "lang" { "language" }
+        default { $normalizedLabel }
+    }
+    return @(
+        $normalizedLabel,
+        $semantic,
+        "label:$normalizedLabel",
+        "label:$semantic",
+        "tap:$normalizedLabel",
+        "tap:$semantic"
+    ) | Select-Object -Unique
+}
+
 function Get-PreviewIconName {
     param([string] $Label)
     switch ($Label.ToLowerInvariant()) {
@@ -218,9 +329,13 @@ function Get-PreviewIconName {
         "bksp" { return "backspace" }
         "backspace" { return "backspace" }
         "opt" { return "options" }
+        "options" { return "options" }
         "res" { return "reserved" }
+        "reserved" { return "reserved" }
         "space" { return "space" }
         "lang" { return "language" }
+        "language" { return "language" }
+        "settings" { return "settings" }
         "enter" { return "enter" }
         default { return "" }
     }
@@ -242,11 +357,15 @@ function Test-DotLegendLabel {
 function Test-AlphaPreviewLabel {
     param([string] $Label)
     return $Label -match '^[A-Za-z]$' `
+            -or $Label -match '^[0-9]$' `
             -or $Label -match '^[\u3131-\u318E\uAC00-\uD7A3]$' `
             -or $Label -eq "?" `
             -or $Label -eq "." `
             -or $Label -eq "/" `
-            -or $Label -eq ".."
+            -or $Label -eq ".." `
+            -or $Label -eq ". ." `
+            -or $Label -eq ([string][char]0x3163 + ".") `
+            -or $Label -eq ([string][char]0x3161 + [string][char]0x3150)
 }
 
 function Test-SimpleTextPack {
@@ -284,10 +403,13 @@ function Get-KeyDisplayPackId {
 function Get-MetropolisPreviewColor {
     param([string] $Icon)
     switch ($Icon) {
+        "options" { return [System.Drawing.Color]::FromArgb(255, 255, 176, 0) }
         "shift" { return [System.Drawing.Color]::FromArgb(255, 255, 75, 62) }
+        "reserved" { return [System.Drawing.Color]::FromArgb(255, 255, 75, 62) }
         "backspace" { return [System.Drawing.Color]::FromArgb(255, 255, 176, 0) }
         "enter" { return [System.Drawing.Color]::FromArgb(255, 102, 227, 196) }
         "language" { return [System.Drawing.Color]::FromArgb(255, 102, 227, 196) }
+        "settings" { return [System.Drawing.Color]::FromArgb(255, 102, 227, 196) }
         default { return [System.Drawing.Color]::FromArgb(255, 112, 215, 232) }
     }
 }
@@ -319,25 +441,61 @@ function Draw-KeyDisplayPackPreview {
     } else {
         $text = switch ($Icon) {
             "enter" { "hihihi" }
-            "backspace" { "del" }
-            "shift" { "shift" }
-            "space" { "space" }
-            "language" { "lang" }
             default { "" }
         }
     }
     if ([string]::IsNullOrWhiteSpace($text)) {
         return $false
     }
-    $font = [System.Drawing.Font]::new("Segoe UI", [Math]::Max(8, $H * 0.28), [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
     $brush = [System.Drawing.SolidBrush]::new($Color)
     try {
-        Draw-CenteredText -Graphics $Graphics -Text $text -Font $font -Brush $brush -X $X -Y $Y -W $W -H $H
+        if ((Test-SimpleTextPack -PackId $packId) -and $text -eq "hihihi") {
+            Draw-HihihiPreviewGlyph -Graphics $Graphics -Color $Color -X $X -Y $Y -W $W -H $H
+        } else {
+            $font = [System.Drawing.Font]::new("Segoe UI", [Math]::Max(8, $H * 0.28), [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+            try {
+                Draw-CenteredText -Graphics $Graphics -Text $text -Font $font -Brush $brush -X $X -Y $Y -W $W -H $H
+            } finally {
+                $font.Dispose()
+            }
+        }
     } finally {
         $brush.Dispose()
-        $font.Dispose()
     }
     return $true
+}
+
+function Draw-HihihiPreviewGlyph {
+    param(
+        [System.Drawing.Graphics] $Graphics,
+        [System.Drawing.Color] $Color,
+        [float] $X,
+        [float] $Y,
+        [float] $W,
+        [float] $H
+    )
+    $pen = [System.Drawing.Pen]::new($Color, [Math]::Max(1.5, $H * 0.06))
+    try {
+        $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+        $left = $X + $W * 0.20
+        $right = $X + $W * 0.80
+        $top = $Y + $H * 0.34
+        $mid = $Y + $H * 0.50
+        $bottom = $Y + $H * 0.66
+        $step = ($right - $left) / 5.0
+        for ($i = 0; $i -lt 3; $i++) {
+            $hx = $left + $i * $step * 2
+            $Graphics.DrawLine($pen, $hx, $bottom, $hx + $step * 0.15, $top)
+            $Graphics.DrawLine($pen, $hx + $step * 0.55, $bottom, $hx + $step * 0.70, $top)
+            $Graphics.DrawLine($pen, $hx + $step * 0.08, $mid, $hx + $step * 0.62, $mid)
+            $ix = $hx + $step
+            $Graphics.DrawBezier($pen, $ix, $bottom, $ix - $step * 0.15, $top, $ix + $step * 0.45, $top, $ix + $step * 0.25, $mid)
+        }
+    } finally {
+        $pen.Dispose()
+    }
 }
 
 function Draw-PackPreviewIcon {
@@ -352,36 +510,42 @@ function Draw-PackPreviewIcon {
         [float] $H
     )
     $pack = Get-ModifierPackId -Theme $Theme
-    if ($pack -eq "dots-lines" -or $pack -eq "metropolis-points") {
-        $drawColor = if ($pack -eq "metropolis-points") { Get-MetropolisPreviewColor -Icon $Icon } else { $Color }
-        $pen = [System.Drawing.Pen]::new($drawColor, [Math]::Max(2, $H * 0.08))
-        $brush = [System.Drawing.SolidBrush]::new($drawColor)
+    if ($pack -eq "metropolis-points" -or $pack -eq "metropolis-graph") {
+        Draw-PreviewIcon -Graphics $Graphics -Icon $Icon -Color $Color -X $X -Y $Y -W $W -H $H
+        return $true
+    }
+    if ($pack -eq "dots-lines") {
+        $weight = Get-DotsLineWeight -W $W -H $H
+        $pen = [System.Drawing.Pen]::new($Color, $weight)
+        $brush = [System.Drawing.SolidBrush]::new($Color)
         try {
             $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
             $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
             $y = $Y + $H / 2
-            $left = $X + $W * 0.28
-            $right = $X + $W * 0.72
-            if ($pack -eq "dots-lines") {
-                $count = 3
-                if ($Icon -eq "space") {
-                    $count = 5
-                    $left = $X + $W * 0.30
-                    $right = $X + $W * 0.70
-                } elseif ($Icon -eq "language" -or $Icon -eq "reserved") {
-                    $count = 1
-                } elseif ($Icon -eq "backspace" -or $Icon -eq "enter" -or $Icon -eq "shift") {
-                    $count = 4
-                }
-                if ($count -eq 1) {
-                    $Graphics.FillEllipse($brush, $X + $W / 2 - $H * 0.045, $y - $H * 0.045, $H * 0.09, $H * 0.09)
-                } else {
-                    for ($i = 0; $i -lt $count; $i++) {
-                        $dotX = $left + ($right - $left) * $i / ($count - 1.0)
-                        $Graphics.FillEllipse($brush, $dotX - $H * 0.035, $y - $H * 0.035, $H * 0.07, $H * 0.07)
+            if ($Icon -eq "space") {
+                $colors = @(
+                    [System.Drawing.Color]::FromArgb(255, 239, 71, 111),
+                    [System.Drawing.Color]::FromArgb(255, 255, 209, 102),
+                    [System.Drawing.Color]::FromArgb(255, 6, 214, 160),
+                    [System.Drawing.Color]::FromArgb(255, 76, 201, 240)
+                )
+                $gap = [Math]::Max($weight * 0.80, 3.2)
+                $total = $weight * $colors.Count + $gap * ($colors.Count - 1)
+                $dotX = $X + $W / 2 - $total / 2 + $weight / 2
+                foreach ($dotColor in $colors) {
+                    $dotBrush = [System.Drawing.SolidBrush]::new($dotColor)
+                    try {
+                        $Graphics.FillEllipse($dotBrush, $dotX - $weight / 2, $y - $weight / 2, $weight, $weight)
+                    } finally {
+                        $dotBrush.Dispose()
                     }
+                    $dotX += $weight + $gap
                 }
+            } elseif ($Icon -eq "language" -or $Icon -eq "reserved") {
+                $Graphics.FillEllipse($brush, $X + $W / 2 - $weight / 2, $y - $weight / 2, $weight, $weight)
             } else {
+                $left = $X + $W * 0.30
+                $right = $X + $W * 0.70
                 $Graphics.DrawLine($pen, $left, $y, $right, $y)
             }
         } finally {
@@ -391,6 +555,11 @@ function Draw-PackPreviewIcon {
         return $true
     }
     return $false
+}
+
+function Get-DotsLineWeight {
+    param([float] $W, [float] $H)
+    return [Math]::Max(3.0, [Math]::Min($H * 0.16, $W * 0.12))
 }
 
 function Draw-PreviewIcon {
@@ -485,11 +654,19 @@ function Draw-PreviewIcon {
                 $Graphics.DrawLine($pen, $cx + $barW / 2, $cy + $barH, $cx + $barW / 2, $cy)
             }
             "language" {
-                $font = [System.Drawing.Font]::new("Segoe UI", [Math]::Max(8, $size * 0.33), [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-                try {
-                    Draw-CenteredText -Graphics $Graphics -Text "A/KR" -Font $font -Brush $brush -X $X -Y $Y -W $W -H $H
-                } finally {
-                    $font.Dispose()
+                $Graphics.DrawEllipse($pen, $left, $top, $size, $size)
+                $Graphics.DrawLine($pen, $left, $cy, $right, $cy)
+                $Graphics.DrawEllipse($pen, $left + $size * 0.28, $top, $size * 0.44, $size)
+            }
+            "settings" {
+                $Graphics.DrawEllipse($pen, $cx - $size * 0.18, $cy - $size * 0.18, $size * 0.36, $size * 0.36)
+                for ($i = 0; $i -lt 6; $i++) {
+                    $angle = [Math]::PI * 2 * $i / 6
+                    $x1 = $cx + [Math]::Cos($angle) * $size * 0.34
+                    $y1 = $cy + [Math]::Sin($angle) * $size * 0.34
+                    $x2 = $cx + [Math]::Cos($angle) * $size * 0.48
+                    $y2 = $cy + [Math]::Sin($angle) * $size * 0.48
+                    $Graphics.DrawLine($pen, $x1, $y1, $x2, $y2)
                 }
             }
             "enter" {
@@ -524,7 +701,7 @@ function Draw-Key {
     $fill = if ($null -ne $overrideFill) { $overrideFill } else { Get-RoleColor -Theme $Theme -Role $Role }
     $accent = Convert-ThemeColor $Theme.colors.accent "#232323"
     $overrideText = Get-KeyOverrideColor -Theme $Theme -Label $Label
-    $textColor = if ($null -ne $overrideText) { $overrideText } else { $accent }
+    $textColor = if ($null -ne $overrideText) { $overrideText } else { Get-RoleTextColor -Theme $Theme -Role $Role }
     $depthColor = $border
     if ($null -ne $Theme.colors.depth -and -not [string]::IsNullOrWhiteSpace([string]$Theme.colors.depth)) {
         $depthColor = Convert-ThemeColor $Theme.colors.depth "#696969"
@@ -561,7 +738,7 @@ function Draw-Key {
         }
         $icon = Get-PreviewIconName $Label
         if (Test-DotLegendLabel -Theme $Theme -Label $Label) {
-            $diameter = [Math]::Min($H * 0.24, $W * 0.48)
+            $diameter = Get-DotsLineWeight -W $W -H $H
             $Graphics.FillEllipse(
                     $textBrush,
                     $X + ($W - $diameter) / 2.0,
@@ -618,16 +795,17 @@ function Draw-QwertySample {
     $bottomRowTopPadding = 0
     $font = New-ThemeFont -Theme $Theme -BaseSize 11 -Primary $true
     try {
-        $rowH = ($H - 40 - $bottomPadding - $bottomRowTopPadding) / 4
+        $rowH = ($H - 40 - $bottomPadding - $bottomRowTopPadding) / 5
         $unit = ($W - 36 - $leftPadding - $rightPadding) / 20
         $startX = $X + 18 + $leftPadding
         $rowY = $Y + 18
         $rowIndex = 0
         $rows = @(
+            @(@("1",2,"number"), @("2",2,"number"), @("3",2,"number"), @("4",2,"number"), @("5",2,"number"), @("6",2,"number"), @("7",2,"number"), @("8",2,"number"), @("9",2,"number"), @("0",2,"number")),
             @(@("q",2,"normal"), @("w",2,"normal"), @("e",2,"pressed"), @("r",2,"normal"), @("t",2,"normal"), @("y",2,"normal"), @("u",2,"normal"), @("i",2,"normal"), @("o",2,"normal"), @("p",2,"normal")),
             @(@("a",2,"normal"), @("s",2,"normal"), @("d",2,"normal"), @("f",2,"normal"), @("g",2,"normal"), @("h",2,"normal"), @("j",2,"normal"), @("k",2,"normal"), @("l",2,"normal")),
             @(@("shift",3,"primary"), @("z",2,"normal"), @("x",2,"normal"), @("c",2,"normal"), @("v",2,"normal"), @("b",2,"normal"), @("n",2,"normal"), @("m",2,"normal"), @("bksp",3,"primary")),
-            @(@("opt",3,"function"), @("res",2,"function"), @("space",10,"normal"), @("lang",2,"function"), @("enter",3,"primary"))
+            @(@("settings",3,"function"), @("reserved",2,"function"), @("space",10,"normal"), @("language",2,"function"), @("enter",3,"primary"))
         )
 
         foreach ($row in $rows) {
@@ -640,7 +818,13 @@ function Draw-QwertySample {
             }
             $xOffset = $startX + ((20 - $rowUnits) * $unit / 2)
             foreach ($key in $row) {
-                Draw-Key -Graphics $Graphics -Theme $Theme -Label ([string]$key[0]) -Role ([string]$key[2]) `
+                $label = [string]$key[0]
+                $role = [string]$key[2]
+                if ($role -eq "number") {
+                    $role = Get-NumberRowRole -Theme $Theme -Label $label
+                }
+                $role = Resolve-PreviewRole -Theme $Theme -Layout "qwerty" -Label $label -BaseRole $role
+                Draw-Key -Graphics $Graphics -Theme $Theme -Label $label -Role $role `
                     -X ($xOffset + $gap / 2) -Y ($rowY + $gap / 2) `
                     -W ([int]$key[1] * $unit - $gap) -H ($rowH - $gap) -Radius $radius -Font $font
                 $xOffset += [int]$key[1] * $unit
@@ -666,7 +850,7 @@ function Draw-DingulSample {
     $bottomRowTopPadding = 0
     $font = New-ThemeFont -Theme $Theme -BaseSize 11 -Primary $true
     try {
-        $rowH = ($H - 32 - $bottomPadding - $bottomRowTopPadding) / 5
+        $rowH = ($H - 32 - $bottomPadding - $bottomRowTopPadding) / 6
         $unit = ($W - 36 - $leftPadding - $rightPadding - $mainSpecialGap) / 300
         $bottomUnit = ($W - 36 - $leftPadding - $rightPadding) / 300
         $startX = $X + 18 + $leftPadding
@@ -686,11 +870,12 @@ function Draw-DingulSample {
         $hieut = [string][char]0x314E
 
         $rows = @(
+            @(@("1",30,"number"), @("2",30,"number"), @("3",30,"number"), @("4",30,"number"), @("5",30,"number"), @("6",30,"number"), @("7",30,"number"), @("8",30,"number"), @("9",30,"number"), @("0",30,"number")),
             @(@($g,83,"normal"), @($n,83,"normal"), @($ui,83,"normal"), @("bksp",51,"primary")),
             @(@($r,83,"normal"), @($m,83,"normal"), @("$i.",83,"normal"), @("?",51,"normal")),
-            @(@($s,83,"normal"), @($o,83,"pressed"), @("$eu$ae",83,"normal"), @(".",51,"accent")),
-            @(@($j,83,"normal"), @($hieut,83,"normal"), @("..",83,"normal"), @("/",51,"accent")),
-            @(@("opt",45,"function"), @("res",30,"function"), @("space",150,"normal"), @("lang",30,"function"), @("enter",45,"primary"))
+            @(@($s,83,"normal"), @($o,83,"pressed"), @("$eu$ae",83,"normal"), @(".",51,"function")),
+            @(@($j,83,"normal"), @($hieut,83,"normal"), @("..",83,"normal"), @("/",51,"function")),
+            @(@("settings",45,"function"), @("reserved",30,"function"), @("space",150,"normal"), @("language",30,"function"), @("enter",45,"primary"))
         )
 
         $rowIndex = 0
@@ -699,14 +884,23 @@ function Draw-DingulSample {
                 $rowY += $bottomRowTopPadding
             }
             $activeUnit = if ($rowIndex -eq ($rows.Count - 1)) { $bottomUnit } else { $unit }
+            if ($rowIndex -eq 0) {
+                $activeUnit = $bottomUnit
+            }
             $xOffset = $startX
             $keyIndex = 0
             foreach ($key in $row) {
-                Draw-Key -Graphics $Graphics -Theme $Theme -Label ([string]$key[0]) -Role ([string]$key[2]) `
+                $label = [string]$key[0]
+                $role = [string]$key[2]
+                if ($role -eq "number") {
+                    $role = Get-NumberRowRole -Theme $Theme -Label $label
+                }
+                $role = Resolve-PreviewRole -Theme $Theme -Layout "dingul" -Label $label -BaseRole $role
+                Draw-Key -Graphics $Graphics -Theme $Theme -Label $label -Role $role `
                     -X ($xOffset + $gap / 2) -Y ($rowY + $gap / 2) `
                     -W ([int]$key[1] * $activeUnit - $gap) -H ($rowH - $gap) -Radius $radius -Font $font
                 $xOffset += [int]$key[1] * $activeUnit
-                if ($rowIndex -lt ($rows.Count - 1) -and $keyIndex -eq 2) {
+                if ($rowIndex -gt 0 -and $rowIndex -lt ($rows.Count - 1) -and $keyIndex -eq 2) {
                     $xOffset += $mainSpecialGap
                 }
                 $keyIndex++
@@ -738,7 +932,7 @@ function Draw-ThemeCard {
         $Graphics.DrawString("QWERTY preview - e = pressed state", $labelFont, $metaBrush, $X + 24, $Y + 58)
         Draw-QwertySample -Graphics $Graphics -Theme $Theme -X ($X + 24) -Y ($Y + 82) -W ($W - 48) -H $qwertyPreviewH
         $dingulLabelY = $Y + 82 + $qwertyPreviewH + 20
-        $Graphics.DrawString("Dingul preview - . and / = accent special keys", $labelFont, $metaBrush, $X + 24, $dingulLabelY)
+        $Graphics.DrawString("Dingul preview - number row + semantic accent policy", $labelFont, $metaBrush, $X + 24, $dingulLabelY)
         Draw-DingulSample -Graphics $Graphics -Theme $Theme -X ($X + 24) -Y ($dingulLabelY + 24) -W ($W - 48) -H $dingulPreviewH
     } finally {
         $cardBrush.Dispose()

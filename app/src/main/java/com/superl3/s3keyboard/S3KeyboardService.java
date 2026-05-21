@@ -408,6 +408,13 @@ public final class S3KeyboardService extends InputMethodService
         }
 
         char currentVowel = automata.currentVowelWithoutFinal();
+        char replacementVowel = centerVowelKey
+                ? dingulCenterReplacementVowel(currentVowel)
+                : dingulWideReplacementVowel(currentVowel);
+        if (replacementVowel != '\0' && automata.replaceCurrentVowelWithoutFinal(replacementVowel)) {
+            updateComposing(inputConnection);
+            return;
+        }
         char nextVowel = centerVowelKey
                 ? dingulCenterTapValue(currentVowel)
                 : dingulWideTapValue(currentVowel);
@@ -432,6 +439,24 @@ public final class S3KeyboardService extends InputMethodService
         }
 
         char previousVowel = decomposed.charAt(1);
+        char replacementVowel = centerVowelKey
+                ? dingulCenterReplacementVowel(previousVowel)
+                : dingulWideReplacementVowel(previousVowel);
+        if (replacementVowel != '\0') {
+            inputConnection.deleteSurroundingText(1, 0);
+            automata.reset();
+            for (int i = 0; i < decomposed.length(); i++) {
+                String committed = automata.input(decomposed.charAt(i));
+                if (!committed.isEmpty()) {
+                    inputConnection.commitText(committed, 1);
+                }
+            }
+            if (automata.replaceCurrentVowelWithoutFinal(replacementVowel)) {
+                updateComposing(inputConnection);
+                return true;
+            }
+        }
+
         char nextVowel = centerVowelKey
                 ? dingulCenterTapValue(previousVowel)
                 : dingulWideTapValue(previousVowel);
@@ -453,6 +478,36 @@ public final class S3KeyboardService extends InputMethodService
         }
         updateComposing(inputConnection);
         return true;
+    }
+
+    private char dingulCenterReplacementVowel(char currentVowel) {
+        switch (currentVowel) {
+            case 'ㅏ':
+                return 'ㅑ';
+            case 'ㅓ':
+                return 'ㅕ';
+            case 'ㅗ':
+                return 'ㅛ';
+            case 'ㅜ':
+                return 'ㅠ';
+            default:
+                return '\0';
+        }
+    }
+
+    private char dingulWideReplacementVowel(char currentVowel) {
+        switch (currentVowel) {
+            case 'ㅏ':
+                return 'ㅐ';
+            case 'ㅓ':
+                return 'ㅔ';
+            case 'ㅑ':
+                return 'ㅒ';
+            case 'ㅕ':
+                return 'ㅖ';
+            default:
+                return '\0';
+        }
     }
 
     private char dingulCenterTapValue(char currentVowel) {

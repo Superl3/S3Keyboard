@@ -295,6 +295,67 @@ public final class KeyboardThemeJsonTest {
     }
 
     @Test
+    public void importsDingulSemanticColorRoles() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"dingulColors\":{"
+                + "\"alpha\":{\"foreground\":\"#111111\",\"background\":\"#222222\"},"
+                + "\"mod\":{\"foreground\":\"#333333\",\"background\":\"#444444\"},"
+                + "\"modInv\":{\"foreground\":\"#555555\",\"background\":\"#666666\"}"
+                + "}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(0xFF111111, (int) imported.keyColorOverrides.get("alpha"));
+        assertEquals(0xFF222222, (int) imported.keyColorOverrides.get("background:alpha"));
+        assertEquals(0xFF333333, (int) imported.keyColorOverrides.get("modifiers"));
+        assertEquals(0xFF444444, (int) imported.keyColorOverrides.get("background:modifiers"));
+        assertEquals(0xFF555555, (int) imported.keyColorOverrides.get("modinv"));
+        assertEquals(0xFF666666, (int) imported.keyColorOverrides.get("background:modinv"));
+    }
+
+    @Test
+    public void importsAccentPolicyAsSemanticKeyOverrides() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"colors\":{\"accentKey\":\"#FF9900\"},"
+                + "\"dingulColors\":{"
+                + "\"modInv\":{\"foreground\":\"#111111\",\"background\":\"#FF9900\"}"
+                + "},"
+                + "\"accentPolicy\":{"
+                + "\"qwerty\":[\"modCtrl\"],"
+                + "\"dingul\":[\"modEnter\",\"modShift\"]"
+                + "}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:settings"));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:enter"));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:."));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:/"));
+        assertEquals(0xFF111111, (int) imported.keyColorOverrides.get("settings"));
+        assertEquals(0xFF111111, (int) imported.keyColorOverrides.get("."));
+    }
+
+    @Test
+    public void numberRowColorModeImportsLegacyAliasesAndExportsSemanticValue() {
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(
+                KeyboardSettings.defaults(),
+                "{"
+                        + "\"schemaVersion\":1,"
+                        + "\"additionalNumberRow\":{\"colorMode\":\"center_dimmed\"}"
+                        + "}");
+        String exported = KeyboardThemeJson.exportTheme(imported, "Number Row", "local", null);
+        KeyboardSettings roundTrip = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), exported);
+
+        assertEquals(AdditionalNumberRowColorMode.HALF_MOD_4567, imported.additionalNumberRowColorMode);
+        assertEquals(AdditionalNumberRowColorMode.HALF_MOD_4567, roundTrip.additionalNumberRowColorMode);
+        assertEquals(true, exported.contains("\"colorMode\": \"half_mod_4567\""));
+    }
+
+    @Test
     public void importsExternalKeyDisplayPackAsOverrides() {
         String json = "{"
                 + "\"schemaVersion\":1,"

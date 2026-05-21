@@ -2,9 +2,23 @@
   "schemaVersion": 1,
   "name": "GMK Dots Light Inspired",
   "author": "local",
+  "metadata": {
+    "tags": [
+      "depth",
+      "dots",
+      "gmkInspired",
+      "light"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "heavyPerKeyOverrides",
+      "keyDisplayOverrides",
+      "modifierIconPack"
+    ]
+  },
   "colors": {
     "keyIdle": "#F6F3EA",
-    "functionKey": "#E8E4D9",
+    "functionKey": "#D8D4CA",
     "primaryFunctionKey": "#D8D4CA",
     "accentKey": "#CFCBC0",
     "keyPressed": "#E2DED3",
@@ -22,7 +36,7 @@
     "depthDp": 1
   },
   "additionalNumberRow": {
-    "colorMode": "full_dimmed"
+    "colorMode": "full_mod"
   },
   "typography": {
     "fontFamily": "noto_sans_kr",
@@ -99,13 +113,30 @@
     "shiftIndicator": "#5865F2"
   },
   "keyBackgroundColorOverrides": {
-    "space": "#E8E4D9",
+    "?": "#F6F3EA",
+    ".": "#D8D4CA",
+    "/": "#D8D4CA",
     "enter": "#D8D4CA",
     "backspace": "#D8D4CA",
     "shift": "#D8D4CA",
     "language": "#D8D4CA",
     "settings": "#D8D4CA",
     "options": "#D8D4CA",
-    "reserved": "#D8D4CA"
+    "reserved": "#D8D4CA",
+    "space": "#F6F3EA"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#1D2430",
+      "background": "#F6F3EA"
+    },
+    "mod": {
+      "foreground": "#6C7480",
+      "background": "#D8D4CA"
+    },
+    "modInv": {
+      "foreground": "#D8D4CA",
+      "background": "#CFCBC0"
+    }
   }
 }

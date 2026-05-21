@@ -2,6 +2,23 @@
   "schemaVersion": 1,
   "name": "macOS Graphite Dark",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": true,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "dark",
+      "depth",
+      "minimal",
+      "platformInspired"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#30343A",
     "functionKey": "#3B414A",
@@ -21,6 +38,9 @@
     "depthDp": 2,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +50,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": true,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#F4F7FA",
+      "background": "#30343A"
+    },
+    "mod": {
+      "foreground": "#AEB7C4",
+      "background": "#3B414A"
+    },
+    "modInv": {
+      "foreground": "#3B414A",
+      "background": "#252B32"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#16A34A"
   }
 }

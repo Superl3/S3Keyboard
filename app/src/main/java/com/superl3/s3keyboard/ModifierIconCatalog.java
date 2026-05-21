@@ -5,7 +5,9 @@ final class ModifierIconCatalog {
     static final String PACK_LINE_MONO = "line-mono";
     static final String PACK_ACCENT_COLOR = "accent-color";
     static final String PACK_DOTS_LINES = "dots-lines";
-    static final String PACK_METROPOLIS_POINTS = "metropolis-points";
+    static final String PACK_METROPOLIS_GRAPH = "metropolis-graph";
+    static final String PACK_METROPOLIS_POINTS = PACK_METROPOLIS_GRAPH;
+    private static final String PACK_METROPOLIS_POINTS_LEGACY = "metropolis-points";
     static final String GLYPH_DOT = "dot";
 
     private static final int INTRINSIC_ACCENT_COLOR = 0xFF06B6D4;
@@ -16,7 +18,11 @@ final class ModifierIconCatalog {
     static String normalizePackId(String packId) {
         if (PACK_ACCENT_COLOR.equals(packId)
                 || PACK_DOTS_LINES.equals(packId)
-                || PACK_METROPOLIS_POINTS.equals(packId)) {
+                || PACK_METROPOLIS_GRAPH.equals(packId)
+                || PACK_METROPOLIS_POINTS_LEGACY.equals(packId)) {
+            if (PACK_METROPOLIS_POINTS_LEGACY.equals(packId)) {
+                return PACK_METROPOLIS_GRAPH;
+            }
             return packId;
         }
         return PACK_LINE_MONO;
@@ -97,7 +103,7 @@ final class ModifierIconCatalog {
             return "Dots Lines";
         }
         if (PACK_METROPOLIS_POINTS.equals(normalized)) {
-            return "Metropolis Points";
+            return "Metropolis Graph";
         }
         return "Line Mono";
     }

@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "name": "GMK Dracula Inspired",
   "author": "local",
+  "metadata": {
+    "tags": [
+      "dark",
+      "depth",
+      "gmkInspired"
+    ],
+    "features": [
+      "dingulRoleColors"
+    ]
+  },
   "colors": {
     "keyIdle": "#44475A",
     "functionKey": "#343746",
@@ -22,7 +32,7 @@
     "depthDp": 2
   },
   "additionalNumberRow": {
-    "colorMode": "full_dimmed"
+    "colorMode": "full_mod"
   },
   "typography": {
     "fontFamily": "d2coding",
@@ -35,5 +45,19 @@
   },
   "keyTextColorOverrides": {
     "shiftIndicator": "#8BE9FD"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#F8F8F2",
+      "background": "#44475A"
+    },
+    "mod": {
+      "foreground": "#BD93F9",
+      "background": "#343746"
+    },
+    "modInv": {
+      "foreground": "#343746",
+      "background": "#363949"
+    }
   }
 }

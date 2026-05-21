@@ -2,6 +2,22 @@
   "schemaVersion": 1,
   "name": "Slate Glass",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": false,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "flat",
+      "glassLike",
+      "light"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#F7F9FC",
     "functionKey": "#E9EEF5",
@@ -21,6 +37,9 @@
     "depthDp": 0,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 78,
@@ -30,9 +49,21 @@
     "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
-  "hints": {
-    "showHangulSlideHints": false,
-    "showEnglishSlideHints": false,
-    "showBeginnerTooltipPreview": true
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#0F172A",
+      "background": "#F7F9FC"
+    },
+    "mod": {
+      "foreground": "#64748B",
+      "background": "#E9EEF5"
+    },
+    "modInv": {
+      "foreground": "#E9EEF5",
+      "background": "#DFE7F0"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#0891B2"
   }
 }

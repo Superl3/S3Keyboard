@@ -2,11 +2,27 @@
   "schemaVersion": 1,
   "name": "Marigold Fiesta Light",
   "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": true,
+      "showEnglishSlideHints": true,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "depth",
+      "light"
+    ],
+    "features": [
+      "colorfulForeground",
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
   "colors": {
     "keyIdle": "#FFFDF8",
-    "functionKey": "#FBF8F2",
-    "primaryFunctionKey": "#F7F4EE",
-    "accentKey": "#F7F4EE",
+    "functionKey": "#ECE7DE",
+    "primaryFunctionKey": "#ECE7DE",
+    "accentKey": "#ECE7DE",
     "keyPressed": "#E8E2D8",
     "keyboardBackground": "#FFFFFF",
     "border": "#BBB4AA",
@@ -21,6 +37,9 @@
     "depthDp": 2,
     "borderWidthDp": 1
   },
+  "additionalNumberRow": {
+    "colorMode": "half_mod_4567"
+  },
   "typography": {
     "fontFamily": "noto_sans_kr",
     "primaryTextSizePercent": 82,
@@ -29,11 +48,6 @@
     "primaryTextItalic": false,
     "secondaryTextBold": false,
     "secondaryTextItalic": false
-  },
-  "hints": {
-    "showHangulSlideHints": true,
-    "showEnglishSlideHints": true,
-    "showBeginnerTooltipPreview": true
   },
   "keyTextColorOverrides": {
     "tap:q": "#7C3CB3",
@@ -63,9 +77,9 @@
     "tap:n": "#B9671E",
     "tap:m": "#7B5CC5",
     "shift": "#8E7600",
-    "backspace": "#202225",
-    "bksp": "#202225",
-    "space": "#2B2D31",
+    "backspace": "#C02666",
+    "bksp": "#C02666",
+    "space": "#008B82",
     "lang": "#008B82",
     "enter": "#A95B00",
     ",;": "#713EA8",
@@ -86,6 +100,22 @@
     "ㅢ": "#00814E",
     "ㅣ.": "#00814E",
     "ㅡㅐ": "#007C89",
-    "shiftIndicator": "#008B82"
+    "shiftIndicator": "#008B82",
+    "options": "#C02666",
+    "reserved": "#7C3CB3"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#271811",
+      "background": "#FFFDF8"
+    },
+    "mod": {
+      "foreground": "#6C5542",
+      "background": "#ECE7DE"
+    },
+    "modInv": {
+      "foreground": "#6C5542",
+      "background": "#ECE7DE"
+    }
   }
 }

@@ -110,7 +110,7 @@ public final class KeyboardKeyVisualClassifierTest {
                         hangul,
                         new GestureKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, null)));
         assertEquals(
-                KeyVisualRole.NORMAL,
+                KeyVisualRole.PRIMARY_FUNCTION,
                 KeyboardKeyVisualClassifier.roleFor(
                         hangul,
                         new GestureKey("?", "?", "!", "*", "+", KeyboardCommands.CMD_NOOP, null)));
@@ -210,19 +210,45 @@ public final class KeyboardKeyVisualClassifierTest {
     public void numberRowColorModeAppliesToBackgroundAndForeground() {
         GestureKey three = new GestureKey("3", "3", null, "#", null, null, "#");
         GestureKey five = new GestureKey("5", "5", null, "%", null, null, "%");
-        KeyboardSettings center = KeyboardSettings.defaults()
-                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.CENTER_DIMMED);
-        KeyboardSettings fullDefault = KeyboardSettings.defaults()
-                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.FULL_DEFAULT);
+        KeyboardSettings halfMod = KeyboardSettings.defaults()
+                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.HALF_MOD_4567);
+        KeyboardSettings fullAlpha = KeyboardSettings.defaults()
+                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.FULL_ALPHA);
+        KeyboardSettings fullMod = KeyboardSettings.defaults()
+                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.FULL_MOD);
+        KeyboardSettings alphaAccent = KeyboardSettings.defaults()
+                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.ALPHA_ACCENT);
+        KeyboardSettings modAlpha = KeyboardSettings.defaults()
+                .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.MOD_ALPHA);
 
-        assertEquals(center.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(center, three));
-        assertEquals(center.accentColor, KeyboardKeyVisualClassifier.textColorFor(center, three));
-        assertEquals(center.accentColor, KeyboardKeyVisualClassifier.hintColorFor(center, three));
-        assertEquals(center.accentKeyColor, KeyboardKeyVisualClassifier.colorFor(center, five));
-        assertEquals(center.secondaryColor, KeyboardKeyVisualClassifier.textColorFor(center, five));
-        assertEquals(center.secondaryColor, KeyboardKeyVisualClassifier.hintColorFor(center, five));
-        assertEquals(fullDefault.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(fullDefault, five));
-        assertEquals(fullDefault.accentColor, KeyboardKeyVisualClassifier.textColorFor(fullDefault, five));
+        assertEquals(halfMod.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(halfMod, three));
+        assertEquals(halfMod.accentColor, KeyboardKeyVisualClassifier.textColorFor(halfMod, three));
+        assertEquals(halfMod.accentColor, KeyboardKeyVisualClassifier.hintColorFor(halfMod, three));
+        assertEquals(halfMod.functionKeyColor, KeyboardKeyVisualClassifier.colorFor(halfMod, five));
+        assertEquals(halfMod.secondaryColor, KeyboardKeyVisualClassifier.textColorFor(halfMod, five));
+        assertEquals(halfMod.secondaryColor, KeyboardKeyVisualClassifier.hintColorFor(halfMod, five));
+        assertEquals(fullAlpha.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(fullAlpha, five));
+        assertEquals(fullAlpha.accentColor, KeyboardKeyVisualClassifier.textColorFor(fullAlpha, five));
+        assertEquals(fullMod.functionKeyColor, KeyboardKeyVisualClassifier.colorFor(fullMod, three));
+        assertEquals(fullMod.secondaryColor, KeyboardKeyVisualClassifier.textColorFor(fullMod, three));
+        assertEquals(alphaAccent.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(alphaAccent, three));
+        assertEquals(alphaAccent.accentKeyColor, KeyboardKeyVisualClassifier.colorFor(alphaAccent, five));
+        assertEquals(alphaAccent.secondaryColor, KeyboardKeyVisualClassifier.textColorFor(alphaAccent, five));
+        assertEquals(modAlpha.functionKeyColor, KeyboardKeyVisualClassifier.colorFor(modAlpha, three));
+        assertEquals(modAlpha.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(modAlpha, five));
+    }
+
+    @Test
+    public void numberRowColorModeImportsLegacyPreferences() {
+        assertEquals(
+                AdditionalNumberRowColorMode.FULL_ALPHA,
+                AdditionalNumberRowColorMode.fromPreference("full_default"));
+        assertEquals(
+                AdditionalNumberRowColorMode.HALF_MOD_4567,
+                AdditionalNumberRowColorMode.fromPreference("center_dimmed"));
+        assertEquals(
+                AdditionalNumberRowColorMode.FULL_MOD,
+                AdditionalNumberRowColorMode.fromPreference("full_dimmed"));
     }
 
     @Test
@@ -257,6 +283,7 @@ public final class KeyboardKeyVisualClassifierTest {
     public void alphaGroupOverridesApplyToSpecialActionAndPunctuationKeys() {
         Map<String, KeyDisplayOverride> displayOverrides = new HashMap<>();
         displayOverrides.put("alpha", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_DOT));
+        displayOverrides.put("modifiers", KeyDisplayOverride.text("mod"));
         displayOverrides.put("..", KeyDisplayOverride.text("two"));
         KeyboardSettings settings = KeyboardSettings.defaults().withKeyDisplayOverrides(displayOverrides);
 
@@ -290,10 +317,38 @@ public final class KeyboardKeyVisualClassifierTest {
                         settings,
                         new GestureKey(". .", ".", null, null, null, null, null)).value);
         assertEquals(
+                "mod",
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        new GestureKey("?", "?", "!", "*", "+", KeyboardCommands.CMD_NOOP, null)).value);
+        assertEquals(
+                "mod",
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        new GestureKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, null)).value);
+        assertEquals(
+                ModifierIconCatalog.GLYPH_DOT,
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        new GestureKey("5", "5", null, "%", null, null, "%")).value);
+    }
+
+    @Test
+    public void dotAlphaOverrideCanOwnDingulPunctuationWhenNoModifierOverrideExists() {
+        Map<String, KeyDisplayOverride> displayOverrides = new HashMap<>();
+        displayOverrides.put("alpha", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_DOT));
+        KeyboardSettings settings = KeyboardSettings.defaults().withKeyDisplayOverrides(displayOverrides);
+
+        assertEquals(
                 ModifierIconCatalog.GLYPH_DOT,
                 KeyDisplayOverrideResolver.resolve(
                         settings,
                         new GestureKey("?", "?", "!", "*", "+", KeyboardCommands.CMD_NOOP, null)).value);
+        assertEquals(
+                ModifierIconCatalog.GLYPH_DOT,
+                KeyDisplayOverrideResolver.resolve(
+                        settings,
+                        new GestureKey(".", ".", ",", "!", "?", KeyboardCommands.CMD_NOOP, null)).value);
         assertEquals(
                 ModifierIconCatalog.GLYPH_DOT,
                 KeyDisplayOverrideResolver.resolve(
@@ -325,16 +380,16 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
-    public void dingulPunctuationUsesAlphaForegroundUnlessThemeUsesPointIcons() {
+    public void dingulPunctuationUsesModifierForeground() {
         Map<String, Integer> overrides = new HashMap<>();
         overrides.put("alpha", 0x00010203);
-        overrides.put("enter", 0x00040506);
+        overrides.put("modifiers", 0x00040506);
         KeyboardSettings settings = KeyboardSettings.defaults().withKeyColorOverrides(overrides);
         GestureKey question = new GestureKey("?", "?", "!", "*", "+", KeyboardCommands.CMD_NOOP, null);
 
-        assertEquals(0xFF010203, KeyboardKeyVisualClassifier.textColorFor(settings, question));
+        assertEquals(0xFF040506, KeyboardKeyVisualClassifier.textColorFor(settings, question));
 
-        assertEquals(0xFF010203, KeyboardKeyVisualClassifier.textColorFor(
+        assertEquals(0xFF040506, KeyboardKeyVisualClassifier.textColorFor(
                 settings.withModifierIconThemePack(ModifierIconCatalog.PACK_DOTS_LINES),
                 question));
     }

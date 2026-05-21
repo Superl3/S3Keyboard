@@ -49,9 +49,9 @@ final class KeyboardKeyVisualClassifier {
             return override;
         }
         if (isAdditionalNumberRowKey(key)) {
-            return additionalNumberRowUsesAccent(settings, key)
-                    ? settings.secondaryColor
-                    : settings.accentColor;
+            return additionalNumberRowRole(settings, key) == KeyVisualRole.NORMAL
+                    ? settings.accentColor
+                    : settings.secondaryColor;
         }
         KeyVisualRole role = roleFor(settings, key);
         return role == KeyVisualRole.NORMAL ? settings.accentColor : settings.secondaryColor;
@@ -191,6 +191,10 @@ final class KeyboardKeyVisualClassifier {
                 }
             }
         }
+        color = dingulSemanticOverrideColorFor(settings, key, false);
+        if (color != null) {
+            return color;
+        }
         if (KeyDisplayOverrideResolver.isAlphaKey(key)) {
             color = findOverride(settings, "alpha");
             if (color != null) {
@@ -306,6 +310,10 @@ final class KeyboardKeyVisualClassifier {
                 }
             }
         }
+        color = dingulSemanticOverrideColorFor(settings, key, true);
+        if (color != null) {
+            return color;
+        }
         if (KeyDisplayOverrideResolver.isAlphaKey(key)) {
             color = findBackgroundOverride(settings, "alpha");
             if (color != null) {
@@ -314,6 +322,41 @@ final class KeyboardKeyVisualClassifier {
         }
         if (KeyDisplayOverrideResolver.isModifierKey(key)) {
             color = findBackgroundOverride(settings, "modifiers");
+            if (color != null) {
+                return color;
+            }
+        }
+        return null;
+    }
+
+    private static Integer dingulSemanticOverrideColorFor(
+            KeyboardSettings settings,
+            GestureKey key,
+            boolean background) {
+        if (settings == null || key == null || settings.keyboardMode != KeyboardMode.HANGUL) {
+            return null;
+        }
+        if (isDingulModifierInvertedKey(key)) {
+            return findSemanticOverride(settings, background, "modInv", "mod_inv", "modifierInverted");
+        }
+        if (isDingulSemanticModifierKey(settings, key)) {
+            Integer color = findSemanticOverride(settings, background, "mod", "modifier", "modifiers");
+            if (color != null) {
+                return color;
+            }
+        }
+        if (KeyDisplayOverrideResolver.isAlphaKey(key)) {
+            return findSemanticOverride(settings, background, "alpha");
+        }
+        return null;
+    }
+
+    private static Integer findSemanticOverride(
+            KeyboardSettings settings,
+            boolean background,
+            String... keys) {
+        for (String key : keys) {
+            Integer color = background ? findBackgroundOverride(settings, key) : findOverride(settings, key);
             if (color != null) {
                 return color;
             }
@@ -362,7 +405,19 @@ final class KeyboardKeyVisualClassifier {
         if (settings == null || key == null || settings.keyboardMode != KeyboardMode.HANGUL) {
             return false;
         }
-        return ".".equals(key.label) || "/".equals(key.label);
+        return "?".equals(key.label) || ".".equals(key.label) || "/".equals(key.label);
+    }
+
+    private static boolean isDingulModifierInvertedKey(GestureKey key) {
+        return KeyboardCommands.CMD_SPACE.equals(key.tap)
+                || KeyboardCommands.CMD_ENTER.equals(key.tap);
+    }
+
+    private static boolean isDingulSemanticModifierKey(KeyboardSettings settings, GestureKey key) {
+        return isDingulModifierPunctuationKey(settings, key)
+                || (!isDingulVowelCommandKey(key)
+                && !isDingulModifierInvertedKey(key)
+                && KeyDisplayOverrideResolver.isModifierKey(key));
     }
 
     private static boolean isDingulEnterLikePunctuationKey(KeyboardSettings settings, GestureKey key) {
@@ -382,20 +437,20 @@ final class KeyboardKeyVisualClassifier {
     }
 
     private static int additionalNumberRowColor(KeyboardSettings settings, GestureKey key) {
-        return additionalNumberRowUsesAccent(settings, key)
-                ? settings.accentKeyColor
-                : settings.keyIdleColor;
+        KeyVisualRole role = additionalNumberRowRole(settings, key);
+        if (role == KeyVisualRole.ACCENT) {
+            return settings.accentKeyColor;
+        }
+        if (role == KeyVisualRole.FUNCTION) {
+            return settings.functionKeyColor;
+        }
+        return settings.keyIdleColor;
     }
 
-    private static boolean additionalNumberRowUsesAccent(KeyboardSettings settings, GestureKey key) {
-        switch (settings.additionalNumberRowColorMode) {
-            case FULL_DEFAULT:
-                return false;
-            case CENTER_DIMMED:
-                return key.tap.charAt(0) >= '4' && key.tap.charAt(0) <= '7';
-            case FULL_DIMMED:
-            default:
-                return true;
+    private static KeyVisualRole additionalNumberRowRole(KeyboardSettings settings, GestureKey key) {
+        if (settings == null || settings.additionalNumberRowColorMode == null || !isAdditionalNumberRowKey(key)) {
+            return KeyVisualRole.FUNCTION;
         }
+        return settings.additionalNumberRowColorMode.roleForDigit(key.tap.charAt(0));
     }
 }

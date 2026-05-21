@@ -77,8 +77,40 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 
 ## Theme Architecture
 
-- `KeyboardThemePreset` is the source of truth for built-in themes. Keep GMK-style
-  themes as deterministic JSON presets rather than image-matched screenshots.
+- `themes/*.json` is the source of truth for built-in theme appearance. Keep
+  generated Android presets, web builder presets, static previews, and tests in
+  parity with those deterministic JSON themes rather than image-matched screenshots.
+- Built-in presets are generated at build time from `themes/*.json` by
+  `tools/sync-themes.mjs`. `KeyboardThemePreset` should stay a thin wrapper
+  around `GeneratedKeyboardThemePresets.PRESETS`; do not add a second manual
+  color mirror there.
+- Theme authoring rules live in `tools/theme-contract.mjs`. Generated web
+  editor files, validation, and preview checks should consume that contract
+  rather than carrying their own copy of allowed fields, pack ids, or legacy
+  aliases.
+- Run `rtk node tools/sync-themes.mjs --generate --report` after editing theme
+  JSON. The same tool validates schema fields, duplicate ids/names, deprecated
+  root `hints`, required shift-indicator appearance data, basic contrast risks,
+  and writes `web-theme-builder/theme-contract.generated.js` plus
+  `web-theme-builder/theme-index.generated.js`.
+- Root `hints` is deprecated because slide hint visibility belongs to user
+  preferences, not theme appearance. Old recommendations can live under
+  `metadata.recommendedHints` for audit context, but import/apply/export must
+  not change `showHangulSlideHints`, `showEnglishSlideHints`, or beginner
+  tooltip settings.
+- `metadata.tags` and `metadata.features` are optional review metadata for
+  diversity reporting. Use them to describe families such as `dark`, `light`,
+  `minimal`, `highContrast`, `dots`, `textPack`, `metal`, `glassLike`, or
+  `gmkInspired` without adding renderer-only custom code.
+- Theme review classifies `coverage` and `colorway` from the shared contract:
+  `1` is all-same color, `2` is alpha/mod, `3` is alpha/mod/accent, `4.1` is
+  custom modifier coverage, `4.2` is custom alpha coverage, and `5` is both.
+  Colorway classes are `a` one colorway, `b` two colorway, `c` three colorway,
+  and `d` colorful.
+- Contrast checks should follow visual intent. Primary `alpha` and `mod`
+  legends can warn when genuinely unreadable, but dimmed `modInv`, secondary,
+  decorative, and accent-marker pairs are valid aesthetic choices and should be
+  reported as metadata rather than failure.
 - Every keyboard theme starts from the same three-tone keycap model:
   `alpha` keys use `keyIdleColor` and `accentColor`, `modifier` keys use
   `functionKeyColor` and `secondaryColor`, and selected command/accent keys use
@@ -92,18 +124,59 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 - Both override maps are imported through `KeyboardThemeJson`. Runtime storage
   normalizes background overrides with a `background:` prefix so the renderer can
   keep one immutable override map without mixing foreground and background lookups.
+- Dingul themes can declare semantic role colors through `dingulColors.alpha`,
+  `dingulColors.mod`, and `dingulColors.modInv`. `modInv` means foreground and
+  background are intentionally inverted for keys such as space and enter. Use
+  these role colors for normal themes before reaching for exact per-key color
+  overrides.
+- Layout role taxonomy lives in `tools/theme-contract.mjs`. Dingul alpha covers
+  the top 4x3 typing keys plus `?` and `space`; visual accent punctuation can be
+  treated as `modEnter` for `.` and `modShift` for `/`; bottom command keys are
+  grouped as `modCtrl` (`settings`, `enter`) and `modMeta` (`reserved`,
+  `language`). QWERTY alpha covers `q-p`, `a-l`, `z-m`, and `space`; the bottom
+  command grouping is shared. Shift and backspace remain `modCommand` until the
+  visual role is settled.
 - Dot-style themes should not use global forced `LegendStylePreset.DOTS`.
   They should use `keyDisplayOverrides`, usually `alpha: icon:dot`, plus exact
   key overrides for punctuation or command keys. Exact key overrides win over
   `alpha` or `modifiers` group overrides.
-- `alpha` display and color overrides apply to letter keys plus Dingul action
-  keys (`ㅣ.`, `ㅡㅐ`, `..`/`. .`) and punctuation keys (`?`, `.`, `/`).
+- Dot-style themes may use many colorful foreground dots, but their keycap
+  surfaces should still preserve the alpha/mod split. Treat the color dots as
+  glyph-level decoration layered on top of a two-tone or three-tone keycap
+  system, not as a replacement for role backgrounds.
+- `alpha` display overrides apply to letter keys plus Dingul action keys
+  (`ㅣ.`, `ㅡㅐ`, `..`/`. .`). Dingul punctuation (`?`, `.`, `/`) is a modifier
+  role for color and display unless an explicit theme exception overrides it.
+- Optional number-row visibility remains a user layout preference. Themes only
+  define `additionalNumberRow.colorMode`, which maps outer `123890` and inner
+  `4567` digit sets onto `alpha`, `mod`, or `accent` styling.
+- Custom display glyphs suppress slide-hint sub items. Dot legends, text display
+  packs, exact display overrides, and non-default custom modifier glyph packs
+  should render as a clean owned glyph surface without extra hint text.
+- Theme review classification ignores `keyPressed` and derived `modInv` pairs
+  when deciding whether a theme is two-color or three-color. They stay visible
+  as interaction/dimmed metadata, not as extra colorway coverage by themselves.
+  A `modInv` pair backed by a visually distinct authored `colors.accentKey`
+  background still counts as the third visual pair when it is clearly separated
+  from the alpha/mod/primary backgrounds; nearby mod shading remains part of the
+  two-tone family.
+- Foreground-only per-key color maps are reviewed as glyph decoration. They can
+  add `colorfulForeground` without upgrading keycap coverage; Marigold Dark is
+  three-tone because of its orange accent background, while Marigold Light stays
+  a white/soft-gray two-tone theme even with colorful legends.
 - `ModifierIconCatalog` owns built-in modifier icon pack ids. Monochrome packs
   use theme foreground colors; colored packs use intrinsic foreground colors and
-  ignore theme foreground.
+  ignore theme foreground. Treat modifier icon packs as the preferred way to
+  make modifier keys visually distinctive once the theme JSON policy is stable.
+  New packs must be added to Android runtime, `tools/theme-contract.mjs`,
+  web builder preview, static preview, and focused tests together.
+- `metropolis-graph` is a modifier glyph pack, not a preview line pattern. It
+  should render the same recognizable command icons as the normal modifier pack;
+  colored Metropolis keycaps should use explicit text overrides for visible
+  glyph contrast.
 - `KeyDisplayOverridePackCatalog` owns built-in text/icon replacement packs. The
-  simple text pack is separate from a theme and can replace command icons with
-  text-like vector output.
+  simple text pack is separate from a theme and only replaces enter-like keys
+  with the `hihihi` vector glyph; other command keys remain modifier icons.
 - `KeyboardThemeJson` accepts imported icon/display pack metadata. In v1,
   external packs select a built-in renderer through `extends` and can add
   `keyDisplayOverrides`; future path renderers can consume the preserved glyph

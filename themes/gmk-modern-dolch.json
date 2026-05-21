@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "name": "GMK Modern Dolch Inspired",
   "author": "local",
+  "metadata": {
+    "tags": [
+      "dark",
+      "depth",
+      "gmkInspired"
+    ],
+    "features": [
+      "dingulRoleColors"
+    ]
+  },
   "colors": {
     "keyIdle": "#616A70",
     "functionKey": "#2A2F34",
@@ -22,7 +32,7 @@
     "depthDp": 2
   },
   "additionalNumberRow": {
-    "colorMode": "full_dimmed"
+    "colorMode": "full_mod"
   },
   "typography": {
     "fontFamily": "noto_sans_kr",
@@ -34,32 +44,20 @@
     "secondaryTextItalic": false
   },
   "keyTextColorOverrides": {
-    "shift": "#D65E72",
-    "language": "#D9DFE2",
-    "settings": "#D9DFE2",
-    "space": "#F0F3F4",
-    "enter": "#F0F3F4",
-    "backspace": "#D9DFE2",
-    "options": "#D9DFE2",
-    "reserved": "#F0F3F4",
-    "tap:ㅢ": "#64D4CF",
-    "ㅢ": "#64D4CF",
-    "tap:ㅣ": "#64D4CF",
-    "ㅣ.": "#64D4CF",
-    "__dingul_center_vowel__": "#64D4CF",
-    "tap:ㅡ": "#64D4CF",
-    "ㅡ": "#64D4CF",
-    "ㅡㅐ": "#64D4CF",
-    "__dingul_wide_vowel__": "#64D4CF",
     "shiftIndicator": "#55C7C8"
   },
-  "keyBackgroundColorOverrides": {
-    "shift": "#2A2F34",
-    "language": "#2A2F34",
-    "space": "#616A70",
-    "enter": "#2E6F70",
-    "backspace": "#2A2F34",
-    "options": "#2A2F34",
-    "reserved": "#B95A68"
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#E8ECEF",
+      "background": "#616A70"
+    },
+    "mod": {
+      "foreground": "#64D4CF",
+      "background": "#2A2F34"
+    },
+    "modInv": {
+      "foreground": "#2A2F34",
+      "background": "#2E6F70"
+    }
   }
 }
