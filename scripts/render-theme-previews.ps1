@@ -140,7 +140,7 @@ function New-ThemeFont {
         $italic = Get-ThemeBool $typography.primaryTextItalic $false
     } else {
         $scale = (Get-ThemeInt $typography.secondaryTextSizePercent 100) / 100.0
-        $bold = Get-ThemeBool $typography.secondaryTextBold $false
+        $bold = $true
         $italic = Get-ThemeBool $typography.secondaryTextItalic $false
     }
     return [System.Drawing.Font]::new(
@@ -153,11 +153,10 @@ function New-ThemeFont {
 function Get-RoleColor {
     param([object] $Theme, [string] $Role)
     switch ($Role) {
-        "function" { return Convert-ThemeColor $Theme.colors.functionKey "#E7EAF0" }
-        "primary" { return Convert-ThemeColor $Theme.colors.primaryFunctionKey "#DDE3EC" }
+        "function" { return Convert-ThemeColor $Theme.colors.modifierKey "#E7EAF0" }
         "accent" { return Convert-ThemeColor $Theme.colors.accentKey "#EAF1FF" }
         "pressed" { return Convert-ThemeColor $Theme.colors.keyPressed "#B2B2B2" }
-        default { return Convert-ThemeColor $Theme.colors.keyIdle "#F8F8F8" }
+        default { return Convert-ThemeColor $Theme.colors.alphaKey "#F8F8F8" }
     }
 }
 
@@ -200,18 +199,59 @@ function Get-NumberRowRole {
 function Get-AccentPolicyTargets {
     param([object] $Theme, [string] $Layout)
     if ($null -eq $Theme.accentPolicy) {
-        return @()
+        return Get-ImplicitAccentPolicyTargets -Theme $Theme -Layout $Layout
     }
     $property = $Theme.accentPolicy.PSObject.Properties |
             Where-Object { $_.Name -eq $Layout } |
             Select-Object -First 1
     if ($null -eq $property -or $null -eq $property.Value) {
-        return @()
+        return Get-ImplicitAccentPolicyTargets -Theme $Theme -Layout $Layout
     }
     if ($property.Value -is [System.Array]) {
-        return @($property.Value | ForEach-Object { [string]$_ })
+        $targets = @($property.Value | ForEach-Object { [string]$_ })
+        if ($targets.Count -eq 0) {
+            return Get-ImplicitAccentPolicyTargets -Theme $Theme -Layout $Layout
+        }
+        return $targets
     }
     return @([string]$property.Value)
+}
+
+function Get-ImplicitAccentPolicyTargets {
+    param([object] $Theme, [string] $Layout)
+    if (-not (Test-ImplicitAccentPolicy -Theme $Theme)) {
+        return @()
+    }
+    if ($Layout -eq "dingul") {
+        return @("modEnter", "modShift")
+    }
+    return @("modCtrl")
+}
+
+function Test-ImplicitAccentPolicy {
+    param([object] $Theme)
+    if ($null -eq $Theme.colors) {
+        return $false
+    }
+    $accent = Convert-ThemeColor $Theme.colors.accentKey "#000000"
+    $baseColors = @(
+        (Convert-ThemeColor $Theme.colors.alphaKey "#000000"),
+        (Convert-ThemeColor $Theme.colors.modifierKey "#000000")
+    )
+    foreach ($base in $baseColors) {
+        if ((Get-ColorDistance -Left $accent -Right $base) -lt 48) {
+            return $false
+        }
+    }
+    return $true
+}
+
+function Get-ColorDistance {
+    param([System.Drawing.Color] $Left, [System.Drawing.Color] $Right)
+    return [Math]::Sqrt(
+        [Math]::Pow($Left.R - $Right.R, 2) +
+        [Math]::Pow($Left.G - $Right.G, 2) +
+        [Math]::Pow($Left.B - $Right.B, 2))
 }
 
 function Test-AccentPolicyTarget {
@@ -226,22 +266,72 @@ function Get-SemanticTargetForPreviewKey {
     param([string] $Layout, [string] $Label)
     $normalized = $Label.ToLowerInvariant()
     switch ($normalized) {
-        "settings" { return "modCtrl" }
-        "enter" { return "modCtrl" }
+        "settings" { return "settingsEnter" }
+        "options" { return "settingsEnter" }
+        "enter" { return "settingsEnter" }
         "reserved" { return "modMeta" }
         "res" { return "modMeta" }
         "language" { return "modMeta" }
         "lang" { return "modMeta" }
-        "shift" { return "modCommand" }
-        "bksp" { return "modCommand" }
-        "backspace" { return "modCommand" }
+        "shift" { return "qwertyShift" }
+        "bksp" { return "backspace" }
+        "backspace" { return "backspace" }
     }
     if ($Layout -eq "dingul") {
         if ($Label -eq ".") { return "modEnter" }
         if ($Label -eq "/") { return "modShift" }
-        if ($Label -eq "?") { return "punctuation" }
+        if ($Label -eq "?") { return "question" }
     }
     return ""
+}
+
+function Get-AlternateAccentPolicyTargets {
+    param([string] $Target)
+    switch ($Target) {
+        "settingsEnter" { return @("settingsEnter", "modCtrl") }
+        "qwertyShift" { return @("qwertyShift", "shift", "modCommand") }
+        "backspace" { return @("backspace", "modCommand") }
+        "modEnter" { return @("dingulDot", "modEnter") }
+        "modShift" { return @("dingulSlash", "modShift") }
+        default { return @($Target) }
+    }
+}
+
+function Get-SpacebarPreviewRole {
+    param([object] $Theme, [string] $BaseRole)
+    if ($null -eq $Theme.accentPolicy) {
+        return $BaseRole
+    }
+    $role = [string]$Theme.accentPolicy.spacebar
+    if ([string]::IsNullOrWhiteSpace($role)) {
+        $role = [string]$Theme.accentPolicy.space
+    }
+    switch ($role) {
+        "accent" { return "accent" }
+        "mod" { return "function" }
+        "modifier" { return "function" }
+        "modifiers" { return "function" }
+        default { return $BaseRole }
+    }
+}
+
+function Get-QuestionPreviewRole {
+    param([object] $Theme, [string] $BaseRole)
+    if ($null -eq $Theme.accentPolicy) {
+        return $BaseRole
+    }
+    $role = [string]$Theme.accentPolicy.question
+    if ([string]::IsNullOrWhiteSpace($role)) {
+        $role = [string]$Theme.accentPolicy.questionMark
+    }
+    switch ($role) {
+        "accent" { return "accent" }
+        "mod" { return "function" }
+        "modifier" { return "function" }
+        "modifiers" { return "function" }
+        "alpha" { return "normal" }
+        default { return $BaseRole }
+    }
 }
 
 function Resolve-PreviewRole {
@@ -249,10 +339,18 @@ function Resolve-PreviewRole {
     if ($BaseRole -eq "pressed") {
         return $BaseRole
     }
+    if ($Label.ToLowerInvariant() -eq "space") {
+        return Get-SpacebarPreviewRole -Theme $Theme -BaseRole $BaseRole
+    }
+    if ($Layout -eq "dingul" -and $Label -eq "?") {
+        return Get-QuestionPreviewRole -Theme $Theme -BaseRole $BaseRole
+    }
     $target = Get-SemanticTargetForPreviewKey -Layout $Layout -Label $Label
-    if ((Test-AccentPolicyTarget -Theme $Theme -Layout $Layout -Target $target) -or
-            ($target -in @("modEnter", "modShift") -and (Test-AccentPolicyTarget -Theme $Theme -Layout $Layout -Target "punctuation"))) {
-        return "accent"
+    foreach ($candidate in (Get-AlternateAccentPolicyTargets -Target $target)) {
+        if ((Test-AccentPolicyTarget -Theme $Theme -Layout $Layout -Target $candidate) -or
+                ($candidate -in @("modEnter", "modShift") -and (Test-AccentPolicyTarget -Theme $Theme -Layout $Layout -Target "punctuation"))) {
+            return "accent"
+        }
     }
     return $BaseRole
 }
@@ -436,13 +534,13 @@ function Draw-KeyDisplayPackPreview {
             "shift" { "rebase" }
             "space" { "pull" }
             "language" { "fetch" }
+            "options" { "stash" }
+            "settings" { "config" }
+            "reserved" { "commit" }
             default { "" }
         }
     } else {
-        $text = switch ($Icon) {
-            "enter" { "hihihi" }
-            default { "" }
-        }
+        $text = ""
     }
     if ([string]::IsNullOrWhiteSpace($text)) {
         return $false
@@ -462,6 +560,50 @@ function Draw-KeyDisplayPackPreview {
     } finally {
         $brush.Dispose()
     }
+    return $true
+}
+
+function Draw-LabelDisplayPackPreview {
+    param(
+        [System.Drawing.Graphics] $Graphics,
+        [object] $Theme,
+        [string] $Label,
+        [System.Drawing.Color] $Color,
+        [float] $X,
+        [float] $Y,
+        [float] $W,
+        [float] $H
+    )
+    $packId = Get-KeyDisplayPackId -Theme $Theme
+    if (-not (Test-SimpleTextPack -PackId $packId) -and -not (Test-GitCommandPack -PackId $packId)) {
+        return $false
+    }
+    if (Test-GitCommandPack -PackId $packId) {
+        $text = switch ($Label) {
+            "." { "diff" }
+            "/" { "log" }
+            default { "" }
+        }
+        if ([string]::IsNullOrWhiteSpace($text)) {
+            return $false
+        }
+        $brush = [System.Drawing.SolidBrush]::new($Color)
+        try {
+            $font = [System.Drawing.Font]::new("Segoe UI", [Math]::Max(8, $H * 0.28), [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+            try {
+                Draw-CenteredText -Graphics $Graphics -Text $text -Font $font -Brush $brush -X $X -Y $Y -W $W -H $H
+            } finally {
+                $font.Dispose()
+            }
+        } finally {
+            $brush.Dispose()
+        }
+        return $true
+    }
+    if ($Label -ne ".") {
+        return $false
+    }
+    Draw-HihihiPreviewGlyph -Graphics $Graphics -Color $Color -X $X -Y $Y -W $W -H $H
     return $true
 }
 
@@ -542,10 +684,12 @@ function Draw-PackPreviewIcon {
                     $dotX += $weight + $gap
                 }
             } elseif ($Icon -eq "language" -or $Icon -eq "reserved") {
-                $Graphics.FillEllipse($brush, $X + $W / 2 - $weight / 2, $y - $weight / 2, $weight, $weight)
+                $diameter = $weight * 1.24
+                $Graphics.FillEllipse($brush, $X + $W / 2 - $diameter / 2, $y - $diameter / 2, $diameter, $diameter)
             } else {
-                $left = $X + $W * 0.30
-                $right = $X + $W * 0.70
+                $side = if ($Icon -eq "options" -or $Icon -eq "settings" -or $Icon -eq "enter") { 0.39 } elseif ($Icon -eq "backspace" -or $Icon -eq "shift") { 0.30 } else { 0.34 }
+                $left = $X + $W * $side
+                $right = $X + $W * (1.0 - $side)
                 $Graphics.DrawLine($pen, $left, $y, $right, $y)
             }
         } finally {
@@ -738,14 +882,24 @@ function Draw-Key {
         }
         $icon = Get-PreviewIconName $Label
         if (Test-DotLegendLabel -Theme $Theme -Label $Label) {
-            $diameter = Get-DotsLineWeight -W $W -H $H
-            $Graphics.FillEllipse(
-                    $textBrush,
-                    $X + ($W - $diameter) / 2.0,
-                    $Y + ($H - $diameter) / 2.0,
-                    $diameter,
-                    $diameter)
+            $diameter = (Get-DotsLineWeight -W $W -H $H) * 0.84
+            if ($Label -eq "." -or $Label -eq "/") {
+                $gap = [Math]::Max($diameter * 0.82, 3.0)
+                $cx = $X + $W / 2.0
+                $cy = $Y + $H / 2.0
+                $Graphics.FillEllipse($textBrush, $cx - $gap / 2.0 - $diameter / 2.0, $cy - $diameter / 2.0, $diameter, $diameter)
+                $Graphics.FillEllipse($textBrush, $cx + $gap / 2.0 - $diameter / 2.0, $cy - $diameter / 2.0, $diameter, $diameter)
+            } else {
+                $Graphics.FillEllipse(
+                        $textBrush,
+                        $X + ($W - $diameter) / 2.0,
+                        $Y + ($H - $diameter) / 2.0,
+                        $diameter,
+                        $diameter)
+            }
         } elseif (-not [string]::IsNullOrWhiteSpace($icon) -and (Draw-KeyDisplayPackPreview -Graphics $Graphics -Theme $Theme -Icon $icon -Color $textColor -X $X -Y $Y -W $W -H $H)) {
+            # rendered by key display pack
+        } elseif ([string]::IsNullOrWhiteSpace($icon) -and (Draw-LabelDisplayPackPreview -Graphics $Graphics -Theme $Theme -Label $Label -Color $textColor -X $X -Y $Y -W $W -H $H)) {
             # rendered by key display pack
         } elseif (-not [string]::IsNullOrWhiteSpace($icon) -and (Draw-PackPreviewIcon -Graphics $Graphics -Theme $Theme -Icon $icon -Color $textColor -X $X -Y $Y -W $W -H $H)) {
             # rendered by icon pack

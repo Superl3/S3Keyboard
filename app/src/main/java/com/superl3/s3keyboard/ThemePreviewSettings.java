@@ -8,10 +8,22 @@ final class ThemePreviewSettings {
             ThemeOption option,
             KeyboardSettings baseSettings,
             KeyboardMode mode) {
-        return option.applyTo(baseSettings)
+        return forOption(option, baseSettings, mode, AccentPlacementPolicy.themeDefault());
+    }
+
+    static KeyboardSettings forOption(
+            ThemeOption option,
+            KeyboardSettings baseSettings,
+            KeyboardMode mode,
+            AccentPlacementPolicy accentPlacementPolicy) {
+        KeyboardSettings preview = option.applyTo(baseSettings)
                 .withKeyboardMode(mode)
                 .withHintVisibility(false, false, false)
                 .withHangulNumberRow(false)
                 .withEnglishNumberRow(true);
+        AccentPlacementPolicy policy = accentPlacementPolicy == null
+                ? AccentPlacementPolicy.themeDefault()
+                : accentPlacementPolicy;
+        return policy.themeDefault ? preview : policy.applyTo(preview);
     }
 }

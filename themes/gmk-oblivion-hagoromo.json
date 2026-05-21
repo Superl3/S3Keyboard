@@ -15,9 +15,8 @@
     ]
   },
   "colors": {
-    "keyIdle": "#EDE8DD",
-    "functionKey": "#2A2C2F",
-    "primaryFunctionKey": "#1B1D20",
+    "alphaKey": "#EDE8DD",
+    "modifierKey": "#2A2C2F",
     "accentKey": "#2F3235",
     "keyPressed": "#D6D0C3",
     "keyboardBackground": "#111214",
@@ -42,13 +41,23 @@
     "secondaryTextSizePercent": 80,
     "primaryTextBold": false,
     "primaryTextItalic": false,
-    "secondaryTextBold": false,
+    "secondaryTextBold": true,
     "secondaryTextItalic": false
   },
   "icons": {
     "keyDisplayPackId": "git-commands"
   },
   "keyTextColorOverrides": {
+    "options": "#E6B35C",
+    "settings": "#B78DC7",
+    "reserved": "#83A95B",
+    "language": "#5BA7BA",
+    "space": "#F0E9DB",
+    "enter": "#83A95B",
+    "backspace": "#D66A72",
+    "shift": "#D58A4D",
+    ".": "#5BA7BA",
+    "/": "#B78DC7",
     "shiftIndicator": "#7BBE64"
   },
   "dingulColors": {

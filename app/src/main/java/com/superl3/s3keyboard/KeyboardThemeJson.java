@@ -28,9 +28,8 @@ final class KeyboardThemeJson {
             }
 
             JSONObject colors = new JSONObject();
-            colors.put("keyIdle", colorToString(safeSettings.keyIdleColor));
-            colors.put("functionKey", colorToString(safeSettings.functionKeyColor));
-            colors.put("primaryFunctionKey", colorToString(safeSettings.primaryFunctionKeyColor));
+            colors.put("alphaKey", colorToString(safeSettings.keyIdleColor));
+            colors.put("modifierKey", colorToString(safeSettings.functionKeyColor));
             colors.put("accentKey", colorToString(safeSettings.accentKeyColor));
             colors.put("keyPressed", colorToString(safeSettings.keyPressedColor));
             colors.put("keyboardBackground", colorToString(safeSettings.keyboardBackgroundColor));
@@ -101,6 +100,54 @@ final class KeyboardThemeJson {
         }
     }
 
+    static boolean locksUserAccentPlacement(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            JSONObject root = new JSONObject(json);
+            JSONObject metadata = root.optJSONObject("metadata");
+            if (containsMetadataToken(metadata, "colorfulForeground")
+                    || containsMetadataToken(metadata, "heavyPerKeyOverrides")) {
+                return true;
+            }
+            JSONObject icons = root.optJSONObject("icons");
+            String modifierPackId = icons == null ? "" : icons.optString("modifierPackId", "");
+            String normalizedPackId = ModifierIconCatalog.normalizePackId(modifierPackId);
+            if (ModifierIconCatalog.PACK_DOTS_LINES.equals(normalizedPackId)
+                    || ModifierIconCatalog.PACK_METROPOLIS_POINTS.equals(normalizedPackId)) {
+                return true;
+            }
+            JSONObject textOverrides = root.optJSONObject("keyTextColorOverrides");
+            JSONObject backgroundOverrides = root.optJSONObject("keyBackgroundColorOverrides");
+            int textCount = textOverrides == null ? 0 : textOverrides.length();
+            int backgroundCount = backgroundOverrides == null ? 0 : backgroundOverrides.length();
+            return textCount + backgroundCount >= 24;
+        } catch (JSONException ex) {
+            return false;
+        }
+    }
+
+    private static boolean containsMetadataToken(JSONObject metadata, String token) {
+        if (metadata == null || token == null) {
+            return false;
+        }
+        return containsJsonArrayToken(metadata.optJSONArray("tags"), token)
+                || containsJsonArrayToken(metadata.optJSONArray("features"), token);
+    }
+
+    private static boolean containsJsonArrayToken(JSONArray array, String token) {
+        if (array == null) {
+            return false;
+        }
+        for (int i = 0; i < array.length(); i++) {
+            if (token.equals(array.optString(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static KeyboardSettings importTheme(KeyboardSettings baseSettings, String json) {
         KeyboardSettings base = baseSettings == null ? KeyboardSettings.defaults() : baseSettings;
         try {
@@ -137,7 +184,7 @@ final class KeyboardThemeJson {
             }
 
             KeyboardSettings themed = layeredBase.withExtendedThemeColors(
-                    color(colors, "keyIdle", layeredBase.keyIdleColor),
+                    color(colors, "alphaKey", layeredBase.keyIdleColor),
                     color(colors, "keyPressed", layeredBase.keyPressedColor),
                     color(colors, "panelBackground", color(
                             colors,
@@ -145,8 +192,7 @@ final class KeyboardThemeJson {
                             layeredBase.keyboardBackgroundColor)),
                     color(colors, "accent", layeredBase.accentColor),
                     color(colors, "secondary", layeredBase.secondaryColor),
-                    color(colors, "functionKey", layeredBase.functionKeyColor),
-                    color(colors, "primaryFunctionKey", layeredBase.primaryFunctionKeyColor),
+                    color(colors, "modifierKey", layeredBase.functionKeyColor),
                     color(colors, "accentKey", layeredBase.accentKeyColor),
                     color(colors, "border", layeredBase.borderColor),
                     customDepthColor,
@@ -217,7 +263,11 @@ final class KeyboardThemeJson {
 
             Map<String, Integer> overrides = new HashMap<>(themed.keyColorOverrides);
             overrides.putAll(decodeDingulColors(dingulColors, themed));
-            overrides.putAll(decodeAccentPolicy(root.optJSONObject("accentPolicy"), themed, overrides));
+            overrides.putAll(decodeAccentPolicy(
+                    root.optJSONObject("accentPolicy"),
+                    themed,
+                    overrides,
+                    keyBackgroundColorOverrides == null));
             overrides.putAll(decodeKeyColorOverrides(keyColorOverrides));
             overrides.putAll(decodeKeyBackgroundColorOverrides(keyBackgroundColorOverrides));
             themed = themed.withKeyColorOverrides(overrides);
@@ -444,13 +494,75 @@ final class KeyboardThemeJson {
             JSONObject object,
             KeyboardSettings settings,
             Map<String, Integer> inheritedOverrides) {
+        return decodeAccentPolicy(object, settings, inheritedOverrides, false);
+    }
+
+    static Map<String, Integer> decodeAccentPolicy(
+            JSONObject object,
+            KeyboardSettings settings,
+            Map<String, Integer> inheritedOverrides,
+            boolean useImplicitDefault) {
         Map<String, Integer> overrides = new HashMap<>();
+        boolean distinctAccent = shouldUseImplicitAccentPolicy(settings);
         if (object == null) {
+            if (useImplicitDefault && distinctAccent) {
+                addAccentTargets(overrides, new JSONArray().put("modMeta"), false, settings, inheritedOverrides);
+                addAccentTargets(overrides, new JSONArray().put("qwertyShift").put("backspace"), false, settings, inheritedOverrides);
+                addAccentTargets(overrides, new JSONArray().put("modCtrl").put("dingulDot"), true, settings, inheritedOverrides);
+            }
             return overrides;
         }
-        addAccentTargets(overrides, object.optJSONArray("qwerty"), false, settings, inheritedOverrides);
-        addAccentTargets(overrides, object.optJSONArray("dingul"), true, settings, inheritedOverrides);
+        addSingleKeyRolePolicy(
+                overrides,
+                object,
+                settings,
+                inheritedOverrides,
+                distinctAccent,
+                "space",
+                new String[]{"spacebar", "space"});
+        addSingleKeyRolePolicy(
+                overrides,
+                object,
+                settings,
+                inheritedOverrides,
+                distinctAccent,
+                "?",
+                new String[]{"question", "questionMark"});
+        if (!distinctAccent) {
+            return overrides;
+        }
+        JSONArray qwertyTargets = object.optJSONArray("qwerty");
+        JSONArray dingulTargets = object.optJSONArray("dingul");
+        if (useImplicitDefault) {
+            if (qwertyTargets == null) {
+                qwertyTargets = new JSONArray().put("modMeta").put("qwertyShift").put("backspace");
+            }
+            if (dingulTargets == null) {
+                dingulTargets = new JSONArray().put("modCtrl").put("dingulDot");
+            }
+        }
+        addAccentTargets(overrides, qwertyTargets, false, settings, inheritedOverrides);
+        addAccentTargets(overrides, dingulTargets, true, settings, inheritedOverrides);
         return overrides;
+    }
+
+    private static boolean shouldUseImplicitAccentPolicy(KeyboardSettings settings) {
+        int accentKey = settings.accentKeyColor;
+        return colorDistance(accentKey, settings.keyIdleColor) >= 48
+                && colorDistance(accentKey, settings.functionKeyColor) >= 48;
+    }
+
+    private static double colorDistance(int left, int right) {
+        int lr = (left >> 16) & 0xFF;
+        int lg = (left >> 8) & 0xFF;
+        int lb = left & 0xFF;
+        int rr = (right >> 16) & 0xFF;
+        int rg = (right >> 8) & 0xFF;
+        int rb = right & 0xFF;
+        return Math.sqrt(
+                Math.pow(lr - rr, 2)
+                        + Math.pow(lg - rg, 2)
+                        + Math.pow(lb - rb, 2));
     }
 
     private static void addAccentTargets(
@@ -463,9 +575,9 @@ final class KeyboardThemeJson {
             return;
         }
         int foreground = accentPolicyForeground(settings, inheritedOverrides);
-        int background = settings.accentKeyColor;
+        int background = accentPolicyBackground(settings, inheritedOverrides);
         for (int index = 0; index < targets.length(); index++) {
-            for (String key : accentPolicyKeys(targets.optString(index, ""), dingul)) {
+            for (String key : accentPolicyKeys(targets.optString(index, ""), dingul, settings)) {
                 overrides.put(key, foreground);
                 overrides.put("background:" + key, background);
             }
@@ -492,9 +604,26 @@ final class KeyboardThemeJson {
         return settings.accentColor;
     }
 
-    private static String[] accentPolicyKeys(String target, boolean dingul) {
-        if ("modCtrl".equals(target)) {
-            return new String[]{"settings", "enter"};
+    private static int accentPolicyBackground(
+            KeyboardSettings settings,
+            Map<String, Integer> inheritedOverrides) {
+        Integer modInv = inheritedOverrides.get("background:modInv");
+        if (modInv == null) {
+            modInv = inheritedOverrides.get("background:modinv");
+        }
+        if (modInv != null) {
+            return modInv;
+        }
+        Integer modifierInverted = inheritedOverrides.get("background:modifierinverted");
+        if (modifierInverted == null) {
+            modifierInverted = settings.keyColorOverrides.get("background:modifierinverted");
+        }
+        return modifierInverted == null ? settings.accentKeyColor : modifierInverted;
+    }
+
+    private static String[] accentPolicyKeys(String target, boolean dingul, KeyboardSettings settings) {
+        if ("modCtrl".equals(target) || "settingsEnter".equals(target)) {
+            return new String[]{"options", "settings", "enter"};
         }
         if ("modMeta".equals(target)) {
             return new String[]{"reserved", "language"};
@@ -502,16 +631,89 @@ final class KeyboardThemeJson {
         if ("modCommand".equals(target)) {
             return new String[]{"shift", "backspace"};
         }
+        if ("qwertyShift".equals(target) || (!dingul && "shift".equals(target))) {
+            return new String[]{"shift"};
+        }
+        if ("backspace".equals(target)) {
+            return new String[]{"backspace"};
+        }
         if (dingul && "modEnter".equals(target)) {
             return new String[]{"."};
         }
         if (dingul && "modShift".equals(target)) {
             return new String[]{"/"};
         }
+        if (dingul && "dingulDot".equals(target)) {
+            return new String[]{"."};
+        }
+        if (dingul && "dingulSlash".equals(target)) {
+            return new String[]{"/"};
+        }
+        if (dingul && "question".equals(target)) {
+            return new String[]{"?"};
+        }
+        if ("escPoint".equals(target) || "esc_point".equals(target)) {
+            boolean hasNumberRow = settings != null
+                    && (dingul ? settings.showHangulNumberRow : settings.showEnglishNumberRow);
+            if (hasNumberRow) {
+                return new String[]{"1"};
+            }
+            return dingul ? new String[]{"\u3131"} : new String[]{"q"};
+        }
         if (dingul && "punctuation".equals(target)) {
-            return new String[]{"?", ".", "/"};
+            return new String[]{".", "/"};
         }
         return new String[0];
+    }
+
+    private static void addSingleKeyRolePolicy(
+            Map<String, Integer> overrides,
+            JSONObject object,
+            KeyboardSettings settings,
+            Map<String, Integer> inheritedOverrides,
+            boolean distinctAccent,
+            String key,
+            String[] aliases) {
+        String role = "";
+        for (String alias : aliases) {
+            role = firstNonEmpty(role, object.optString(alias, ""));
+        }
+        if (role.isEmpty() || "default".equals(role) || "theme".equals(role)) {
+            return;
+        }
+        int foreground;
+        int background;
+        if ("alpha".equals(role)) {
+            foreground = semanticColor(inheritedOverrides, "alpha", settings.accentColor, false);
+            background = semanticColor(inheritedOverrides, "alpha", settings.keyIdleColor, true);
+        } else if ("mod".equals(role) || "modifier".equals(role) || "modifiers".equals(role)) {
+            foreground = semanticColor(inheritedOverrides, "modifiers", settings.secondaryColor, false);
+            background = semanticColor(inheritedOverrides, "modifiers", settings.functionKeyColor, true);
+        } else if ("accent".equals(role)) {
+            if (!distinctAccent) {
+                return;
+            }
+            foreground = accentPolicyForeground(settings, inheritedOverrides);
+            background = accentPolicyBackground(settings, inheritedOverrides);
+        } else {
+            return;
+        }
+        overrides.put(key, foreground);
+        overrides.put("background:" + key, background);
+    }
+
+    private static int semanticColor(
+            Map<String, Integer> overrides,
+            String role,
+            int fallback,
+            boolean background) {
+        String normalized = KeyboardSettings.normalizeKeyOverrideName(role);
+        Integer color = overrides.get(KeyboardSettings.normalizeKeyOverrideName(
+                background ? "background:" + normalized : normalized));
+        if (color == null && background) {
+            color = overrides.get(KeyboardSettings.normalizeKeyOverrideName("bg:" + normalized));
+        }
+        return color == null ? fallback : color;
     }
 
     private static void decodeDingulColorRole(
@@ -574,14 +776,11 @@ final class KeyboardThemeJson {
         }
         KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
         switch (value) {
-            case "keyIdle":
             case "alphaKey":
                 return safeSettings.keyIdleColor;
-            case "functionKey":
+            case "modifierKey":
             case "modKey":
                 return safeSettings.functionKeyColor;
-            case "primaryFunctionKey":
-                return safeSettings.primaryFunctionKeyColor;
             case "accentKey":
             case "modInvKey":
                 return safeSettings.accentKeyColor;

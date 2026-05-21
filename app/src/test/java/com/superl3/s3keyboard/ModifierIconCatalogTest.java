@@ -51,8 +51,11 @@ public final class ModifierIconCatalogTest {
                 "hihihi",
                 KeyDisplayOverridePackCatalog.overridesForPack(
                         KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT)
-                        .get("enter")
+                        .get("label:.")
                         .value);
+        assertNull(KeyDisplayOverridePackCatalog.overridesForPack(
+                KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT)
+                .get("enter"));
         assertNull(KeyDisplayOverridePackCatalog.overridesForPack(
                 KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT)
                 .get("backspace"));
@@ -88,6 +91,19 @@ public final class ModifierIconCatalogTest {
                         KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS)
                         .get("shift")
                         .value);
+    }
+
+    @Test
+    public void pointKeycapDoesNotReplaceMainLegendWithNestedEscIcon() {
+        KeyboardSettings english = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withEnglishNumberRow(false)
+                .withPointKeycapStyle(true);
+
+        GestureKey q = new GestureKey("q", "q", null, null, null, null, null);
+        KeyDisplayOverride override = KeyDisplayOverrideResolver.resolve(english, q);
+
+        assertEquals(null, override);
     }
 
     @Test

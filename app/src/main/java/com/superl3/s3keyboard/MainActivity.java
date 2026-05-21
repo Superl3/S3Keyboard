@@ -6,6 +6,7 @@ import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -41,7 +42,6 @@ public final class MainActivity extends Activity {
     private static final String EXTRA_ACCENT_COLOR = "accent_color";
     private static final String EXTRA_SECONDARY_COLOR = "secondary_color";
     private static final String EXTRA_FUNCTION_KEY_COLOR = "function_key_color";
-    private static final String EXTRA_PRIMARY_FUNCTION_KEY_COLOR = "primary_function_key_color";
     private static final String EXTRA_ACCENT_KEY_COLOR = "accent_key_color";
     private static final String EXTRA_BORDER_COLOR = "border_color";
     private static final String EXTRA_KEY_ROUNDNESS_DP = "key_roundness_dp";
@@ -76,6 +76,7 @@ public final class MainActivity extends Activity {
     private SeekBar keyGapSeekBar;
     private SeekBar keyDepthSeekBar;
     private SeekBar gestureThresholdSeekBar;
+    private SeekBar touchYOffsetSeekBar;
     private SeekBar hapticDurationSeekBar;
     private SeekBar hapticGapSeekBar;
     private SeekBar repeatStartDelaySeekBar;
@@ -89,7 +90,6 @@ public final class MainActivity extends Activity {
     private Spinner accentColorSpinner;
     private Spinner secondaryColorSpinner;
     private Spinner functionKeyColorSpinner;
-    private Spinner primaryFunctionKeyColorSpinner;
     private Spinner accentKeyColorSpinner;
     private Spinner borderColorSpinner;
     private Spinner depthColorSpinner;
@@ -125,15 +125,18 @@ public final class MainActivity extends Activity {
     private TextView hangulSpecialColumnValue;
     private TextView keyboardTopPaddingValue;
     private TextView keyboardBottomPaddingValue;
+    private TextView numberRowBottomGapValue;
     private EditText leftMarginInput;
     private EditText rightMarginInput;
     private EditText keyboardTopPaddingInput;
     private EditText keyboardBottomPaddingInput;
+    private EditText numberRowBottomGapInput;
     private TextView roundnessValue;
     private TextView keyBorderWidthValue;
     private TextView keyGapValue;
     private TextView keyDepthValue;
     private TextView gestureThresholdValue;
+    private TextView touchYOffsetValue;
     private TextView repeatStartDelayValue;
     private TextView repeatIntervalValue;
     private TextView hapticDurationValue;
@@ -232,10 +235,6 @@ public final class MainActivity extends Activity {
                         colorExtra(intent, EXTRA_ACCENT_COLOR, settings.accentColor),
                         colorExtra(intent, EXTRA_SECONDARY_COLOR, settings.secondaryColor),
                         colorExtra(intent, EXTRA_FUNCTION_KEY_COLOR, settings.functionKeyColor),
-                        colorExtra(
-                                intent,
-                                EXTRA_PRIMARY_FUNCTION_KEY_COLOR,
-                                settings.primaryFunctionKeyColor),
                         colorExtra(intent, EXTRA_ACCENT_KEY_COLOR, settings.accentKeyColor),
                         colorExtra(intent, EXTRA_BORDER_COLOR, settings.borderColor),
                         customDepthColorEnabled,
@@ -287,7 +286,6 @@ public final class MainActivity extends Activity {
                 || intent.hasExtra(EXTRA_ACCENT_COLOR)
                 || intent.hasExtra(EXTRA_SECONDARY_COLOR)
                 || intent.hasExtra(EXTRA_FUNCTION_KEY_COLOR)
-                || intent.hasExtra(EXTRA_PRIMARY_FUNCTION_KEY_COLOR)
                 || intent.hasExtra(EXTRA_ACCENT_KEY_COLOR)
                 || intent.hasExtra(EXTRA_BORDER_COLOR)
                 || intent.hasExtra(EXTRA_KEY_ROUNDNESS_DP)
@@ -328,7 +326,7 @@ public final class MainActivity extends Activity {
     }
 
     private ScrollView createContentView() {
-        int padding = dp(24);
+        int padding = dp(16);
         SettingsUiPalette ui = SettingsUiPalette.from(this);
         ScrollView scrollView = new ScrollView(this);
         scrollView.setBackgroundColor(ui.background);
@@ -344,11 +342,11 @@ public final class MainActivity extends Activity {
         title.setTextSize(22);
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleParams = matchWrap();
-        titleParams.bottomMargin = dp(8);
+        titleParams.bottomMargin = dp(12);
         root.addView(title, titleParams);
 
-        addSectionTitle(root, getString(R.string.gesture_practice_title));
-        addBodyText(root, getString(R.string.gesture_practice_body), 8);
+        LinearLayout hubSection = addExpandableSection(root, "\uC124\uC815 \uD5C8\uBE0C", true);
+        addBodyText(hubSection, getString(R.string.gesture_practice_body), 0);
 
         EditText testInput = new EditText(this);
         gestureTestInput = testInput;
@@ -357,34 +355,40 @@ public final class MainActivity extends Activity {
         testInput.setMinLines(2);
         testInput.setFocusableInTouchMode(true);
         SettingsViewStyler.editText(testInput, this);
-        root.addView(testInput, matchWrapWithTop(18));
+        hubSection.addView(testInput, matchWrapWithTop(12));
         maybeShowDemoKeyboard(testInput);
 
-        addThemeQuickControls(root);
+        addThemeQuickControls(hubSection);
+        // Keep existing preference wiring alive while appearance editing moves to ThemeEditor.
         addVisualControls(root);
-        addVisibleVisualControls(root);
 
         LinearLayout layoutSection = addExpandableSection(
                 root,
-                getString(R.string.layout_settings_title),
-                false);
+                "\uB808\uC774\uC544\uC6C3",
+                true);
         addLayoutControls(layoutSection);
+
+        LinearLayout displaySection = addExpandableSection(
+                root,
+                "\uD45C\uC2DC",
+                true);
+        addVisibleVisualControls(displaySection);
 
         LinearLayout inputSection = addExpandableSection(
                 root,
-                getString(R.string.input_feel_title),
+                "\uC785\uB825\uAC10",
                 false);
         addInputFeelControls(inputSection);
 
         LinearLayout reservedSection = addExpandableSection(
                 root,
-                "예약어 설정",
+                "\uC608\uC57D\uC5B4",
                 false);
         addReservedPhraseControls(reservedSection);
 
         LinearLayout androidSection = addExpandableSection(
                 root,
-                getString(R.string.android_ime_title),
+                "Android / IME",
                 false);
         addAndroidImeControls(androidSection);
 
@@ -432,46 +436,77 @@ public final class MainActivity extends Activity {
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
-        root.addView(label("한손 모드"), matchWrapWithTop(12));
+        root.addView(label("\uD55C\uC190 \uBAA8\uB4DC"), matchWrapWithTop(12));
         root.addView(handednessSpinner, matchWrap());
 
         leftMarginValue = label("");
-        leftMarginSeekBar = seekBar(KeyboardSettings.MAX_MARGIN_DP);
-        leftMarginSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    settings = settings.withMargins(progress, settings.rightMarginDp);
-                    saveAndSync();
-                }
-            }
-        });
         root.addView(leftMarginValue, matchWrapWithTop(12));
-        root.addView(leftMarginSeekBar, matchWrap());
-        leftMarginInput = numericInput(settings.leftMarginDp, KeyboardSettings.MAX_MARGIN_DP, value -> {
-            settings = settings.withMargins(value, settings.rightMarginDp);
+        leftMarginInput = addNumericStepper(root, settings.leftMarginDp, KeyboardSettings.MAX_MARGIN_DP, value -> {
+            settings = settings.withSharedMargin(value);
             saveAndSync();
         });
-        root.addView(leftMarginInput, matchWrap());
 
         rightMarginValue = label("");
-        rightMarginSeekBar = seekBar(KeyboardSettings.MAX_MARGIN_DP);
-        rightMarginSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    settings = settings.withMargins(settings.leftMarginDp, progress);
+
+        keyboardTopPaddingValue = label("");
+        root.addView(keyboardTopPaddingValue, matchWrapWithTop(12));
+        keyboardTopPaddingInput = addNumericStepper(root,
+                settings.keyboardTopPaddingDp,
+                KeyboardSettings.MAX_KEYBOARD_TOP_PADDING_DP,
+                value -> {
+                    settings = settings.withLayoutSpacing(
+                            settings.hangulMainSpecialGapDp,
+                            value,
+                            settings.keyboardBottomPaddingDp,
+                            settings.bottomRowTopPaddingDp);
                     saveAndSync();
-                }
+                });
+
+        keyboardBottomPaddingValue = label("");
+        root.addView(keyboardBottomPaddingValue, matchWrapWithTop(12));
+        keyboardBottomPaddingInput = addNumericStepper(root,
+                settings.keyboardBottomPaddingDp,
+                KeyboardSettings.MAX_KEYBOARD_BOTTOM_PADDING_DP,
+                value -> {
+                    settings = settings.withLayoutSpacing(
+                            settings.hangulMainSpecialGapDp,
+                            settings.keyboardTopPaddingDp,
+                            value,
+                            settings.bottomRowTopPaddingDp);
+                    saveAndSync();
+                });
+
+        hangulNumberRowCheckBox = new CheckBox(this);
+        hangulNumberRowCheckBox.setText("\uD55C\uAE00 \uC22B\uC790\uC904 \uD45C\uC2DC");
+        hangulNumberRowCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                settings = settings.withHangulNumberRow(isChecked);
+                saveAndSync();
             }
         });
-        root.addView(rightMarginValue, matchWrapWithTop(12));
-        root.addView(rightMarginSeekBar, matchWrap());
-        rightMarginInput = numericInput(settings.rightMarginDp, KeyboardSettings.MAX_MARGIN_DP, value -> {
-            settings = settings.withMargins(settings.leftMarginDp, value);
-            saveAndSync();
+        root.addView(hangulNumberRowCheckBox, matchWrapWithTop(16));
+
+        englishNumberRowCheckBox = new CheckBox(this);
+        englishNumberRowCheckBox.setText("\uC601\uBB38 \uC22B\uC790\uC904 \uD45C\uC2DC");
+        englishNumberRowCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                settings = settings.withEnglishNumberRow(isChecked);
+                saveAndSync();
+            }
         });
-        root.addView(rightMarginInput, matchWrap());
+        root.addView(englishNumberRowCheckBox, matchWrapWithTop(8));
+
+        numberRowBottomGapValue = label("");
+        root.addView(numberRowBottomGapValue, matchWrapWithTop(12));
+        numberRowBottomGapInput = addNumericStepper(root,
+                settings.numberRowBottomGapDp,
+                KeyboardSettings.MAX_NUMBER_ROW_BOTTOM_GAP_DP,
+                value -> {
+                    settings = settings.withNumberRowBottomGap(value);
+                    saveAndSync();
+                });
 
         hangulHeightValue = label("");
         hangulHeightSeekBar = seekBar(KeyboardSettings.MAX_HEIGHT_DP - KeyboardSettings.MIN_HEIGHT_DP);
@@ -485,7 +520,7 @@ public final class MainActivity extends Activity {
                 }
             }
         });
-        root.addView(hangulHeightValue, matchWrapWithTop(12));
+        root.addView(hangulHeightValue, matchWrapWithTop(16));
         root.addView(hangulHeightSeekBar, matchWrap());
 
         englishHeightValue = label("");
@@ -520,110 +555,31 @@ public final class MainActivity extends Activity {
         root.addView(hangulSpecialColumnValue, matchWrapWithTop(12));
         root.addView(hangulSpecialColumnSeekBar, matchWrap());
 
-        keyboardTopPaddingValue = label("");
-        keyboardTopPaddingSeekBar = seekBar(KeyboardSettings.MAX_KEYBOARD_TOP_PADDING_DP);
-        keyboardTopPaddingSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    settings = settings.withLayoutSpacing(
-                            settings.hangulMainSpecialGapDp,
-                            progress,
-                            settings.keyboardBottomPaddingDp,
-                            settings.bottomRowTopPaddingDp);
-                    saveAndSync();
-                }
-            }
-        });
-        root.addView(keyboardTopPaddingValue, matchWrapWithTop(12));
-        root.addView(keyboardTopPaddingSeekBar, matchWrap());
-        keyboardTopPaddingInput = numericInput(
-                settings.keyboardTopPaddingDp,
-                KeyboardSettings.MAX_KEYBOARD_TOP_PADDING_DP,
-                value -> {
-                    settings = settings.withLayoutSpacing(
-                            settings.hangulMainSpecialGapDp,
-                            value,
-                            settings.keyboardBottomPaddingDp,
-                            settings.bottomRowTopPaddingDp);
-                    saveAndSync();
-                });
-        root.addView(keyboardTopPaddingInput, matchWrap());
-
-        keyboardBottomPaddingValue = label("");
-        keyboardBottomPaddingSeekBar = seekBar(KeyboardSettings.MAX_KEYBOARD_BOTTOM_PADDING_DP);
-        keyboardBottomPaddingSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    settings = settings.withLayoutSpacing(
-                            settings.hangulMainSpecialGapDp,
-                            settings.keyboardTopPaddingDp,
-                            progress,
-                            settings.bottomRowTopPaddingDp);
-                    saveAndSync();
-                }
-            }
-        });
-        root.addView(keyboardBottomPaddingValue, matchWrapWithTop(12));
-        root.addView(keyboardBottomPaddingSeekBar, matchWrap());
-        keyboardBottomPaddingInput = numericInput(
-                settings.keyboardBottomPaddingDp,
-                KeyboardSettings.MAX_KEYBOARD_BOTTOM_PADDING_DP,
-                value -> {
-                    settings = settings.withLayoutSpacing(
-                            settings.hangulMainSpecialGapDp,
-                            settings.keyboardTopPaddingDp,
-                            value,
-                            settings.bottomRowTopPaddingDp);
-                    saveAndSync();
-                });
-        root.addView(keyboardBottomPaddingInput, matchWrap());
-
-        hangulNumberRowCheckBox = new CheckBox(this);
-        hangulNumberRowCheckBox.setText("한글 상단 숫자줄 표시");
-        hangulNumberRowCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                settings = settings.withHangulNumberRow(isChecked);
-                saveAndSync();
-            }
-        });
-        root.addView(hangulNumberRowCheckBox, matchWrapWithTop(16));
-
-        englishNumberRowCheckBox = new CheckBox(this);
-        englishNumberRowCheckBox.setText("영문 상단 숫자줄 표시");
-        englishNumberRowCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                settings = settings.withEnglishNumberRow(isChecked);
-                saveAndSync();
-            }
-        });
-        root.addView(englishNumberRowCheckBox, matchWrapWithTop(8));
-
-        additionalNumberRowColorModeSpinner = additionalNumberRowColorModeSpinner();
-        root.addView(label("Additional number row color"), matchWrapWithTop(8));
-        root.addView(additionalNumberRowColorModeSpinner, matchWrap());
     }
 
     private void addThemeQuickControls(LinearLayout root) {
-        addSectionTitle(root, "테마");
         Button openThemeSelectorButton = new Button(this);
-        openThemeSelectorButton.setText("테마 선택");
+        openThemeSelectorButton.setText("\uD14C\uB9C8 \uC120\uD0DD");
         styleSystemButton(openThemeSelectorButton);
         setButtonIcon(openThemeSelectorButton, R.drawable.ic_keyboard_keyboard);
         openThemeSelectorButton.setOnClickListener(v ->
                 startActivity(new Intent(this, ThemeSelectorActivity.class)));
         root.addView(openThemeSelectorButton, buttonParams());
 
+        Button openThemeEditorButton = new Button(this);
+        openThemeEditorButton.setText("\uD14C\uB9C8 \uD3B8\uC9D1");
+        styleSystemButton(openThemeEditorButton);
+        setButtonIcon(openThemeEditorButton, R.drawable.ic_keyboard_settings);
+        openThemeEditorButton.setOnClickListener(v ->
+                startActivity(new Intent(this, ThemeEditorActivity.class)));
+        root.addView(openThemeEditorButton, buttonParams());
+
         Button resetThemeButton = new Button(this);
-        resetThemeButton.setText("\uAE30\uBCF8 \uD14C\uB9C8\uB85C \uBCF5\uC6D0");
+        resetThemeButton.setText("\uAE30\uBCF8 \uD14C\uB9C8 \uBCF5\uC6D0");
         styleSystemButton(resetThemeButton);
         setButtonIcon(resetThemeButton, R.drawable.ic_keyboard_reset);
         resetThemeButton.setOnClickListener(v -> resetThemeAppearanceToDefault());
         root.addView(resetThemeButton, buttonParams());
-
     }
 
     private void resetThemeAppearanceToDefault() {
@@ -634,197 +590,27 @@ public final class MainActivity extends Activity {
     }
 
     private void addVisibleVisualControls(LinearLayout root) {
-        root.addView(label("\uBAA8\uB514\uD30C\uC774\uC5B4 \uC544\uC774\uCF58"), matchWrapWithTop(12));
+        root.addView(label("\uC544\uC774\uCF58 \uC2A4\uD0C0\uC77C"), matchWrapWithTop(8));
         modifierIconPackSpinner = modifierIconPackSpinner(true);
         root.addView(modifierIconPackSpinner, matchWrap());
 
-        root.addView(label("Key display override pack"), matchWrapWithTop(12));
+        root.addView(label("\uD45C\uC2DC \uC2A4\uD0C0\uC77C"), matchWrapWithTop(12));
         keyDisplayPackSpinner = keyDisplayPackSpinner(true);
         root.addView(keyDisplayPackSpinner, matchWrap());
 
-        LinearLayout visualSection = addExpandableSection(root, "\uC2DC\uAC01 \uC635\uC158", true);
+        Button accentPlacementButton = new Button(this);
+        accentPlacementButton.setText("\uC2DC\uAC01 \uC5ED\uD560 \uD3B8\uC9D1");
+        styleSystemButton(accentPlacementButton);
+        accentPlacementButton.setOnClickListener(v ->
+                startActivity(new Intent(MainActivity.this, AccentPlacementActivity.class)));
+        root.addView(accentPlacementButton, buttonParams());
 
         fontFamilySpinner = fontSpinner();
-        visualSection.addView(label("\uD3F0\uD2B8"), matchWrapWithTop(12));
-        visualSection.addView(fontFamilySpinner, matchWrap());
-
-        pointKeycapStyleCheckBox = new CheckBox(this);
-        pointKeycapStyleCheckBox.setText("\uD3EC\uC778\uD2B8 \uD0A4\uCEA1 \uC2A4\uD0C0\uC77C \uC0AC\uC6A9");
-        pointKeycapStyleCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
-                settings = settings.withPointKeycapStyle(isChecked);
-                saveAndSync();
-            }
-        });
-        visualSection.addView(pointKeycapStyleCheckBox, matchWrapWithTop(8));
-    }
-
-    private void addVisualControls(LinearLayout root) {
-        LinearLayout hiddenLegacyControls = new LinearLayout(this);
-        hiddenLegacyControls.setOrientation(LinearLayout.VERTICAL);
-        root = hiddenLegacyControls;
-
-        Button saveThemeButton = new Button(this);
-        saveThemeButton.setText("현재 테마 저장");
-        setButtonIcon(saveThemeButton, R.drawable.ic_keyboard_settings);
-        saveThemeButton.setOnClickListener(v -> {
-            UserThemeStore.UserTheme saved = UserThemeStore.saveCurrent(this, settings);
-            selectedThemePresetIndex = indexOfUserTheme(saved.id);
-            KeyboardPreferences.saveSelectedThemeId(this, saved.id);
-            refreshThemePresetAdapter();
-            syncControls();
-        });
-        root.addView(saveThemeButton, buttonParams());
-
-        deleteThemeButton = new Button(this);
-        deleteThemeButton.setText("선택한 사용자 테마 삭제");
-        setButtonIcon(deleteThemeButton, R.drawable.ic_keyboard_backspace);
-        deleteThemeButton.setOnClickListener(v -> {
-            ThemeOption option = selectedThemeOption();
-            if (option == null || option.userThemeId == null) {
-                return;
-            }
-            UserThemeStore.delete(this, option.userThemeId);
-            if (option.userThemeId.equals(KeyboardPreferences.loadSelectedThemeId(this))) {
-                KeyboardPreferences.saveSelectedThemeId(this, "");
-            }
-            selectedThemePresetIndex = 0;
-            refreshThemePresetAdapter();
-            syncControls();
-        });
-        root.addView(deleteThemeButton, buttonParams());
-
-        keyIdleColorSpinner = colorSpinner(color -> {
-            selectedThemePresetIndex = 0;
-            settings = settings.withThemeColors(
-                    color,
-                    settings.keyPressedColor,
-                    settings.keyboardBackgroundColor,
-                    settings.accentColor,
-                    settings.secondaryColor);
-            saveAndSync();
-        });
-        root.addView(label("문자/기호 키 색상"), matchWrapWithTop(12));
-        root.addView(keyIdleColorSpinner, matchWrap());
-
-        accentKeyColorSpinner = colorSpinner(color -> {
-            selectedThemePresetIndex = 0;
-            settings = settings.withExtendedThemeColors(
-                    settings.keyIdleColor,
-                    settings.keyPressedColor,
-                    settings.keyboardBackgroundColor,
-                    settings.accentColor,
-                    settings.secondaryColor,
-                    settings.functionKeyColor,
-                    settings.primaryFunctionKeyColor,
-                    color,
-                    settings.borderColor,
-                    settings.customDepthColorEnabled,
-                    settings.depthColor);
-            saveAndSync();
-        });
-        root.addView(label("딩굴 특수열 accent 키 색상 (,; / @/)"), matchWrapWithTop(12));
-        root.addView(accentKeyColorSpinner, matchWrap());
-
-        keyPressedColorSpinner = colorSpinner(color -> {
-            selectedThemePresetIndex = 0;
-            settings = settings.withThemeColors(
-                    settings.keyIdleColor,
-                    color,
-                    settings.keyboardBackgroundColor,
-                    settings.accentColor,
-                    settings.secondaryColor);
-            saveAndSync();
-        });
-        root.addView(label("눌림 색상"), matchWrapWithTop(12));
-        root.addView(keyPressedColorSpinner, matchWrap());
-
-        keyboardBackgroundColorSpinner = colorSpinner(color -> {
-            selectedThemePresetIndex = 0;
-            settings = settings.withThemeColors(
-                    settings.keyIdleColor,
-                    settings.keyPressedColor,
-                    color,
-                    settings.accentColor,
-                    settings.secondaryColor);
-            saveAndSync();
-        });
-        root.addView(label("버튼 바깥 색상"), matchWrapWithTop(12));
-        root.addView(keyboardBackgroundColorSpinner, matchWrap());
-
-        accentColorSpinner = colorSpinner(color -> {
-            selectedThemePresetIndex = 0;
-            settings = settings.withThemeColors(
-                    settings.keyIdleColor,
-                    settings.keyPressedColor,
-                    settings.keyboardBackgroundColor,
-                    color,
-                    settings.secondaryColor);
-            saveAndSync();
-        });
-        root.addView(label("Accent 색상"), matchWrapWithTop(12));
-        root.addView(accentColorSpinner, matchWrap());
-
-        secondaryColorSpinner = colorSpinner(color -> {
-            selectedThemePresetIndex = 0;
-            settings = settings.withThemeColors(
-                    settings.keyIdleColor,
-                    settings.keyPressedColor,
-                    settings.keyboardBackgroundColor,
-                    settings.accentColor,
-                    color);
-            saveAndSync();
-        });
-        root.addView(label("Secondary 색상"), matchWrapWithTop(12));
-        root.addView(secondaryColorSpinner, matchWrap());
-
-        borderColorSpinner = colorSpinner(color -> {
-            selectedThemePresetIndex = 0;
-            settings = settings.withExtendedThemeColors(
-                    settings.keyIdleColor,
-                    settings.keyPressedColor,
-                    settings.keyboardBackgroundColor,
-                    settings.accentColor,
-                    settings.secondaryColor,
-                    settings.functionKeyColor,
-                    settings.primaryFunctionKeyColor,
-                    settings.accentKeyColor,
-                    color,
-                    settings.customDepthColorEnabled,
-                    settings.depthColor);
-            saveAndSync();
-        });
-        root.addView(label("테두리 색상"), matchWrapWithTop(12));
-        root.addView(borderColorSpinner, matchWrap());
-
-        customDepthColorCheckBox = new CheckBox(this);
-        customDepthColorCheckBox.setText("입체 효과 색상 직접 지정");
-        customDepthColorCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
-                settings = settings.withDepthColor(isChecked, settings.depthColor);
-                saveAndSync();
-            }
-        });
-        root.addView(customDepthColorCheckBox, matchWrapWithTop(16));
-
-        depthColorSpinner = colorSpinner(color -> {
-            selectedThemePresetIndex = 0;
-            settings = settings.withDepthColor(true, color);
-            saveAndSync();
-        });
-        root.addView(label("Depth 색상"), matchWrapWithTop(8));
-        root.addView(depthColorSpinner, matchWrap());
-
-        fontFamilySpinner = fontSpinner();
-        root.addView(label("키보드 폰트"), matchWrapWithTop(12));
+        root.addView(label("\uD3F0\uD2B8"), matchWrapWithTop(12));
         root.addView(fontFamilySpinner, matchWrap());
 
         followThemeTypographyCheckBox = new CheckBox(this);
-        followThemeTypographyCheckBox.setText("테마 글꼴/굵기/크기 따르기");
+        followThemeTypographyCheckBox.setText("\uD14C\uB9C8 \uAE00\uAF34/\uAD75\uAE30/\uD06C\uAE30 \uB530\uB974\uAE30");
         followThemeTypographyCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -881,7 +667,7 @@ public final class MainActivity extends Activity {
         root.addView(secondaryTextSizeSeekBar, matchWrap());
 
         primaryTextBoldCheckBox = new CheckBox(this);
-        primaryTextBoldCheckBox.setText("주 글자 굵게");
+        primaryTextBoldCheckBox.setText("\uBA54\uC778 \uAE00\uC790 \uAD75\uAC8C");
         primaryTextBoldCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -900,7 +686,7 @@ public final class MainActivity extends Activity {
         root.addView(primaryTextBoldCheckBox, matchWrapWithTop(8));
 
         primaryTextItalicCheckBox = new CheckBox(this);
-        primaryTextItalicCheckBox.setText("주 글자 기울임");
+        primaryTextItalicCheckBox.setText("\uBA54\uC778 \uAE00\uC790 \uAE30\uC6B8\uC784");
         primaryTextItalicCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -919,7 +705,7 @@ public final class MainActivity extends Activity {
         root.addView(primaryTextItalicCheckBox, matchWrapWithTop(4));
 
         secondaryTextBoldCheckBox = new CheckBox(this);
-        secondaryTextBoldCheckBox.setText("보조 힌트 굵게");
+        secondaryTextBoldCheckBox.setText("\uBCF4\uC870 \uAE00\uC790 \uAD75\uAC8C");
         secondaryTextBoldCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -938,7 +724,7 @@ public final class MainActivity extends Activity {
         root.addView(secondaryTextBoldCheckBox, matchWrapWithTop(8));
 
         secondaryTextItalicCheckBox = new CheckBox(this);
-        secondaryTextItalicCheckBox.setText("보조 힌트 기울임");
+        secondaryTextItalicCheckBox.setText("\uBCF4\uC870 \uAE00\uC790 \uAE30\uC6B8\uC784");
         secondaryTextItalicCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -956,53 +742,144 @@ public final class MainActivity extends Activity {
         });
         root.addView(secondaryTextItalicCheckBox, matchWrapWithTop(4));
 
+        pointKeycapStyleCheckBox = new CheckBox(this);
+        pointKeycapStyleCheckBox.setText("\uD3EC\uC778\uD2B8 \uD0A4\uCEA1 \uC2A4\uD0C0\uC77C \uC0AC\uC6A9");
+        pointKeycapStyleCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                selectedThemePresetIndex = 0;
+                settings = settings.withPointKeycapStyle(isChecked);
+                saveAndSync();
+            }
+        });
+        root.addView(pointKeycapStyleCheckBox, matchWrapWithTop(8));
+
+        hangulConsonantSlideHintsCheckBox = new CheckBox(this);
+        hangulConsonantSlideHintsCheckBox.setText("\uD55C\uAE00 \uC790\uC74C \uC2AC\uB77C\uC774\uB4DC \uD78C\uD2B8");
+        hangulConsonantSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                KeyboardPreferences.saveShowHangulConsonantSlideHints(MainActivity.this, isChecked);
+                syncControls();
+            }
+        });
+        root.addView(hangulConsonantSlideHintsCheckBox, matchWrapWithTop(12));
+
+        hangulVowelSlideHintsCheckBox = new CheckBox(this);
+        hangulVowelSlideHintsCheckBox.setText("\uD55C\uAE00 \uBAA8\uC74C \uC2AC\uB77C\uC774\uB4DC \uD78C\uD2B8");
+        hangulVowelSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                KeyboardPreferences.saveShowHangulVowelSlideHints(MainActivity.this, isChecked);
+                syncControls();
+            }
+        });
+        root.addView(hangulVowelSlideHintsCheckBox, matchWrapWithTop(8));
+
+        englishSlideHintsCheckBox = new CheckBox(this);
+        englishSlideHintsCheckBox.setText("\uC601\uBB38 \uC2AC\uB77C\uC774\uB4DC \uD78C\uD2B8");
+        englishSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                selectedThemePresetIndex = 0;
+                settings = settings.withHintVisibility(
+                        settings.showHangulSlideHints,
+                        isChecked,
+                        settings.showBeginnerTooltipPreview);
+                saveAndSync();
+            }
+        });
+        root.addView(englishSlideHintsCheckBox, matchWrapWithTop(8));
+
+        spacebarSlideHintsCheckBox = new CheckBox(this);
+        spacebarSlideHintsCheckBox.setText("\uC2A4\uD398\uC774\uC2A4\uBC14 \uC2AC\uB77C\uC774\uB4DC \uD78C\uD2B8");
+        spacebarSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                KeyboardPreferences.saveShowSpacebarSlideHints(MainActivity.this, isChecked);
+                syncControls();
+            }
+        });
+        root.addView(spacebarSlideHintsCheckBox, matchWrapWithTop(8));
+
+        beginnerTooltipPreviewCheckBox = new CheckBox(this);
+        beginnerTooltipPreviewCheckBox.setText("\uC785\uB825 preview \uD45C\uC2DC");
+        beginnerTooltipPreviewCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                selectedThemePresetIndex = 0;
+                settings = settings.withHintVisibility(
+                        settings.showHangulSlideHints,
+                        settings.showEnglishSlideHints,
+                        isChecked);
+                saveAndSync();
+            }
+        });
+        root.addView(beginnerTooltipPreviewCheckBox, matchWrapWithTop(8));
+    }
+
+    private void addVisualControls(LinearLayout unusedRoot) {
+        deleteThemeButton = new Button(this);
+        deleteThemeButton.setText("\uC120\uD0DD\uD55C \uC0AC\uC6A9\uC790 \uD14C\uB9C8 \uC0AD\uC81C");
+        deleteThemeButton.setOnClickListener(v -> {
+            ThemeOption option = selectedThemeOption();
+            if (option == null || option.userThemeId == null) {
+                return;
+            }
+            UserThemeStore.delete(this, option.userThemeId);
+            if (option.userThemeId.equals(KeyboardPreferences.loadSelectedThemeId(this))) {
+                KeyboardPreferences.saveSelectedThemeId(this, "");
+            }
+            selectedThemePresetIndex = 0;
+            refreshThemePresetAdapter();
+            syncControls();
+        });
+        keyIdleColorSpinner = colorSpinner(color -> settings = settings.withThemeColors(
+                color, settings.keyPressedColor, settings.keyboardBackgroundColor,
+                settings.accentColor, settings.secondaryColor));
+        keyPressedColorSpinner = colorSpinner(color -> settings = settings.withThemeColors(
+                settings.keyIdleColor, color, settings.keyboardBackgroundColor,
+                settings.accentColor, settings.secondaryColor));
+        keyboardBackgroundColorSpinner = colorSpinner(color -> settings = settings.withThemeColors(
+                settings.keyIdleColor, settings.keyPressedColor, color,
+                settings.accentColor, settings.secondaryColor));
+        accentColorSpinner = colorSpinner(color -> settings = settings.withThemeColors(
+                settings.keyIdleColor, settings.keyPressedColor, settings.keyboardBackgroundColor,
+                color, settings.secondaryColor));
+        secondaryColorSpinner = colorSpinner(color -> settings = settings.withThemeColors(
+                settings.keyIdleColor, settings.keyPressedColor, settings.keyboardBackgroundColor,
+                settings.accentColor, color));
+        accentKeyColorSpinner = colorSpinner(color -> settings = settings.withExtendedThemeColors(
+                settings.keyIdleColor, settings.keyPressedColor, settings.keyboardBackgroundColor,
+                settings.accentColor, settings.secondaryColor, settings.functionKeyColor,
+                color, settings.borderColor, settings.customDepthColorEnabled, settings.depthColor));
+        borderColorSpinner = colorSpinner(color -> settings = settings.withExtendedThemeColors(
+                settings.keyIdleColor, settings.keyPressedColor, settings.keyboardBackgroundColor,
+                settings.accentColor, settings.secondaryColor, settings.functionKeyColor,
+                settings.accentKeyColor, color, settings.customDepthColorEnabled, settings.depthColor));
+        customDepthColorCheckBox = new CheckBox(this);
+        customDepthColorCheckBox.setText("\uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1 \uC9C1\uC811 \uC9C0\uC815");
+        customDepthColorCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                selectedThemePresetIndex = 0;
+                settings = settings.withDepthColor(isChecked, settings.depthColor);
+                saveAndSync();
+            }
+        });
+        depthColorSpinner = colorSpinner(color -> {
+            selectedThemePresetIndex = 0;
+            settings = settings.withDepthColor(true, color);
+            saveAndSync();
+        });
         roundnessValue = label("");
         roundnessSeekBar = seekBar(KeyboardSettings.MAX_KEY_ROUNDNESS_DP);
-        roundnessSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    selectedThemePresetIndex = 0;
-                    settings = settings.withKeyRoundness(progress);
-                    saveAndSync();
-                }
-            }
-        });
-        root.addView(roundnessValue, matchWrapWithTop(12));
-        root.addView(roundnessSeekBar, matchWrap());
-
         keyBorderWidthValue = label("");
         keyBorderWidthSeekBar = seekBar(KeyboardSettings.MAX_KEY_BORDER_WIDTH_DP);
-        keyBorderWidthSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    selectedThemePresetIndex = 0;
-                    settings = settings.withKeyBorderWidth(progress);
-                    saveAndSync();
-                }
-            }
-        });
-        root.addView(keyBorderWidthValue, matchWrapWithTop(12));
-        root.addView(keyBorderWidthSeekBar, matchWrap());
-
         keyGapValue = label("");
         keyGapSeekBar = seekBar(KeyboardSettings.MAX_KEY_GAP_DP);
-        keyGapSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    selectedThemePresetIndex = 0;
-                    settings = settings.withKeyGap(progress);
-                    saveAndSync();
-                }
-            }
-        });
-        root.addView(keyGapValue, matchWrapWithTop(12));
-        root.addView(keyGapSeekBar, matchWrap());
-
         keyDepthCheckBox = new CheckBox(this);
-        keyDepthCheckBox.setText("입체 depth 효과");
+        keyDepthCheckBox.setText("\uC785\uCCB4 depth \uD6A8\uACFC");
         keyDepthCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1011,27 +888,13 @@ public final class MainActivity extends Activity {
                 saveAndSync();
             }
         });
-        root.addView(keyDepthCheckBox, matchWrapWithTop(16));
-
         keyDepthValue = label("");
         keyDepthSeekBar = seekBar(KeyboardSettings.MAX_KEY_DEPTH_DP);
-        keyDepthSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    selectedThemePresetIndex = 0;
-                    settings = settings.withKeyDepth(settings.keyDepthEnabled, progress);
-                    saveAndSync();
-                }
-            }
-        });
-        root.addView(keyDepthValue, matchWrapWithTop(8));
-        root.addView(keyDepthSeekBar, matchWrap());
     }
 
     private void addInputFeelControls(LinearLayout root) {
         hapticCheckBox = new CheckBox(this);
-        hapticCheckBox.setText("햅틱 피드백");
+        hapticCheckBox.setText("\uD589\uD2F1 \uD53C\uB4DC\uBC31");
         hapticCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1042,7 +905,7 @@ public final class MainActivity extends Activity {
         root.addView(hapticCheckBox, matchWrapWithTop(8));
 
         differentiatedHapticCheckBox = new CheckBox(this);
-        differentiatedHapticCheckBox.setText("입력 종류별 햅틱 구분");
+        differentiatedHapticCheckBox.setText("\uC785\uB825 \uC885\uB958\uBCC4 \uD589\uD2F1 \uAD6C\uBD84");
         differentiatedHapticCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1103,6 +966,22 @@ public final class MainActivity extends Activity {
         root.addView(gestureThresholdValue, matchWrapWithTop(12));
         root.addView(gestureThresholdSeekBar, matchWrap());
 
+        touchYOffsetValue = label("");
+        touchYOffsetSeekBar = seekBar(
+                KeyboardSettings.MAX_TOUCH_Y_OFFSET_DP - KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP);
+        touchYOffsetSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && !syncing) {
+                    settings = settings.withTouchYOffset(
+                            KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP + progress);
+                    saveAndSync();
+                }
+            }
+        });
+        root.addView(touchYOffsetValue, matchWrapWithTop(12));
+        root.addView(touchYOffsetSeekBar, matchWrap());
+
         repeatStartDelayValue = label("");
         repeatStartDelaySeekBar = seekBar(
                 KeyboardSettings.MAX_REPEAT_START_DELAY_MS - KeyboardSettings.MIN_REPEAT_START_DELAY_MS);
@@ -1138,7 +1017,7 @@ public final class MainActivity extends Activity {
         root.addView(repeatIntervalSeekBar, matchWrap());
 
         touchBiasAutoCorrectionCheckBox = new CheckBox(this);
-        touchBiasAutoCorrectionCheckBox.setText("터치/슬라이드 보정 학습");
+        touchBiasAutoCorrectionCheckBox.setText("\uD130\uCE58/\uC2AC\uB77C\uC774\uB4DC \uBCF4\uC815 \uD559\uC2B5");
         touchBiasAutoCorrectionCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1149,7 +1028,7 @@ public final class MainActivity extends Activity {
         root.addView(touchBiasAutoCorrectionCheckBox, matchWrapWithTop(8));
 
         clipboardHistoryCheckBox = new CheckBox(this);
-        clipboardHistoryCheckBox.setText("클립보드 기록");
+        clipboardHistoryCheckBox.setText("\uD074\uB9BD\uBCF4\uB4DC \uAE30\uB85D");
         clipboardHistoryCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1163,7 +1042,7 @@ public final class MainActivity extends Activity {
         root.addView(clipboardHistoryCheckBox, matchWrapWithTop(8));
 
         doubleSpacePeriodCheckBox = new CheckBox(this);
-        doubleSpacePeriodCheckBox.setText("영어에서 스페이스 두 번으로 마침표");
+        doubleSpacePeriodCheckBox.setText("\uC601\uC5B4\uC5D0\uC11C \uC2A4\uD398\uC774\uC2A4 2\uBC88\uC73C\uB85C \uB9C8\uCE68\uD45C");
         doubleSpacePeriodCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
@@ -1173,81 +1052,18 @@ public final class MainActivity extends Activity {
         });
         root.addView(doubleSpacePeriodCheckBox, matchWrapWithTop(8));
 
-        hangulConsonantSlideHintsCheckBox = new CheckBox(this);
-        hangulConsonantSlideHintsCheckBox.setText("한글 자음 슬라이드 힌트");
-        hangulConsonantSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                KeyboardPreferences.saveShowHangulConsonantSlideHints(MainActivity.this, isChecked);
-                syncControls();
-            }
-        });
-        root.addView(hangulConsonantSlideHintsCheckBox, matchWrapWithTop(12));
-
-        hangulVowelSlideHintsCheckBox = new CheckBox(this);
-        hangulVowelSlideHintsCheckBox.setText("한글 모음 슬라이드 힌트");
-        hangulVowelSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                KeyboardPreferences.saveShowHangulVowelSlideHints(MainActivity.this, isChecked);
-                syncControls();
-            }
-        });
-        root.addView(hangulVowelSlideHintsCheckBox, matchWrapWithTop(8));
-
-        englishSlideHintsCheckBox = new CheckBox(this);
-        englishSlideHintsCheckBox.setText("영문 슬라이드 힌트");
-        englishSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
-                settings = settings.withHintVisibility(
-                        settings.showHangulSlideHints,
-                        isChecked,
-                        settings.showBeginnerTooltipPreview);
-                saveAndSync();
-            }
-        });
-        root.addView(englishSlideHintsCheckBox, matchWrapWithTop(8));
-
-        spacebarSlideHintsCheckBox = new CheckBox(this);
-        spacebarSlideHintsCheckBox.setText("스페이스바 슬라이드 힌트");
-        spacebarSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                KeyboardPreferences.saveShowSpacebarSlideHints(MainActivity.this, isChecked);
-                syncControls();
-            }
-        });
-        root.addView(spacebarSlideHintsCheckBox, matchWrapWithTop(8));
-
-        beginnerTooltipPreviewCheckBox = new CheckBox(this);
-        beginnerTooltipPreviewCheckBox.setText("입력 preview 표시");
-        beginnerTooltipPreviewCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-            @Override
-            protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
-                settings = settings.withHintVisibility(
-                        settings.showHangulSlideHints,
-                        settings.showEnglishSlideHints,
-                        isChecked);
-                saveAndSync();
-            }
-        });
-        root.addView(beginnerTooltipPreviewCheckBox, matchWrapWithTop(8));
-
         Button resetTouchBiasButton = new Button(this);
-        resetTouchBiasButton.setText("입력 보정 초기화");
+        resetTouchBiasButton.setText("\uC785\uB825 \uBCF4\uC815 \uCD08\uAE30\uD654");
+        styleSystemButton(resetTouchBiasButton);
         setButtonIcon(resetTouchBiasButton, R.drawable.ic_keyboard_reset);
         resetTouchBiasButton.setOnClickListener(v -> TouchBiasStore.reset(this));
         root.addView(resetTouchBiasButton, buttonParams());
     }
-
     private void addReservedPhraseControls(LinearLayout root) {
-        addReservedPhraseField(root, "탭", GestureAction.TAP, 8);
-        addReservedPhraseField(root, "왼쪽 슬라이드", GestureAction.LEFT, 8);
-        addReservedPhraseField(root, "오른쪽 슬라이드", GestureAction.RIGHT, 8);
-        addReservedPhraseField(root, "위 슬라이드", GestureAction.UP, 8);
+        addReservedPhraseField(root, "\uD0ED", GestureAction.TAP, 8);
+        addReservedPhraseField(root, "\uC67C\uCABD \uC2AC\uB77C\uC774\uB4DC", GestureAction.LEFT, 8);
+        addReservedPhraseField(root, "\uC624\uB978\uCABD \uC2AC\uB77C\uC774\uB4DC", GestureAction.RIGHT, 8);
+        addReservedPhraseField(root, "\uC704 \uC2AC\uB77C\uC774\uB4DC", GestureAction.UP, 8);
     }
 
     private void addReservedPhraseField(
@@ -1258,7 +1074,7 @@ public final class MainActivity extends Activity {
         root.addView(label(labelText), matchWrapWithTop(topMarginDp));
         EditText input = new EditText(this);
         input.setSingleLine(true);
-        input.setHint("비우면 입력하지 않음");
+        input.setHint("\uBE44\uC6B0\uBA74 \uC785\uB825\uD558\uC9C0 \uC54A\uC74C");
         SettingsViewStyler.editText(input, this);
         input.setText(KeyboardPreferences.loadReservedPhrase(this, action));
         input.addTextChangedListener(new TextWatcher() {
@@ -1304,6 +1120,7 @@ public final class MainActivity extends Activity {
     }
 
     private void saveAndSync() {
+        settings = KeyboardPreferences.applyAccentPlacementPolicy(this, settings);
         KeyboardPreferences.saveSettings(this, settings);
         syncControls();
     }
@@ -1345,24 +1162,35 @@ public final class MainActivity extends Activity {
         }
         rebuildThemePresetCards();
         handednessSpinner.setSelection(settings.handednessMode.ordinal());
-        leftMarginSeekBar.setProgress(settings.leftMarginDp);
-        rightMarginSeekBar.setProgress(settings.rightMarginDp);
+        if (leftMarginSeekBar != null) {
+            leftMarginSeekBar.setProgress(settings.leftMarginDp);
+        }
+        if (rightMarginSeekBar != null) {
+            rightMarginSeekBar.setProgress(settings.rightMarginDp);
+        }
         hangulHeightSeekBar.setProgress(settings.hangulKeyboardHeightDp - KeyboardSettings.MIN_HEIGHT_DP);
         englishHeightSeekBar.setProgress(settings.englishKeyboardHeightDp - KeyboardSettings.MIN_HEIGHT_DP);
         hangulSpecialColumnSeekBar.setProgress(
                 settings.hangulSpecialColumnPercent - KeyboardSettings.MIN_HANGUL_SPECIAL_COLUMN_PERCENT);
-        keyboardTopPaddingSeekBar.setProgress(settings.keyboardTopPaddingDp);
-        keyboardBottomPaddingSeekBar.setProgress(settings.keyboardBottomPaddingDp);
+        if (keyboardTopPaddingSeekBar != null) {
+            keyboardTopPaddingSeekBar.setProgress(settings.keyboardTopPaddingDp);
+        }
+        if (keyboardBottomPaddingSeekBar != null) {
+            keyboardBottomPaddingSeekBar.setProgress(settings.keyboardBottomPaddingDp);
+        }
         setNumericText(leftMarginInput, settings.leftMarginDp);
         setNumericText(rightMarginInput, settings.rightMarginDp);
         setNumericText(keyboardTopPaddingInput, settings.keyboardTopPaddingDp);
         setNumericText(keyboardBottomPaddingInput, settings.keyboardBottomPaddingDp);
+        setNumericText(numberRowBottomGapInput, settings.numberRowBottomGapDp);
         roundnessSeekBar.setProgress(settings.keyRoundnessDp);
         keyBorderWidthSeekBar.setProgress(settings.keyBorderWidthDp);
         keyGapSeekBar.setProgress(settings.keyGapDp);
         keyDepthSeekBar.setProgress(settings.keyDepthDp);
         gestureThresholdSeekBar.setProgress(
                 settings.gestureThresholdDp - KeyboardSettings.MIN_GESTURE_THRESHOLD_DP);
+        touchYOffsetSeekBar.setProgress(
+                settings.touchYOffsetDp - KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP);
         repeatStartDelaySeekBar.setProgress(
                 settings.repeatStartDelayMs - KeyboardSettings.MIN_REPEAT_START_DELAY_MS);
         repeatIntervalSeekBar.setProgress(
@@ -1383,7 +1211,9 @@ public final class MainActivity extends Activity {
         followThemeTypographyCheckBox.setChecked(settings.followThemeTypography);
         modifierIconPackSpinner.setSelection(indexOfModifierIconPack(settings.modifierIconOverridePackId, true));
         keyDisplayPackSpinner.setSelection(indexOfKeyDisplayPack(settings.keyDisplayOverridePackId, true));
-        additionalNumberRowColorModeSpinner.setSelection(settings.additionalNumberRowColorMode.ordinal());
+        if (additionalNumberRowColorModeSpinner != null) {
+            additionalNumberRowColorModeSpinner.setSelection(settings.additionalNumberRowColorMode.ordinal());
+        }
         primaryTextSizeSeekBar.setProgress(
                 settings.primaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
         secondaryTextSizeSeekBar.setProgress(
@@ -1424,27 +1254,30 @@ public final class MainActivity extends Activity {
         keyDepthSeekBar.setEnabled(settings.keyDepthEnabled);
         depthColorSpinner.setEnabled(settings.customDepthColorEnabled);
         deleteThemeButton.setEnabled(selectedThemeOption() != null && selectedThemeOption().userThemeId != null);
-        leftMarginValue.setText("왼쪽 패딩: " + settings.leftMarginDp + "dp");
-        rightMarginValue.setText("오른쪽 패딩: " + settings.rightMarginDp + "dp");
-        hangulHeightValue.setText("딩굴 높이: " + settings.hangulKeyboardHeightDp + "dp"
+        leftMarginValue.setText("\uC88C\uC6B0 \uD328\uB529: " + settings.leftMarginDp + "dp");
+        rightMarginValue.setText("\uC88C\uC6B0 \uD328\uB529: " + settings.rightMarginDp + "dp");
+        hangulHeightValue.setText("\uB529\uAD74 \uB192\uC774: " + settings.hangulKeyboardHeightDp + "dp"
                 + (settings.keyboardMode == KeyboardMode.HANGUL && settings.showNumberRow ? " + num row" : ""));
-        englishHeightValue.setText("쿼티 높이: " + settings.englishKeyboardHeightDp + "dp"
+        englishHeightValue.setText("\uCFFC\uD2F0 \uB192\uC774: " + settings.englishKeyboardHeightDp + "dp"
                 + (settings.keyboardMode == KeyboardMode.ENGLISH && settings.showNumberRow ? " + num row" : ""));
-        hangulSpecialColumnValue.setText("한글 오른쪽 특수열 폭: "
+        hangulSpecialColumnValue.setText("\uB529\uAD74 \uC6B0\uCE21 \uD2B9\uC218\uC5F4 \uBE44\uC728: "
                 + settings.hangulSpecialColumnPercent + "%");
-        keyboardTopPaddingValue.setText("키보드 상단 패딩: " + settings.keyboardTopPaddingDp + "dp");
-        keyboardBottomPaddingValue.setText("키보드 하단 패딩: " + settings.keyboardBottomPaddingDp + "dp");
-        roundnessValue.setText("버튼 roundness: " + settings.keyRoundnessDp + "dp");
-        keyBorderWidthValue.setText("테두리 굵기: " + settings.keyBorderWidthDp + "dp");
-        keyGapValue.setText("버튼 간 시각 간격: " + settings.keyGapDp + "dp");
-        keyDepthValue.setText("입체 높이: " + settings.keyDepthDp + "dp"
+        keyboardTopPaddingValue.setText("\uD0A4\uBCF4\uB4DC \uC0C1\uB2E8 \uD328\uB529: " + settings.keyboardTopPaddingDp + "dp");
+        keyboardBottomPaddingValue.setText("\uD0A4\uBCF4\uB4DC \uD558\uB2E8 \uD328\uB529: " + settings.keyboardBottomPaddingDp + "dp");
+        numberRowBottomGapValue.setText("\uC22B\uC790\uC904-\uC790\uD310 \uAC04\uACA9: " + settings.numberRowBottomGapDp + "dp");
+        roundnessValue.setText("\uBC84\uD2BC roundness: " + settings.keyRoundnessDp + "dp");
+        keyBorderWidthValue.setText("\uD14C\uB450\uB9AC \uAD75\uAE30: " + settings.keyBorderWidthDp + "dp");
+        keyGapValue.setText("\uBC84\uD2BC \uAC04 \uC2DC\uAC01 \uAC04\uACA9: " + settings.keyGapDp + "dp");
+        keyDepthValue.setText("\uC785\uCCB4 \uB192\uC774: " + settings.keyDepthDp + "dp"
                 + (settings.keyDepthEnabled ? "" : " (flat)"));
-        gestureThresholdValue.setText("슬라이드 시작 거리: " + settings.gestureThresholdDp
-                + "dp (낮을수록 민감)");
-        hapticDurationValue.setText("햅틱 길이: " + hapticDurationMs + "ms");
-        hapticGapValue.setText("햅틱 사이 간격: " + hapticGapMs + "ms");
-        primaryTextSizeValue.setText("주 글자 크기: " + settings.primaryTextSizePercent + "%");
-        secondaryTextSizeValue.setText("보조 힌트 크기: " + settings.secondaryTextSizePercent + "%");
+        gestureThresholdValue.setText("\uC2AC\uB77C\uC774\uB4DC \uC2DC\uC791 \uAC70\uB9AC: " + settings.gestureThresholdDp
+                + "dp (\uB0AE\uC744\uC218\uB85D \uBBFC\uAC10)");
+        hapticDurationValue.setText("\uD589\uD2F1 \uAE38\uC774: " + hapticDurationMs + "ms");
+        hapticGapValue.setText("\uD589\uD2F1 \uC0AC\uC774 \uAC04\uACA9: " + hapticGapMs + "ms");
+        primaryTextSizeValue.setText("\uBA54\uC778 \uAE00\uC790 \uD06C\uAE30: " + settings.primaryTextSizePercent + "%");
+        secondaryTextSizeValue.setText("\uBCF4\uC870 \uD78C\uD2B8 \uD06C\uAE30: " + settings.secondaryTextSizePercent + "%");
+        touchYOffsetValue.setText("\uD130\uCE58 Y \uBCF4\uC815: " + settings.touchYOffsetDp
+                + "dp (\uC591\uC218=\uC544\uB798\uCABD \uD0A4\uB85C \uBCF4\uC815)");
         repeatStartDelayValue.setText("\uBC18\uBCF5 \uC2DC\uC791 \uC9C0\uC5F0: "
                 + settings.repeatStartDelayMs + "ms");
         repeatIntervalValue.setText("\uBC18\uBCF5 \uAC04\uACA9: " + settings.repeatIntervalMs + "ms");
@@ -1459,29 +1292,10 @@ public final class MainActivity extends Activity {
     }
 
     private LinearLayout addExpandableSection(LinearLayout root, String text, boolean expandedByDefault) {
-        TextView title = label("");
-        title.setTextSize(17);
-        title.setGravity(Gravity.START);
-
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setVisibility(expandedByDefault ? View.VISIBLE : View.GONE);
-        setExpandableTitle(title, text, expandedByDefault);
-        title.setOnClickListener(v -> {
-            boolean expanded = content.getVisibility() != View.VISIBLE;
-            content.setVisibility(expanded ? View.VISIBLE : View.GONE);
-            setExpandableTitle(title, text, expanded);
-        });
-
-        root.addView(title, matchWrapWithTop(24));
-        root.addView(content, matchWrap());
-        return content;
+        SettingsSectionCard card = SettingsSectionCard.create(this, text, expandedByDefault);
+        root.addView(card.container, matchWrapWithTop(12));
+        return card.content;
     }
-
-    private void setExpandableTitle(TextView title, String text, boolean expanded) {
-        title.setText((expanded ? "▾ " : "▸ ") + text);
-    }
-
     private void addBodyText(LinearLayout root, String text, int topMarginDp) {
         TextView body = label(text);
         body.setLineSpacing(dp(2), 1.0f);
@@ -1490,11 +1304,7 @@ public final class MainActivity extends Activity {
     }
 
     private TextView label(String text) {
-        TextView label = new TextView(this);
-        label.setText(text);
-        label.setTextColor(SettingsUiPalette.from(this).textPrimary);
-        label.setTextSize(14);
-        return label;
+        return SettingsRowBuilder.label(this, text);
     }
 
     private void styleSystemButton(Button button) {
@@ -1533,6 +1343,45 @@ public final class MainActivity extends Activity {
             }
         });
         return input;
+    }
+
+    private EditText addNumericStepper(
+            LinearLayout root,
+            int initialValue,
+            int maxValue,
+            IntSettingListener listener) {
+        NumericStepperRow row = new NumericStepperRow(
+                this,
+                initialValue,
+                maxValue,
+                value -> {
+                    if (!syncing && listener != null) {
+                        listener.onValue(value);
+                    }
+                });
+        root.addView(row, matchWrap());
+        return row.input();
+    }
+    private Button stepperButton(String text) {
+        Button button = new Button(this);
+        button.setText(text);
+        styleSystemButton(button);
+        return button;
+    }
+
+    private void stepNumericInput(EditText input, int maxValue, int delta, IntSettingListener listener) {
+        if (syncing || input == null || listener == null) {
+            return;
+        }
+        int value;
+        try {
+            value = Integer.parseInt(input.getText().toString().trim());
+        } catch (NumberFormatException ex) {
+            value = 0;
+        }
+        value = Math.max(0, Math.min(maxValue, value + delta));
+        input.setText(String.valueOf(value));
+        listener.onValue(value);
     }
 
     private void applyNumericInput(EditText input, int maxValue, IntSettingListener listener) {
@@ -1674,14 +1523,17 @@ public final class MainActivity extends Activity {
 
     private View themePresetCard(int index) {
         ThemeOption option = themeOptions[index];
+        AccentPlacementPolicy accentPolicy = KeyboardPreferences.loadAccentPlacementPolicy(this);
         KeyboardSettings englishSettings = ThemePreviewSettings.forOption(
                 option,
                 settings,
-                KeyboardMode.ENGLISH);
+                KeyboardMode.ENGLISH,
+                accentPolicy);
         KeyboardSettings hangulSettings = ThemePreviewSettings.forOption(
                 option,
                 settings,
-                KeyboardMode.HANGUL);
+                KeyboardMode.HANGUL,
+                accentPolicy);
         boolean selected = index == selectedThemePresetIndex;
         SettingsUiPalette ui = SettingsUiPalette.from(this);
 
@@ -1889,9 +1741,34 @@ public final class MainActivity extends Activity {
         return params;
     }
 
+    private LinearLayout.LayoutParams stepperButtonParams() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                dp(52),
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.leftMargin = dp(3);
+        params.rightMargin = dp(3);
+        return params;
+    }
+
+    private LinearLayout.LayoutParams stepperInputParams() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f);
+        params.leftMargin = dp(3);
+        params.rightMargin = dp(3);
+        return params;
+    }
+
     private void setButtonIcon(Button button, int drawableResId) {
         button.setCompoundDrawablesWithIntrinsicBounds(drawableResId, 0, 0, 0);
         button.setCompoundDrawablePadding(dp(8));
+        int tint = SettingsUiPalette.from(this).controlText;
+        for (Drawable drawable : button.getCompoundDrawables()) {
+            if (drawable != null) {
+                drawable.setTint(tint);
+            }
+        }
     }
 
     private LinearLayout.LayoutParams matchWrap() {

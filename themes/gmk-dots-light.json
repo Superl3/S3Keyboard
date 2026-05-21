@@ -17,9 +17,8 @@
     ]
   },
   "colors": {
-    "keyIdle": "#F6F3EA",
-    "functionKey": "#D8D4CA",
-    "primaryFunctionKey": "#D8D4CA",
+    "alphaKey": "#F6F3EA",
+    "modifierKey": "#D8D4CA",
     "accentKey": "#CFCBC0",
     "keyPressed": "#E2DED3",
     "keyboardBackground": "#ECE8DD",
@@ -36,7 +35,7 @@
     "depthDp": 1
   },
   "additionalNumberRow": {
-    "colorMode": "full_mod"
+    "colorMode": "full_alpha"
   },
   "typography": {
     "fontFamily": "noto_sans_kr",
@@ -44,7 +43,7 @@
     "secondaryTextSizePercent": 80,
     "primaryTextBold": false,
     "primaryTextItalic": false,
-    "secondaryTextBold": false,
+    "secondaryTextBold": true,
     "secondaryTextItalic": false
   },
   "icons": {
@@ -83,6 +82,16 @@
     "tap:b": "#FF6B6B",
     "tap:n": "#E63946",
     "tap:m": "#F4A261",
+    "tap:1": "#E63946",
+    "tap:2": "#F4A261",
+    "tap:3": "#2A9D8F",
+    "tap:4": "#457B9D",
+    "tap:5": "#7B2CBF",
+    "tap:6": "#FF6B6B",
+    "tap:7": "#E63946",
+    "tap:8": "#F4A261",
+    "tap:9": "#2A9D8F",
+    "tap:0": "#457B9D",
     "tap:ㄱ": "#2A9D8F",
     "tap:ㄴ": "#457B9D",
     "tap:ㅢ": "#7B2CBF",
@@ -135,7 +144,7 @@
       "background": "#D8D4CA"
     },
     "modInv": {
-      "foreground": "#D8D4CA",
+      "foreground": "#1D2430",
       "background": "#CFCBC0"
     }
   }

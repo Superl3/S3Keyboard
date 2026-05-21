@@ -3,19 +3,14 @@ window.S3_THEME_CONTRACT = {
   "schemaVersion": 1,
   "colorFields": [
     {
-      "key": "keyIdle",
+      "key": "alphaKey",
       "label": "전체 - 기본 키",
       "description": "일반 입력 키와 스페이스바 배경색입니다."
     },
     {
-      "key": "functionKey",
+      "key": "modifierKey",
       "label": "전체 - 기능 키",
       "description": "옵션, 예약어, 한/영 키 배경색입니다."
-    },
-    {
-      "key": "primaryFunctionKey",
-      "label": "전체 - 주요 기능 키",
-      "description": "시프트, 삭제, 엔터 배경색입니다."
     },
     {
       "key": "accentKey",
@@ -177,10 +172,40 @@ window.S3_THEME_CONTRACT = {
       "description": "Shift/backspace command keys. Their final visual role is intentionally still open."
     },
     {
+      "id": "qwertyShift",
+      "label": "QWERTY shift",
+      "contrastIntent": "primary",
+      "description": "The single QWERTY Shift key."
+    },
+    {
+      "id": "backspace",
+      "label": "Backspace",
+      "contrastIntent": "primary",
+      "description": "Backspace/delete command key."
+    },
+    {
+      "id": "settingsEnter",
+      "label": "Settings and enter",
+      "contrastIntent": "primary",
+      "description": "Bottom options/settings and enter/send command surfaces."
+    },
+    {
       "id": "space",
       "label": "Space",
       "contrastIntent": "primary",
       "description": "Spacebar; treated as alpha for text entry and as a long modifier surface visually."
+    },
+    {
+      "id": "question",
+      "label": "Dingul question",
+      "contrastIntent": "primary",
+      "description": "Dingul ? key. Defaults to alpha, but can be promoted to mod or accent by policy."
+    },
+    {
+      "id": "escPoint",
+      "label": "Esc point keycap",
+      "contrastIntent": "primary",
+      "description": "Optional point keycap accent: number-row 1 when visible, otherwise QWERTY q or Dingul ㄱ."
     }
   ],
   "layoutRoleMaps": {
@@ -215,8 +240,6 @@ window.S3_THEME_CONTRACT = {
         "space"
       ],
       "mod": [
-        "..",
-        ". .",
         ",;",
         "@/"
       ],
@@ -226,7 +249,26 @@ window.S3_THEME_CONTRACT = {
       "modShift": [
         "/"
       ],
+      "dingulDot": [
+        "."
+      ],
+      "dingulSlash": [
+        "/"
+      ],
+      "question": [
+        "?"
+      ],
+      "escPoint": [
+        "1",
+        "tap:ㄱ"
+      ],
       "modCtrl": [
+        "options",
+        "settings",
+        "enter"
+      ],
+      "settingsEnter": [
+        "options",
         "settings",
         "enter"
       ],
@@ -236,6 +278,12 @@ window.S3_THEME_CONTRACT = {
       ],
       "modCommand": [
         "shift",
+        "backspace"
+      ],
+      "qwertyShift": [
+        "shift"
+      ],
+      "backspace": [
         "backspace"
       ]
     },
@@ -284,6 +332,12 @@ window.S3_THEME_CONTRACT = {
         "space"
       ],
       "modCtrl": [
+        "options",
+        "settings",
+        "enter"
+      ],
+      "settingsEnter": [
+        "options",
         "settings",
         "enter"
       ],
@@ -294,6 +348,16 @@ window.S3_THEME_CONTRACT = {
       "modCommand": [
         "shift",
         "backspace"
+      ],
+      "qwertyShift": [
+        "shift"
+      ],
+      "backspace": [
+        "backspace"
+      ],
+      "escPoint": [
+        "1",
+        "q"
       ]
     }
   },
@@ -301,15 +365,44 @@ window.S3_THEME_CONTRACT = {
     "none",
     "modEnter",
     "modShift",
+    "dingulDot",
+    "dingulSlash",
     "modCtrl",
     "modMeta",
     "modCommand",
+    "settingsEnter",
+    "qwertyShift",
+    "backspace",
+    "question",
+    "escPoint",
+    "shift",
     "punctuation",
     "perKey"
   ],
+  "accentPolicySpacebarRoles": [
+    "default",
+    "alpha",
+    "mod",
+    "modifier",
+    "accent"
+  ],
+  "accentPolicyQuestionRoles": [
+    "default",
+    "alpha",
+    "mod",
+    "modifier",
+    "accent"
+  ],
   "defaultAccentPolicy": {
-    "qwerty": [],
-    "dingul": []
+    "qwerty": [
+      "modMeta",
+      "qwertyShift",
+      "backspace"
+    ],
+    "dingul": [
+      "modCtrl",
+      "dingulDot"
+    ]
   },
   "userPreferenceCandidates": [
     {
@@ -398,7 +491,7 @@ window.S3_THEME_CONTRACT = {
     },
     {
       "id": "half_mod_4567",
-      "label": "123890 alpha / 4567 mod",
+      "label": "Center mod",
       "outerRole": "alpha",
       "innerRole": "mod",
       "legacyAliases": [
@@ -407,13 +500,13 @@ window.S3_THEME_CONTRACT = {
     },
     {
       "id": "alpha_accent",
-      "label": "123890 alpha / 4567 accent",
+      "label": "Center accent",
       "outerRole": "alpha",
       "innerRole": "accent"
     },
     {
       "id": "mod_alpha",
-      "label": "123890 mod / 4567 alpha",
+      "label": "Outer mod / center alpha",
       "outerRole": "mod",
       "innerRole": "alpha"
     },
@@ -428,19 +521,19 @@ window.S3_THEME_CONTRACT = {
     },
     {
       "id": "mod_accent",
-      "label": "123890 mod / 4567 accent",
+      "label": "Outer mod / center accent",
       "outerRole": "mod",
       "innerRole": "accent"
     },
     {
       "id": "accent_alpha",
-      "label": "123890 accent / 4567 alpha",
+      "label": "Outer accent / center alpha",
       "outerRole": "accent",
       "innerRole": "alpha"
     },
     {
       "id": "accent_mod",
-      "label": "123890 accent / 4567 mod",
+      "label": "Outer accent / center mod",
       "outerRole": "accent",
       "innerRole": "mod"
     },

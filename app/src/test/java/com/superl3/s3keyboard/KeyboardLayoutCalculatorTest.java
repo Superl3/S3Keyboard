@@ -120,6 +120,58 @@ public final class KeyboardLayoutCalculatorTest {
     }
 
     @Test
+    public void numberRowBottomGapSeparatesNumberRowFromMainRows() {
+        KeyboardSettings noGap = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withEnglishNumberRow(true)
+                .withNumberRowBottomGap(0);
+        KeyboardSettings withGap = noGap.withNumberRowBottomGap(14);
+
+        List<KeyboardLayoutCalculator.Slot> noGapSlots = KeyboardLayoutCalculator.layout(
+                KeyboardLayoutFactory.build(noGap),
+                noGap,
+                320f,
+                noGap.measuredHeightDp(),
+                1f);
+        List<KeyboardLayoutCalculator.Slot> withGapSlots = KeyboardLayoutCalculator.layout(
+                KeyboardLayoutFactory.build(withGap),
+                withGap,
+                320f,
+                withGap.measuredHeightDp(),
+                1f);
+
+        assertEquals(0f, noGapSlots.get(10).top - noGapSlots.get(0).bottom, 0.001f);
+        assertEquals(14f, withGapSlots.get(10).top - withGapSlots.get(0).bottom, 0.001f);
+        assertEquals(noGapSlots.get(0).top, withGapSlots.get(0).top, 0.001f);
+    }
+
+    @Test
+    public void numberRowHeightMatchesBottomControlRowHeight() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withEnglishNumberRow(true);
+
+        List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
+                KeyboardLayoutFactory.build(settings),
+                settings,
+                320f,
+                settings.measuredHeightDp(),
+                1f);
+
+        KeyboardLayoutCalculator.Slot numberRow = slots.get(0);
+        KeyboardLayoutCalculator.Slot bottomRow = slots.get(slots.size() - 1);
+
+        assertEquals(
+                bottomRow.bottom - bottomRow.top,
+                numberRow.bottom - numberRow.top,
+                0.001f);
+        assertEquals(
+                KeyboardSettings.DEFAULT_BOTTOM_CONTROL_ROW_HEIGHT_DP,
+                numberRow.bottom - numberRow.top,
+                0.001f);
+    }
+
+    @Test
     public void visualKeyGapDoesNotChangePhysicalLayoutSlots() {
         KeyboardSettings withoutGap = KeyboardSettings.defaults().withKeyGap(0);
         KeyboardSettings withGap = KeyboardSettings.defaults().withKeyGap(18);

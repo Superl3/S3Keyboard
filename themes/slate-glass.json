@@ -19,9 +19,8 @@
     ]
   },
   "colors": {
-    "keyIdle": "#F7F9FC",
-    "functionKey": "#E9EEF5",
-    "primaryFunctionKey": "#DFE7F0",
+    "alphaKey": "#F7F9FC",
+    "modifierKey": "#E9EEF5",
     "accentKey": "#DFE7F0",
     "keyPressed": "#D7E2EF",
     "keyboardBackground": "#EAF0F6",
@@ -46,7 +45,7 @@
     "secondaryTextSizePercent": 80,
     "primaryTextBold": false,
     "primaryTextItalic": false,
-    "secondaryTextBold": false,
+    "secondaryTextBold": true,
     "secondaryTextItalic": false
   },
   "dingulColors": {

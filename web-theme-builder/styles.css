@@ -209,10 +209,38 @@ textarea {
 }
 
 .main-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
   display: block;
+}
+
+.main-dot.two-dot-legend {
+  width: 18px;
+  height: 8px;
+  background: transparent !important;
+  color: inherit;
+  position: relative;
+}
+
+.main-dot.two-dot-legend::before,
+.main-dot.two-dot-legend::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateY(-50%);
+}
+
+.main-dot.two-dot-legend::before {
+  left: 0;
+}
+
+.main-dot.two-dot-legend::after {
+  right: 0;
 }
 
 .key-glyph {
@@ -267,9 +295,13 @@ textarea {
 }
 
 .mod-pack-line.single-dot-line {
-  width: 8px;
-  height: 8px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
+}
+
+.mod-pack-line.short-mod-line {
+  width: 26%;
 }
 
 .mod-pack-line.metro-line {

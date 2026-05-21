@@ -1,8 +1,7 @@
 package com.superl3.s3keyboard;
 
 enum KeyVisualRole {
-    NORMAL,
-    FUNCTION,
-    PRIMARY_FUNCTION,
+    ALPHA,
+    MODIFIER,
     ACCENT
 }

@@ -19,9 +19,8 @@
     ]
   },
   "colors": {
-    "keyIdle": "#FFFDF8",
-    "functionKey": "#ECE7DE",
-    "primaryFunctionKey": "#ECE7DE",
+    "alphaKey": "#FFFDF8",
+    "modifierKey": "#ECE7DE",
     "accentKey": "#ECE7DE",
     "keyPressed": "#E8E2D8",
     "keyboardBackground": "#FFFFFF",
@@ -46,7 +45,7 @@
     "secondaryTextSizePercent": 78,
     "primaryTextBold": false,
     "primaryTextItalic": false,
-    "secondaryTextBold": false,
+    "secondaryTextBold": true,
     "secondaryTextItalic": false
   },
   "keyTextColorOverrides": {
@@ -76,6 +75,16 @@
     "tap:b": "#987800",
     "tap:n": "#B9671E",
     "tap:m": "#7B5CC5",
+    "tap:1": "#7C3CB3",
+    "tap:2": "#008B82",
+    "tap:3": "#B85F19",
+    "tap:4": "#C02666",
+    "tap:5": "#A06F00",
+    "tap:6": "#6D4BC1",
+    "tap:7": "#007C89",
+    "tap:8": "#7D43C6",
+    "tap:9": "#B06F00",
+    "tap:0": "#B52A62",
     "shift": "#8E7600",
     "backspace": "#C02666",
     "bksp": "#C02666",

@@ -17,9 +17,8 @@
     ]
   },
   "colors": {
-    "keyIdle": "#20242C",
-    "functionKey": "#252B34",
-    "primaryFunctionKey": "#252B34",
+    "alphaKey": "#252B34",
+    "modifierKey": "#20242C",
     "accentKey": "#181C23",
     "keyPressed": "#2C313C",
     "keyboardBackground": "#101318",
@@ -36,7 +35,7 @@
     "depthDp": 1
   },
   "additionalNumberRow": {
-    "colorMode": "full_mod"
+    "colorMode": "full_alpha"
   },
   "typography": {
     "fontFamily": "noto_sans_kr",
@@ -44,7 +43,7 @@
     "secondaryTextSizePercent": 80,
     "primaryTextBold": false,
     "primaryTextItalic": false,
-    "secondaryTextBold": false,
+    "secondaryTextBold": true,
     "secondaryTextItalic": false
   },
   "icons": {
@@ -83,6 +82,16 @@
     "tap:b": "#F77F00",
     "tap:n": "#EF476F",
     "tap:m": "#FFD166",
+    "tap:1": "#EF476F",
+    "tap:2": "#FFD166",
+    "tap:3": "#06D6A0",
+    "tap:4": "#4CC9F0",
+    "tap:5": "#B5179E",
+    "tap:6": "#F77F00",
+    "tap:7": "#EF476F",
+    "tap:8": "#FFD166",
+    "tap:9": "#06D6A0",
+    "tap:0": "#4CC9F0",
     "tap:ㄱ": "#06D6A0",
     "tap:ㄴ": "#4CC9F0",
     "tap:ㅢ": "#B5179E",
@@ -113,29 +122,29 @@
     "shiftIndicator": "#FFFFFF"
   },
   "keyBackgroundColorOverrides": {
-    "?": "#20242C",
-    ".": "#252B34",
-    "/": "#252B34",
-    "enter": "#252B34",
-    "backspace": "#252B34",
-    "shift": "#252B34",
-    "language": "#252B34",
-    "settings": "#252B34",
-    "options": "#252B34",
-    "reserved": "#252B34",
-    "space": "#20242C"
+    "?": "#252B34",
+    ".": "#20242C",
+    "/": "#20242C",
+    "enter": "#20242C",
+    "backspace": "#20242C",
+    "shift": "#20242C",
+    "language": "#20242C",
+    "settings": "#20242C",
+    "options": "#20242C",
+    "reserved": "#20242C",
+    "space": "#252B34"
   },
   "dingulColors": {
     "alpha": {
       "foreground": "#F4F6FA",
-      "background": "#20242C"
+      "background": "#252B34"
     },
     "mod": {
       "foreground": "#AAB4C2",
-      "background": "#252B34"
+      "background": "#20242C"
     },
     "modInv": {
-      "foreground": "#252B34",
+      "foreground": "#F4F6FA",
       "background": "#181C23"
     }
   }

@@ -89,7 +89,7 @@ Modifier icon packs are a first-class theme axis, especially after the core JSON
 
 Theme review uses visual taxonomy, not strict accessibility contrast for every color pair. Dimmed pairs are allowed for subtle platform-style themes and should appear as review metadata, not warnings. Warnings should be reserved for primary `alpha` and `mod` text that is genuinely at risk of becoming unreadable.
 
-Theme review classification counts only the authored visual role pairs that define the keycap colorway. `alpha` and `mod` are the core pairs; `modInv` is a derived/inverted pair and `keyPressed` is an interaction state, so neither one upgrades a two-color theme into an accent/three-color theme by itself. A `modInv` pair backed by a visually distinct authored `colors.accentKey` background counts as the third pair when it is clearly separated from the alpha/mod/primary backgrounds; HammerHead-style inverted mod accents and GMK 8008-style fluorescent accent keys are intended three-tone examples, while Dracula-style nearby mod shading remains two-tone.
+Theme review classification counts only the authored visual role pairs that define the keycap colorway. `alpha` and `mod` are the core pairs; `modInv` is a derived/inverted pair and `keyPressed` is an interaction state, so neither one upgrades a two-color theme into an accent/three-color theme by itself. A `modInv` pair backed by a visually distinct authored `colors.accentKey` background counts as the third pair when it is clearly separated from the alpha/modifier backgrounds; HammerHead-style inverted mod accents and GMK 8008-style fluorescent accent keys are intended three-tone examples, while Dracula-style nearby mod shading remains two-tone.
 
 Foreground-only per-key colors are glyph decoration, not keycap coverage. Marigold-style themes can have many colorful legends while still classifying by their alpha/mod/accent keycap backgrounds; report this as `colorfulForeground` instead of inflating the theme to custom coverage just because text colors vary.
 
@@ -131,7 +131,7 @@ Display packs replace labels or command icons with either:
 { "type": "text", "value": "hihihi" }
 ```
 
-The simple text pack is separate from Olivia as a theme. It only replaces enter-like keys with `hihihi`; shift, backspace, space, language, settings, options, and reserved remain modifier glyph icons. `hihihi` is rendered as a vector path in Android and previews, not as a font string, so keep script-like replacements in the renderer or a future imported vector renderer.
+The simple text pack is separate from Olivia as a theme. It replaces only Dingul's visual enter-position `.` key with `hihihi`; the real bottom-right Enter command must keep the default Enter icon. Shift, backspace, space, language, settings, options, and reserved remain modifier glyph icons. `hihihi` is rendered as a vector path in Android and previews, not as a font string, so keep script-like replacements in the renderer or a future imported vector renderer.
 
 The `git-commands` display pack is used by Oblivion-style themes. It replaces modifier keys with short Git/workflow labels such as `exec`, `fetch`, `pull`, `rebase`, `reset`, `commit`, `diff`, and `log`.
 

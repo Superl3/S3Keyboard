@@ -103,14 +103,17 @@ public final class ThemeSelectorActivity extends Activity {
 
     private View themeCard(int index) {
         ThemeOption option = themeOptions[index];
+        AccentPlacementPolicy accentPolicy = KeyboardPreferences.loadAccentPlacementPolicy(this);
         KeyboardSettings englishSettings = ThemePreviewSettings.forOption(
                 option,
                 settings,
-                KeyboardMode.ENGLISH);
+                KeyboardMode.ENGLISH,
+                accentPolicy);
         KeyboardSettings hangulSettings = ThemePreviewSettings.forOption(
                 option,
                 settings,
-                KeyboardMode.HANGUL);
+                KeyboardMode.HANGUL,
+                accentPolicy);
         boolean selected = index == selectedIndex;
         SettingsUiPalette ui = SettingsUiPalette.from(this);
 
@@ -195,6 +198,7 @@ public final class ThemeSelectorActivity extends Activity {
         selectedIndex = index;
         settings = themeOptions[index].applyTo(settings);
         KeyboardPreferences.saveSelectedThemeId(this, themeOptions[index].stableId());
+        settings = KeyboardPreferences.applyAccentPlacementPolicy(this, settings);
         KeyboardPreferences.saveSettings(this, settings);
         rebuildCards();
     }

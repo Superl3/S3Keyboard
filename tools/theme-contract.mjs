@@ -2,19 +2,14 @@ export const themeContract = {
   schemaVersion: 1,
   colorFields: [
     {
-      key: "keyIdle",
+      key: "alphaKey",
       label: "\uC804\uCCB4 - \uAE30\uBCF8 \uD0A4",
       description: "\uC77C\uBC18 \uC785\uB825 \uD0A4\uC640 \uC2A4\uD398\uC774\uC2A4\uBC14 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."
     },
     {
-      key: "functionKey",
+      key: "modifierKey",
       label: "\uC804\uCCB4 - \uAE30\uB2A5 \uD0A4",
       description: "\uC635\uC158, \uC608\uC57D\uC5B4, \uD55C/\uC601 \uD0A4 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."
-    },
-    {
-      key: "primaryFunctionKey",
-      label: "\uC804\uCCB4 - \uC8FC\uC694 \uAE30\uB2A5 \uD0A4",
-      description: "\uC2DC\uD504\uD2B8, \uC0AD\uC81C, \uC5D4\uD130 \uBC30\uACBD\uC0C9\uC785\uB2C8\uB2E4."
     },
     {
       key: "accentKey",
@@ -135,10 +130,40 @@ export const themeContract = {
       description: "Shift/backspace command keys. Their final visual role is intentionally still open."
     },
     {
+      id: "qwertyShift",
+      label: "QWERTY shift",
+      contrastIntent: "primary",
+      description: "The single QWERTY Shift key."
+    },
+    {
+      id: "backspace",
+      label: "Backspace",
+      contrastIntent: "primary",
+      description: "Backspace/delete command key."
+    },
+    {
+      id: "settingsEnter",
+      label: "Settings and enter",
+      contrastIntent: "primary",
+      description: "Bottom options/settings and enter/send command surfaces."
+    },
+    {
       id: "space",
       label: "Space",
       contrastIntent: "primary",
       description: "Spacebar; treated as alpha for text entry and as a long modifier surface visually."
+    },
+    {
+      id: "question",
+      label: "Dingul question",
+      contrastIntent: "primary",
+      description: "Dingul ? key. Defaults to alpha, but can be promoted to mod or accent by policy."
+    },
+    {
+      id: "escPoint",
+      label: "Esc point keycap",
+      contrastIntent: "primary",
+      description: "Optional point keycap accent: number-row 1 when visible, otherwise QWERTY q or Dingul ㄱ."
     }
   ],
   layoutRoleMaps: {
@@ -160,12 +185,19 @@ export const themeContract = {
         "?",
         "space"
       ],
-      mod: ["..", ". .", ",;", "@/"],
+      mod: [",;", "@/"],
       modEnter: ["."],
       modShift: ["/"],
-      modCtrl: ["settings", "enter"],
+      dingulDot: ["."],
+      dingulSlash: ["/"],
+      question: ["?"],
+      escPoint: ["1", "tap:\u3131"],
+      modCtrl: ["options", "settings", "enter"],
+      settingsEnter: ["options", "settings", "enter"],
       modMeta: ["reserved", "language"],
-      modCommand: ["shift", "backspace"]
+      modCommand: ["shift", "backspace"],
+      qwertyShift: ["shift"],
+      backspace: ["backspace"]
     },
     qwerty: {
       numberOuter: ["1", "2", "3", "8", "9", "0"],
@@ -199,24 +231,38 @@ export const themeContract = {
         "m",
         "space"
       ],
-      modCtrl: ["settings", "enter"],
+      modCtrl: ["options", "settings", "enter"],
+      settingsEnter: ["options", "settings", "enter"],
       modMeta: ["reserved", "language"],
-      modCommand: ["shift", "backspace"]
+      modCommand: ["shift", "backspace"],
+      qwertyShift: ["shift"],
+      backspace: ["backspace"],
+      escPoint: ["1", "q"]
     }
   },
   accentPolicyTargets: [
     "none",
     "modEnter",
     "modShift",
+    "dingulDot",
+    "dingulSlash",
     "modCtrl",
     "modMeta",
     "modCommand",
+    "settingsEnter",
+    "qwertyShift",
+    "backspace",
+    "question",
+    "escPoint",
+    "shift",
     "punctuation",
     "perKey"
   ],
+  accentPolicySpacebarRoles: ["default", "alpha", "mod", "modifier", "accent"],
+  accentPolicyQuestionRoles: ["default", "alpha", "mod", "modifier", "accent"],
   defaultAccentPolicy: {
-    qwerty: [],
-    dingul: []
+    qwerty: ["modMeta", "qwertyShift", "backspace"],
+    dingul: ["modCtrl", "dingulDot"]
   },
   userPreferenceCandidates: [
     {
@@ -255,13 +301,13 @@ export const themeContract = {
   },
   numberRowModes: [
     { id: "full_alpha", label: "All alpha", outerRole: "alpha", innerRole: "alpha", legacyAliases: ["full_default"] },
-    { id: "half_mod_4567", label: "123890 alpha / 4567 mod", outerRole: "alpha", innerRole: "mod", legacyAliases: ["center_dimmed"] },
-    { id: "alpha_accent", label: "123890 alpha / 4567 accent", outerRole: "alpha", innerRole: "accent" },
-    { id: "mod_alpha", label: "123890 mod / 4567 alpha", outerRole: "mod", innerRole: "alpha" },
+    { id: "half_mod_4567", label: "Center mod", outerRole: "alpha", innerRole: "mod", legacyAliases: ["center_dimmed"] },
+    { id: "alpha_accent", label: "Center accent", outerRole: "alpha", innerRole: "accent" },
+    { id: "mod_alpha", label: "Outer mod / center alpha", outerRole: "mod", innerRole: "alpha" },
     { id: "full_mod", label: "All mod", outerRole: "mod", innerRole: "mod", legacyAliases: ["full_dimmed"] },
-    { id: "mod_accent", label: "123890 mod / 4567 accent", outerRole: "mod", innerRole: "accent" },
-    { id: "accent_alpha", label: "123890 accent / 4567 alpha", outerRole: "accent", innerRole: "alpha" },
-    { id: "accent_mod", label: "123890 accent / 4567 mod", outerRole: "accent", innerRole: "mod" },
+    { id: "mod_accent", label: "Outer mod / center accent", outerRole: "mod", innerRole: "accent" },
+    { id: "accent_alpha", label: "Outer accent / center alpha", outerRole: "accent", innerRole: "alpha" },
+    { id: "accent_mod", label: "Outer accent / center mod", outerRole: "accent", innerRole: "mod" },
     { id: "full_accent", label: "All accent", outerRole: "accent", innerRole: "accent" }
   ],
   defaultNumberRowMode: "full_mod",

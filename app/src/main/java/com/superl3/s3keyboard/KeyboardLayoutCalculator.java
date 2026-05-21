@@ -34,13 +34,20 @@ final class KeyboardLayoutCalculator {
         float topPadding = dp(settings.keyboardTopPaddingDp, safeDensity);
         float bottomPadding = dp(settings.keyboardBottomPaddingDp, safeDensity);
         float bottomRowTopPadding = rows.size() > 1 ? dp(settings.bottomRowTopPaddingDp, safeDensity) : 0f;
+        float numberRowBottomGap = hasAdditionalNumberRow(settings, rows)
+                ? dp(settings.numberRowBottomGapDp, safeDensity)
+                : 0f;
+        boolean hasNumberRow = hasAdditionalNumberRow(settings, rows);
         float usableHeight = Math.max(rows.size(), height - topPadding - bottomPadding);
         float bottomRowHeight = bottomRowHeight(usableHeight, bottomRowTopPadding, rows.size(), safeDensity);
+        float numberRowHeight = hasNumberRow ? bottomRowHeight : 0f;
+        int characterRowCount = Math.max(1, rows.size() - (hasNumberRow ? 2 : 1));
         float nonBottomHeight = rows.size() > 1
-                ? Math.max(rows.size() - 1, usableHeight - bottomRowTopPadding - bottomRowHeight)
+                ? Math.max(characterRowCount,
+                usableHeight - bottomRowTopPadding - bottomRowHeight - numberRowBottomGap - numberRowHeight)
                 : usableHeight;
         float characterRowHeight = rows.size() > 1
-                ? nonBottomHeight / (float) (rows.size() - 1)
+                ? nonBottomHeight / (float) characterRowCount
                 : usableHeight;
 
         List<Slot> slots = new ArrayList<>();
@@ -48,14 +55,20 @@ final class KeyboardLayoutCalculator {
             KeyboardRow row = rows.get(rowIndex);
             boolean bottomRow = rowIndex == rows.size() - 1;
             boolean hangulCharacterRow = isHangulCharacterRow(settings, row, bottomRow);
-            float rowHeight = bottomRow ? bottomRowHeight : characterRowHeight;
+            boolean numberRow = hasNumberRow && rowIndex == 0;
+            float rowHeight = bottomRow ? bottomRowHeight : (numberRow ? numberRowHeight : characterRowHeight);
             float rowSpecialGap = hangulCharacterRow
                     ? Math.min(dp(settings.hangulMainSpecialGapDp, safeDensity), Math.max(0f, availableWidth - 1f))
                     : 0f;
             float rowAvailableWidth = Math.max(1f, availableWidth - rowSpecialGap);
-            float top = topPadding + (bottomRow
-                    ? characterRowHeight * (rows.size() - 1) + bottomRowTopPadding
-                    : rowIndex * characterRowHeight);
+            float top = topPadding + topForRow(
+                    rowIndex,
+                    rows.size(),
+                    hasNumberRow,
+                    characterRowHeight,
+                    numberRowHeight,
+                    numberRowBottomGap,
+                    bottomRowTopPadding);
             float unitWidth = Math.max(0.1f, rowAvailableWidth / (float) row.baseUnits);
             float contentWidth = KeyboardRowMetrics.contentWidth(row, unitWidth, 0f) + rowSpecialGap;
             float maxContentWidth = KeyboardRowMetrics.maxContentWidth(row, unitWidth, 0f) + rowSpecialGap;
@@ -85,6 +98,13 @@ final class KeyboardLayoutCalculator {
         return slots;
     }
 
+    private static boolean hasAdditionalNumberRow(KeyboardSettings settings, List<KeyboardRow> rows) {
+        return settings.showNumberRow
+                && rows.size() > 2
+                && !rows.get(0).keys.isEmpty()
+                && "1".equals(rows.get(0).keys.get(0).tap);
+    }
+
     private static float bottomRowHeight(
             float usableHeight,
             float bottomRowTopPadding,
@@ -97,6 +117,32 @@ final class KeyboardLayoutCalculator {
         float balanced = Math.max(1f, usableHeight / (float) rowCount * 1.05f);
         float maxHeight = Math.max(1f, usableHeight - bottomRowTopPadding - (rowCount - 1));
         return Math.min(Math.min(desired, balanced), maxHeight);
+    }
+
+    private static float topForRow(
+            int rowIndex,
+            int rowCount,
+            boolean hasNumberRow,
+            float characterRowHeight,
+            float numberRowHeight,
+            float numberRowBottomGap,
+            float bottomRowTopPadding) {
+        if (!hasNumberRow) {
+            return rowIndex == rowCount - 1
+                    ? characterRowHeight * (rowCount - 1) + bottomRowTopPadding
+                    : rowIndex * characterRowHeight;
+        }
+        if (rowIndex == 0) {
+            return 0f;
+        }
+        int characterIndex = rowIndex - 1;
+        if (rowIndex == rowCount - 1) {
+            return numberRowHeight
+                    + numberRowBottomGap
+                    + characterRowHeight * characterIndex
+                    + bottomRowTopPadding;
+        }
+        return numberRowHeight + numberRowBottomGap + characterRowHeight * characterIndex;
     }
 
     private static boolean isHangulCharacterRow(

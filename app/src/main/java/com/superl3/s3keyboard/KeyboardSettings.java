@@ -5,14 +5,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 final class KeyboardSettings {
-    static final int DEFAULT_ENGLISH_HEIGHT_DP = 186;
+    static final int DEFAULT_ENGLISH_HEIGHT_DP = 235;
     static final int DEFAULT_HANGUL_HEIGHT_DP = 260;
     static final int DEFAULT_HEIGHT_DP = DEFAULT_ENGLISH_HEIGHT_DP;
     static final int DEFAULT_BOTTOM_CONTROL_ROW_HEIGHT_DP = 46;
-    static final int NUMBER_ROW_HEIGHT_DP = 42;
+    static final int NUMBER_ROW_HEIGHT_DP = DEFAULT_BOTTOM_CONTROL_ROW_HEIGHT_DP;
     static final int MIN_HEIGHT_DP = 150;
     static final int MAX_HEIGHT_DP = 430;
-    static final int MAX_MARGIN_DP = 96;
+    static final int MAX_MARGIN_DP = 64;
     static final int DEFAULT_HANGUL_LEFT_PADDING_DP = 6;
     static final int DEFAULT_HANGUL_RIGHT_PADDING_DP = 6;
     static final int DEFAULT_ENGLISH_LEFT_PADDING_DP = 6;
@@ -21,15 +21,19 @@ final class KeyboardSettings {
     static final int DEFAULT_KEYBOARD_TOP_PADDING_DP = 6;
     static final int DEFAULT_KEYBOARD_BOTTOM_PADDING_DP = 4;
     static final int DEFAULT_BOTTOM_ROW_TOP_PADDING_DP = 0;
-    static final int MAX_HANGUL_MAIN_SPECIAL_GAP_DP = 32;
-    static final int MAX_KEYBOARD_TOP_PADDING_DP = 48;
-    static final int MAX_KEYBOARD_BOTTOM_PADDING_DP = 48;
-    static final int MAX_BOTTOM_ROW_TOP_PADDING_DP = 48;
+    static final int DEFAULT_NUMBER_ROW_BOTTOM_GAP_DP = 8;
+    static final int MAX_HANGUL_MAIN_SPECIAL_GAP_DP = 24;
+    static final int MAX_KEYBOARD_TOP_PADDING_DP = 24;
+    static final int MAX_KEYBOARD_BOTTOM_PADDING_DP = 24;
+    static final int MAX_BOTTOM_ROW_TOP_PADDING_DP = 24;
+    static final int MAX_NUMBER_ROW_BOTTOM_GAP_DP = 24;
     static final int DEFAULT_HIT_SLOP_DP = 8;
     static final int MIN_GESTURE_THRESHOLD_DP = 12;
     static final int MAX_GESTURE_THRESHOLD_DP = 64;
     static final int DEFAULT_GESTURE_THRESHOLD_DP = 22;
-    static final int DEFAULT_TOUCH_Y_OFFSET_DP = -4;
+    static final int MIN_TOUCH_Y_OFFSET_DP = -24;
+    static final int MAX_TOUCH_Y_OFFSET_DP = 24;
+    static final int DEFAULT_TOUCH_Y_OFFSET_DP = 4;
     static final int DEFAULT_REPEAT_START_DELAY_MS = 420;
     static final int DEFAULT_REPEAT_INTERVAL_MS = 55;
     static final int MIN_REPEAT_START_DELAY_MS = 180;
@@ -42,8 +46,7 @@ final class KeyboardSettings {
     static final int DEFAULT_ACCENT_COLOR = 0xFF232323;
     static final int DEFAULT_SECONDARY_COLOR = 0xFF696969;
     static final int DEFAULT_FUNCTION_KEY_COLOR = 0xFFE7EAF0;
-    static final int DEFAULT_PRIMARY_FUNCTION_KEY_COLOR = 0xFFDDE3EC;
-    static final int DEFAULT_ACCENT_KEY_COLOR = DEFAULT_PRIMARY_FUNCTION_KEY_COLOR;
+    static final int DEFAULT_ACCENT_KEY_COLOR = 0xFFDDE3EC;
     static final int DEFAULT_BORDER_COLOR = DEFAULT_SECONDARY_COLOR;
     static final int DEFAULT_KEY_BORDER_WIDTH_DP = 1;
     static final int DEFAULT_KEY_ROUNDNESS_DP = 0;
@@ -61,7 +64,7 @@ final class KeyboardSettings {
     static final int DEFAULT_SECONDARY_TEXT_SIZE_PERCENT = 80;
     static final boolean DEFAULT_PRIMARY_TEXT_BOLD = true;
     static final boolean DEFAULT_PRIMARY_TEXT_ITALIC = false;
-    static final boolean DEFAULT_SECONDARY_TEXT_BOLD = false;
+    static final boolean DEFAULT_SECONDARY_TEXT_BOLD = true;
     static final boolean DEFAULT_SECONDARY_TEXT_ITALIC = false;
     static final boolean DEFAULT_FOLLOW_THEME_TYPOGRAPHY = false;
     static final int MIN_TEXT_SIZE_PERCENT = 70;
@@ -115,7 +118,6 @@ final class KeyboardSettings {
     final int accentColor;
     final int secondaryColor;
     final int functionKeyColor;
-    final int primaryFunctionKeyColor;
     final int accentKeyColor;
     final int borderColor;
     final int keyBorderWidthDp;
@@ -141,6 +143,7 @@ final class KeyboardSettings {
     final int keyboardTopPaddingDp;
     final int keyboardBottomPaddingDp;
     final int bottomRowTopPaddingDp;
+    final int numberRowBottomGapDp;
     final Map<String, Integer> keyColorOverrides;
     final LegendStylePreset legendStylePreset;
     final boolean pointKeycapStyleEnabled;
@@ -174,7 +177,6 @@ final class KeyboardSettings {
             int accentColor,
             int secondaryColor,
             int functionKeyColor,
-            int primaryFunctionKeyColor,
             int accentKeyColor,
             int borderColor,
             int keyBorderWidthDp,
@@ -213,7 +215,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -262,7 +263,6 @@ final class KeyboardSettings {
             int accentColor,
             int secondaryColor,
             int functionKeyColor,
-            int primaryFunctionKeyColor,
             int accentKeyColor,
             int borderColor,
             int keyBorderWidthDp,
@@ -301,7 +301,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -350,7 +349,6 @@ final class KeyboardSettings {
             int accentColor,
             int secondaryColor,
             int functionKeyColor,
-            int primaryFunctionKeyColor,
             int accentKeyColor,
             int borderColor,
             int keyBorderWidthDp,
@@ -397,7 +395,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -454,7 +451,6 @@ final class KeyboardSettings {
             int accentColor,
             int secondaryColor,
             int functionKeyColor,
-            int primaryFunctionKeyColor,
             int accentKeyColor,
             int borderColor,
             int keyBorderWidthDp,
@@ -509,7 +505,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -540,6 +535,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                DEFAULT_NUMBER_ROW_BOTTOM_GAP_DP,
                 DEFAULT_LEGEND_STYLE_PRESET,
                 DEFAULT_POINT_KEYCAP_STYLE_ENABLED,
                 DEFAULT_MODIFIER_ICON_PACK_ID,
@@ -575,7 +571,6 @@ final class KeyboardSettings {
             int accentColor,
             int secondaryColor,
             int functionKeyColor,
-            int primaryFunctionKeyColor,
             int accentKeyColor,
             int borderColor,
             int keyBorderWidthDp,
@@ -606,6 +601,7 @@ final class KeyboardSettings {
             int keyboardTopPaddingDp,
             int keyboardBottomPaddingDp,
             int bottomRowTopPaddingDp,
+            int numberRowBottomGapDp,
             LegendStylePreset legendStylePreset,
             boolean pointKeycapStyleEnabled,
             String modifierIconThemePackId,
@@ -642,7 +638,7 @@ final class KeyboardSettings {
                 gestureThresholdDp,
                 MIN_GESTURE_THRESHOLD_DP,
                 MAX_GESTURE_THRESHOLD_DP);
-        this.touchYOffsetDp = clamp(touchYOffsetDp, -24, 24);
+        this.touchYOffsetDp = clamp(touchYOffsetDp, MIN_TOUCH_Y_OFFSET_DP, MAX_TOUCH_Y_OFFSET_DP);
         this.repeatStartDelayMs = clamp(
                 repeatStartDelayMs,
                 MIN_REPEAT_START_DELAY_MS,
@@ -659,7 +655,6 @@ final class KeyboardSettings {
         this.accentColor = opaque(accentColor);
         this.secondaryColor = opaque(secondaryColor);
         this.functionKeyColor = opaque(functionKeyColor);
-        this.primaryFunctionKeyColor = opaque(primaryFunctionKeyColor);
         this.accentKeyColor = opaque(accentKeyColor);
         this.borderColor = opaque(borderColor);
         this.keyBorderWidthDp = clamp(keyBorderWidthDp, 0, MAX_KEY_BORDER_WIDTH_DP);
@@ -706,6 +701,10 @@ final class KeyboardSettings {
                 bottomRowTopPaddingDp,
                 0,
                 MAX_BOTTOM_ROW_TOP_PADDING_DP);
+        this.numberRowBottomGapDp = clamp(
+                numberRowBottomGapDp,
+                0,
+                MAX_NUMBER_ROW_BOTTOM_GAP_DP);
         this.keyColorOverrides = normalizeKeyColorOverrides(keyColorOverrides);
         this.legendStylePreset = legendStylePreset == null ? DEFAULT_LEGEND_STYLE_PRESET : legendStylePreset;
         this.pointKeycapStyleEnabled = pointKeycapStyleEnabled;
@@ -743,7 +742,6 @@ final class KeyboardSettings {
                 DEFAULT_ACCENT_COLOR,
                 DEFAULT_SECONDARY_COLOR,
                 DEFAULT_FUNCTION_KEY_COLOR,
-                DEFAULT_PRIMARY_FUNCTION_KEY_COLOR,
                 DEFAULT_ACCENT_KEY_COLOR,
                 DEFAULT_BORDER_COLOR,
                 DEFAULT_KEY_BORDER_WIDTH_DP,
@@ -824,7 +822,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -855,6 +852,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -896,7 +894,18 @@ final class KeyboardSettings {
     }
 
     KeyboardSettings withMargins(int leftMarginDp, int rightMarginDp) {
-        return withAllSidePadding(leftMarginDp, rightMarginDp);
+        if (handednessMode == HandednessMode.LEFT) {
+            return withAllSidePadding(leftMarginDp, presetRightMargin(HandednessMode.LEFT));
+        }
+        if (handednessMode == HandednessMode.RIGHT) {
+            return withAllSidePadding(presetLeftMargin(HandednessMode.RIGHT), rightMarginDp);
+        }
+        int sharedMarginDp = Math.max(leftMarginDp, rightMarginDp);
+        return withAllSidePadding(sharedMarginDp, sharedMarginDp);
+    }
+
+    KeyboardSettings withSharedMargin(int marginDp) {
+        return withAllSidePadding(marginDp, marginDp);
     }
 
     KeyboardSettings withAllSidePadding(int leftPaddingDp, int rightPaddingDp) {
@@ -1005,7 +1014,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -1036,6 +1044,74 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
+                legendStylePreset,
+                pointKeycapStyleEnabled,
+                modifierIconThemePackId,
+                modifierIconOverridePackId,
+                keyDisplayThemePackId,
+                keyDisplayOverridePackId,
+                keyDisplayOverrides,
+                visualEffects,
+                followThemeTypography);
+    }
+
+    KeyboardSettings withNumberRowBottomGap(int numberRowBottomGapDp) {
+        return new KeyboardSettings(
+                keyboardMode,
+                handednessMode,
+                leftMarginDp,
+                rightMarginDp,
+                hangulKeyboardHeightDp,
+                englishKeyboardHeightDp,
+                showHangulNumberRow,
+                showEnglishNumberRow,
+                forceNumberRow,
+                hapticFeedbackEnabled,
+                hitSlopDp,
+                gestureThresholdDp,
+                touchYOffsetDp,
+                repeatStartDelayMs,
+                repeatIntervalMs,
+                englishDoubleSpacePeriodEnabled,
+                enterKeyLabel,
+                keyIdleColor,
+                keyPressedColor,
+                keyboardBackgroundColor,
+                accentColor,
+                secondaryColor,
+                functionKeyColor,
+                accentKeyColor,
+                borderColor,
+                keyBorderWidthDp,
+                keyRoundnessDp,
+                keyGapDp,
+                keyDepthEnabled,
+                keyDepthDp,
+                customDepthColorEnabled,
+                depthColor,
+                fontFamily,
+                primaryTextSizePercent,
+                secondaryTextSizePercent,
+                primaryTextBold,
+                primaryTextItalic,
+                secondaryTextBold,
+                secondaryTextItalic,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                showBeginnerTooltipPreview,
+                hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
+                keyColorOverrides,
+                hangulLeftPaddingDp,
+                hangulRightPaddingDp,
+                englishLeftPaddingDp,
+                englishRightPaddingDp,
+                hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
+                keyboardBottomPaddingDp,
+                bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -1084,7 +1160,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -1115,6 +1190,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -1296,7 +1372,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -1327,6 +1402,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -1443,6 +1519,35 @@ final class KeyboardSettings {
                 hitSlopDp,
                 thresholdDp,
                 touchYOffsetDp,
+                repeatStartDelayMs,
+                repeatIntervalMs,
+                englishDoubleSpacePeriodEnabled,
+                enterKeyLabel,
+                keyIdleColor,
+                keyPressedColor,
+                keyboardBackgroundColor,
+                accentColor,
+                secondaryColor,
+                keyRoundnessDp,
+                keyBorderWidthDp,
+                keyGapDp,
+                hangulSpecialColumnPercent);
+    }
+
+    KeyboardSettings withTouchYOffset(int offsetDp) {
+        return copy(
+                keyboardMode,
+                handednessMode,
+                leftMarginDp,
+                rightMarginDp,
+                keyboardHeightDp,
+                showHangulNumberRow,
+                showEnglishNumberRow,
+                forceNumberRow,
+                hapticFeedbackEnabled,
+                hitSlopDp,
+                gestureThresholdDp,
+                offsetDp,
                 repeatStartDelayMs,
                 repeatIntervalMs,
                 englishDoubleSpacePeriodEnabled,
@@ -1579,15 +1684,14 @@ final class KeyboardSettings {
                 hangulSpecialColumnPercent);
     }
 
-    KeyboardSettings withFunctionKeyColors(int functionKeyColor, int primaryFunctionKeyColor) {
+    KeyboardSettings withModifierKeyColor(int modifierKeyColor) {
         return withExtendedThemeColors(
                 keyIdleColor,
                 keyPressedColor,
                 keyboardBackgroundColor,
                 accentColor,
                 secondaryColor,
-                functionKeyColor,
-                primaryFunctionKeyColor,
+                modifierKeyColor,
                 accentKeyColor,
                 borderColor,
                 customDepthColorEnabled,
@@ -1601,7 +1705,6 @@ final class KeyboardSettings {
             int accentColor,
             int secondaryColor,
             int functionKeyColor,
-            int primaryFunctionKeyColor,
             int accentKeyColor,
             int borderColor,
             boolean customDepthColorEnabled,
@@ -1630,7 +1733,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -1661,6 +1763,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -1784,7 +1887,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -1815,6 +1917,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -1834,7 +1937,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 customDepthColorEnabled,
@@ -1884,7 +1986,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -1915,6 +2016,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -1954,7 +2056,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -1985,6 +2086,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -2021,7 +2123,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -2052,6 +2153,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -2088,7 +2190,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -2119,6 +2220,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -2155,7 +2257,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -2186,6 +2287,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -2222,7 +2324,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -2253,6 +2354,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 enabled,
                 modifierIconThemePackId,
@@ -2297,7 +2399,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -2328,6 +2429,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 themePackId,
@@ -2372,7 +2474,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -2403,6 +2504,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -2439,7 +2541,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -2470,6 +2571,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -2506,7 +2608,6 @@ final class KeyboardSettings {
                 accentColor,
                 secondaryColor,
                 functionKeyColor,
-                primaryFunctionKeyColor,
                 accentKeyColor,
                 borderColor,
                 keyBorderWidthDp,
@@ -2537,6 +2638,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 legendStylePreset,
                 pointKeycapStyleEnabled,
                 modifierIconThemePackId,
@@ -2575,7 +2677,6 @@ final class KeyboardSettings {
                 theme.accentColor,
                 theme.secondaryColor,
                 theme.functionKeyColor,
-                theme.primaryFunctionKeyColor,
                 theme.accentKeyColor,
                 theme.borderColor,
                 theme.keyBorderWidthDp,
@@ -2606,6 +2707,7 @@ final class KeyboardSettings {
                 keyboardTopPaddingDp,
                 keyboardBottomPaddingDp,
                 bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
                 theme.legendStylePreset,
                 theme.pointKeycapStyleEnabled,
                 theme.modifierIconThemePackId,
@@ -2659,7 +2761,7 @@ final class KeyboardSettings {
     }
 
     int measuredHeightDp() {
-        return keyboardHeightDp + (showNumberRow ? NUMBER_ROW_HEIGHT_DP : 0);
+        return keyboardHeightDp + (showNumberRow ? NUMBER_ROW_HEIGHT_DP + numberRowBottomGapDp : 0);
     }
 
     private int activeHeightForMode(KeyboardMode mode) {
@@ -2753,7 +2855,3 @@ final class KeyboardSettings {
         return 0xFF000000 | (color & 0x00FFFFFF);
     }
 }
-
-
-
-

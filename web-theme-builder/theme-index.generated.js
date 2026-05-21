@@ -40,9 +40,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#050505",
-        "functionKey": "#111111",
-        "primaryFunctionKey": "#000000",
+        "alphaKey": "#050505",
+        "modifierKey": "#111111",
         "accentKey": "#000000",
         "keyPressed": "#2D2D2D",
         "keyboardBackground": "#000000",
@@ -67,7 +66,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -131,9 +130,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#211F26",
-        "functionKey": "#2B2930",
-        "primaryFunctionKey": "#17151B",
+        "alphaKey": "#211F26",
+        "modifierKey": "#2B2930",
         "accentKey": "#17151B",
         "keyPressed": "#4A4458",
         "keyboardBackground": "#141218",
@@ -158,7 +156,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -222,9 +220,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#FFFBFE",
-        "functionKey": "#ECE6F0",
-        "primaryFunctionKey": "#E1DCE8",
+        "alphaKey": "#FFFBFE",
+        "modifierKey": "#ECE6F0",
         "accentKey": "#E1DCE8",
         "keyPressed": "#D0C4DB",
         "keyboardBackground": "#F3EDF7",
@@ -249,7 +246,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -301,9 +298,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#8C929D",
-        "functionKey": "#1E2028",
-        "primaryFunctionKey": "#161820",
+        "alphaKey": "#8C929D",
+        "modifierKey": "#1E2028",
         "accentKey": "#B94D61",
         "keyPressed": "#5A606A",
         "keyboardBackground": "#111216",
@@ -328,7 +324,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "keyTextColorOverrides": {
@@ -350,11 +346,13 @@ window.S3_THEME_INDEX = [
       },
       "accentPolicy": {
         "qwerty": [
-          "modCtrl"
+          "modMeta",
+          "qwertyShift",
+          "backspace"
         ],
         "dingul": [
-          "modEnter",
-          "modShift"
+          "modCtrl",
+          "dingulDot"
         ]
       }
     }
@@ -389,9 +387,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#E8E0D3",
-        "functionKey": "#2E6687",
-        "primaryFunctionKey": "#25536F",
+        "alphaKey": "#E8E0D3",
+        "modifierKey": "#2E6687",
         "accentKey": "#E66D61",
         "keyPressed": "#CBBFAE",
         "keyboardBackground": "#9DA7A4",
@@ -416,7 +413,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "keyTextColorOverrides": {
@@ -438,11 +435,13 @@ window.S3_THEME_INDEX = [
       },
       "accentPolicy": {
         "qwerty": [
-          "modCtrl"
+          "modMeta",
+          "qwertyShift",
+          "backspace"
         ],
         "dingul": [
-          "modEnter",
-          "modShift"
+          "modCtrl",
+          "dingulDot"
         ]
       }
     }
@@ -485,9 +484,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#20242C",
-        "functionKey": "#252B34",
-        "primaryFunctionKey": "#252B34",
+        "alphaKey": "#252B34",
+        "modifierKey": "#20242C",
         "accentKey": "#181C23",
         "keyPressed": "#2C313C",
         "keyboardBackground": "#101318",
@@ -504,7 +502,7 @@ window.S3_THEME_INDEX = [
         "depthDp": 1
       },
       "additionalNumberRow": {
-        "colorMode": "full_mod"
+        "colorMode": "full_alpha"
       },
       "typography": {
         "fontFamily": "noto_sans_kr",
@@ -512,7 +510,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "icons": {
@@ -551,6 +549,16 @@ window.S3_THEME_INDEX = [
         "tap:b": "#F77F00",
         "tap:n": "#EF476F",
         "tap:m": "#FFD166",
+        "tap:1": "#EF476F",
+        "tap:2": "#FFD166",
+        "tap:3": "#06D6A0",
+        "tap:4": "#4CC9F0",
+        "tap:5": "#B5179E",
+        "tap:6": "#F77F00",
+        "tap:7": "#EF476F",
+        "tap:8": "#FFD166",
+        "tap:9": "#06D6A0",
+        "tap:0": "#4CC9F0",
         "tap:ㄱ": "#06D6A0",
         "tap:ㄴ": "#4CC9F0",
         "tap:ㅢ": "#B5179E",
@@ -581,29 +589,29 @@ window.S3_THEME_INDEX = [
         "shiftIndicator": "#FFFFFF"
       },
       "keyBackgroundColorOverrides": {
-        "?": "#20242C",
-        ".": "#252B34",
-        "/": "#252B34",
-        "enter": "#252B34",
-        "backspace": "#252B34",
-        "shift": "#252B34",
-        "language": "#252B34",
-        "settings": "#252B34",
-        "options": "#252B34",
-        "reserved": "#252B34",
-        "space": "#20242C"
+        "?": "#252B34",
+        ".": "#20242C",
+        "/": "#20242C",
+        "enter": "#20242C",
+        "backspace": "#20242C",
+        "shift": "#20242C",
+        "language": "#20242C",
+        "settings": "#20242C",
+        "options": "#20242C",
+        "reserved": "#20242C",
+        "space": "#252B34"
       },
       "dingulColors": {
         "alpha": {
           "foreground": "#F4F6FA",
-          "background": "#20242C"
+          "background": "#252B34"
         },
         "mod": {
           "foreground": "#AAB4C2",
-          "background": "#252B34"
+          "background": "#20242C"
         },
         "modInv": {
-          "foreground": "#252B34",
+          "foreground": "#F4F6FA",
           "background": "#181C23"
         }
       }
@@ -647,9 +655,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#F6F3EA",
-        "functionKey": "#D8D4CA",
-        "primaryFunctionKey": "#D8D4CA",
+        "alphaKey": "#F6F3EA",
+        "modifierKey": "#D8D4CA",
         "accentKey": "#CFCBC0",
         "keyPressed": "#E2DED3",
         "keyboardBackground": "#ECE8DD",
@@ -666,7 +673,7 @@ window.S3_THEME_INDEX = [
         "depthDp": 1
       },
       "additionalNumberRow": {
-        "colorMode": "full_mod"
+        "colorMode": "full_alpha"
       },
       "typography": {
         "fontFamily": "noto_sans_kr",
@@ -674,7 +681,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "icons": {
@@ -713,6 +720,16 @@ window.S3_THEME_INDEX = [
         "tap:b": "#FF6B6B",
         "tap:n": "#E63946",
         "tap:m": "#F4A261",
+        "tap:1": "#E63946",
+        "tap:2": "#F4A261",
+        "tap:3": "#2A9D8F",
+        "tap:4": "#457B9D",
+        "tap:5": "#7B2CBF",
+        "tap:6": "#FF6B6B",
+        "tap:7": "#E63946",
+        "tap:8": "#F4A261",
+        "tap:9": "#2A9D8F",
+        "tap:0": "#457B9D",
         "tap:ㄱ": "#2A9D8F",
         "tap:ㄴ": "#457B9D",
         "tap:ㅢ": "#7B2CBF",
@@ -765,7 +782,7 @@ window.S3_THEME_INDEX = [
           "background": "#D8D4CA"
         },
         "modInv": {
-          "foreground": "#D8D4CA",
+          "foreground": "#1D2430",
           "background": "#CFCBC0"
         }
       }
@@ -801,9 +818,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#44475A",
-        "functionKey": "#343746",
-        "primaryFunctionKey": "#282A36",
+        "alphaKey": "#44475A",
+        "modifierKey": "#343746",
         "accentKey": "#363949",
         "keyPressed": "#50546A",
         "keyboardBackground": "#1E2029",
@@ -828,7 +844,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "keyTextColorOverrides": {
@@ -880,9 +896,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#B9C7CD",
-        "functionKey": "#132633",
-        "primaryFunctionKey": "#0B1720",
+        "alphaKey": "#B9C7CD",
+        "modifierKey": "#132633",
         "accentKey": "#27AFA3",
         "keyPressed": "#8EA2A9",
         "keyboardBackground": "#DDE4DE",
@@ -907,7 +922,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "keyTextColorOverrides": {
@@ -929,11 +944,13 @@ window.S3_THEME_INDEX = [
       },
       "accentPolicy": {
         "qwerty": [
-          "modCtrl"
+          "modMeta",
+          "qwertyShift",
+          "backspace"
         ],
         "dingul": [
-          "modEnter",
-          "modShift"
+          "modCtrl",
+          "dingulDot"
         ]
       }
     }
@@ -980,9 +997,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#10151B",
-        "functionKey": "#151B22",
-        "primaryFunctionKey": "#161D25",
+        "alphaKey": "#10151B",
+        "modifierKey": "#151B22",
         "accentKey": "#28161C",
         "keyPressed": "#26313B",
         "keyboardBackground": "#090D12",
@@ -1007,7 +1023,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "icons": {
@@ -1123,9 +1139,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#616A70",
-        "functionKey": "#2A2F34",
-        "primaryFunctionKey": "#1C2024",
+        "alphaKey": "#616A70",
+        "modifierKey": "#2A2F34",
         "accentKey": "#2E6F70",
         "keyPressed": "#4A5258",
         "keyboardBackground": "#555B60",
@@ -1150,7 +1165,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "keyTextColorOverrides": {
@@ -1169,6 +1184,17 @@ window.S3_THEME_INDEX = [
           "foreground": "#2A2F34",
           "background": "#2E6F70"
         }
+      },
+      "accentPolicy": {
+        "qwerty": [
+          "modMeta",
+          "qwertyShift",
+          "backspace"
+        ],
+        "dingul": [
+          "modCtrl",
+          "dingulDot"
+        ]
       }
     }
   },
@@ -1206,9 +1232,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#EDE8DD",
-        "functionKey": "#2A2C2F",
-        "primaryFunctionKey": "#1B1D20",
+        "alphaKey": "#EDE8DD",
+        "modifierKey": "#2A2C2F",
         "accentKey": "#2F3235",
         "keyPressed": "#D6D0C3",
         "keyboardBackground": "#111214",
@@ -1233,13 +1258,23 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "icons": {
         "keyDisplayPackId": "git-commands"
       },
       "keyTextColorOverrides": {
+        "options": "#E6B35C",
+        "settings": "#B78DC7",
+        "reserved": "#83A95B",
+        "language": "#5BA7BA",
+        "space": "#F0E9DB",
+        "enter": "#83A95B",
+        "backspace": "#D66A72",
+        "shift": "#D58A4D",
+        ".": "#5BA7BA",
+        "/": "#B78DC7",
         "shiftIndicator": "#7BBE64"
       },
       "dingulColors": {
@@ -1292,9 +1327,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#6F787D",
-        "functionKey": "#252A2E",
-        "primaryFunctionKey": "#171A1E",
+        "alphaKey": "#6F787D",
+        "modifierKey": "#252A2E",
         "accentKey": "#252A2E",
         "keyPressed": "#555F64",
         "keyboardBackground": "#101214",
@@ -1319,13 +1353,23 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "icons": {
         "keyDisplayPackId": "git-commands"
       },
       "keyTextColorOverrides": {
+        "options": "#EBCB8B",
+        "settings": "#B48EAD",
+        "reserved": "#A3BE8C",
+        "language": "#88C0D0",
+        "space": "#D7D1C5",
+        "enter": "#A3BE8C",
+        "backspace": "#BF616A",
+        "shift": "#D08770",
+        ".": "#88C0D0",
+        "/": "#B48EAD",
         "shiftIndicator": "#6CBF84"
       },
       "dingulColors": {
@@ -1378,9 +1422,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#3A3438",
-        "functionKey": "#171619",
-        "primaryFunctionKey": "#171619",
+        "alphaKey": "#3A3438",
+        "modifierKey": "#171619",
         "accentKey": "#D9A3AA",
         "keyPressed": "#4B4248",
         "keyboardBackground": "#111114",
@@ -1405,7 +1448,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "icons": {
@@ -1470,9 +1513,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#F2EDE8",
-        "functionKey": "#242126",
-        "primaryFunctionKey": "#242126",
+        "alphaKey": "#F2EDE8",
+        "modifierKey": "#242126",
         "accentKey": "#E8A5AE",
         "keyPressed": "#E2D8D4",
         "keyboardBackground": "#ECE6E2",
@@ -1497,7 +1539,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "icons": {
@@ -1570,9 +1612,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#F5F5F5",
-        "functionKey": "#E8E8E8",
-        "primaryFunctionKey": "#DDDDDD",
+        "alphaKey": "#F5F5F5",
+        "modifierKey": "#E8E8E8",
         "accentKey": "#DDDDDD",
         "keyPressed": "#CFCFCF",
         "keyboardBackground": "#EDEDED",
@@ -1597,7 +1638,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -1661,9 +1702,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#FFFFFF",
-        "functionKey": "#EFEFEF",
-        "primaryFunctionKey": "#E0E0E0",
+        "alphaKey": "#FFFFFF",
+        "modifierKey": "#EFEFEF",
         "accentKey": "#E0E0E0",
         "keyPressed": "#C8D7EA",
         "keyboardBackground": "#F3F4F6",
@@ -1688,7 +1728,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -1754,9 +1794,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#2B2D31",
-        "functionKey": "#3A3D43",
-        "primaryFunctionKey": "#202328",
+        "alphaKey": "#2B2D31",
+        "modifierKey": "#3A3D43",
         "accentKey": "#202328",
         "keyPressed": "#5A5E66",
         "keyboardBackground": "#1D1F23",
@@ -1781,7 +1820,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -1847,9 +1886,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#FBFBFD",
-        "functionKey": "#EEF0F4",
-        "primaryFunctionKey": "#E4E7ED",
+        "alphaKey": "#FBFBFD",
+        "modifierKey": "#EEF0F4",
         "accentKey": "#E4E7ED",
         "keyPressed": "#D6D8DD",
         "keyboardBackground": "#D1D5DB",
@@ -1874,7 +1912,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -1936,9 +1974,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#FCFBFF",
-        "functionKey": "#F0ECF8",
-        "primaryFunctionKey": "#E7E0F2",
+        "alphaKey": "#FCFBFF",
+        "modifierKey": "#F0ECF8",
         "accentKey": "#E7E0F2",
         "keyPressed": "#D9CFE7",
         "keyboardBackground": "#F4F0FA",
@@ -1963,7 +2000,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -2027,9 +2064,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#F6F7F9",
-        "functionKey": "#E7EAEE",
-        "primaryFunctionKey": "#DCE2EA",
+        "alphaKey": "#F6F7F9",
+        "modifierKey": "#E7EAEE",
         "accentKey": "#DCE2EA",
         "keyPressed": "#C9D2DC",
         "keyboardBackground": "#EEF1F4",
@@ -2054,7 +2090,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -2120,9 +2156,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#30343A",
-        "functionKey": "#3B414A",
-        "primaryFunctionKey": "#252B32",
+        "alphaKey": "#30343A",
+        "modifierKey": "#3B414A",
         "accentKey": "#252B32",
         "keyPressed": "#596271",
         "keyboardBackground": "#20242A",
@@ -2147,7 +2182,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -2211,10 +2246,9 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#202225",
-        "functionKey": "#2A2C31",
-        "primaryFunctionKey": "#111318",
-        "accentKey": "#FF9F32",
+        "alphaKey": "#202225",
+        "modifierKey": "#1A1C20",
+        "accentKey": "#1A1C20",
         "keyPressed": "#3C4048",
         "keyboardBackground": "#111214",
         "border": "#45484F",
@@ -2238,7 +2272,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 78,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "keyTextColorOverrides": {
@@ -2268,14 +2302,24 @@ window.S3_THEME_INDEX = [
         "tap:b": "#FFD95F",
         "tap:n": "#F28C4B",
         "tap:m": "#C2A2FF",
+        "tap:1": "#C75DFF",
+        "tap:2": "#4DE4D2",
+        "tap:3": "#FF9B48",
+        "tap:4": "#FF5DAE",
+        "tap:5": "#FFD25A",
+        "tap:6": "#9C7CFF",
+        "tap:7": "#36E7F4",
+        "tap:8": "#B66BFF",
+        "tap:9": "#FFC857",
+        "tap:0": "#FF6FAE",
         "shift": "#E9D64A",
         "backspace": "#FF5DAE",
         "bksp": "#FF5DAE",
         "space": "#4DE4D2",
         "lang": "#4DE4D2",
         "enter": "#FF9F32",
-        ".": "#111318",
-        "/": "#111318",
+        ".": "#B8A9BF",
+        "/": "#B8A9BF",
         ",;": "#C78AFF",
         "@/": "#4DE4D2",
         "language": "#4DE4D2",
@@ -2305,19 +2349,12 @@ window.S3_THEME_INDEX = [
         },
         "mod": {
           "foreground": "#B8A9BF",
-          "background": "#2A2C31"
+          "background": "#1A1C20"
         },
         "modInv": {
-          "foreground": "#111318",
-          "background": "#FF9F32"
+          "foreground": "#B8A9BF",
+          "background": "#1A1C20"
         }
-      },
-      "accentPolicy": {
-        "qwerty": [],
-        "dingul": [
-          "modEnter",
-          "modShift"
-        ]
       }
     }
   },
@@ -2363,9 +2400,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#FFFDF8",
-        "functionKey": "#ECE7DE",
-        "primaryFunctionKey": "#ECE7DE",
+        "alphaKey": "#FFFDF8",
+        "modifierKey": "#ECE7DE",
         "accentKey": "#ECE7DE",
         "keyPressed": "#E8E2D8",
         "keyboardBackground": "#FFFFFF",
@@ -2390,7 +2426,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 78,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "keyTextColorOverrides": {
@@ -2420,6 +2456,16 @@ window.S3_THEME_INDEX = [
         "tap:b": "#987800",
         "tap:n": "#B9671E",
         "tap:m": "#7B5CC5",
+        "tap:1": "#7C3CB3",
+        "tap:2": "#008B82",
+        "tap:3": "#B85F19",
+        "tap:4": "#C02666",
+        "tap:5": "#A06F00",
+        "tap:6": "#6D4BC1",
+        "tap:7": "#007C89",
+        "tap:8": "#7D43C6",
+        "tap:9": "#B06F00",
+        "tap:0": "#B52A62",
         "shift": "#8E7600",
         "backspace": "#C02666",
         "bksp": "#C02666",
@@ -2504,9 +2550,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#2E3440",
-        "functionKey": "#3B4252",
-        "primaryFunctionKey": "#252B35",
+        "alphaKey": "#2E3440",
+        "modifierKey": "#3B4252",
         "accentKey": "#252B35",
         "keyPressed": "#4C566A",
         "keyboardBackground": "#242933",
@@ -2531,7 +2576,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -2593,9 +2638,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#F8FAFC",
-        "functionKey": "#EEF2F7",
-        "primaryFunctionKey": "#E4EAF2",
+        "alphaKey": "#F8FAFC",
+        "modifierKey": "#EEF2F7",
         "accentKey": "#E4EAF2",
         "keyPressed": "#D8DEE9",
         "keyboardBackground": "#E5E9F0",
@@ -2620,7 +2664,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -2684,9 +2728,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#FAFAFA",
-        "functionKey": "#EFEFEF",
-        "primaryFunctionKey": "#E5E5E5",
+        "alphaKey": "#FAFAFA",
+        "modifierKey": "#EFEFEF",
         "accentKey": "#E5E5E5",
         "keyPressed": "#DADADA",
         "keyboardBackground": "#F4F4F4",
@@ -2711,7 +2754,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -2775,9 +2818,8 @@ window.S3_THEME_INDEX = [
         ]
       },
       "colors": {
-        "keyIdle": "#F7F9FC",
-        "functionKey": "#E9EEF5",
-        "primaryFunctionKey": "#DFE7F0",
+        "alphaKey": "#F7F9FC",
+        "modifierKey": "#E9EEF5",
         "accentKey": "#DFE7F0",
         "keyPressed": "#D7E2EF",
         "keyboardBackground": "#EAF0F6",
@@ -2802,7 +2844,7 @@ window.S3_THEME_INDEX = [
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": false,
+        "secondaryTextBold": true,
         "secondaryTextItalic": false
       },
       "dingulColors": {

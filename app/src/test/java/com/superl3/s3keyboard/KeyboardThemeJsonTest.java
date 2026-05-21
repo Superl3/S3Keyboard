@@ -18,9 +18,7 @@ public final class KeyboardThemeJsonTest {
                         0x00333333,
                         0x00444444,
                         0x00555555,
-                        0x00666666,
-                        0x00777777,
-                        0x00888888,
+                        0x00666666,                        0x00888888,
                         0x00999999,
                         true,
                         0x00AAAAAA)
@@ -49,13 +47,17 @@ public final class KeyboardThemeJsonTest {
                 KeyboardThemeJson.exportTheme(settings, "Soft Classic", "local", null));
         String exported = KeyboardThemeJson.exportTheme(settings, "Soft Classic", "local", null);
 
+        assertEquals(true, exported.contains("\"alphaKey\""));
+        assertEquals(true, exported.contains("\"modifierKey\""));
+        assertEquals(false, exported.contains("\"keyIdle\""));
+        assertEquals(false, exported.contains("\"functionKey\""));
+        assertEquals(false, exported.contains("\"primaryFunctionKey\""));
         assertEquals(0xFF111111, imported.keyIdleColor);
         assertEquals(0xFF222222, imported.keyPressedColor);
         assertEquals(0xFF333333, imported.keyboardBackgroundColor);
         assertEquals(0xFF444444, imported.accentColor);
         assertEquals(0xFF555555, imported.secondaryColor);
         assertEquals(0xFF666666, imported.functionKeyColor);
-        assertEquals(0xFF777777, imported.primaryFunctionKeyColor);
         assertEquals(0xFF888888, imported.accentKeyColor);
         assertEquals(0xFF999999, imported.borderColor);
         assertEquals(true, imported.customDepthColorEnabled);
@@ -332,11 +334,134 @@ public final class KeyboardThemeJsonTest {
         KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
 
         assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:settings"));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:options"));
         assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:enter"));
         assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:."));
         assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:/"));
         assertEquals(0xFF111111, (int) imported.keyColorOverrides.get("settings"));
         assertEquals(0xFF111111, (int) imported.keyColorOverrides.get("."));
+    }
+
+    @Test
+    public void importsAccentPolicyWithIndividualCommandsAndSpaceRole() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"colors\":{"
+                + "\"alphaKey\":\"#101010\","
+                + "\"modifierKey\":\"#202020\","
+                + "\"accent\":\"#111111\","
+                + "\"secondary\":\"#222222\","
+                + "\"accentKey\":\"#FF9900\""
+                + "},"
+                + "\"dingulColors\":{"
+                + "\"alpha\":{\"foreground\":\"#AAAAAA\",\"background\":\"#BBBBBB\"},"
+                + "\"mod\":{\"foreground\":\"#CCCCCC\",\"background\":\"#DDDDDD\"},"
+                + "\"modInv\":{\"foreground\":\"#111111\",\"background\":\"#FF9900\"}"
+                + "},"
+                + "\"accentPolicy\":{"
+                + "\"qwerty\":[\"qwertyShift\",\"backspace\",\"settingsEnter\",\"escPoint\"],"
+                + "\"dingul\":[\"dingulDot\",\"escPoint\"],"
+                + "\"spacebar\":\"mod\","
+                + "\"question\":\"accent\""
+                + "}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:shift"));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:backspace"));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:options"));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:1"));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:\u3131"));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:."));
+        assertEquals(false, imported.keyColorOverrides.containsKey("background:/"));
+        assertEquals(0xFFDDDDDD, (int) imported.keyColorOverrides.get("background:space"));
+        assertEquals(0xFFCCCCCC, (int) imported.keyColorOverrides.get("space"));
+        assertEquals(0xFFFF9900, (int) imported.keyColorOverrides.get("background:?"));
+        assertEquals(0xFF111111, (int) imported.keyColorOverrides.get("?"));
+    }
+
+    @Test
+    public void colorfulThemesLockUserAccentPlacement() {
+        String colorful = "{"
+                + "\"schemaVersion\":1,"
+                + "\"metadata\":{\"features\":[\"colorfulForeground\"]},"
+                + "\"colors\":{\"alphaKey\":\"#101010\",\"modifierKey\":\"#202020\"}"
+                + "}";
+        String normal = "{"
+                + "\"schemaVersion\":1,"
+                + "\"colors\":{\"alphaKey\":\"#101010\",\"modifierKey\":\"#202020\"}"
+                + "}";
+
+        assertEquals(true, KeyboardThemeJson.locksUserAccentPlacement(colorful));
+        assertEquals(false, KeyboardThemeJson.locksUserAccentPlacement(normal));
+    }
+
+    @Test
+    public void importsImplicitAccentPolicyWhenAccentKeyIsDistinct() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"colors\":{"
+                + "\"alphaKey\":\"#101010\","
+                + "\"modifierKey\":\"#202020\","
+                + "\"accentKey\":\"#F06030\""
+                + "},"
+                + "\"dingulColors\":{"
+                + "\"modInv\":{\"foreground\":\"#111111\",\"background\":\"#F06030\"}"
+                + "}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(0xFFF06030, (int) imported.keyColorOverrides.get("background:reserved"));
+        assertEquals(0xFFF06030, (int) imported.keyColorOverrides.get("background:language"));
+        assertEquals(0xFFF06030, (int) imported.keyColorOverrides.get("background:shift"));
+        assertEquals(0xFFF06030, (int) imported.keyColorOverrides.get("background:backspace"));
+        assertEquals(0xFFF06030, (int) imported.keyColorOverrides.get("background:settings"));
+        assertEquals(0xFFF06030, (int) imported.keyColorOverrides.get("background:enter"));
+        assertEquals(0xFFF06030, (int) imported.keyColorOverrides.get("background:."));
+        assertEquals(false, imported.keyColorOverrides.containsKey("background:/"));
+        assertEquals(0xFF111111, (int) imported.keyColorOverrides.get("settings"));
+        assertEquals(0xFF111111, (int) imported.keyColorOverrides.get("language"));
+        assertEquals(0xFF111111, (int) imported.keyColorOverrides.get("."));
+    }
+
+    @Test
+    public void skipsImplicitAccentPolicyForTwoToneThemes() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"colors\":{"
+                + "\"alphaKey\":\"#101010\","
+                + "\"modifierKey\":\"#202020\","
+                + "\"accentKey\":\"#202020\""
+                + "}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(false, imported.keyColorOverrides.containsKey("background:settings"));
+        assertEquals(false, imported.keyColorOverrides.containsKey("background:."));
+    }
+
+    @Test
+    public void skipsExplicitAccentPolicyForTwoToneThemes() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"colors\":{"
+                + "\"alphaKey\":\"#101010\","
+                + "\"modifierKey\":\"#202020\","
+                + "\"accentKey\":\"#202020\""
+                + "},"
+                + "\"accentPolicy\":{"
+                + "\"qwerty\":[\"modCtrl\"],"
+                + "\"dingul\":[\"modEnter\",\"modShift\"]"
+                + "}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(false, imported.keyColorOverrides.containsKey("background:settings"));
+        assertEquals(false, imported.keyColorOverrides.containsKey("background:."));
     }
 
     @Test

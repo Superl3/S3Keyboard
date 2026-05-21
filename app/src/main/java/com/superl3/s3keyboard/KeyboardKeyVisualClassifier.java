@@ -6,26 +6,28 @@ final class KeyboardKeyVisualClassifier {
 
     static KeyVisualRole roleFor(KeyboardSettings settings, GestureKey key) {
         if (key == null) {
-            return KeyVisualRole.NORMAL;
-        }
-        if (isPrimaryFunctionKey(key)) {
-            return KeyVisualRole.PRIMARY_FUNCTION;
+            return KeyVisualRole.ALPHA;
         }
         if (isDingulVowelCommandKey(key)) {
-            return KeyVisualRole.NORMAL;
+            return KeyVisualRole.ALPHA;
         }
         if (settings != null && isPointKeycapCandidate(settings, key)) {
-            return settings.pointKeycapStyleEnabled
-                    ? KeyVisualRole.PRIMARY_FUNCTION
-                    : KeyVisualRole.FUNCTION;
+            return KeyVisualRole.MODIFIER;
         }
         if (key.icon != KeyIcon.NONE || KeyboardCommands.isCommand(key.tap)) {
-            return KeyVisualRole.FUNCTION;
+            return KeyVisualRole.MODIFIER;
         }
-        return KeyVisualRole.NORMAL;
+        return KeyVisualRole.ALPHA;
     }
 
     static int colorFor(KeyboardSettings settings, GestureKey key) {
+        if (isAdditionalNumberRowKey(key)) {
+            Integer exactOverride = exactBackgroundOverrideColorFor(settings, key);
+            if (exactOverride != null) {
+                return exactOverride;
+            }
+            return additionalNumberRowColor(settings, key);
+        }
         Integer override = backgroundOverrideColorFor(settings, key);
         if (override != null) {
             return override;
@@ -34,34 +36,33 @@ final class KeyboardKeyVisualClassifier {
         if (role == KeyVisualRole.ACCENT) {
             return settings.accentKeyColor;
         }
-        if (role == KeyVisualRole.PRIMARY_FUNCTION) {
-            return settings.primaryFunctionKeyColor;
-        }
-        if (isAdditionalNumberRowKey(key)) {
-            return additionalNumberRowColor(settings, key);
-        }
-        return role == KeyVisualRole.NORMAL ? settings.keyIdleColor : settings.functionKeyColor;
+        return role == KeyVisualRole.ALPHA ? settings.keyIdleColor : settings.functionKeyColor;
     }
 
     static int textColorFor(KeyboardSettings settings, GestureKey key) {
+        if (isAdditionalNumberRowKey(key)) {
+            Integer exactOverride = exactOverrideColorFor(settings, key);
+            if (exactOverride != null) {
+                return exactOverride;
+            }
+            return textColorForRole(settings, additionalNumberRowRole(settings, key));
+        }
         Integer override = overrideColorFor(settings, key);
         if (override != null) {
             return override;
         }
-        if (isAdditionalNumberRowKey(key)) {
-            return additionalNumberRowRole(settings, key) == KeyVisualRole.NORMAL
-                    ? settings.accentColor
-                    : settings.secondaryColor;
-        }
         KeyVisualRole role = roleFor(settings, key);
-        return role == KeyVisualRole.NORMAL ? settings.accentColor : settings.secondaryColor;
+        return textColorForRole(settings, role);
     }
 
     static int hintColorFor(KeyboardSettings settings, GestureKey key) {
         if (isAdditionalNumberRowKey(key)) {
             return textColorFor(settings, key);
         }
-        return settings.secondaryColor;
+        int background = colorFor(settings, key);
+        return contrastRatio(settings.secondaryColor, background) >= 1.6
+                ? settings.secondaryColor
+                : textColorFor(settings, key);
     }
 
     static int iconColorFor(KeyboardSettings settings, GestureKey key, boolean selected) {
@@ -87,16 +88,6 @@ final class KeyboardKeyVisualClassifier {
                 && ModifierIconCatalog.GLYPH_DOT.equals(override.value);
     }
 
-    static boolean isPrimaryFunctionKey(GestureKey key) {
-        if (key == null) {
-            return false;
-        }
-        return KeyboardCommands.CMD_DELETE.equals(key.tap)
-                || KeyboardCommands.CMD_ENTER.equals(key.tap)
-                || KeyboardCommands.CMD_SHIFT_ONCE.equals(key.tap)
-                || KeyboardCommands.CMD_SHIFT_LOCK.equals(key.tap);
-    }
-
     private static Integer overrideColorFor(KeyboardSettings settings, GestureKey key) {
         if (settings == null || key == null || settings.keyColorOverrides.isEmpty()) {
             return null;
@@ -104,6 +95,13 @@ final class KeyboardKeyVisualClassifier {
         Integer color = findOverride(settings, "label:" + key.label);
         if (color != null) {
             return color;
+        }
+        if (isDingulDotDotKey(key)) {
+            color = findOverride(settings, "..");
+            if (color != null) {
+                return color;
+            }
+            return dingulAlphaOverrideColorFor(settings, false);
         }
         color = findOverride(settings, "tap:" + key.tap);
         if (color != null) {
@@ -116,12 +114,6 @@ final class KeyboardKeyVisualClassifier {
         color = findOverride(settings, key.label);
         if (color != null) {
             return color;
-        }
-        if (". .".equals(key.label)) {
-            color = findOverride(settings, "..");
-            if (color != null) {
-                return color;
-            }
         }
         if (key.icon != KeyIcon.NONE) {
             color = findOverride(settings, "icon:" + key.icon);
@@ -165,7 +157,8 @@ final class KeyboardKeyVisualClassifier {
                 return color;
             }
         }
-        if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)) {
+        if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)
+                || KeyboardCommands.CMD_QUICK_SETTINGS.equals(key.tap)) {
             color = findOverride(settings, "options");
             if (color != null) {
                 return color;
@@ -216,6 +209,52 @@ final class KeyboardKeyVisualClassifier {
                 && ModifierIconCatalog.PACK_METROPOLIS_POINTS.equals(ModifierIconCatalog.effectivePackId(settings));
     }
 
+    private static Integer exactOverrideColorFor(KeyboardSettings settings, GestureKey key) {
+        if (settings == null || key == null || settings.keyColorOverrides.isEmpty()) {
+            return null;
+        }
+        Integer color = findOverride(settings, "label:" + key.label);
+        if (color != null) {
+            return color;
+        }
+        if (isDingulDotDotKey(key)) {
+            color = findOverride(settings, "..");
+            return color == null ? null : color;
+        }
+        color = findOverride(settings, "tap:" + key.tap);
+        if (color != null) {
+            return color;
+        }
+        color = findOverride(settings, key.tap);
+        if (color != null) {
+            return color;
+        }
+        return findOverride(settings, key.label);
+    }
+
+    private static Integer exactBackgroundOverrideColorFor(KeyboardSettings settings, GestureKey key) {
+        if (settings == null || key == null || settings.keyColorOverrides.isEmpty()) {
+            return null;
+        }
+        Integer color = findBackgroundOverride(settings, "label:" + key.label);
+        if (color != null) {
+            return color;
+        }
+        if (isDingulDotDotKey(key)) {
+            color = findBackgroundOverride(settings, "..");
+            return color == null ? null : color;
+        }
+        color = findBackgroundOverride(settings, "tap:" + key.tap);
+        if (color != null) {
+            return color;
+        }
+        color = findBackgroundOverride(settings, key.tap);
+        if (color != null) {
+            return color;
+        }
+        return findBackgroundOverride(settings, key.label);
+    }
+
     private static Integer backgroundOverrideColorFor(KeyboardSettings settings, GestureKey key) {
         if (settings == null || key == null || settings.keyColorOverrides.isEmpty()) {
             return null;
@@ -223,6 +262,13 @@ final class KeyboardKeyVisualClassifier {
         Integer color = findBackgroundOverride(settings, "label:" + key.label);
         if (color != null) {
             return color;
+        }
+        if (isDingulDotDotKey(key)) {
+            color = findBackgroundOverride(settings, "..");
+            if (color != null) {
+                return color;
+            }
+            return dingulAlphaOverrideColorFor(settings, true);
         }
         color = findBackgroundOverride(settings, "tap:" + key.tap);
         if (color != null) {
@@ -235,12 +281,6 @@ final class KeyboardKeyVisualClassifier {
         color = findBackgroundOverride(settings, key.label);
         if (color != null) {
             return color;
-        }
-        if (". .".equals(key.label)) {
-            color = findBackgroundOverride(settings, "..");
-            if (color != null) {
-                return color;
-            }
         }
         if (key.icon != KeyIcon.NONE) {
             color = findBackgroundOverride(settings, "icon:" + key.icon);
@@ -284,7 +324,8 @@ final class KeyboardKeyVisualClassifier {
                 return color;
             }
         }
-        if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)) {
+        if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)
+                || KeyboardCommands.CMD_QUICK_SETTINGS.equals(key.tap)) {
             color = findBackgroundOverride(settings, "options");
             if (color != null) {
                 return color;
@@ -339,16 +380,23 @@ final class KeyboardKeyVisualClassifier {
         if (isDingulModifierInvertedKey(key)) {
             return findSemanticOverride(settings, background, "modInv", "mod_inv", "modifierInverted");
         }
+        if (KeyDisplayOverrideResolver.isAlphaKey(key)) {
+            return findSemanticOverride(settings, background, "alpha");
+        }
         if (isDingulSemanticModifierKey(settings, key)) {
             Integer color = findSemanticOverride(settings, background, "mod", "modifier", "modifiers");
             if (color != null) {
                 return color;
             }
         }
-        if (KeyDisplayOverrideResolver.isAlphaKey(key)) {
-            return findSemanticOverride(settings, background, "alpha");
-        }
         return null;
+    }
+
+    private static Integer dingulAlphaOverrideColorFor(KeyboardSettings settings, boolean background) {
+        if (settings == null || settings.keyboardMode != KeyboardMode.HANGUL) {
+            return null;
+        }
+        return findSemanticOverride(settings, background, "alpha");
     }
 
     private static Integer findSemanticOverride(
@@ -405,12 +453,15 @@ final class KeyboardKeyVisualClassifier {
         if (settings == null || key == null || settings.keyboardMode != KeyboardMode.HANGUL) {
             return false;
         }
-        return "?".equals(key.label) || ".".equals(key.label) || "/".equals(key.label);
+        return ".".equals(key.label) || "/".equals(key.label);
+    }
+
+    private static boolean isDingulDotDotKey(GestureKey key) {
+        return key != null && ". .".equals(key.label);
     }
 
     private static boolean isDingulModifierInvertedKey(GestureKey key) {
-        return KeyboardCommands.CMD_SPACE.equals(key.tap)
-                || KeyboardCommands.CMD_ENTER.equals(key.tap);
+        return KeyboardCommands.CMD_SPACE.equals(key.tap);
     }
 
     private static boolean isDingulSemanticModifierKey(KeyboardSettings settings, GestureKey key) {
@@ -437,20 +488,59 @@ final class KeyboardKeyVisualClassifier {
     }
 
     private static int additionalNumberRowColor(KeyboardSettings settings, GestureKey key) {
-        KeyVisualRole role = additionalNumberRowRole(settings, key);
+        return backgroundColorForRole(settings, additionalNumberRowRole(settings, key));
+    }
+
+    private static int backgroundColorForRole(KeyboardSettings settings, KeyVisualRole role) {
         if (role == KeyVisualRole.ACCENT) {
-            return settings.accentKeyColor;
+            Integer color = findSemanticOverride(settings, true, "modInv", "mod_inv", "modifierInverted");
+            return color == null ? settings.accentKeyColor : color;
         }
-        if (role == KeyVisualRole.FUNCTION) {
-            return settings.functionKeyColor;
+        if (role == KeyVisualRole.MODIFIER) {
+            Integer color = findSemanticOverride(settings, true, "mod", "modifier", "modifiers");
+            return color == null ? settings.functionKeyColor : color;
         }
-        return settings.keyIdleColor;
+        Integer color = findSemanticOverride(settings, true, "alpha");
+        return color == null ? settings.keyIdleColor : color;
     }
 
     private static KeyVisualRole additionalNumberRowRole(KeyboardSettings settings, GestureKey key) {
         if (settings == null || settings.additionalNumberRowColorMode == null || !isAdditionalNumberRowKey(key)) {
-            return KeyVisualRole.FUNCTION;
+            return KeyVisualRole.MODIFIER;
         }
         return settings.additionalNumberRowColorMode.roleForDigit(key.tap.charAt(0));
+    }
+
+    private static int textColorForRole(KeyboardSettings settings, KeyVisualRole role) {
+        if (role == KeyVisualRole.ACCENT) {
+            Integer color = findSemanticOverride(settings, false, "modInv", "mod_inv", "modifierInverted");
+            return color == null ? settings.functionKeyColor : color;
+        }
+        if (role == KeyVisualRole.ALPHA) {
+            Integer color = findSemanticOverride(settings, false, "alpha");
+            return color == null ? settings.accentColor : color;
+        }
+        Integer color = findSemanticOverride(settings, false, "mod", "modifier", "modifiers");
+        return color == null ? settings.secondaryColor : color;
+    }
+
+    private static double contrastRatio(int foreground, int background) {
+        double lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background));
+        double darker = Math.min(relativeLuminance(foreground), relativeLuminance(background));
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    private static double relativeLuminance(int color) {
+        double r = linearChannel((color >> 16) & 0xFF);
+        double g = linearChannel((color >> 8) & 0xFF);
+        double b = linearChannel(color & 0xFF);
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    private static double linearChannel(int channel) {
+        double value = channel / 255.0;
+        return value <= 0.03928
+                ? value / 12.92
+                : Math.pow((value + 0.055) / 1.055, 2.4);
     }
 }

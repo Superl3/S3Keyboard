@@ -246,6 +246,7 @@ function validateThemes(themes) {
     validateTypography(json.typography, at, errors);
     validateAdditionalNumberRow(json.additionalNumberRow, at, errors);
     validateAccentPolicy(json.accentPolicy, at, errors);
+    validateAccentPolicyColorway(json, at, errors);
     validateIcons(json.icons, at, errors);
     validateEffects(json.effects, at, errors);
     validateColorMap(json.keyTextColorOverrides, at("keyTextColorOverrides"), errors);
@@ -389,6 +390,56 @@ function validateAccentPolicy(accentPolicy, at, errors) {
       if (!accentPolicyTargets.has(target)) {
         errors.push(`${at(`accentPolicy.${layout}`)}: unknown target ${target}`);
       }
+    }
+  }
+  for (const property of ["spacebar", "space"]) {
+    if (accentPolicy[property] === undefined) {
+      continue;
+    }
+    const roles = new Set(themeContract.accentPolicySpacebarRoles || []);
+    if (!roles.has(accentPolicy[property])) {
+      errors.push(`${at(`accentPolicy.${property}`)}: expected one of ${[...roles].sort().join(", ")}`);
+    }
+  }
+  for (const property of ["question", "questionMark"]) {
+    if (accentPolicy[property] === undefined) {
+      continue;
+    }
+    const roles = new Set(themeContract.accentPolicyQuestionRoles || themeContract.accentPolicySpacebarRoles || []);
+    if (!roles.has(accentPolicy[property])) {
+      errors.push(`${at(`accentPolicy.${property}`)}: expected one of ${[...roles].sort().join(", ")}`);
+    }
+  }
+}
+
+function validateAccentPolicyColorway(json, at, errors) {
+  const policy = json.accentPolicy;
+  if (!policy || typeof policy !== "object" || Array.isArray(policy)) {
+    return;
+  }
+  const hasTargets = ["qwerty", "dingul"].some(layout =>
+    Array.isArray(policy[layout]) && policy[layout].length > 0)
+    || policy.spacebar === "accent"
+    || policy.space === "accent"
+    || policy.question === "accent"
+    || policy.questionMark === "accent";
+  if (!hasTargets) {
+    return;
+  }
+  const colors = json.colors || {};
+  const accent = colors.accentKey;
+  const baseBackgrounds = [
+    ["alphaKey", colors.alphaKey],
+    ["modifierKey", colors.modifierKey]
+  ].filter(([, value]) => isColor(value));
+  if (!isColor(accent) || baseBackgrounds.length === 0) {
+    return;
+  }
+  for (const [field, background] of baseBackgrounds) {
+    if (sameColor(accent, background)
+        || colorDistance(accent, background) < minAccentBackgroundDistance) {
+      errors.push(`${at("accentPolicy")}: accentPolicy requires a distinct accentKey background; ${field} is too close to accentKey`);
+      return;
     }
   }
 }
@@ -707,9 +758,9 @@ function expectedBackgroundForOverrideKey(theme, key) {
     : normalized;
   const dingul = theme.json.dingulColors || {};
   if (isAlphaLikeKey(raw) || raw === "space" || raw === "alpha") {
-    return dingul.alpha?.background || theme.json.colors?.keyIdle;
+    return dingul.alpha?.background || theme.json.colors?.alphaKey;
   }
-  return dingul.mod?.background || theme.json.colors?.functionKey;
+  return dingul.mod?.background || theme.json.colors?.modifierKey;
 }
 
 function colorwayClass(theme) {
@@ -754,6 +805,14 @@ function accentPolicySummary(theme) {
       parts.push(`${layout}:${policy[layout].join("+")}`);
     }
   }
+  const spacebar = policy.spacebar || policy.space;
+  if (spacebar && spacebar !== "default") {
+    parts.push(`spacebar:${spacebar}`);
+  }
+  const question = policy.question || policy.questionMark;
+  if (question && question !== "default") {
+    parts.push(`question:${question}`);
+  }
   return parts.length === 0 ? "-" : parts.join(" ");
 }
 
@@ -771,8 +830,8 @@ function distinctVisualRolePairs(theme) {
     pairs.push(accentPair);
   }
   if (pairs.length === 0 && theme.json.colors) {
-    pairs.push(`${theme.json.colors.accent}/${theme.json.colors.keyIdle}`);
-    pairs.push(`${theme.json.colors.secondary}/${theme.json.colors.functionKey}`);
+    pairs.push(`${theme.json.colors.accent}/${theme.json.colors.alphaKey}`);
+    pairs.push(`${theme.json.colors.secondary}/${theme.json.colors.modifierKey}`);
   }
   return new Set(pairs).size;
 }
@@ -785,9 +844,8 @@ function authoredAccentPair(theme) {
     return null;
   }
   const primaryBackgrounds = [
-    colors.keyIdle,
-    colors.functionKey,
-    colors.primaryFunctionKey
+    colors.alphaKey,
+    colors.modifierKey
   ].filter(isColor);
   if (primaryBackgrounds.some(value => sameColor(value, background))) {
     return null;

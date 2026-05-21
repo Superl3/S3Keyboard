@@ -195,7 +195,9 @@ public final class KeyboardLayoutFactoryTest {
                 rows.size());
         assertEquals("1,2,3,4,5,6,7,8,9,0", labels(rows.get(0)));
         assertEquals(
-                withoutNumberRow.measuredHeightDp() + KeyboardSettings.NUMBER_ROW_HEIGHT_DP,
+                withoutNumberRow.measuredHeightDp()
+                        + KeyboardSettings.NUMBER_ROW_HEIGHT_DP
+                        + KeyboardSettings.DEFAULT_NUMBER_ROW_BOTTOM_GAP_DP,
                 withNumberRow.measuredHeightDp());
     }
 

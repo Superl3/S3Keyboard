@@ -2,6 +2,9 @@ package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+
+import java.util.EnumSet;
 
 import org.junit.Test;
 
@@ -43,6 +46,51 @@ public final class ThemePreviewSettingsTest {
         assertEquals(ModifierIconCatalog.PACK_THEME_DEFAULT, preview.modifierIconOverridePackId);
         assertEquals(ModifierIconCatalog.PACK_METROPOLIS_POINTS, ModifierIconCatalog.effectivePackId(preview));
         assertEquals(KeyDisplayOverridePackCatalog.PACK_THEME_DEFAULT, preview.keyDisplayOverridePackId);
+    }
+
+    @Test
+    public void previewSettingsApplyUserAccentPlacementWhenNotThemeDefault() {
+        ThemeOption option = option("gmk-modern-dolch");
+        KeyboardSettings settings = KeyboardSettings.defaults();
+
+        KeyboardSettings preview = ThemePreviewSettings.forOption(
+                option,
+                settings,
+                KeyboardMode.ENGLISH,
+                AccentPlacementPolicy.of(EnumSet.of(AccentPlacementTarget.META)));
+
+        assertEquals(
+                preview.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        preview,
+                        GestureKey.command("", KeyboardCommands.CMD_TOGGLE_LANGUAGE)));
+        assertNotEquals(
+                preview.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        preview,
+                        GestureKey.command("", KeyboardCommands.CMD_ENTER)));
+    }
+
+    @Test
+    public void previewSettingsUseThemeAccentPlacementByDefault() {
+        ThemeOption option = option("gmk-modern-dolch");
+
+        KeyboardSettings preview = ThemePreviewSettings.forOption(
+                option,
+                KeyboardSettings.defaults(),
+                KeyboardMode.ENGLISH,
+                AccentPlacementPolicy.themeDefault());
+
+        assertEquals(
+                preview.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        preview,
+                        GestureKey.command("", KeyboardCommands.CMD_ENTER)));
+        assertEquals(
+                preview.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        preview,
+                        GestureKey.command("", KeyboardCommands.CMD_TOGGLE_LANGUAGE)));
     }
 
     private ThemeOption option(String id) {

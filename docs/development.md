@@ -112,8 +112,8 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   decorative, and accent-marker pairs are valid aesthetic choices and should be
   reported as metadata rather than failure.
 - Every keyboard theme starts from the same three-tone keycap model:
-  `alpha` keys use `keyIdleColor` and `accentColor`, `modifier` keys use
-  `functionKeyColor` and `secondaryColor`, and selected command/accent keys use
+  `alpha` keys use `alphaKeyColor` and `accentColor`, `modifier` keys use
+  `modifierKeyColor` and `secondaryColor`, and selected command/accent keys use
   `accentKeyColor`. Per-key overrides should be treated as explicit exceptions
   on top of that model, not as the default way to build a theme.
 - Theme colors are split into global key colors plus per-key overrides:

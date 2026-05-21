@@ -9,6 +9,7 @@ final class ModifierIconCatalog {
     static final String PACK_METROPOLIS_POINTS = PACK_METROPOLIS_GRAPH;
     private static final String PACK_METROPOLIS_POINTS_LEGACY = "metropolis-points";
     static final String GLYPH_DOT = "dot";
+    static final String GLYPH_ESC = "esc";
 
     private static final int INTRINSIC_ACCENT_COLOR = 0xFF06B6D4;
 

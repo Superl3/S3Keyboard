@@ -16,7 +16,7 @@ public final class KeyboardSettingsTest {
         assertEquals(KeyboardSettings.DEFAULT_ACCENT_COLOR, settings.accentColor);
         assertEquals(KeyboardSettings.DEFAULT_SECONDARY_COLOR, settings.secondaryColor);
         assertEquals(KeyboardSettings.DEFAULT_FUNCTION_KEY_COLOR, settings.functionKeyColor);
-        assertEquals(KeyboardSettings.DEFAULT_PRIMARY_FUNCTION_KEY_COLOR, settings.primaryFunctionKeyColor);
+        assertEquals(KeyboardSettings.DEFAULT_FUNCTION_KEY_COLOR, settings.functionKeyColor);
         assertEquals(KeyboardSettings.DEFAULT_ACCENT_KEY_COLOR, settings.accentKeyColor);
         assertEquals(KeyboardSettings.DEFAULT_BORDER_COLOR, settings.borderColor);
         assertEquals(KeyboardSettings.DEFAULT_KEY_BORDER_WIDTH_DP, settings.keyBorderWidthDp);
@@ -46,7 +46,7 @@ public final class KeyboardSettingsTest {
         assertEquals(KeyboardSettings.DEFAULT_ENGLISH_HEIGHT_DP, settings.englishKeyboardHeightDp);
         assertEquals(KeyboardSettings.DEFAULT_HANGUL_HEIGHT_DP, settings.keyboardHeightDp);
         assertTrue(settings.hangulKeyboardHeightDp < 390 * 0.70f);
-        assertTrue(settings.englishKeyboardHeightDp < 286 * 0.70f);
+        assertEquals(235, settings.englishKeyboardHeightDp);
         assertEquals(
                 KeyboardSettings.DEFAULT_HANGUL_SPECIAL_COLUMN_PERCENT,
                 settings.hangulSpecialColumnPercent);
@@ -61,7 +61,17 @@ public final class KeyboardSettingsTest {
         assertEquals(4, settings.keyboardBottomPaddingDp);
         assertEquals(0, settings.bottomRowTopPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_GESTURE_THRESHOLD_DP, settings.gestureThresholdDp);
+        assertEquals(4, settings.touchYOffsetDp);
         assertEquals(430, KeyboardSettings.MAX_HEIGHT_DP);
+    }
+
+    @Test
+    public void touchYOffsetCanBeAdjustedAndClamped() {
+        assertEquals(KeyboardSettings.MAX_TOUCH_Y_OFFSET_DP,
+                KeyboardSettings.defaults().withTouchYOffset(99).touchYOffsetDp);
+        assertEquals(KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP,
+                KeyboardSettings.defaults().withTouchYOffset(-99).touchYOffsetDp);
+        assertEquals(-6, KeyboardSettings.defaults().withTouchYOffset(-6).touchYOffsetDp);
     }
 
     @Test
@@ -77,18 +87,17 @@ public final class KeyboardSettingsTest {
         assertEquals(0xFF444444, settings.accentColor);
         assertEquals(0xFF555555, settings.secondaryColor);
         assertEquals(KeyboardSettings.DEFAULT_FUNCTION_KEY_COLOR, settings.functionKeyColor);
-        assertEquals(KeyboardSettings.DEFAULT_PRIMARY_FUNCTION_KEY_COLOR, settings.primaryFunctionKeyColor);
+        assertEquals(KeyboardSettings.DEFAULT_FUNCTION_KEY_COLOR, settings.functionKeyColor);
     }
 
     @Test
-    public void functionKeyColorsCanChangeWithoutChangingInputSettings() {
+    public void modifierKeyColorCanChangeWithoutChangingInputSettings() {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withKeyboardMode(KeyboardMode.ENGLISH)
-                .withFunctionKeyColors(0x00666666, 0x00777777);
+                .withModifierKeyColor(0x00666666);
 
         assertEquals(KeyboardMode.ENGLISH, settings.keyboardMode);
         assertEquals(0xFF666666, settings.functionKeyColor);
-        assertEquals(0xFF777777, settings.primaryFunctionKeyColor);
         assertEquals(KeyboardSettings.DEFAULT_KEY_IDLE_COLOR, settings.keyIdleColor);
     }
 
@@ -102,9 +111,7 @@ public final class KeyboardSettingsTest {
                         0x00333333,
                         0x00444444,
                         0x00555555,
-                        0x00666666,
-                        0x00777777,
-                        0x00888888,
+                        0x00666666,                        0x00888888,
                         0x00999999,
                         true,
                         0x00AAAAAA)
@@ -204,6 +211,9 @@ public final class KeyboardSettingsTest {
         assertEquals(KeyboardSettings.MAX_KEYBOARD_TOP_PADDING_DP, settings.keyboardTopPaddingDp);
         assertEquals(KeyboardSettings.MAX_KEYBOARD_BOTTOM_PADDING_DP, settings.keyboardBottomPaddingDp);
         assertEquals(KeyboardSettings.MAX_BOTTOM_ROW_TOP_PADDING_DP, settings.bottomRowTopPaddingDp);
+        assertEquals(
+                KeyboardSettings.MAX_NUMBER_ROW_BOTTOM_GAP_DP,
+                settings.withNumberRowBottomGap(999).numberRowBottomGapDp);
         assertEquals(0, tooSmall.hangulLeftPaddingDp);
         assertEquals(0, tooSmall.hangulRightPaddingDp);
         assertEquals(0, tooSmall.englishLeftPaddingDp);
@@ -212,18 +222,70 @@ public final class KeyboardSettingsTest {
         assertEquals(0, tooSmall.keyboardTopPaddingDp);
         assertEquals(0, tooSmall.keyboardBottomPaddingDp);
         assertEquals(0, tooSmall.bottomRowTopPaddingDp);
+        assertEquals(0, tooSmall.withNumberRowBottomGap(-9).numberRowBottomGapDp);
     }
 
     @Test
     public void legacyMarginSetterUpdatesBothLayoutSidePaddings() {
         KeyboardSettings settings = KeyboardSettings.defaults().withMargins(13, 17);
 
-        assertEquals(13, settings.leftMarginDp);
+        assertEquals(17, settings.leftMarginDp);
         assertEquals(17, settings.rightMarginDp);
-        assertEquals(13, settings.hangulLeftPaddingDp);
+        assertEquals(17, settings.hangulLeftPaddingDp);
         assertEquals(17, settings.hangulRightPaddingDp);
-        assertEquals(13, settings.englishLeftPaddingDp);
+        assertEquals(17, settings.englishLeftPaddingDp);
         assertEquals(17, settings.englishRightPaddingDp);
+    }
+
+    @Test
+    public void sharedMarginCanBeReducedToZero() {
+        KeyboardSettings settings = KeyboardSettings.defaults().withSharedMargin(12).withSharedMargin(0);
+
+        assertEquals(0, settings.leftMarginDp);
+        assertEquals(0, settings.rightMarginDp);
+        assertEquals(0, settings.hangulLeftPaddingDp);
+        assertEquals(0, settings.hangulRightPaddingDp);
+        assertEquals(0, settings.englishLeftPaddingDp);
+        assertEquals(0, settings.englishRightPaddingDp);
+    }
+
+    @Test
+    public void oneHandedPresetUsesPresetSidePadding() {
+        KeyboardSettings base = KeyboardSettings.defaults().withSharedMargin(12);
+        KeyboardSettings left = base.withHandednessPreset(HandednessMode.LEFT);
+        KeyboardSettings right = base.withHandednessPreset(HandednessMode.RIGHT);
+        KeyboardSettings balanced = right.withHandednessPreset(HandednessMode.BALANCED);
+
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_LEFT_PADDING_DP, left.leftMarginDp);
+        assertEquals(56, left.rightMarginDp);
+        assertEquals(56, right.leftMarginDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_RIGHT_PADDING_DP, right.rightMarginDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_LEFT_PADDING_DP, balanced.leftMarginDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_RIGHT_PADDING_DP, balanced.rightMarginDp);
+    }
+
+    @Test
+    public void oneHandedPresetAppliesToBothLayouts() {
+        KeyboardSettings base = KeyboardSettings.defaults()
+                .withSharedMargin(12)
+                .withHangulSidePadding(7, 9)
+                .withEnglishSidePadding(11, 13);
+        KeyboardSettings left = base.withHandednessPreset(HandednessMode.LEFT);
+        KeyboardSettings right = base.withHandednessPreset(HandednessMode.RIGHT);
+        KeyboardSettings balanced = right.withHandednessPreset(HandednessMode.BALANCED);
+
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_LEFT_PADDING_DP, left.hangulLeftPaddingDp);
+        assertEquals(56, left.hangulRightPaddingDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_LEFT_PADDING_DP, left.englishLeftPaddingDp);
+        assertEquals(56, left.englishRightPaddingDp);
+        assertEquals(56, right.hangulLeftPaddingDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_RIGHT_PADDING_DP, right.hangulRightPaddingDp);
+        assertEquals(56, right.englishLeftPaddingDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_RIGHT_PADDING_DP, right.englishRightPaddingDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_LEFT_PADDING_DP, balanced.hangulLeftPaddingDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_RIGHT_PADDING_DP, balanced.hangulRightPaddingDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_LEFT_PADDING_DP, balanced.englishLeftPaddingDp);
+        assertEquals(KeyboardSettings.DEFAULT_HANGUL_RIGHT_PADDING_DP, balanced.englishRightPaddingDp);
     }
 
     @Test

@@ -1,15 +1,15 @@
 package com.superl3.s3keyboard;
 
 enum AdditionalNumberRowColorMode {
-    FULL_ALPHA("full_alpha", "All alpha", KeyVisualRole.NORMAL, KeyVisualRole.NORMAL),
-    HALF_MOD_4567("half_mod_4567", "123890 alpha / 4567 mod", KeyVisualRole.NORMAL, KeyVisualRole.FUNCTION),
-    ALPHA_ACCENT("alpha_accent", "123890 alpha / 4567 accent", KeyVisualRole.NORMAL, KeyVisualRole.ACCENT),
-    MOD_ALPHA("mod_alpha", "123890 mod / 4567 alpha", KeyVisualRole.FUNCTION, KeyVisualRole.NORMAL),
-    FULL_MOD("full_mod", "All mod", KeyVisualRole.FUNCTION, KeyVisualRole.FUNCTION),
-    MOD_ACCENT("mod_accent", "123890 mod / 4567 accent", KeyVisualRole.FUNCTION, KeyVisualRole.ACCENT),
-    ACCENT_ALPHA("accent_alpha", "123890 accent / 4567 alpha", KeyVisualRole.ACCENT, KeyVisualRole.NORMAL),
-    ACCENT_MOD("accent_mod", "123890 accent / 4567 mod", KeyVisualRole.ACCENT, KeyVisualRole.FUNCTION),
-    FULL_ACCENT("full_accent", "All accent", KeyVisualRole.ACCENT, KeyVisualRole.ACCENT);
+    FULL_ALPHA("full_alpha", "\uC804\uCCB4 Alpha", KeyVisualRole.ALPHA, KeyVisualRole.ALPHA),
+    HALF_MOD_4567("half_mod_4567", "\uAC00\uC6B4\uB370 Mod", KeyVisualRole.ALPHA, KeyVisualRole.MODIFIER),
+    ALPHA_ACCENT("alpha_accent", "\uAC00\uC6B4\uB370 Accent", KeyVisualRole.ALPHA, KeyVisualRole.ACCENT),
+    MOD_ALPHA("mod_alpha", "\uBC14\uAE65 Mod / \uAC00\uC6B4\uB370 Alpha", KeyVisualRole.MODIFIER, KeyVisualRole.ALPHA),
+    FULL_MOD("full_mod", "\uC804\uCCB4 Mod", KeyVisualRole.MODIFIER, KeyVisualRole.MODIFIER),
+    MOD_ACCENT("mod_accent", "\uBC14\uAE65 Mod / \uAC00\uC6B4\uB370 Accent", KeyVisualRole.MODIFIER, KeyVisualRole.ACCENT),
+    ACCENT_ALPHA("accent_alpha", "\uBC14\uAE65 Accent / \uAC00\uC6B4\uB370 Alpha", KeyVisualRole.ACCENT, KeyVisualRole.ALPHA),
+    ACCENT_MOD("accent_mod", "\uBC14\uAE65 Accent / \uAC00\uC6B4\uB370 Mod", KeyVisualRole.ACCENT, KeyVisualRole.MODIFIER),
+    FULL_ACCENT("full_accent", "\uC804\uCCB4 Accent", KeyVisualRole.ACCENT, KeyVisualRole.ACCENT);
 
     final String preferenceValue;
     final String label;

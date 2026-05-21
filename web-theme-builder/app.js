@@ -91,10 +91,8 @@ function createDefaultTheme() {
   const theme = {
     name: "Untitled Theme",
     colors: {
-      keyIdle: "#FBFBFD",
-      functionKey: "#EEF0F4",
-      primaryFunctionKey: "#E4E7ED",
-      accentKey: "#CCD3DE",
+      alphaKey: "#FBFBFD",
+      modifierKey: "#EEF0F4",      accentKey: "#CCD3DE",
       keyPressed: "#D6D8DD",
       keyboardBackground: "#D1D5DB",
       border: "#C2C7D0",
@@ -105,7 +103,7 @@ function createDefaultTheme() {
     shape: { roundnessDp: 5, borderWidthDp: 1, keyGapDp: 5, depthEnabled: false, depthDp: 0 },
     typography: defaultTypography(),
     additionalNumberRow: { colorMode: "full_mod" },
-    accentPolicy: { qwerty: [], dingul: [] },
+    accentPolicy: cloneAccentPolicy(themeContract.defaultAccentPolicy),
     icons: {},
     effects: {},
     keyDisplayOverrides: {},
@@ -123,16 +121,16 @@ function defaultTypography() {
     secondaryTextSizePercent: 80,
     primaryTextBold: false,
     primaryTextItalic: false,
-    secondaryTextBold: false,
+    secondaryTextBold: true,
     secondaryTextItalic: false
   };
 }
 
 function defaultDingulColors(colors) {
   return {
-    alpha: { foreground: colors.accent, background: colors.keyIdle },
-    mod: { foreground: colors.secondary, background: colors.functionKey },
-    modInv: { foreground: colors.functionKey, background: colors.accentKey }
+    alpha: { foreground: colors.accent, background: colors.alphaKey },
+    mod: { foreground: colors.secondary, background: colors.modifierKey },
+    modInv: { foreground: colors.modifierKey, background: colors.accentKey }
   };
 }
 
@@ -359,10 +357,8 @@ function buildTheme() {
     name: ids.name.value.trim() || "Untitled Theme",
     author: ids.author.value.trim() || "local",
     colors: {
-      keyIdle: state.colors.keyIdle,
-      functionKey: state.colors.functionKey,
-      primaryFunctionKey: state.colors.primaryFunctionKey,
-      accentKey: state.colors.accentKey,
+      alphaKey: state.colors.alphaKey,
+      modifierKey: state.colors.modifierKey,      accentKey: state.colors.accentKey,
       keyPressed: state.colors.keyPressed,
       keyboardBackground: state.colors.keyboardBackground,
       panelBackground: state.colors.panelBackground || state.colors.keyboardBackground,
@@ -440,7 +436,11 @@ function renderPreview(theme) {
       const key = document.createElement("div");
       const role = roleForPreview(label, "qwerty", theme);
       const number = /^[0-9]$/.test(label);
-      const numberRole = number ? numberRowRole(theme.additionalNumberRow.colorMode, label) : null;
+      const numberRole = number ? numberRowRoleForPreview(
+        theme.additionalNumberRow.colorMode,
+        label,
+        theme,
+        "qwerty") : null;
       const bgOverride = backgroundColorFor(label, theme);
       key.className = "key";
       key.style.background = bgOverride || backgroundForRole(numberRole || role, theme);
@@ -455,10 +455,17 @@ function renderPreview(theme) {
       key.style.fontWeight = theme.typography.primaryTextBold ? "700" : "400";
       const displayOverride = displayOverrideFor(label, theme);
       if (displayOverride?.type === "icon" && displayOverride.value === "dot") {
-        const mainDot = document.createElement("span");
-        mainDot.className = "main-dot";
-        mainDot.style.background = textColorFor(label, theme);
-        key.appendChild(mainDot);
+        if ((label === "." || label === "/") && (theme.icons?.modifierPackId || "") === "dots-lines") {
+          const twoDots = document.createElement("span");
+          twoDots.className = "main-dot two-dot-legend";
+          twoDots.style.color = textColorFor(label, theme);
+          key.appendChild(twoDots);
+        } else {
+          const mainDot = document.createElement("span");
+          mainDot.className = "main-dot";
+          mainDot.style.background = textColorFor(label, theme);
+          key.appendChild(mainDot);
+        }
       } else if (displayOverride?.type === "text") {
         if (displayOverride.value === "hihihi" && isSimpleTextPack(theme.icons?.keyDisplayPackId)) {
           appendHihihiGlyph(key, textColorFor(label, theme));
@@ -497,10 +504,27 @@ function appendSubLegend(key, label, theme) {
   const item = document.createElement("span");
   item.className = "sublegend";
   item.textContent = sub;
-  item.style.color = theme.colors.secondary;
+  item.style.color = hintColorFor(label, theme);
   item.style.fontSize = `${10 * theme.typography.secondaryTextSizePercent / 100}px`;
-  item.style.fontWeight = theme.typography.secondaryTextBold ? "700" : "400";
+  item.style.fontWeight = theme.typography.secondaryTextBold ? "700" : "600";
   key.appendChild(item);
+}
+
+function hintColorFor(label, theme) {
+  const secondary = normalizeColor(theme.colors.secondary);
+  const role = roleForPreview(label, "qwerty", theme);
+  const number = /^[0-9]$/.test(label);
+  const numberRole = number ? numberRowRoleForPreview(
+    theme.additionalNumberRow.colorMode,
+    label,
+    theme,
+    "qwerty") : null;
+  const background = normalizeColor(backgroundColorFor(label, theme))
+    || normalizeColor(backgroundForRole(numberRole || role, theme));
+  if (secondary && background && contrastRatio(secondary, background) >= 1.6) {
+    return secondary;
+  }
+  return number ? textColorForNumberRole(numberRole, theme) : textColorFor(label, theme);
 }
 
 function subLegendFor(label) {
@@ -514,20 +538,45 @@ function subLegendFor(label) {
 
 function roleForPreview(label, layout = "qwerty", theme = null) {
   if (label === "Space") {
-    return "alpha";
+    return spacebarRoleForPreview(theme);
+  }
+  if (layout === "dingul" && label === "?") {
+    return questionRoleForPreview(theme);
   }
   if (label === "Enter") {
-    return accentPolicyIncludes(theme, layout, "modCtrl") ? "accent" : "modifier";
+    return accentPolicyIncludesAny(theme, layout, ["settingsEnter", "modCtrl"]) ? "accent" : "modifier";
   }
   if (["Shift", "Bksp", "Lang", "Options", "Reserved", "Settings", "?", ".", "/"].includes(label)) {
-    const target = semanticTargetForPreview(label, layout);
-    if (accentPolicyIncludes(theme, layout, target)
-        || ([".", "/", "?"].includes(label) && accentPolicyIncludes(theme, layout, "punctuation"))) {
+    const targets = semanticTargetsForPreview(label, layout);
+    if (accentPolicyIncludesAny(theme, layout, targets)
+        || ([".", "/"].includes(label) && accentPolicyIncludes(theme, layout, "punctuation"))) {
       return "accent";
     }
     return "modifier";
   }
   if (["?123"].includes(label)) {
+    return "modifier";
+  }
+  return "alpha";
+}
+
+function spacebarRoleForPreview(theme) {
+  const raw = theme?.accentPolicy?.spacebar || theme?.accentPolicy?.space || "";
+  if (raw === "accent") {
+    return "accent";
+  }
+  if (raw === "mod" || raw === "modifier" || raw === "modifiers") {
+    return "modifier";
+  }
+  return "alpha";
+}
+
+function questionRoleForPreview(theme) {
+  const raw = theme?.accentPolicy?.question || theme?.accentPolicy?.questionMark || "";
+  if (raw === "accent") {
+    return "accent";
+  }
+  if (raw === "mod" || raw === "modifier" || raw === "modifiers") {
     return "modifier";
   }
   return "alpha";
@@ -542,41 +591,123 @@ function backgroundForRole(role, theme) {
     case "modInv":
       return dingul.modInv.background;
     case "accent":
-      return theme.colors.accentKey;
+      return dingul.modInv.background || theme.colors.accentKey;
     case "alpha":
     default:
       return dingul.alpha.background;
   }
 }
 
-function semanticTargetForPreview(label, layout) {
+function semanticTargetsForPreview(label, layout) {
   const normalized = label.toLowerCase();
-  if (["settings", "enter"].includes(normalized)) {
-    return "modCtrl";
+  if (["options", "settings", "enter"].includes(normalized)) {
+    return ["settingsEnter", "modCtrl"];
   }
   if (["reserved", "lang", "language"].includes(normalized)) {
-    return "modMeta";
+    return ["modMeta"];
   }
-  if (["shift", "bksp", "backspace"].includes(normalized)) {
-    return "modCommand";
+  if (normalized === "shift") {
+    return ["qwertyShift", "shift", "modCommand"];
+  }
+  if (["bksp", "backspace"].includes(normalized)) {
+    return ["backspace", "modCommand"];
   }
   if (layout === "dingul" && label === ".") {
-    return "modEnter";
+    return ["dingulDot", "modEnter"];
   }
   if (layout === "dingul" && label === "/") {
-    return "modShift";
+    return ["dingulSlash", "modShift"];
   }
   if (layout === "dingul" && label === "?") {
-    return "punctuation";
+    return ["question"];
   }
-  return "";
+  return [];
+}
+
+function accentPolicyIncludesAny(theme, layout, targets) {
+  return Array.isArray(targets) && targets.some(target => accentPolicyIncludes(theme, layout, target));
 }
 
 function accentPolicyIncludes(theme, layout, target) {
   if (!theme || !target) {
     return false;
   }
-  return Array.isArray(theme.accentPolicy?.[layout]) && theme.accentPolicy[layout].includes(target);
+  const explicitTargets = Array.isArray(theme.accentPolicy?.[layout]) ? theme.accentPolicy[layout] : [];
+  if (explicitTargets.includes(target)) {
+    return true;
+  }
+  if (explicitTargets.length > 0 || !usesImplicitAccentPolicy(theme)) {
+    return false;
+  }
+  const implicitTargets = layout === "dingul" ? ["modEnter", "modShift"] : ["modCtrl", "modMeta"];
+  return implicitTargets.includes(target);
+}
+
+function cloneAccentPolicy(policy) {
+  return {
+    qwerty: Array.isArray(policy?.qwerty) ? [...policy.qwerty] : [],
+    dingul: Array.isArray(policy?.dingul) ? [...policy.dingul] : [],
+    spacebar: policy?.spacebar || policy?.space || "default",
+    question: policy?.question || policy?.questionMark || "default"
+  };
+}
+
+function usesImplicitAccentPolicy(theme) {
+  const colors = theme?.colors || {};
+  const accent = normalizeColor(colors.accentKey);
+  if (!accent) {
+    return false;
+  }
+  return [colors.alphaKey, colors.modifierKey]
+    .map(normalizeColor)
+    .filter(Boolean)
+    .every(color => colorDistance(accent, color) >= 48);
+}
+
+function colorDistance(left, right) {
+  const a = parseHexColor(left);
+  const b = parseHexColor(right);
+  if (!a || !b) {
+    return 0;
+  }
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function contrastRatio(left, right) {
+  const a = relativeLuminance(left);
+  const b = relativeLuminance(right);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    return 1;
+  }
+  const lighter = Math.max(a, b);
+  const darker = Math.min(a, b);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function relativeLuminance(value) {
+  const rgb = parseHexColor(value);
+  if (!rgb) {
+    return NaN;
+  }
+  const [r, g, b] = rgb.map(channel => {
+    const normalized = channel / 255;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function parseHexColor(value) {
+  const normalized = normalizeColor(value);
+  if (!normalized) {
+    return null;
+  }
+  return [
+    parseInt(normalized.slice(1, 3), 16),
+    parseInt(normalized.slice(3, 5), 16),
+    parseInt(normalized.slice(5, 7), 16)
+  ];
 }
 
 function shouldHideSubLegend(label, theme) {
@@ -595,6 +726,13 @@ function numberRowRole(mode, label) {
     return inner ? option.innerRole : option.outerRole;
   }
   return "mod";
+}
+
+function numberRowRoleForPreview(mode, label, theme, layout = "qwerty") {
+  if (label === "1" && accentPolicyIncludes(theme, layout, "escPoint")) {
+    return "accent";
+  }
+  return numberRowRole(mode, label);
 }
 
 function textColorForNumberRole(role, theme) {
@@ -657,7 +795,7 @@ function displayOverrideFor(label, theme) {
 function keyDisplayPackOverrideFor(label, pack) {
   if (isSimpleTextPack(pack)) {
     switch (label) {
-      case "Enter":
+      case ".":
         return { type: "text", value: "hihihi" };
       default:
         return null;
@@ -675,6 +813,16 @@ function keyDisplayPackOverrideFor(label, pack) {
         return { type: "text", value: "pull" };
       case "Lang":
         return { type: "text", value: "fetch" };
+      case "Options":
+        return { type: "text", value: "stash" };
+      case "Settings":
+        return { type: "text", value: "config" };
+      case "Reserved":
+        return { type: "text", value: "commit" };
+      case ".":
+        return { type: "text", value: "diff" };
+      case "/":
+        return { type: "text", value: "log" };
       default:
         return null;
     }
@@ -690,6 +838,8 @@ function renderModifierPackGlyph(key, label, theme) {
       line.className = "mod-pack-line five-dot-line";
     } else if (label === "Lang" || label === "Reserved") {
       line.className = "mod-pack-line single-dot-line";
+    } else if (label === "Options" || label === "Settings" || label === "Enter") {
+      line.className = "mod-pack-line dotted-line short-mod-line";
     } else {
       line.className = "mod-pack-line dotted-line";
     }
@@ -947,7 +1097,9 @@ function normalizeAccentPolicy(rawPolicy) {
   const allowed = new Set(themeContract.accentPolicyTargets || []);
   return {
     qwerty: normalizeAccentTargets(policy.qwerty, allowed),
-    dingul: normalizeAccentTargets(policy.dingul, allowed)
+    dingul: normalizeAccentTargets(policy.dingul, allowed),
+    spacebar: normalizeAccentKeyRole(policy.spacebar || policy.space, "accentPolicySpacebarRoles"),
+    question: normalizeAccentKeyRole(policy.question || policy.questionMark, "accentPolicyQuestionRoles")
   };
 }
 
@@ -956,6 +1108,11 @@ function normalizeAccentTargets(rawTargets, allowed) {
     return [];
   }
   return rawTargets.filter(target => allowed.has(target));
+}
+
+function normalizeAccentKeyRole(rawRole, contractKey) {
+  const allowed = new Set(themeContract[contractKey] || ["default", "alpha", "mod", "modifier", "accent"]);
+  return allowed.has(rawRole) ? rawRole : "default";
 }
 
 function normalizeTypography(rawTypography, fallbackTypography) {

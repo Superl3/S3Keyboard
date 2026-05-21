@@ -105,10 +105,7 @@ final class KeyDisplayOverridePackCatalog {
 
     private static Map<String, KeyDisplayOverride> createSimpleTextOverrides() {
         Map<String, KeyDisplayOverride> overrides = new HashMap<>();
-        putIconText(overrides, KeyIcon.ENTER, "hihihi");
-        putIconText(overrides, KeyIcon.DONE, "hihihi");
-        putIconText(overrides, KeyIcon.NEXT, "hihihi");
-        putText(overrides, "enter", "hihihi");
+        putText(overrides, "label:.", "hihihi");
         return Collections.unmodifiableMap(overrides);
     }
 

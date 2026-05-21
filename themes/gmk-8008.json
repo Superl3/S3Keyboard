@@ -13,9 +13,8 @@
     ]
   },
   "colors": {
-    "keyIdle": "#8C929D",
-    "functionKey": "#1E2028",
-    "primaryFunctionKey": "#161820",
+    "alphaKey": "#8C929D",
+    "modifierKey": "#1E2028",
     "accentKey": "#B94D61",
     "keyPressed": "#5A606A",
     "keyboardBackground": "#111216",
@@ -40,7 +39,7 @@
     "secondaryTextSizePercent": 80,
     "primaryTextBold": false,
     "primaryTextItalic": false,
-    "secondaryTextBold": false,
+    "secondaryTextBold": true,
     "secondaryTextItalic": false
   },
   "keyTextColorOverrides": {
@@ -62,11 +61,13 @@
   },
   "accentPolicy": {
     "qwerty": [
-      "modCtrl"
+      "modMeta",
+      "qwertyShift",
+      "backspace"
     ],
     "dingul": [
-      "modEnter",
-      "modShift"
+      "modCtrl",
+      "dingulDot"
     ]
   }
 }

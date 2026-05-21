@@ -99,14 +99,14 @@ final class KeyDisplayOverrideResolver {
                 || KeyboardCommands.CMD_DINGUL_WIDE_VOWEL.equals(key.tap)
                 || "\u3163.".equals(key.label)
                 || "\u3161\u3150".equals(key.label)
-                || ". .".equals(key.label);
+                || ". .".equals(key.label)
+                || "?".equals(key.label)
+                || "?".equals(key.tap);
     }
 
     private static boolean isDingulPunctuationModifierKey(GestureKey key) {
-        return "?".equals(key.label)
-                || ".".equals(key.label)
+        return ".".equals(key.label)
                 || "/".equals(key.label)
-                || "?".equals(key.tap)
                 || ".".equals(key.tap)
                 || "/".equals(key.tap);
     }

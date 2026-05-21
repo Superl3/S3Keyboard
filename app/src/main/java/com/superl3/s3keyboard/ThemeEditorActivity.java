@@ -43,7 +43,6 @@ public final class ThemeEditorActivity extends Activity {
 
     private Spinner keyIdleColorSpinner;
     private Spinner functionKeyColorSpinner;
-    private Spinner primaryFunctionKeyColorSpinner;
     private Spinner accentKeyColorSpinner;
     private Spinner keyPressedColorSpinner;
     private Spinner keyboardBackgroundColorSpinner;
@@ -82,7 +81,6 @@ public final class ThemeEditorActivity extends Activity {
     private TextView secondaryTextSizeValue;
     private View keyIdleColorSwatch;
     private View functionKeyColorSwatch;
-    private View primaryFunctionKeyColorSwatch;
     private View accentKeyColorSwatch;
     private View keyPressedColorSwatch;
     private View keyboardBackgroundColorSwatch;
@@ -297,7 +295,6 @@ public final class ThemeEditorActivity extends Activity {
                 settings.accentColor,
                 settings.secondaryColor,
                 color,
-                settings.primaryFunctionKeyColor,
                 settings.accentKeyColor,
                 settings.borderColor,
                 settings.customDepthColorEnabled,
@@ -314,37 +311,13 @@ public final class ThemeEditorActivity extends Activity {
                 "기능 키 색상 = 기본 키를 살짝 어둡게",
                 v -> functionKeyListener.onColorChanged(dimColor(settings.keyIdleColor, 0.90f))),
                 buttonParams());
-
-        ColorChangeListener primaryFunctionKeyListener = color -> updateSettings(settings.withExtendedThemeColors(
-                settings.keyIdleColor,
-                settings.keyPressedColor,
-                settings.keyboardBackgroundColor,
-                settings.accentColor,
-                settings.secondaryColor,
-                settings.functionKeyColor,
-                color,
-                settings.accentKeyColor,
-                settings.borderColor,
-                settings.customDepthColorEnabled,
-                settings.depthColor));
-        primaryFunctionKeyColorSpinner = colorSpinner(primaryFunctionKeyListener);
-        primaryFunctionKeyColorSwatch = addColorControl(
-                root,
-                "전체 - 주요 기능 키",
-                "시프트, 삭제, 엔터처럼 입력 흐름을 직접 바꾸는 주요 기능 키의 배경색입니다.",
-                primaryFunctionKeyColorSpinner,
-                primaryFunctionKeyListener);
-        root.addView(primaryFunctionKeyColorSpinner, matchWrap());
-
         ColorChangeListener accentKeyListener = color -> updateSettings(settings.withExtendedThemeColors(
                 settings.keyIdleColor,
                 settings.keyPressedColor,
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 settings.secondaryColor,
-                settings.functionKeyColor,
-                settings.primaryFunctionKeyColor,
-                color,
+                settings.functionKeyColor,                color,
                 settings.borderColor,
                 settings.customDepthColorEnabled,
                 settings.depthColor));
@@ -364,9 +337,7 @@ public final class ThemeEditorActivity extends Activity {
                         settings.keyboardBackgroundColor,
                         settings.accentColor,
                         settings.functionKeyColor,
-                        settings.functionKeyColor,
-                        settings.primaryFunctionKeyColor,
-                        settings.secondaryColor,
+                        settings.functionKeyColor,                        settings.secondaryColor,
                         settings.borderColor,
                         settings.customDepthColorEnabled,
                         settings.depthColor))),
@@ -399,7 +370,6 @@ public final class ThemeEditorActivity extends Activity {
                 settings.accentColor,
                 settings.secondaryColor,
                 settings.functionKeyColor,
-                settings.primaryFunctionKeyColor,
                 settings.accentKeyColor,
                 color,
                 settings.customDepthColorEnabled,
@@ -566,7 +536,6 @@ public final class ThemeEditorActivity extends Activity {
         setProgress(secondaryTextSizeSeekBar, settings.secondaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
         setSelection(keyIdleColorSpinner, indexOfColor(settings.keyIdleColor));
         setSelection(functionKeyColorSpinner, indexOfColor(settings.functionKeyColor));
-        setSelection(primaryFunctionKeyColorSpinner, indexOfColor(settings.primaryFunctionKeyColor));
         setSelection(accentKeyColorSpinner, indexOfColor(settings.accentKeyColor));
         setSelection(keyPressedColorSpinner, indexOfColor(settings.keyPressedColor));
         setSelection(keyboardBackgroundColorSpinner, indexOfColor(settings.keyboardBackgroundColor));
@@ -587,7 +556,6 @@ public final class ThemeEditorActivity extends Activity {
         setEnabled(keyDepthSeekBar, settings.keyDepthEnabled);
         setSwatch(keyIdleColorSwatch, settings.keyIdleColor);
         setSwatch(functionKeyColorSwatch, settings.functionKeyColor);
-        setSwatch(primaryFunctionKeyColorSwatch, settings.primaryFunctionKeyColor);
         setSwatch(accentKeyColorSwatch, settings.accentKeyColor);
         setSwatch(keyPressedColorSwatch, settings.keyPressedColor);
         setSwatch(keyboardBackgroundColorSwatch, settings.keyboardBackgroundColor);
@@ -618,7 +586,7 @@ public final class ThemeEditorActivity extends Activity {
         boolean keyEdit = keySelected && editScopeGroup.getCheckedRadioButtonId() == EDIT_KEY_TEXT_ID;
         KeyVisualRole role = keySelected
                 ? KeyboardKeyVisualClassifier.roleFor(settings, selectedKey)
-                : KeyVisualRole.NORMAL;
+                : KeyVisualRole.ALPHA;
         selectedKeyLabel.setText(keySelected
                 ? "선택: " + displayKeyName(selectedKey)
                         + " / 그룹: " + visualRoleLabel(role)
@@ -708,11 +676,9 @@ public final class ThemeEditorActivity extends Activity {
         switch (role) {
             case ACCENT:
                 return "accent";
-            case PRIMARY_FUNCTION:
-                return "primary";
-            case FUNCTION:
+            case MODIFIER:
                 return "modifier";
-            case NORMAL:
+            case ALPHA:
             default:
                 return "alpha";
         }

@@ -30,6 +30,11 @@
             android:exported="false"
             android:label="Theme Selector" />
 
+        <activity
+            android:name=".AccentPlacementActivity"
+            android:exported="false"
+            android:label="Accent Placement" />
+
         <service
             android:name=".S3KeyboardService"
             android:exported="true"

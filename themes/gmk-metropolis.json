@@ -19,9 +19,8 @@
     ]
   },
   "colors": {
-    "keyIdle": "#10151B",
-    "functionKey": "#151B22",
-    "primaryFunctionKey": "#161D25",
+    "alphaKey": "#10151B",
+    "modifierKey": "#151B22",
     "accentKey": "#28161C",
     "keyPressed": "#26313B",
     "keyboardBackground": "#090D12",
@@ -46,7 +45,7 @@
     "secondaryTextSizePercent": 80,
     "primaryTextBold": false,
     "primaryTextItalic": false,
-    "secondaryTextBold": false,
+    "secondaryTextBold": true,
     "secondaryTextItalic": false
   },
   "icons": {

@@ -19,6 +19,7 @@ final class KeyboardPreferences {
     static final String KEYBOARD_TOP_PADDING_DP = "keyboard_top_padding_dp";
     static final String KEYBOARD_BOTTOM_PADDING_DP = "keyboard_bottom_padding_dp";
     static final String BOTTOM_ROW_TOP_PADDING_DP = "bottom_row_top_padding_dp";
+    static final String NUMBER_ROW_BOTTOM_GAP_DP = "number_row_bottom_gap_dp";
     static final String KEYBOARD_HEIGHT_DP = "keyboard_height_dp";
     static final String HANGUL_KEYBOARD_HEIGHT_DP = "hangul_keyboard_height_dp";
     static final String ENGLISH_KEYBOARD_HEIGHT_DP = "english_keyboard_height_dp";
@@ -26,6 +27,8 @@ final class KeyboardPreferences {
     static final String SHOW_HANGUL_NUMBER_ROW = "show_hangul_number_row";
     static final String SHOW_ENGLISH_NUMBER_ROW = "show_english_number_row";
     static final String ADDITIONAL_NUMBER_ROW_COLOR_MODE = "additional_number_row_color_mode";
+    static final String ACCENT_PLACEMENT_MODE = "accent_placement_mode";
+    static final String ACCENT_PLACEMENT_TARGETS = "accent_placement_targets";
     static final String HAPTIC_FEEDBACK_ENABLED = "haptic_feedback_enabled";
     static final String HIT_SLOP_DP = "hit_slop_dp";
     static final String GESTURE_THRESHOLD_DP = "gesture_threshold_dp";
@@ -39,7 +42,6 @@ final class KeyboardPreferences {
     static final String ACCENT_COLOR = "accent_color";
     static final String SECONDARY_COLOR = "secondary_color";
     static final String FUNCTION_KEY_COLOR = "function_key_color";
-    static final String PRIMARY_FUNCTION_KEY_COLOR = "primary_function_key_color";
     static final String ACCENT_KEY_COLOR = "accent_key_color";
     static final String BORDER_COLOR = "border_color";
     static final String KEY_BORDER_WIDTH_DP = "key_border_width_dp";
@@ -91,12 +93,13 @@ final class KeyboardPreferences {
     private static final String PREF_NAME = "keyboard_preferences";
     private static final String DEFAULT_RESERVED_TAP_TEXT = "ㅋㅋㅋ";
     private static final int LEGACY_DEFAULT_HANGUL_HEIGHT_DP = 390;
-    private static final int LEGACY_DEFAULT_ENGLISH_HEIGHT_DP = 286;
+    private static final int LEGACY_DEFAULT_ENGLISH_HEIGHT_DP = 186;
     private static final int LEGACY_DEFAULT_KEYBOARD_BOTTOM_PADDING_DP = 4;
     private static final int LEGACY_DEFAULT_BOTTOM_ROW_TOP_PADDING_DP = 6;
     private static final int LEGACY_DEFAULT_PRIMARY_TEXT_SIZE_PERCENT = 92;
     private static final int LEGACY_DEFAULT_SECONDARY_TEXT_SIZE_PERCENT = 90;
     private static final int LEGACY_DEFAULT_GESTURE_THRESHOLD_DP = 28;
+    private static final int LEGACY_DEFAULT_TOUCH_Y_OFFSET_DP = -4;
     static final int DEFAULT_HAPTIC_TICK_DURATION_MS = 14;
     static final int MIN_HAPTIC_TICK_DURATION_MS = 4;
     static final int MAX_HAPTIC_TICK_DURATION_MS = 40;
@@ -167,6 +170,9 @@ final class KeyboardPreferences {
         int bottomRowTopPaddingDp = prefs.getInt(
                 BOTTOM_ROW_TOP_PADDING_DP,
                 defaults.bottomRowTopPaddingDp);
+        int numberRowBottomGapDp = prefs.getInt(
+                NUMBER_ROW_BOTTOM_GAP_DP,
+                defaults.numberRowBottomGapDp);
         keyboardBottomPaddingDp = migrateLegacyDefault(
                 prefs,
                 KEYBOARD_BOTTOM_PADDING_DP,
@@ -197,6 +203,12 @@ final class KeyboardPreferences {
                 prefs.getInt(GESTURE_THRESHOLD_DP, defaults.gestureThresholdDp),
                 LEGACY_DEFAULT_GESTURE_THRESHOLD_DP,
                 defaults.gestureThresholdDp);
+        int touchYOffsetDp = migrateLegacyDefault(
+                prefs,
+                TOUCH_Y_OFFSET_DP,
+                prefs.getInt(TOUCH_Y_OFFSET_DP, defaults.touchYOffsetDp),
+                LEGACY_DEFAULT_TOUCH_Y_OFFSET_DP,
+                defaults.touchYOffsetDp);
         KeyboardSettings loaded = new KeyboardSettings(
                 KeyboardMode.fromPreference(prefs.getString(
                         KEYBOARD_MODE_LAST,
@@ -214,7 +226,7 @@ final class KeyboardPreferences {
                 prefs.getBoolean(HAPTIC_FEEDBACK_ENABLED, defaults.hapticFeedbackEnabled),
                 prefs.getInt(HIT_SLOP_DP, defaults.hitSlopDp),
                 gestureThresholdDp,
-                prefs.getInt(TOUCH_Y_OFFSET_DP, defaults.touchYOffsetDp),
+                touchYOffsetDp,
                 prefs.getInt(REPEAT_START_DELAY_MS, defaults.repeatStartDelayMs),
                 prefs.getInt(REPEAT_INTERVAL_MS, defaults.repeatIntervalMs),
                 prefs.getBoolean(
@@ -227,7 +239,6 @@ final class KeyboardPreferences {
                 prefs.getInt(ACCENT_COLOR, defaults.accentColor),
                 prefs.getInt(SECONDARY_COLOR, defaults.secondaryColor),
                 prefs.getInt(FUNCTION_KEY_COLOR, defaults.functionKeyColor),
-                prefs.getInt(PRIMARY_FUNCTION_KEY_COLOR, defaults.primaryFunctionKeyColor),
                 prefs.getInt(ACCENT_KEY_COLOR, defaults.accentKeyColor),
                 prefs.getInt(BORDER_COLOR, defaults.borderColor),
                 prefs.getInt(KEY_BORDER_WIDTH_DP, defaults.keyBorderWidthDp),
@@ -242,7 +253,7 @@ final class KeyboardPreferences {
                 prefs.getBoolean(SHOW_ENGLISH_SLIDE_HINTS, defaults.showEnglishSlideHints),
                 prefs.getBoolean(SHOW_BEGINNER_TOOLTIP_PREVIEW, defaults.showBeginnerTooltipPreview),
                 hangulSpecialColumnPercent(prefs, defaults));
-        return loaded
+        loaded = loaded
                 .withHangulSidePadding(hangulLeftPaddingDp, hangulRightPaddingDp)
                 .withEnglishSidePadding(englishLeftPaddingDp, englishRightPaddingDp)
                 .withLayoutSpacing(
@@ -250,6 +261,7 @@ final class KeyboardPreferences {
                         keyboardTopPaddingDp,
                         keyboardBottomPaddingDp,
                         bottomRowTopPaddingDp)
+                .withNumberRowBottomGap(numberRowBottomGapDp)
                 .withTypography(
                         prefs.getString(FONT_FAMILY, defaults.fontFamily),
                         primaryTextSizePercent,
@@ -283,6 +295,7 @@ final class KeyboardPreferences {
                 .withAdditionalNumberRowColorMode(AdditionalNumberRowColorMode.fromPreference(prefs.getString(
                         ADDITIONAL_NUMBER_ROW_COLOR_MODE,
                         defaults.additionalNumberRowColorMode.preferenceValue)));
+        return applyAccentPlacementPolicy(context, loaded);
     }
 
     static void saveSettings(Context context, KeyboardSettings settings) {
@@ -299,6 +312,7 @@ final class KeyboardPreferences {
                 .putInt(KEYBOARD_TOP_PADDING_DP, settings.keyboardTopPaddingDp)
                 .putInt(KEYBOARD_BOTTOM_PADDING_DP, settings.keyboardBottomPaddingDp)
                 .putInt(BOTTOM_ROW_TOP_PADDING_DP, settings.bottomRowTopPaddingDp)
+                .putInt(NUMBER_ROW_BOTTOM_GAP_DP, settings.numberRowBottomGapDp)
                 .putInt(KEYBOARD_HEIGHT_DP, settings.keyboardHeightDp)
                 .putInt(HANGUL_KEYBOARD_HEIGHT_DP, settings.hangulKeyboardHeightDp)
                 .putInt(ENGLISH_KEYBOARD_HEIGHT_DP, settings.englishKeyboardHeightDp)
@@ -323,7 +337,6 @@ final class KeyboardPreferences {
                 .putInt(ACCENT_COLOR, settings.accentColor)
                 .putInt(SECONDARY_COLOR, settings.secondaryColor)
                 .putInt(FUNCTION_KEY_COLOR, settings.functionKeyColor)
-                .putInt(PRIMARY_FUNCTION_KEY_COLOR, settings.primaryFunctionKeyColor)
                 .putInt(ACCENT_KEY_COLOR, settings.accentKeyColor)
                 .putInt(BORDER_COLOR, settings.borderColor)
                 .putInt(KEY_BORDER_WIDTH_DP, settings.keyBorderWidthDp)
@@ -361,6 +374,81 @@ final class KeyboardPreferences {
                         VISUAL_EFFECTS,
                         KeyboardThemeJson.encodeVisualEffectsObject(settings.visualEffects).toString())
                 .apply();
+    }
+
+    static AccentPlacementMode loadAccentPlacementMode(Context context) {
+        return AccentPlacementMode.fromPreference(prefs(context).getString(
+                ACCENT_PLACEMENT_MODE,
+                AccentPlacementMode.DEFAULT.preferenceValue));
+    }
+
+    static void saveAccentPlacementMode(Context context, AccentPlacementMode mode) {
+        prefs(context).edit()
+                .putString(
+                        ACCENT_PLACEMENT_MODE,
+                        (mode == null ? AccentPlacementMode.DEFAULT : mode).preferenceValue)
+                .apply();
+    }
+
+    static AccentPlacementPolicy loadAccentPlacementPolicy(Context context) {
+        SharedPreferences prefs = prefs(context);
+        if (prefs.contains(ACCENT_PLACEMENT_TARGETS)) {
+            return AccentPlacementPolicy.fromPreference(prefs.getString(
+                    ACCENT_PLACEMENT_TARGETS,
+                    AccentPlacementPolicy.THEME_DEFAULT_VALUE));
+        }
+        return AccentPlacementPolicy.fromLegacyMode(loadAccentPlacementMode(context));
+    }
+
+    static KeyboardSettings applyAccentPlacementPolicy(Context context, KeyboardSettings settings) {
+        AccentPlacementPolicy policy = loadAccentPlacementPolicy(context);
+        if (policy.themeDefault) {
+            return AccentPlacementPolicy.applyThemeDefaultTo(
+                    settings,
+                    selectedThemeAppearance(context));
+        }
+        if (selectedThemeLocksUserAccentPlacement(context)) {
+            return settings;
+        }
+        return policy.applyTo(settings);
+    }
+
+    static void saveAccentPlacementPolicy(Context context, AccentPlacementPolicy policy) {
+        AccentPlacementPolicy safePolicy = policy == null ? AccentPlacementPolicy.themeDefault() : policy;
+        prefs(context).edit()
+                .putString(ACCENT_PLACEMENT_TARGETS, safePolicy.toPreferenceValue())
+                .putString(ACCENT_PLACEMENT_MODE, AccentPlacementMode.THEME_DEFAULT.preferenceValue)
+                .apply();
+    }
+
+    private static KeyboardSettings selectedThemeAppearance(Context context) {
+        String json = selectedThemeJson(context);
+        return json == null ? null : KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+    }
+
+    static boolean selectedThemeLocksUserAccentPlacement(Context context) {
+        return KeyboardThemeJson.locksUserAccentPlacement(selectedThemeJson(context));
+    }
+
+    private static String selectedThemeJson(Context context) {
+        String selectedThemeId = loadSelectedThemeId(context);
+        if (selectedThemeId == null || selectedThemeId.isEmpty()) {
+            return null;
+        }
+        KeyboardThemePreset preset = KeyboardThemePreset.find(selectedThemeId);
+        if (preset != null) {
+            return preset.json;
+        }
+        UserThemeStore.UserTheme[] userThemes = UserThemeStore.load(context);
+        if (userThemes == null) {
+            return null;
+        }
+        for (UserThemeStore.UserTheme theme : userThemes) {
+            if (theme != null && selectedThemeId.equals(theme.id)) {
+                return theme.json;
+            }
+        }
+        return null;
     }
 
     static void saveKeyboardMode(Context context, KeyboardMode mode) {
@@ -594,11 +682,10 @@ final class KeyboardPreferences {
             int legacyValue,
             int defaultValue) {
         if (prefs.contains(key)) {
-            int value = prefs.getInt(key, defaultValue);
-            return value == 0 ? defaultValue : value;
+            return prefs.getInt(key, defaultValue);
         }
         if (prefs.contains(legacyKey)) {
-            return legacyValue == 0 ? defaultValue : legacyValue;
+            return legacyValue;
         }
         return defaultValue;
     }

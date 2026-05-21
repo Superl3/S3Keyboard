@@ -47,7 +47,7 @@ public final class KeyboardThemePresetTest {
 
             assertEquals(themed.fontFamily, KeyboardSettings.normalizeFontFamily(themed.fontFamily));
             assertEquals(true, themed.showBeginnerTooltipPreview);
-            assertTrue(themed.primaryFunctionKeyColor != themed.keyIdleColor);
+            assertTrue(themed.functionKeyColor != themed.keyIdleColor);
             assertTrue(themed.accentKeyColor != themed.keyIdleColor);
             assertEquals(330, themed.hangulKeyboardHeightDp);
             assertEquals(270, themed.englishKeyboardHeightDp);
@@ -87,13 +87,14 @@ public final class KeyboardThemePresetTest {
         assertEquals(0xFFD2CCC2, light.depthColor);
         assertEquals(0xFFFFFFFF, light.keyboardBackgroundColor);
         assertEquals(0xFFECE7DE, light.functionKeyColor);
-        assertEquals(0xFFECE7DE, light.primaryFunctionKeyColor);
-        assertEquals(0xFFFF9F32, dark.accentKeyColor);
+        assertEquals(0xFFECE7DE, light.functionKeyColor);
+        assertEquals(0xFF1A1C20, dark.functionKeyColor);
+        assertEquals(0xFF1A1C20, dark.accentKeyColor);
         assertEquals(0xFFECE7DE, light.accentKeyColor);
-        assertEquals(0xFF111318, (int) dark.keyColorOverrides.get("modinv"));
-        assertEquals(0xFFFF9F32, (int) dark.keyColorOverrides.get("background:modinv"));
-        assertEquals(0xFF111318, (int) dark.keyColorOverrides.get("."));
-        assertEquals(0xFF111318, (int) dark.keyColorOverrides.get("/"));
+        assertEquals(0xFFB8A9BF, (int) dark.keyColorOverrides.get("modinv"));
+        assertEquals(0xFF1A1C20, (int) dark.keyColorOverrides.get("background:modinv"));
+        assertEquals(0xFFB8A9BF, (int) dark.keyColorOverrides.get("."));
+        assertEquals(0xFFB8A9BF, (int) dark.keyColorOverrides.get("/"));
         assertEquals(0xFF6C5542, (int) light.keyColorOverrides.get("modinv"));
         assertEquals(0xFFECE7DE, (int) light.keyColorOverrides.get("background:modinv"));
         assertEquals(KeyboardSettings.FONT_NOTO_SANS_KR, dark.fontFamily);
@@ -115,6 +116,11 @@ public final class KeyboardThemePresetTest {
         assertEquals(ModifierIconCatalog.PACK_DOTS_LINES, light.modifierIconThemePackId);
         assertEquals(ModifierIconCatalog.GLYPH_DOT, dark.keyDisplayOverrides.get("alpha").value);
         assertEquals(ModifierIconCatalog.GLYPH_DOT, light.keyDisplayOverrides.get("alpha").value);
+        assertTrue(brightness(dark.functionKeyColor) < brightness(dark.keyIdleColor));
+        assertEquals(AdditionalNumberRowColorMode.FULL_ALPHA, dark.additionalNumberRowColorMode);
+        assertEquals(AdditionalNumberRowColorMode.FULL_ALPHA, light.additionalNumberRowColorMode);
+        assertTrue(dark.keyColorOverrides.containsKey("tap:1"));
+        assertTrue(light.keyColorOverrides.containsKey("tap:1"));
         assertNotEquals(
                 dark.accentColor,
                 KeyboardKeyVisualClassifier.textColorFor(
@@ -132,6 +138,14 @@ public final class KeyboardThemePresetTest {
                                 "ㅔ",
                                 "ㅐ",
                                 null)));
+    }
+
+    @Test
+    public void colorfulForegroundThemesAlsoColorNumberRowLegends() {
+        assertThemeHasNumberLegendColor("gmk-dots-dark");
+        assertThemeHasNumberLegendColor("gmk-dots-light");
+        assertThemeHasNumberLegendColor("marigold-fiesta-dark");
+        assertThemeHasNumberLegendColor("marigold-fiesta-light");
     }
 
     @Test
@@ -159,6 +173,16 @@ public final class KeyboardThemePresetTest {
         assertEquals("log", KeyDisplayOverridePackCatalog
                 .overridesForPack(KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS)
                 .get("/").value);
+        assertEquals(0xFFEBCB8B, (int) oblivion.keyColorOverrides.get("options"));
+        assertEquals(0xFFA3BE8C, (int) oblivion.keyColorOverrides.get("enter"));
+        assertEquals(0xFF88C0D0, (int) oblivion.keyColorOverrides.get("."));
+        assertEquals(0xFFB48EAD, (int) oblivion.keyColorOverrides.get("/"));
+        assertEquals(false, oblivion.keyColorOverrides.containsKey("background:enter"));
+        assertEquals(
+                oblivion.functionKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        oblivion,
+                        GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, 3)));
         assertEquals(ModifierIconCatalog.PACK_METROPOLIS_POINTS, metropolis.modifierIconThemePackId);
         assertEquals(0xFF090D12, metropolis.keyboardBackgroundColor);
         assertEquals(0xFF10151B, (int) metropolis.keyColorOverrides.get("background:alpha"));
@@ -197,6 +221,14 @@ public final class KeyboardThemePresetTest {
         assertSpecialLegendsReadable("gmk-hammerhead");
         assertSpecialLegendsReadable("gmk-8008");
         assertSpecialLegendsReadable("gmk-modern-dolch");
+    }
+
+    @Test
+    public void threeToneThemesUseCurrentDefaultAccentPlacement() {
+        assertDefaultAccentPlacement("gmk-bento");
+        assertDefaultAccentPlacement("gmk-hammerhead");
+        assertDefaultAccentPlacement("gmk-8008");
+        assertDefaultAccentPlacement("gmk-modern-dolch");
     }
 
     @Test
@@ -240,7 +272,7 @@ public final class KeyboardThemePresetTest {
 
         assertEquals(builtIn.keyIdleColor, external.keyIdleColor);
         assertEquals(builtIn.functionKeyColor, external.functionKeyColor);
-        assertEquals(builtIn.primaryFunctionKeyColor, external.primaryFunctionKeyColor);
+        assertEquals(builtIn.functionKeyColor, external.functionKeyColor);
         assertEquals(builtIn.accentKeyColor, external.accentKeyColor);
         assertEquals(builtIn.borderColor, external.borderColor);
         assertEquals(builtIn.depthColor, external.depthColor);
@@ -267,7 +299,7 @@ public final class KeyboardThemePresetTest {
 
         assertEquals(id, builtIn.keyIdleColor, external.keyIdleColor);
         assertEquals(id, builtIn.functionKeyColor, external.functionKeyColor);
-        assertEquals(id, builtIn.primaryFunctionKeyColor, external.primaryFunctionKeyColor);
+        assertEquals(id, builtIn.functionKeyColor, external.functionKeyColor);
         assertEquals(id, builtIn.accentKeyColor, external.accentKeyColor);
         assertEquals(id, builtIn.keyPressedColor, external.keyPressedColor);
         assertEquals(id, builtIn.keyboardBackgroundColor, external.keyboardBackgroundColor);
@@ -342,6 +374,54 @@ public final class KeyboardThemePresetTest {
                 KeyboardKeyVisualClassifier.textColorFor(settings, key));
     }
 
+    private void assertDefaultAccentPlacement(String presetId) {
+        KeyboardThemePreset preset = KeyboardThemePreset.find(presetId);
+        assertNotNull(preset);
+        KeyboardSettings settings = preset.applyTo(KeyboardSettings.defaults());
+
+        int accentBackground = KeyboardKeyVisualClassifier.colorFor(
+                settings,
+                GestureKey.command("", KeyboardCommands.CMD_ENTER));
+        assertEquals(
+                presetId + " language should use qwerty meta accent",
+                accentBackground,
+                KeyboardKeyVisualClassifier.colorFor(settings, GestureKey.command("", KeyboardCommands.CMD_TOGGLE_LANGUAGE)));
+        assertEquals(
+                presetId + " shift should use qwerty accent",
+                accentBackground,
+                KeyboardKeyVisualClassifier.colorFor(settings, GestureKey.command("", KeyboardCommands.CMD_SHIFT_ONCE)));
+        assertEquals(
+                presetId + " backspace should use qwerty accent",
+                accentBackground,
+                KeyboardKeyVisualClassifier.colorFor(settings, GestureKey.command("", KeyboardCommands.CMD_DELETE)));
+        assertEquals(
+                presetId + " settings should use dingul ctrl accent",
+                accentBackground,
+                KeyboardKeyVisualClassifier.colorFor(settings, GestureKey.command("", KeyboardCommands.CMD_SETTINGS)));
+        assertEquals(
+                presetId + " dot should use dingul visual enter accent",
+                accentBackground,
+                KeyboardKeyVisualClassifier.colorFor(settings, new GestureKey(
+                        ".",
+                        ".",
+                        "\"",
+                        "`",
+                        ",",
+                        KeyboardCommands.CMD_NOOP,
+                        null)));
+        assertNotEquals(
+                presetId + " slash should stay modifier by default",
+                accentBackground,
+                KeyboardKeyVisualClassifier.colorFor(settings, new GestureKey(
+                        "/",
+                        "/",
+                        ":",
+                        ";",
+                        "@",
+                        KeyboardCommands.CMD_NOOP,
+                        null)));
+    }
+
     private String readThemeJson(String id) throws IOException {
         File file = new File(themeDirectory(), id + ".json");
         assertTrue("Missing external theme JSON: " + id, file.isFile());
@@ -374,6 +454,16 @@ public final class KeyboardThemePresetTest {
         }
         assertTrue("Missing themes directory", dir.isDirectory());
         return dir;
+    }
+
+    private void assertThemeHasNumberLegendColor(String presetId) {
+        KeyboardThemePreset preset = KeyboardThemePreset.find(presetId);
+        assertNotNull(preset);
+        KeyboardSettings settings = preset.applyTo(KeyboardSettings.defaults());
+        for (int digit = 0; digit <= 9; digit++) {
+            assertTrue(presetId + " missing tap:" + digit,
+                    settings.keyColorOverrides.containsKey("tap:" + digit));
+        }
     }
 
     private static int brightness(int color) {
