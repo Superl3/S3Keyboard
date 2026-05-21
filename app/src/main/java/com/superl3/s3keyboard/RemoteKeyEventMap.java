@@ -12,6 +12,14 @@ final class RemoteKeyEventMap {
                 return KeyEvent.KEYCODE_ESCAPE;
             case KeyboardCommands.CMD_REMOTE_TAB:
                 return KeyEvent.KEYCODE_TAB;
+            case KeyboardCommands.CMD_REMOTE_ARROW_UP:
+                return KeyEvent.KEYCODE_DPAD_UP;
+            case KeyboardCommands.CMD_REMOTE_ARROW_DOWN:
+                return KeyEvent.KEYCODE_DPAD_DOWN;
+            case KeyboardCommands.CMD_REMOTE_ARROW_LEFT:
+                return KeyEvent.KEYCODE_DPAD_LEFT;
+            case KeyboardCommands.CMD_REMOTE_ARROW_RIGHT:
+                return KeyEvent.KEYCODE_DPAD_RIGHT;
             case KeyboardCommands.CMD_REMOTE_HOME:
                 return KeyEvent.KEYCODE_MOVE_HOME;
             case KeyboardCommands.CMD_REMOTE_END:

@@ -29,8 +29,16 @@ final class KeyboardCommands {
     static final String CMD_REMOTE_CTRL_TAB = "__remote_ctrl_tab__";
     static final String CMD_REMOTE_ALT_TAB = "__remote_alt_tab__";
     static final String CMD_REMOTE_CTRL_LATCH = "__remote_ctrl_latch__";
+    static final String CMD_REMOTE_WIN_LATCH = "__remote_win_latch__";
     static final String CMD_REMOTE_ALT_LATCH = "__remote_alt_latch__";
+    static final String CMD_REMOTE_CTRL_LOCK = "__remote_ctrl_lock__";
+    static final String CMD_REMOTE_WIN_LOCK = "__remote_win_lock__";
+    static final String CMD_REMOTE_ALT_LOCK = "__remote_alt_lock__";
     static final String CMD_REMOTE_IME_TOGGLE = "__remote_ime_toggle__";
+    static final String CMD_REMOTE_ARROW_UP = "__remote_arrow_up__";
+    static final String CMD_REMOTE_ARROW_DOWN = "__remote_arrow_down__";
+    static final String CMD_REMOTE_ARROW_LEFT = "__remote_arrow_left__";
+    static final String CMD_REMOTE_ARROW_RIGHT = "__remote_arrow_right__";
     static final String CMD_REMOTE_HOME = "__remote_home__";
     static final String CMD_REMOTE_END = "__remote_end__";
     static final String CMD_REMOTE_PAGE_UP = "__remote_page_up__";
@@ -118,10 +126,26 @@ final class KeyboardCommands {
                 return "Alt+Tab";
             case CMD_REMOTE_CTRL_LATCH:
                 return "Ctrl";
+            case CMD_REMOTE_WIN_LATCH:
+                return "Win";
             case CMD_REMOTE_ALT_LATCH:
                 return "Alt";
+            case CMD_REMOTE_CTRL_LOCK:
+                return "Ctrl Lock";
+            case CMD_REMOTE_WIN_LOCK:
+                return "Win Lock";
+            case CMD_REMOTE_ALT_LOCK:
+                return "Alt Lock";
             case CMD_REMOTE_IME_TOGGLE:
                 return "IME";
+            case CMD_REMOTE_ARROW_UP:
+                return "Up";
+            case CMD_REMOTE_ARROW_DOWN:
+                return "Down";
+            case CMD_REMOTE_ARROW_LEFT:
+                return "Left";
+            case CMD_REMOTE_ARROW_RIGHT:
+                return "Right";
             case CMD_REMOTE_HOME:
                 return "Home";
             case CMD_REMOTE_END:

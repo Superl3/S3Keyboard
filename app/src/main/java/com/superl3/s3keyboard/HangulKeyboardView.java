@@ -1172,6 +1172,9 @@ public final class HangulKeyboardView extends View {
     }
 
     private int iconFor(GestureKey key) {
+        if (settings.remoteModeEnabled) {
+            return KeyIcon.NONE;
+        }
         if (isShiftKey(key) && englishCapsLocked) {
             return KeyIcon.CAPS_LOCK;
         }

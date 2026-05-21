@@ -640,6 +640,7 @@ final class KeyboardSettings {
         this.showEnglishNumberRow = showEnglishNumberRow;
         this.forceNumberRow = forceNumberRow;
         this.showNumberRow = forceNumberRow
+                || remoteModeEnabled
                 || (this.keyboardMode == KeyboardMode.ENGLISH ? showEnglishNumberRow : showHangulNumberRow);
         this.additionalNumberRowColorMode = additionalNumberRowColorMode == null
                 ? DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE

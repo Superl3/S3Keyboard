@@ -39,6 +39,7 @@ public final class S3KeyboardService extends InputMethodService
     private PopupWindow previewPopup;
     private PopupWindow quickSettingsPopup;
     private int pendingRemoteMetaState;
+    private int lockedRemoteMetaState;
 
     private FloatingModeController floatingModeController;
     private ClipboardStore clipboardStore;
@@ -284,6 +285,7 @@ public final class S3KeyboardService extends InputMethodService
         doubleSpacePeriodState.reset();
         englishShiftState.reset();
         pendingRemoteMetaState = 0;
+        lockedRemoteMetaState = 0;
         updateShiftStateView();
     }
 
@@ -299,6 +301,7 @@ public final class S3KeyboardService extends InputMethodService
         automata.reset();
         englishShiftState.reset();
         pendingRemoteMetaState = 0;
+        lockedRemoteMetaState = 0;
         super.onFinishInput();
     }
 
@@ -560,7 +563,7 @@ public final class S3KeyboardService extends InputMethodService
 
     private void inputText(InputConnection inputConnection, String text) {
         doubleSpacePeriodState.reset();
-        if (settings.remoteModeEnabled && pendingRemoteMetaState != 0) {
+        if (settings.remoteModeEnabled && (pendingRemoteMetaState | lockedRemoteMetaState) != 0) {
             int remoteKeyCode = remotePrintableKeyCode(text);
             if (remoteKeyCode != 0) {
                 commitCurrent(inputConnection);
@@ -854,10 +857,22 @@ public final class S3KeyboardService extends InputMethodService
 
         switch (command) {
             case KeyboardCommands.CMD_REMOTE_CTRL_LATCH:
-                pendingRemoteMetaState = togglePendingRemoteMeta(KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+                pendingRemoteMetaState = togglePendingRemoteMeta(remoteCtrlMeta());
+                return;
+            case KeyboardCommands.CMD_REMOTE_WIN_LATCH:
+                pendingRemoteMetaState = togglePendingRemoteMeta(remoteWinMeta());
                 return;
             case KeyboardCommands.CMD_REMOTE_ALT_LATCH:
-                pendingRemoteMetaState = togglePendingRemoteMeta(KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
+                pendingRemoteMetaState = togglePendingRemoteMeta(remoteAltMeta());
+                return;
+            case KeyboardCommands.CMD_REMOTE_CTRL_LOCK:
+                lockedRemoteMetaState = toggleLockedRemoteMeta(remoteCtrlMeta());
+                return;
+            case KeyboardCommands.CMD_REMOTE_WIN_LOCK:
+                lockedRemoteMetaState = toggleLockedRemoteMeta(remoteWinMeta());
+                return;
+            case KeyboardCommands.CMD_REMOTE_ALT_LOCK:
+                lockedRemoteMetaState = toggleLockedRemoteMeta(remoteAltMeta());
                 return;
             case KeyboardCommands.CMD_REMOTE_SHIFT_TAB:
                 sendRemoteKey(inputConnection, KeyEvent.KEYCODE_TAB, KeyEvent.META_SHIFT_ON);
@@ -886,7 +901,28 @@ public final class S3KeyboardService extends InputMethodService
         return pendingRemoteMetaState == metaState ? 0 : metaState;
     }
 
+    private int toggleLockedRemoteMeta(int metaState) {
+        pendingRemoteMetaState &= ~metaState;
+        return (lockedRemoteMetaState & metaState) == metaState
+                ? lockedRemoteMetaState & ~metaState
+                : lockedRemoteMetaState | metaState;
+    }
+
+    private int remoteCtrlMeta() {
+        return KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
+    }
+
+    private int remoteWinMeta() {
+        return KeyEvent.META_META_ON | KeyEvent.META_META_LEFT_ON;
+    }
+
+    private int remoteAltMeta() {
+        return KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
+    }
+
     private void sendRemoteImeToggle(InputConnection inputConnection) {
+        pendingRemoteMetaState = 0;
+        lockedRemoteMetaState = 0;
         switch (settings.remoteImeShortcut) {
             case CTRL_SPACE:
                 sendRemoteKey(inputConnection, KeyEvent.KEYCODE_SPACE, KeyEvent.META_CTRL_ON);
@@ -899,7 +935,6 @@ public final class S3KeyboardService extends InputMethodService
                 return;
             case ALT_SHIFT:
             default:
-                pendingRemoteMetaState = 0;
                 inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ALT_LEFT));
                 inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT));
                 inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT));
@@ -908,7 +943,7 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void sendRemoteKey(InputConnection inputConnection, int keyCode, int metaState) {
-        int combinedMetaState = metaState | pendingRemoteMetaState;
+        int combinedMetaState = metaState | pendingRemoteMetaState | lockedRemoteMetaState;
         pendingRemoteMetaState = 0;
         inputConnection.sendKeyEvent(new KeyEvent(
                 0,
@@ -1076,9 +1111,7 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private boolean activeNumberRowVisible() {
-        return settings.keyboardMode == KeyboardMode.ENGLISH
-                ? settings.showEnglishNumberRow
-                : settings.showHangulNumberRow;
+        return settings.showNumberRow;
     }
 
     private String numberRowToggleLabel() {
@@ -1099,6 +1132,7 @@ public final class S3KeyboardService extends InputMethodService
                 .withEnterKeyLabel(enterAction.label)
                 .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
         pendingRemoteMetaState = 0;
+        lockedRemoteMetaState = 0;
         KeyboardPreferences.saveSettings(this, settings);
         applyCurrentSettingsToInputView();
         updateToolbarVisibility();
@@ -1106,6 +1140,11 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void toggleActiveNumberRow() {
+        if (settings.remoteModeEnabled) {
+            Toast.makeText(this, "Remote mode forces number row", Toast.LENGTH_SHORT).show();
+            dismissQuickSettings();
+            return;
+        }
         settings = (settings.keyboardMode == KeyboardMode.ENGLISH
                 ? settings.withEnglishNumberRow(!settings.showEnglishNumberRow)
                 : settings.withHangulNumberRow(!settings.showHangulNumberRow))

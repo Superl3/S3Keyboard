@@ -11,6 +11,10 @@ public final class RemoteKeyEventMapTest {
     public void mapsRemoteCommandsToAndroidKeyCodes() {
         assertEquals(KeyEvent.KEYCODE_ESCAPE, RemoteKeyEventMap.keyCodeFor(KeyboardCommands.CMD_REMOTE_ESC));
         assertEquals(KeyEvent.KEYCODE_TAB, RemoteKeyEventMap.keyCodeFor(KeyboardCommands.CMD_REMOTE_TAB));
+        assertEquals(KeyEvent.KEYCODE_DPAD_UP, RemoteKeyEventMap.keyCodeFor(KeyboardCommands.CMD_REMOTE_ARROW_UP));
+        assertEquals(KeyEvent.KEYCODE_DPAD_DOWN, RemoteKeyEventMap.keyCodeFor(KeyboardCommands.CMD_REMOTE_ARROW_DOWN));
+        assertEquals(KeyEvent.KEYCODE_DPAD_LEFT, RemoteKeyEventMap.keyCodeFor(KeyboardCommands.CMD_REMOTE_ARROW_LEFT));
+        assertEquals(KeyEvent.KEYCODE_DPAD_RIGHT, RemoteKeyEventMap.keyCodeFor(KeyboardCommands.CMD_REMOTE_ARROW_RIGHT));
         assertEquals(KeyEvent.KEYCODE_MOVE_HOME, RemoteKeyEventMap.keyCodeFor(KeyboardCommands.CMD_REMOTE_HOME));
         assertEquals(KeyEvent.KEYCODE_PAGE_UP, RemoteKeyEventMap.keyCodeFor(KeyboardCommands.CMD_REMOTE_PAGE_UP));
         assertEquals(KeyEvent.KEYCODE_F1, RemoteKeyEventMap.keyCodeFor(KeyboardCommands.CMD_REMOTE_F1));

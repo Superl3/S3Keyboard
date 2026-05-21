@@ -92,6 +92,27 @@ public final class KeyboardSettingsTest {
     }
 
     @Test
+    public void remoteModeForcesNumberRowWithoutChangingStoredNumberRowToggles() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withHangulNumberRow(false)
+                .withEnglishNumberRow(false)
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+
+        assertTrue(settings.showNumberRow);
+        assertFalse(settings.showHangulNumberRow);
+        assertFalse(settings.showEnglishNumberRow);
+
+        KeyboardSettings restored = settings.withRemoteOptions(
+                false,
+                RemoteKeyPreset.PC_KEYBOARD,
+                RemoteImeShortcut.ALT_SHIFT);
+
+        assertFalse(restored.showNumberRow);
+        assertFalse(restored.showHangulNumberRow);
+        assertFalse(restored.showEnglishNumberRow);
+    }
+
+    @Test
     public void themeColorsCanChangeWithoutChangingInputSettings() {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withKeyboardMode(KeyboardMode.ENGLISH)

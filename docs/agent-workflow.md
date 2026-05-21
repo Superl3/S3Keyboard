@@ -42,6 +42,7 @@ rtk .\.android-tools\android-sdk\platform-tools\adb.exe -t <transport_id> shell 
 - `KeyboardKeyVisualClassifier`: key role, foreground/background override resolution, dot display detection.
 - `HangulKeyboardView`: actual Canvas renderer, touch handling, preview bubble, visual effects, custom modifier/dot/metropolis/script drawing, touch-learning sample capture.
 - `S3KeyboardService`: IME lifecycle, input commands, quick settings popup, clipboard, editor policy integration.
+- `docs/remote-mode.md`: remote input overlay contract and Android `KeyEvent` transport limits.
 - `MainActivity`, `ThemeEditorActivity`, `ThemeSelectorActivity`: settings, theme editing, theme preview and reset UI.
 - `web-theme-builder/app.js`: browser-side theme authoring and preview parity.
 - `scripts/render-theme-previews.ps1`: static preview image parity for themes.
@@ -156,6 +157,8 @@ The raw log is local SharedPreferences data and is reset by the same input corre
 
 - Quick settings in the IME should use `PopupWindow`, be focusable, be outside-touch dismissible, and have an explicit OK close action.
 - The bottom-row options key opens quick settings on tap; the full settings activity is the long-press fallback.
+- Remote mode is a runtime input overlay, not a theme. It forces the number row while enabled without changing saved Hangul/English number-row toggles, bypasses theme display/icon overrides, uses the fixed plain text bottom row `Ctrl Win Alt Space Lang Menu Enter`, and clears one-shot/sticky remote modifiers when remote mode or the input session ends.
+- QWERTY alpha long press is intentionally empty. Remote number-row function keys live on down slide, not long press.
 - The launcher instant keyboard test should hide the IME when tapping outside the test `EditText`.
 - Spinner/dropdown rows must use `SettingsArrayAdapter`; platform default rows can render black text/icons on dark system UI.
 

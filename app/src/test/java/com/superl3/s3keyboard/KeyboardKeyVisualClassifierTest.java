@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -351,6 +352,19 @@ public final class KeyboardKeyVisualClassifierTest {
                 KeyDisplayOverrideResolver.resolve(
                         settings,
                         new GestureKey("5", "5", null, "%", null, null, "%")).value);
+    }
+
+    @Test
+    public void remoteModeIgnoresThemeDisplayOverrides() {
+        Map<String, KeyDisplayOverride> displayOverrides = new HashMap<>();
+        displayOverrides.put("alpha", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_DOT));
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyDisplayOverrides(displayOverrides)
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+
+        assertNull(KeyDisplayOverrideResolver.resolve(
+                settings,
+                new GestureKey("q", "q", "Q", "1", null, null, null)));
     }
 
     @Test

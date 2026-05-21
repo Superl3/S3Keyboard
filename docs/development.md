@@ -72,6 +72,10 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 - Windows remote mode uses the normal IME path plus Android `KeyEvent` dispatch.
   See `docs/remote-mode.md` before changing remote key mappings, Windows IME
   shortcuts, or any Accessibility-based bypass idea.
+- Remote mode is a runtime overlay: it force-enables the number row while remote
+  is on, restores the saved number-row state when remote is off, disables theme
+  display/icon overrides, and uses plain text command keys. Function keys are on
+  number-row down slides; QWERTY alpha long press remains empty.
 - `HangulKeyboardView` keeps the preview strip inside the measured keyboard
   height, so preview space does not create a transparent area over the app UI.
 - `TouchBiasStore` learns from local input patterns. It stores aggregate touch

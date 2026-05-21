@@ -3,19 +3,20 @@
 ## Current implementation
 
 - Remote mode is a user setting and defaults to off.
-- When enabled, the keyboard keeps the normal input engine but remaps the bottom modifier row and number-row long press slots to Windows-oriented commands.
+- When enabled, the keyboard keeps the normal input engine but overlays a Windows-oriented runtime layout. It must not mutate the saved Hangul/English number-row visibility preferences or theme/icon choices.
 - The current target is remote desktop style apps that accept Android IME `InputConnection.sendKeyEvent(...)` events and forward them to Windows.
-- The options key long press always remains a local escape path to app settings.
+- Remote mode disables theme display/icon overrides and renders plain text labels so command keys remain predictable. The Menu key still exposes quick settings, and Menu long press remains the local escape path to app settings.
 
 ## Default PC keyboard mapping
 
-- Options: tap `Esc`, up `Home`, left `Ctrl latch`, right `Alt latch`, long press app settings.
-- Reserved: tap `Tab`, left `Shift+Tab`, right `Ctrl+Tab`, up `Alt+Tab`.
-- Space: tap `Space`, left/right cursor movement, up `PageUp`, long press repeated space.
-- Language: tap remote IME shortcut, up `End`, long press internal Hangul/English toggle.
-- Enter: tap `Enter`, long press `Ctrl+Enter`.
-- Number row: tap keeps digits, long press `1..0 = F1..F10`, `9 left = F11`, `0 right = F12`.
-- Ctrl/Alt latch applies to the next remote key event or to the next English letter/digit key event, then clears.
+- Bottom row: `Ctrl Win Alt Space Lang Menu Enter`. Remote mode keeps this order fixed even when the normal keyboard handedness preset is left-handed.
+- `Ctrl`, `Win`, and `Alt`: tap one-shot latches the modifier for the next remote key or next English letter/digit; long press toggles a sticky modifier lock.
+- Space: tap `Space`; slide up/down/left/right sends arrow keys.
+- Lang: tap remote IME shortcut; long press internal Hangul/English toggle.
+- Menu: tap quick settings; long press app settings.
+- Enter: tap `Enter`; long press `Ctrl+Enter`.
+- Number row: remote mode force-enables the row at runtime. Tap keeps digits, down slide maps `1..0 = F1..F10`, `9 left = F11`, `0 right = F12`, and long press is intentionally empty.
+- QWERTY alpha keys do not use long press for alternate input in either normal or remote mode.
 
 ## Compatibility risk
 

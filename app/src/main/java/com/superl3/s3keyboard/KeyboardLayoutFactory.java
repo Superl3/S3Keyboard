@@ -27,7 +27,7 @@ final class KeyboardLayoutFactory {
             rows.add(numberRow(settings));
         }
         if (settings.keyboardMode == KeyboardMode.ENGLISH) {
-            rows.addAll(englishRows());
+            rows.addAll(englishRows(settings.remoteModeEnabled));
         } else {
             rows.addAll(hangulRows(settings.hangulSpecialColumnPercent));
         }
@@ -50,7 +50,7 @@ final class KeyboardLayoutFactory {
             String fKey = remoteFunctionCommand(index);
             String left = index == 9 ? KeyboardCommands.CMD_REMOTE_F11 : null;
             String right = index == 10 ? KeyboardCommands.CMD_REMOTE_F12 : null;
-            return new GestureKey(number, number, null, symbol, left, right, fKey);
+            return new GestureKey(number, number, null, fKey, left, right, null);
         }
         return new GestureKey(number, number, null, symbol, null, null, symbol);
     }
@@ -126,7 +126,7 @@ final class KeyboardLayoutFactory {
                         specialKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits));
     }
 
-    private static List<KeyboardRow> englishRows() {
+    private static List<KeyboardRow> englishRows(boolean remoteModeEnabled) {
         return Arrays.asList(
                 englishRow("qwertyuiop", TOP_QWERTY_SLIDES),
                 englishRow("asdfghjkl", HOME_QWERTY_SLIDES),
@@ -136,7 +136,7 @@ final class KeyboardLayoutFactory {
                                 KeyboardCommands.CMD_SHIFT_ONCE,
                                 KeyboardCommands.CMD_SHIFT_LOCK,
                                 3,
-                                KeyIcon.SHIFT),
+                                remoteModeEnabled ? KeyIcon.NONE : KeyIcon.SHIFT),
                         englishKey('z', pair("(", ")"), 2),
                         englishKey('x', pair("[", "]"), 2),
                         englishKey('c', pair(";", ":"), 2),
@@ -144,7 +144,12 @@ final class KeyboardLayoutFactory {
                         englishKey('b', pair("&", "|"), 2),
                         englishKey('n', single("!"), 2),
                         englishKey('m', single("?"), 2),
-                        GestureKey.command("삭제", KeyboardCommands.CMD_DELETE, 3)), 20));
+                        GestureKey.command(
+                                remoteModeEnabled ? "Bksp" : "삭제",
+                                KeyboardCommands.CMD_DELETE,
+                                null,
+                                3,
+                                remoteModeEnabled ? KeyIcon.NONE : KeyIcon.BACKSPACE)), 20));
     }
 
     private static KeyboardRow englishRow(String letters, EnglishSlideSpec[] slides) {
@@ -165,7 +170,7 @@ final class KeyboardLayoutFactory {
                 slide.down,
                 slide.left,
                 slide.right,
-                slide.longPress,
+                null,
                 widthUnits);
     }
 
@@ -179,7 +184,7 @@ final class KeyboardLayoutFactory {
 
     private static KeyboardRow bottomRow(KeyboardSettings settings) {
         if (settings.remoteModeEnabled && settings.remoteKeyPreset == RemoteKeyPreset.PC_KEYBOARD) {
-            return remoteBottomRow(settings);
+            return remoteBottomRow();
         }
         List<GestureKey> rightHandOrder = Arrays.asList(
                 new GestureKey(
@@ -220,62 +225,80 @@ final class KeyboardLayoutFactory {
         return new KeyboardRow(leftHandOrder, 20);
     }
 
-    private static KeyboardRow remoteBottomRow(KeyboardSettings settings) {
+    private static KeyboardRow remoteBottomRow() {
         List<GestureKey> rightHandOrder = Arrays.asList(
                 new GestureKey(
-                        "Esc",
-                        KeyboardCommands.CMD_REMOTE_ESC,
-                        KeyboardCommands.CMD_REMOTE_HOME,
-                        null,
+                        "Ctrl",
                         KeyboardCommands.CMD_REMOTE_CTRL_LATCH,
-                        KeyboardCommands.CMD_REMOTE_ALT_LATCH,
-                        KeyboardCommands.CMD_OPEN_OPTIONS,
-                        3,
-                        KeyIcon.OPTIONS),
-                new GestureKey(
-                        "Tab",
-                        KeyboardCommands.CMD_REMOTE_TAB,
-                        KeyboardCommands.CMD_REMOTE_ALT_TAB,
                         null,
-                        KeyboardCommands.CMD_REMOTE_SHIFT_TAB,
-                        KeyboardCommands.CMD_REMOTE_CTRL_TAB,
                         null,
+                        null,
+                        null,
+                        KeyboardCommands.CMD_REMOTE_CTRL_LOCK,
                         2,
-                        KeyIcon.RESERVED),
+                        KeyIcon.NONE),
                 new GestureKey(
-                        "?ㅽ럹?댁뒪",
-                        KeyboardCommands.CMD_SPACE,
-                        KeyboardCommands.CMD_REMOTE_PAGE_UP,
+                        "Win",
+                        KeyboardCommands.CMD_REMOTE_WIN_LATCH,
                         null,
-                        KeyboardCommands.CMD_MOVE_LEFT,
-                        KeyboardCommands.CMD_MOVE_RIGHT,
-                        KeyboardCommands.CMD_SPACE,
-                        10,
-                        KeyIcon.SPACE),
+                        null,
+                        null,
+                        null,
+                        KeyboardCommands.CMD_REMOTE_WIN_LOCK,
+                        2,
+                        KeyIcon.NONE),
                 new GestureKey(
-                        "IME",
+                        "Alt",
+                        KeyboardCommands.CMD_REMOTE_ALT_LATCH,
+                        null,
+                        null,
+                        null,
+                        null,
+                        KeyboardCommands.CMD_REMOTE_ALT_LOCK,
+                        2,
+                        KeyIcon.NONE),
+                new GestureKey(
+                        "Space",
+                        KeyboardCommands.CMD_SPACE,
+                        KeyboardCommands.CMD_REMOTE_ARROW_UP,
+                        KeyboardCommands.CMD_REMOTE_ARROW_DOWN,
+                        KeyboardCommands.CMD_REMOTE_ARROW_LEFT,
+                        KeyboardCommands.CMD_REMOTE_ARROW_RIGHT,
+                        null,
+                        8,
+                        KeyIcon.NONE),
+                new GestureKey(
+                        "Lang",
                         KeyboardCommands.CMD_REMOTE_IME_TOGGLE,
-                        KeyboardCommands.CMD_REMOTE_END,
-                        KeyboardCommands.CMD_NOOP,
-                        ",",
-                        ",",
+                        null,
+                        null,
+                        null,
+                        null,
                         KeyboardCommands.CMD_TOGGLE_LANGUAGE,
                         2,
-                        KeyIcon.LANGUAGE),
-                GestureKey.command(
-                        settings.enterKeyLabel,
+                        KeyIcon.NONE),
+                new GestureKey(
+                        "Menu",
+                        KeyboardCommands.CMD_QUICK_SETTINGS,
+                        null,
+                        null,
+                        null,
+                        null,
+                        KeyboardCommands.CMD_OPEN_OPTIONS,
+                        2,
+                        KeyIcon.NONE),
+                new GestureKey(
+                        "Enter",
                         KeyboardCommands.CMD_ENTER,
+                        null,
+                        null,
+                        null,
+                        null,
                         KeyboardCommands.CMD_REMOTE_CTRL_ENTER,
-                        3,
-                        KeyIcon.enterForLabel(settings.enterKeyLabel)));
+                        2,
+                        KeyIcon.NONE));
 
-        if (settings.handednessMode != HandednessMode.LEFT) {
-            return new KeyboardRow(rightHandOrder, 20);
-        }
-
-        List<GestureKey> leftHandOrder = new ArrayList<>(rightHandOrder);
-        Collections.reverse(leftHandOrder);
-        return new KeyboardRow(leftHandOrder, 20);
+        return new KeyboardRow(rightHandOrder, 20);
     }
 
     private static GestureKey spaceKey(KeyboardSettings settings) {

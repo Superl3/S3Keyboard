@@ -10,6 +10,9 @@ final class KeyDisplayOverrideResolver {
         if (settings == null || key == null) {
             return null;
         }
+        if (settings.remoteModeEnabled) {
+            return null;
+        }
 
         Map<String, KeyDisplayOverride> packOverrides =
                 KeyDisplayOverridePackCatalog.overridesForEffectivePack(settings);
