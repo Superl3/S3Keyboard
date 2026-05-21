@@ -83,6 +83,8 @@ public final class KeyboardLayoutFactoryTest {
         assertDirections(findKey(rows, "ㅢ"), "ㅚ", "ㅟ", "ㅝ", "ㅘ");
         assertDirections(findKey(rows, "ㅣ."), "ㅗ", "ㅜ", "ㅓ", "ㅏ");
         assertDirections(findKey(rows, "ㅡㅐ"), "ㅙ", "ㅞ", "ㅔ", "ㅐ");
+        assertDirections(findKey(rows, ". ."), "ㅛ", "ㅑ", "ㅠ", "ㅕ");
+        assertEquals(" ", findKey(rows, ". .").valueFor(GestureAction.TAP));
         assertDirections(findKey(rows, "?"), "!", "*", "+", KeyboardCommands.CMD_NOOP);
         assertDirections(findKey(rows, "."), "\"", "`", ",", KeyboardCommands.CMD_NOOP);
         assertDirections(findKey(rows, "/"), ":", ";", "@", KeyboardCommands.CMD_NOOP);

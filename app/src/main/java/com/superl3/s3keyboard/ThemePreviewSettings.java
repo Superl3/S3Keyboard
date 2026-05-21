@@ -24,6 +24,7 @@ final class ThemePreviewSettings {
         AccentPlacementPolicy policy = accentPlacementPolicy == null
                 ? AccentPlacementPolicy.themeDefault()
                 : accentPlacementPolicy;
-        return policy.themeDefault ? preview : policy.applyTo(preview);
+        boolean themeLocksAccentPlacement = option != null && option.locksUserAccentPlacement();
+        return policy.themeDefault || themeLocksAccentPlacement ? preview : policy.applyTo(preview);
     }
 }

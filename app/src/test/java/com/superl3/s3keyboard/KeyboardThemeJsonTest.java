@@ -388,12 +388,24 @@ public final class KeyboardThemeJsonTest {
                 + "\"metadata\":{\"features\":[\"colorfulForeground\"]},"
                 + "\"colors\":{\"alphaKey\":\"#101010\",\"modifierKey\":\"#202020\"}"
                 + "}";
+        String colorfulModifierToken = "{"
+                + "\"schemaVersion\":1,"
+                + "\"metadata\":{\"features\":[\"colorfulModifier\"]},"
+                + "\"colors\":{\"alphaKey\":\"#101010\",\"modifierKey\":\"#202020\"}"
+                + "}";
+        String colorfulModifierPack = "{"
+                + "\"schemaVersion\":1,"
+                + "\"icons\":{\"modifierPackId\":\"accent-color\"},"
+                + "\"colors\":{\"alphaKey\":\"#101010\",\"modifierKey\":\"#202020\"}"
+                + "}";
         String normal = "{"
                 + "\"schemaVersion\":1,"
                 + "\"colors\":{\"alphaKey\":\"#101010\",\"modifierKey\":\"#202020\"}"
                 + "}";
 
         assertEquals(true, KeyboardThemeJson.locksUserAccentPlacement(colorful));
+        assertEquals(true, KeyboardThemeJson.locksUserAccentPlacement(colorfulModifierToken));
+        assertEquals(true, KeyboardThemeJson.locksUserAccentPlacement(colorfulModifierPack));
         assertEquals(false, KeyboardThemeJson.locksUserAccentPlacement(normal));
     }
 

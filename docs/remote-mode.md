@@ -44,12 +44,30 @@ These shortcuts only work if the remote app forwards the Android key events to W
 
 Some game-streaming or remote-control forks use Accessibility control paths to bypass Android input interception. That approach should be treated as a separate experimental transport, not as a guaranteed upgrade to the IME path.
 
+Android exposes different input/control surfaces with different limits:
+
+- `InputConnection.sendKeyEvent(...)` is the current IME path. It is cheap and does not require extra user permissions, but it depends on the focused app and remote client accepting soft-keyboard key events.
+- `AccessibilityService.dispatchGesture(...)` can inject touch gestures, not an arbitrary reliable PC keyboard/HID stream.
+- `AccessibilityService.performGlobalAction(...)` is for Android global actions such as back/home/recents, not forwarding Windows shortcuts.
+
+That means Accessibility may help a specific remote client when the target can be controlled through on-screen controls or a documented accessibility surface, but it should not be assumed to solve intercepted `Alt+Tab`, `Win+Space`, function keys, or Windows IME toggles.
+
 Before adding it, verify:
 
 - whether Accessibility can actually inject the needed target-app key events on the supported Android versions,
 - whether the target remote app exposes a stable control surface,
 - whether Play/closed-beta permission disclosure is acceptable,
 - and whether the user can clearly opt in and recover when the bridge fails.
+
+## Transport strategy
+
+Keep the v1 remote mode on `InputConnection.sendKeyEvent(...)` and add proof tooling before adding a privileged bridge:
+
+1. Build a remote key test screen that sends the exact shortcuts and records which remote app receives them.
+2. Add per-app compatibility profiles only after real-device evidence, because RDP, Moonlight, Chrome Remote Desktop, and WebView-backed clients do not treat soft keyboard events identically.
+3. If a Moonlight/Sunshine path is needed, prefer a client-specific integration or companion transport over a generic Accessibility workaround.
+4. Only add Accessibility as an explicit opt-in experimental transport when the test screen proves which failures it fixes.
+5. Treat Bluetooth HID or a small companion bridge as separate future transports for cases where the Android IME path is fundamentally insufficient.
 
 ## Recommended next work
 

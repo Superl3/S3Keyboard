@@ -57,6 +57,13 @@ final class ThemeOption {
         return null;
     }
 
+    boolean locksUserAccentPlacement() {
+        if (preset != null) {
+            return KeyboardThemeJson.locksUserAccentPlacement(preset.json);
+        }
+        return KeyboardThemeJson.locksUserAccentPlacement(userThemeJson);
+    }
+
     static KeyboardSettings resetToDefaultAppearance(KeyboardSettings settings) {
         KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
         return base.withAppearanceFrom(KeyboardSettings.defaults());

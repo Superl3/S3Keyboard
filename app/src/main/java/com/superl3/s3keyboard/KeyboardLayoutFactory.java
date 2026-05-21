@@ -122,7 +122,7 @@ final class KeyboardLayoutFactory {
                 new KeyboardRow(Arrays.asList(
                         mainKey("ㅈ", "ㅈ", "ㅉ", "~", "ㅊ", "ㅊ", mainUnits),
                         mainKey("ㅎ", "ㅎ", "0", "8", "7", "9", mainUnits),
-                        mainKey(". .", ".", null, null, null, null, mainUnits),
+                        mainKey(". .", " ", "ㅛ", "ㅑ", "ㅠ", "ㅕ", mainUnits),
                         specialKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits));
     }
 

@@ -108,6 +108,9 @@ final class KeyboardThemeJson {
             JSONObject root = new JSONObject(json);
             JSONObject metadata = root.optJSONObject("metadata");
             if (containsMetadataToken(metadata, "colorfulForeground")
+                    || containsMetadataToken(metadata, "colorfulModifier")
+                    || containsMetadataToken(metadata, "colorfulModifiers")
+                    || containsMetadataToken(metadata, "colorful")
                     || containsMetadataToken(metadata, "heavyPerKeyOverrides")) {
                 return true;
             }
@@ -115,6 +118,7 @@ final class KeyboardThemeJson {
             String modifierPackId = icons == null ? "" : icons.optString("modifierPackId", "");
             String normalizedPackId = ModifierIconCatalog.normalizePackId(modifierPackId);
             if (ModifierIconCatalog.PACK_DOTS_LINES.equals(normalizedPackId)
+                    || ModifierIconCatalog.isColoredPack(normalizedPackId)
                     || ModifierIconCatalog.PACK_METROPOLIS_POINTS.equals(normalizedPackId)) {
                 return true;
             }

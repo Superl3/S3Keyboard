@@ -72,6 +72,24 @@ public final class ThemePreviewSettingsTest {
     }
 
     @Test
+    public void previewSettingsIgnoreUserAccentPlacementForLockedColorfulThemes() {
+        ThemeOption option = option("gmk-dots-dark");
+        KeyboardSettings settings = KeyboardSettings.defaults();
+
+        KeyboardSettings preview = ThemePreviewSettings.forOption(
+                option,
+                settings,
+                KeyboardMode.ENGLISH,
+                AccentPlacementPolicy.of(EnumSet.of(AccentPlacementTarget.META)));
+
+        assertNotEquals(
+                preview.accentKeyColor,
+                KeyboardKeyVisualClassifier.colorFor(
+                        preview,
+                        GestureKey.command("", KeyboardCommands.CMD_TOGGLE_LANGUAGE)));
+    }
+
+    @Test
     public void previewSettingsUseThemeAccentPlacementByDefault() {
         ThemeOption option = option("gmk-modern-dolch");
 

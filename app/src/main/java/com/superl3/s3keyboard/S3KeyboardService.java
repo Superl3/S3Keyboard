@@ -502,7 +502,7 @@ public final class S3KeyboardService extends InputMethodService
         return true;
     }
 
-    private char dingulCenterReplacementVowel(char currentVowel) {
+    static char dingulCenterReplacementVowel(char currentVowel) {
         switch (currentVowel) {
             case 'ㅏ':
                 return 'ㅑ';
@@ -517,12 +517,16 @@ public final class S3KeyboardService extends InputMethodService
         }
     }
 
-    private char dingulWideReplacementVowel(char currentVowel) {
+    static char dingulWideReplacementVowel(char currentVowel) {
         switch (currentVowel) {
             case 'ㅏ':
                 return 'ㅐ';
             case 'ㅓ':
                 return 'ㅔ';
+            case 'ㅔ':
+                return 'ㅖ';
+            case 'ㅐ':
+                return 'ㅒ';
             case 'ㅑ':
                 return 'ㅒ';
             case 'ㅕ':
@@ -532,7 +536,7 @@ public final class S3KeyboardService extends InputMethodService
         }
     }
 
-    private char dingulCenterTapValue(char currentVowel) {
+    static char dingulCenterTapValue(char currentVowel) {
         switch (currentVowel) {
             case 'ㅓ':
             case 'ㅏ':
@@ -544,7 +548,7 @@ public final class S3KeyboardService extends InputMethodService
         }
     }
 
-    private char dingulWideTapValue(char currentVowel) {
+    static char dingulWideTapValue(char currentVowel) {
         switch (currentVowel) {
             case 'ㅔ':
             case 'ㅐ':

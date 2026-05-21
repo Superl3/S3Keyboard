@@ -96,6 +96,12 @@ public final class HangulAutomataTest {
     }
 
     @Test
+    public void dingulWideTapAddsStrokeToSideWideVowels() {
+        assertEquals('ㅖ', S3KeyboardService.dingulWideReplacementVowel('ㅔ'));
+        assertEquals('ㅒ', S3KeyboardService.dingulWideReplacementVowel('ㅐ'));
+    }
+
+    @Test
     public void doesNotReplaceVowelWhenFinalConsonantExists() {
         HangulAutomata automata = new HangulAutomata();
 
