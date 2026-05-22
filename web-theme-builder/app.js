@@ -45,6 +45,7 @@ const ids = {
   accentPolicyMap: document.getElementById("accentPolicyMap"),
   perKeyMap: document.getElementById("perKeyOverrideMap"),
   aiPrompt: document.getElementById("aiPrompt"),
+  copyPalettePrompt: document.getElementById("copyPalettePrompt"),
   textOverrides: document.getElementById("textOverridesText"),
   backgroundOverrides: document.getElementById("backgroundOverridesText"),
   output: document.getElementById("jsonOutput"),
@@ -512,6 +513,7 @@ function bindStaticControls() {
   }
   document.getElementById("copyJson").addEventListener("click", copyJson);
   document.getElementById("copyAiPrompt").addEventListener("click", copyAiPrompt);
+  ids.copyPalettePrompt.addEventListener("click", copyPalettePrompt);
   document.getElementById("importJson").addEventListener("click", importJson);
   document.getElementById("downloadJson").addEventListener("click", downloadJson);
 }
@@ -1866,6 +1868,11 @@ async function copyAiPrompt() {
   ids.status.textContent = "Copied image-to-theme prompt to clipboard.";
 }
 
+async function copyPalettePrompt() {
+  await navigator.clipboard.writeText(buildPaletteImageThemePrompt(buildTheme()));
+  ids.status.textContent = "Copied general image palette prompt to clipboard.";
+}
+
 function downloadJson() {
   const blob = new Blob([ids.output.value], { type: "application/json" });
   const link = document.createElement("a");
@@ -2042,6 +2049,59 @@ function buildImageThemePrompt(theme) {
     "- dingulColors.alpha/mod define the 2-tone base. dingulColors.modInv should mirror mod unless the image is truly 3-tone.",
     "",
     "Use this exact JSON shape and replace values based on the image:",
+    JSON.stringify(sample, null, 2)
+  ].join("\n");
+}
+
+function buildPaletteImageThemePrompt(theme) {
+  const colorKeys = colorFields.map(([key]) => key).join(", ");
+  const shapeKeys = shapeFields.map(([key]) => key).join(", ");
+  const fontIds = fontFamilies.map(option => option.id).join(", ");
+  const numberModes = numberRowModes.map(option => option.id).join(", ");
+  const accentTargets = (themeContract.accentPolicyTargets || []).join(", ");
+  const sample = {
+    ...theme,
+    name: theme.name || "Image Palette Theme",
+    author: theme.author || "local",
+    effects: normalizedVisualEffects(theme.effects)
+  };
+  return [
+    "Use the attached drawing, illustration, photo, poster, product image, or artwork as a color palette reference and create a New Dingul Keyboard theme JSON.",
+    "Return JSON only. Do not wrap it in markdown, do not add comments, and do not add explanation.",
+    "",
+    "Hard rules:",
+    "- schemaVersion must be 1.",
+    "- Use only #RRGGBB colors.",
+    "- Do not include raster images, vector assets, icon packs, layout settings, hint settings, or user preference fields.",
+    "- Preserve readability for alpha and modifier foreground/background pairs.",
+    "- Prefer global role colors over per-key overrides. Keep the keyboard coherent even if the image is colorful.",
+    "",
+    "General-image palette mapping rules:",
+    "- Extract 4 to 7 dominant colors from the image, then reduce them into readable keyboard roles.",
+    "- alphaKey should be the broad typing surface color. Prefer a calm, readable neutral or the dominant low-saturation color.",
+    "- modifierKey should be visibly different from alphaKey but still comfortable for repeated command keys.",
+    "- accentKey should use the most memorable vivid color only when the image has a clear point color.",
+    "- keyboardBackground and panelBackground should be a quiet backdrop derived from the image, not the loudest color.",
+    "- accent is the main legend/icon color and must remain readable on alphaKey.",
+    "- secondary is the sub legend/modifier legend color and must remain readable on modifierKey.",
+    "- Use effects.keyFaceGradient only for subtle key-surface depth; do not simulate the image texture.",
+    "",
+    `Allowed color keys: ${colorKeys}.`,
+    `Allowed shape keys: ${shapeKeys}.`,
+    "Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100.",
+    `Allowed fontFamily values: ${fontIds}.`,
+    `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
+    `Allowed accentPolicy targets: ${accentTargets}.`,
+    "",
+    "Role guide:",
+    "- alphaKey: main typing keycap background.",
+    "- modifierKey: command/modifier keycap background.",
+    "- accentKey: point/accent keycap background, only if a real third tone exists.",
+    "- depth: fixed depth color; use null to auto-dim from each key background.",
+    "- dingulColors.alpha/mod/modInv should mirror the same alpha/mod/accent colorway for Dingul.",
+    "- keyTextColorOverrides and keyBackgroundColorOverrides are sparse escape hatches, not the main colorway.",
+    "",
+    "Use this JSON shape as the starting point and replace values based on the image palette:",
     JSON.stringify(sample, null, 2)
   ].join("\n");
 }

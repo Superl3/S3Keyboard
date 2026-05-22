@@ -166,6 +166,7 @@ public final class ThemeEditorActivity extends Activity {
                 1f));
 
         addThemeSaveControls(editorRoot);
+        addThemePromptControls(editorRoot);
         LinearLayout globalSection = addExpandableSection(editorRoot, "전체", true);
         addColorControls(addExpandableSection(globalSection, "색상", true));
         addShapeControls(addExpandableSection(globalSection, "형태", false));
@@ -197,6 +198,30 @@ public final class ThemeEditorActivity extends Activity {
         styleSystemButton(importJsonButton);
         importJsonButton.setOnClickListener(v -> showThemeJsonImportDialog());
         root.addView(importJsonButton, buttonParams());
+    }
+
+    private void addThemePromptControls(LinearLayout root) {
+        LinearLayout section = addExpandableSection(root, "AI 테마 프롬프트", false);
+        TextView description = label(
+                "이미지를 첨부한 채팅에서 붙여 넣으면 New Dingul 테마 JSON을 만들기 위한 프롬프트입니다. "
+                        + "키보드 사진용과 일반 이미지 팔레트용을 나눠서 복사할 수 있습니다.");
+        section.addView(description, matchWrapWithTop(6));
+
+        Button keyboardPromptButton = actionButton(
+                "키보드 이미지 프롬프트 복사",
+                v -> copyPromptToClipboard(
+                        "New Dingul keyboard image prompt",
+                        ThemePromptTemplates.keyboardImagePrompt(currentThemeJson()),
+                        "키보드 이미지 프롬프트를 복사했습니다"));
+        section.addView(keyboardPromptButton, buttonParams());
+
+        Button palettePromptButton = actionButton(
+                "일반 이미지 팔레트 프롬프트 복사",
+                v -> copyPromptToClipboard(
+                        "New Dingul palette image prompt",
+                        ThemePromptTemplates.paletteImagePrompt(currentThemeJson()),
+                        "일반 이미지 팔레트 프롬프트를 복사했습니다"));
+        section.addView(palettePromptButton, buttonParams());
     }
 
     private void addSelectedKeyInspector(LinearLayout root) {
@@ -946,12 +971,24 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private void copyThemeJsonToClipboard() {
-        String json = KeyboardThemeJson.exportTheme(settings, "Current Theme", "local", null);
+        String json = currentThemeJson();
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         if (clipboard != null) {
             clipboard.setPrimaryClip(ClipData.newPlainText("New Dingul theme JSON", json));
         }
         Toast.makeText(this, "테마 JSON을 복사했습니다", Toast.LENGTH_SHORT).show();
+    }
+
+    private String currentThemeJson() {
+        return KeyboardThemeJson.exportTheme(settings, "Current Theme", "local", null);
+    }
+
+    private void copyPromptToClipboard(String label, String prompt, String toast) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText(label, prompt));
+        }
+        Toast.makeText(this, toast, Toast.LENGTH_SHORT).show();
     }
 
     private void showThemeJsonImportDialog() {
