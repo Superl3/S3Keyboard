@@ -39,6 +39,8 @@ final class KeyboardCommands {
     static final String CMD_REMOTE_ARROW_DOWN = "__remote_arrow_down__";
     static final String CMD_REMOTE_ARROW_LEFT = "__remote_arrow_left__";
     static final String CMD_REMOTE_ARROW_RIGHT = "__remote_arrow_right__";
+    static final String CMD_REMOTE_INSERT = "__remote_insert__";
+    static final String CMD_REMOTE_FORWARD_DELETE = "__remote_forward_delete__";
     static final String CMD_REMOTE_HOME = "__remote_home__";
     static final String CMD_REMOTE_END = "__remote_end__";
     static final String CMD_REMOTE_PAGE_UP = "__remote_page_up__";
@@ -119,11 +121,11 @@ final class KeyboardCommands {
             case CMD_REMOTE_TAB:
                 return "Tab";
             case CMD_REMOTE_SHIFT_TAB:
-                return "Shift+Tab";
+                return "S⇥";
             case CMD_REMOTE_CTRL_TAB:
-                return "Ctrl+Tab";
+                return "C⇥";
             case CMD_REMOTE_ALT_TAB:
-                return "Alt+Tab";
+                return "A⇥";
             case CMD_REMOTE_CTRL_LATCH:
                 return "Ctrl";
             case CMD_REMOTE_WIN_LATCH:
@@ -139,13 +141,17 @@ final class KeyboardCommands {
             case CMD_REMOTE_IME_TOGGLE:
                 return "IME";
             case CMD_REMOTE_ARROW_UP:
-                return "Up";
+                return "↑";
             case CMD_REMOTE_ARROW_DOWN:
-                return "Down";
+                return "↓";
             case CMD_REMOTE_ARROW_LEFT:
-                return "Left";
+                return "←";
             case CMD_REMOTE_ARROW_RIGHT:
-                return "Right";
+                return "→";
+            case CMD_REMOTE_INSERT:
+                return "Ins";
+            case CMD_REMOTE_FORWARD_DELETE:
+                return "Del";
             case CMD_REMOTE_HOME:
                 return "Home";
             case CMD_REMOTE_END:

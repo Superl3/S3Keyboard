@@ -83,7 +83,7 @@ public final class KeyboardLayoutFactoryTest {
         assertDirections(findKey(rows, "ㅢ"), "ㅚ", "ㅟ", "ㅝ", "ㅘ");
         assertDirections(findKey(rows, "ㅣ."), "ㅗ", "ㅜ", "ㅓ", "ㅏ");
         assertDirections(findKey(rows, "ㅡㅐ"), "ㅙ", "ㅞ", "ㅔ", "ㅐ");
-        assertDirections(findKey(rows, ". ."), "ㅛ", "ㅑ", "ㅠ", "ㅕ");
+        assertDirections(findKey(rows, ". ."), "\u315B", "\u3160", "\u3155", "\u3151");
         assertEquals(" ", findKey(rows, ". .").valueFor(GestureAction.TAP));
         assertDirections(findKey(rows, "?"), "!", "*", "+", KeyboardCommands.CMD_NOOP);
         assertDirections(findKey(rows, "."), "\"", "`", ",", KeyboardCommands.CMD_NOOP);
@@ -221,11 +221,11 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals("!", rows.get(0).keys.get(0).valueFor(GestureAction.DOWN));
         assertEquals("@", rows.get(0).keys.get(1).valueFor(GestureAction.DOWN));
         assertEquals(")", rows.get(0).keys.get(9).valueFor(GestureAction.DOWN));
-        assertEquals("!", rows.get(0).keys.get(0).valueFor(GestureAction.LONG_PRESS));
+        assertNull(rows.get(0).keys.get(0).valueFor(GestureAction.LONG_PRESS));
     }
 
     @Test
-    public void remoteModeForcesNumberRowAndMapsDownSlideToFunctionKeys() {
+    public void remoteModeForcesNumberRowAndMapsFunctionKeys() {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withHangulNumberRow(false)
                 .withEnglishNumberRow(false)
@@ -234,12 +234,41 @@ public final class KeyboardLayoutFactoryTest {
 
         assertEquals(true, settings.showNumberRow);
         assertEquals("1", rows.get(0).keys.get(0).valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_ESC, rows.get(0).keys.get(0).valueFor(GestureAction.UP));
         assertEquals(KeyboardCommands.CMD_REMOTE_F1, rows.get(0).keys.get(0).valueFor(GestureAction.DOWN));
+        assertEquals(KeyboardCommands.CMD_REMOTE_F5, rows.get(0).keys.get(4).valueFor(GestureAction.DOWN));
         assertEquals(KeyboardCommands.CMD_REMOTE_F10, rows.get(0).keys.get(9).valueFor(GestureAction.DOWN));
+        assertEquals(KeyboardCommands.CMD_REMOTE_F11, rows.get(0).keys.get(8).valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_F12, rows.get(0).keys.get(9).valueFor(GestureAction.UP));
         assertNull(rows.get(0).keys.get(0).valueFor(GestureAction.LONG_PRESS));
         assertNull(rows.get(0).keys.get(9).valueFor(GestureAction.LONG_PRESS));
-        assertEquals(KeyboardCommands.CMD_REMOTE_F11, rows.get(0).keys.get(8).valueFor(GestureAction.LEFT));
-        assertEquals(KeyboardCommands.CMD_REMOTE_F12, rows.get(0).keys.get(9).valueFor(GestureAction.RIGHT));
+        assertNull(rows.get(0).keys.get(0).leftSlide);
+        assertNull(rows.get(0).keys.get(9).rightSlide);
+    }
+
+    @Test
+    public void remoteModeDistributesNavigationClusterAcrossAlphaKeys() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
+
+        assertEquals(KeyboardCommands.CMD_REMOTE_TAB, findKey(rows, "q").valueFor(GestureAction.UP));
+        assertNull(findKey(rows, "w").valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_REMOTE_SHIFT_TAB, findKey(rows, "r").valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_CTRL_TAB, findKey(rows, "t").valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_ALT_TAB, findKey(rows, "y").valueFor(GestureAction.UP));
+        assertEquals("U", findKey(rows, "u").valueFor(GestureAction.UP));
+        assertNull(findKey(rows, "q").valueFor(GestureAction.LONG_PRESS));
+        assertNull(findKey(rows, "u").valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_REMOTE_INSERT, findKey(rows, "i").valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_FORWARD_DELETE, findKey(rows, "i").valueFor(GestureAction.DOWN));
+        assertEquals(KeyboardCommands.CMD_REMOTE_HOME, findKey(rows, "o").valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_END, findKey(rows, "o").valueFor(GestureAction.DOWN));
+        assertEquals(KeyboardCommands.CMD_REMOTE_PAGE_UP, findKey(rows, "p").valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_PAGE_DOWN, findKey(rows, "p").valueFor(GestureAction.DOWN));
+        assertEquals("@", findKey(rows, "a").valueFor(GestureAction.DOWN));
+        assertEquals("/", findKey(rows, "d").valueFor(GestureAction.DOWN));
     }
 
     @Test
@@ -350,13 +379,13 @@ public final class KeyboardLayoutFactoryTest {
         List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
         KeyboardRow bottom = rows.get(rows.size() - 1);
 
-        assertEquals("Ctrl,Win,Alt,Space,Lang,Menu,Enter", labels(bottom));
+        assertEquals("Ctrl,Win,Alt,스페이스,한/영,옵션,전송", labels(bottom));
         assertEquals("2,2,2,8,2,2,2", widths(bottom));
         assertEquals(
-                "Ctrl,Win,Alt,Space,Lang,Menu,Enter",
+                "Ctrl,Win,Alt,스페이스,한/영,옵션,전송",
                 bottomLabels(settings.withHandednessPreset(HandednessMode.LEFT)));
         assertEquals(
-                "0,0,0,0,0,0,0",
+                "0,0,0,1,1,1,1",
                 bottom.keys.stream()
                         .map(key -> key.icon == KeyIcon.NONE ? "0" : "1")
                         .collect(Collectors.joining(",")));

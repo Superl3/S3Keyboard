@@ -11,7 +11,10 @@ final class KeyDisplayOverrideResolver {
             return null;
         }
         if (settings.remoteModeEnabled) {
-            return null;
+            KeyDisplayOverride remoteOverride = remoteModeOverride(key);
+            if (remoteOverride != null) {
+                return remoteOverride;
+            }
         }
 
         Map<String, KeyDisplayOverride> packOverrides =
@@ -30,6 +33,18 @@ final class KeyDisplayOverrideResolver {
         if (isModifierKey(key)) {
             KeyDisplayOverride group = settings.keyDisplayOverrides.get("modifiers");
             return group == null ? packOverrides.get("modifiers") : group;
+        }
+        return null;
+    }
+
+    private static KeyDisplayOverride remoteModeOverride(GestureKey key) {
+        if (key == null || key.label == null || key.label.isEmpty()) {
+            return null;
+        }
+        if (KeyboardCommands.CMD_REMOTE_CTRL_LATCH.equals(key.tap)
+                || KeyboardCommands.CMD_REMOTE_WIN_LATCH.equals(key.tap)
+                || KeyboardCommands.CMD_REMOTE_ALT_LATCH.equals(key.tap)) {
+            return KeyDisplayOverride.text(key.label);
         }
         return null;
     }

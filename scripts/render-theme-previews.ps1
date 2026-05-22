@@ -109,6 +109,117 @@ function Get-ThemeBool {
     return [System.Convert]::ToBoolean($Value)
 }
 
+function Blend-ThemeColor {
+    param(
+        [System.Drawing.Color] $Foreground,
+        [System.Drawing.Color] $Background,
+        [double] $ForegroundAmount
+    )
+    $amount = [Math]::Max(0.0, [Math]::Min(1.0, $ForegroundAmount))
+    $inverse = 1.0 - $amount
+    return [System.Drawing.Color]::FromArgb(
+        255,
+        [int][Math]::Round($Foreground.R * $amount + $Background.R * $inverse),
+        [int][Math]::Round($Foreground.G * $amount + $Background.G * $inverse),
+        [int][Math]::Round($Foreground.B * $amount + $Background.B * $inverse))
+}
+
+function Get-DimmedDepthColor {
+    param([System.Drawing.Color] $Background)
+    $luminance = ($Background.R * 299 + $Background.G * 587 + $Background.B * 114) / 1000.0
+    if ($luminance -lt 42) {
+        return Blend-ThemeColor `
+                -Foreground ([System.Drawing.Color]::White) `
+                -Background $Background `
+                -ForegroundAmount 0.10
+    }
+    return Blend-ThemeColor `
+            -Foreground ([System.Drawing.Color]::Black) `
+            -Background $Background `
+            -ForegroundAmount 0.16
+}
+
+function Get-ThemeDepthColor {
+    param([object] $Theme, [System.Drawing.Color] $Fill)
+    if ($null -ne $Theme.colors.depth -and -not [string]::IsNullOrWhiteSpace([string]$Theme.colors.depth)) {
+        return Convert-ThemeColor $Theme.colors.depth "#696969"
+    }
+    return Get-DimmedDepthColor -Background $Fill
+}
+
+function Get-KeyFaceGradientEffect {
+    param([object] $Theme)
+    if ($null -eq $Theme.effects) {
+        return $null
+    }
+    if ($null -ne $Theme.effects.keyFaceGradient) {
+        return $Theme.effects.keyFaceGradient
+    }
+    return $Theme.effects.keyGradient
+}
+
+function Get-KeyFaceGradientEnabled {
+    param([object] $Theme)
+    $effect = Get-KeyFaceGradientEffect -Theme $Theme
+    if ($null -eq $effect) {
+        return $true
+    }
+    return Get-ThemeBool $effect.enabled $true
+}
+
+function Get-KeyFaceGradientStrength {
+    param([object] $Theme)
+    $effect = Get-KeyFaceGradientEffect -Theme $Theme
+    if ($null -eq $effect) {
+        return 22
+    }
+    return [Math]::Max(0, [Math]::Min(100, (Get-ThemeInt $effect.strengthPercent 22)))
+}
+
+function Get-KeyFaceGradientColors {
+    param([System.Drawing.Color] $Background, [int] $StrengthPercent)
+    $luminance = ($Background.R * 299 + $Background.G * 587 + $Background.B * 114) / 1000.0
+    $strength = [Math]::Max(0.0, [Math]::Min(1.0, $StrengthPercent / 100.0))
+    $topAmount = $(if ($luminance -lt 42) { 0.08 } else { 0.06 }) + 0.24 * $strength
+    $bottomAmount = $(if ($luminance -lt 42) { 0.04 } else { 0.05 }) + 0.18 * $strength
+    return @(
+        (Blend-ThemeColor -Foreground ([System.Drawing.Color]::White) -Background $Background -ForegroundAmount $topAmount),
+        $Background,
+        (Blend-ThemeColor -Foreground ([System.Drawing.Color]::Black) -Background $Background -ForegroundAmount $bottomAmount)
+    )
+}
+
+function New-KeyFaceBrush {
+    param(
+        [object] $Theme,
+        [System.Drawing.Color] $Fill,
+        [float] $X,
+        [float] $Y,
+        [float] $W,
+        [float] $H
+    )
+    $depthEnabled = Get-ThemeBool $Theme.shape.depthEnabled $false
+    $depthDp = Get-ThemeInt $Theme.shape.depthDp 0
+    $gradientEnabled = Get-KeyFaceGradientEnabled -Theme $Theme
+    $strength = Get-KeyFaceGradientStrength -Theme $Theme
+    if (-not $depthEnabled -or $depthDp -le 0 -or -not $gradientEnabled -or $strength -le 0) {
+        return [System.Drawing.SolidBrush]::new($Fill)
+    }
+
+    $colors = Get-KeyFaceGradientColors -Background $Fill -StrengthPercent $strength
+    $rect = [System.Drawing.RectangleF]::new($X, $Y, [Math]::Max(1, $W), [Math]::Max(1, $H))
+    $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            $rect,
+            $colors[0],
+            $colors[2],
+            [System.Drawing.Drawing2D.LinearGradientMode]::Vertical)
+    $blend = [System.Drawing.Drawing2D.ColorBlend]::new(3)
+    $blend.Positions = [single[]](0.0, 0.42, 1.0)
+    $blend.Colors = [System.Drawing.Color[]]($colors[0], $colors[1], $colors[2])
+    $brush.InterpolationColors = $blend
+    return $brush
+}
+
 function Get-FontFamilyName {
     param([object] $Theme)
     $fontFamily = if ($null -ne $Theme.typography) { [string]$Theme.typography.fontFamily } else { "default" }
@@ -153,7 +264,7 @@ function New-ThemeFont {
 function Get-RoleColor {
     param([object] $Theme, [string] $Role)
     switch ($Role) {
-        "function" { return Convert-ThemeColor $Theme.colors.modifierKey "#E7EAF0" }
+        "modifier" { return Convert-ThemeColor $Theme.colors.modifierKey "#E7EAF0" }
         "accent" { return Convert-ThemeColor $Theme.colors.accentKey "#EAF1FF" }
         "pressed" { return Convert-ThemeColor $Theme.colors.keyPressed "#B2B2B2" }
         default { return Convert-ThemeColor $Theme.colors.alphaKey "#F8F8F8" }
@@ -166,6 +277,7 @@ function Get-RoleTextColor {
         "normal" { return Convert-ThemeColor $Theme.colors.accent "#232323" }
         "pressed" { return Convert-ThemeColor $Theme.colors.accent "#232323" }
         "accent" { return Get-AccentTextColor -Theme $Theme }
+        "modifier" { return Convert-ThemeColor $Theme.colors.secondary "#5F6368" }
         default { return Convert-ThemeColor $Theme.colors.secondary "#5F6368" }
     }
 }
@@ -185,14 +297,14 @@ function Get-NumberRowRole {
     $inner = $Label -ge "4" -and $Label -le "7"
     switch ($mode) {
         "full_alpha" { return "normal" }
-        "half_mod_4567" { if ($inner) { return "function" } return "normal" }
+        "half_mod_4567" { if ($inner) { return "modifier" } return "normal" }
         "alpha_accent" { if ($inner) { return "accent" } return "normal" }
-        "mod_alpha" { if ($inner) { return "normal" } return "function" }
-        "mod_accent" { if ($inner) { return "accent" } return "function" }
+        "mod_alpha" { if ($inner) { return "normal" } return "modifier" }
+        "mod_accent" { if ($inner) { return "accent" } return "modifier" }
         "accent_alpha" { if ($inner) { return "normal" } return "accent" }
-        "accent_mod" { if ($inner) { return "function" } return "accent" }
+        "accent_mod" { if ($inner) { return "modifier" } return "accent" }
         "full_accent" { return "accent" }
-        default { return "function" }
+        default { return "modifier" }
     }
 }
 
@@ -266,9 +378,10 @@ function Get-SemanticTargetForPreviewKey {
     param([string] $Layout, [string] $Label)
     $normalized = $Label.ToLowerInvariant()
     switch ($normalized) {
+        "1" { return "escPoint" }
         "settings" { return "settingsEnter" }
         "options" { return "settingsEnter" }
-        "enter" { return "settingsEnter" }
+        "enter" { return "enter" }
         "reserved" { return "modMeta" }
         "res" { return "modMeta" }
         "language" { return "modMeta" }
@@ -289,6 +402,7 @@ function Get-AlternateAccentPolicyTargets {
     param([string] $Target)
     switch ($Target) {
         "settingsEnter" { return @("settingsEnter", "modCtrl") }
+        "enter" { return @("enter", "settingsEnter", "modCtrl") }
         "qwertyShift" { return @("qwertyShift", "shift", "modCommand") }
         "backspace" { return @("backspace", "modCommand") }
         "modEnter" { return @("dingulDot", "modEnter") }
@@ -308,9 +422,9 @@ function Get-SpacebarPreviewRole {
     }
     switch ($role) {
         "accent" { return "accent" }
-        "mod" { return "function" }
-        "modifier" { return "function" }
-        "modifiers" { return "function" }
+        "mod" { return "modifier" }
+        "modifier" { return "modifier" }
+        "modifiers" { return "modifier" }
         default { return $BaseRole }
     }
 }
@@ -326,9 +440,9 @@ function Get-QuestionPreviewRole {
     }
     switch ($role) {
         "accent" { return "accent" }
-        "mod" { return "function" }
-        "modifier" { return "function" }
-        "modifiers" { return "function" }
+        "mod" { return "modifier" }
+        "modifier" { return "modifier" }
+        "modifiers" { return "modifier" }
         "alpha" { return "normal" }
         default { return $BaseRole }
     }
@@ -404,10 +518,14 @@ function Get-OverrideCandidatesForLabel {
     param([string] $Label)
     $normalizedLabel = $Label.ToLowerInvariant() -replace "\s+", ""
     $semantic = switch ($normalizedLabel) {
+        "1" { "escpoint" }
         "bksp" { "backspace" }
         "opt" { "options" }
         "res" { "reserved" }
         "lang" { "language" }
+        "enter" { "enter" }
+        "." { "dinguldot" }
+        "/" { "dingulslash" }
         default { $normalizedLabel }
     }
     return @(
@@ -671,20 +789,21 @@ function Draw-PackPreviewIcon {
                     [System.Drawing.Color]::FromArgb(255, 6, 214, 160),
                     [System.Drawing.Color]::FromArgb(255, 76, 201, 240)
                 )
-                $gap = [Math]::Max($weight * 0.80, 3.2)
-                $total = $weight * $colors.Count + $gap * ($colors.Count - 1)
-                $dotX = $X + $W / 2 - $total / 2 + $weight / 2
+                $diameter = $weight * 1.38
+                $gap = [Math]::Max($diameter * 0.80, 3.2)
+                $total = $diameter * $colors.Count + $gap * ($colors.Count - 1)
+                $dotX = $X + $W / 2 - $total / 2 + $diameter / 2
                 foreach ($dotColor in $colors) {
                     $dotBrush = [System.Drawing.SolidBrush]::new($dotColor)
                     try {
-                        $Graphics.FillEllipse($dotBrush, $dotX - $weight / 2, $y - $weight / 2, $weight, $weight)
+                        $Graphics.FillEllipse($dotBrush, $dotX - $diameter / 2, $y - $diameter / 2, $diameter, $diameter)
                     } finally {
                         $dotBrush.Dispose()
                     }
-                    $dotX += $weight + $gap
+                    $dotX += $diameter + $gap
                 }
             } elseif ($Icon -eq "language" -or $Icon -eq "reserved") {
-                $diameter = $weight * 1.24
+                $diameter = $weight * 1.38
                 $Graphics.FillEllipse($brush, $X + $W / 2 - $diameter / 2, $y - $diameter / 2, $diameter, $diameter)
             } else {
                 $side = if ($Icon -eq "options" -or $Icon -eq "settings" -or $Icon -eq "enter") { 0.39 } elseif ($Icon -eq "backspace" -or $Icon -eq "shift") { 0.30 } else { 0.34 }
@@ -846,10 +965,7 @@ function Draw-Key {
     $accent = Convert-ThemeColor $Theme.colors.accent "#232323"
     $overrideText = Get-KeyOverrideColor -Theme $Theme -Label $Label
     $textColor = if ($null -ne $overrideText) { $overrideText } else { Get-RoleTextColor -Theme $Theme -Role $Role }
-    $depthColor = $border
-    if ($null -ne $Theme.colors.depth -and -not [string]::IsNullOrWhiteSpace([string]$Theme.colors.depth)) {
-        $depthColor = Convert-ThemeColor $Theme.colors.depth "#696969"
-    }
+    $depthColor = Get-ThemeDepthColor -Theme $Theme -Fill $fill
 
     $depthEnabled = [bool]$Theme.shape.depthEnabled
     $depthDp = [int]$Theme.shape.depthDp
@@ -862,7 +978,7 @@ function Draw-Key {
         }
     }
 
-    $fillBrush = [System.Drawing.SolidBrush]::new($fill)
+    $fillBrush = New-KeyFaceBrush -Theme $Theme -Fill $fill -X $X -Y $Y -W $W -H $H
     $borderWidth = [Math]::Max(0, (Get-ThemeInt $Theme.shape.borderWidthDp 1)) * 1.2
     $borderPen = if ($borderWidth -gt 0) { [System.Drawing.Pen]::new($border, $borderWidth) } else { $null }
     $textBrush = [System.Drawing.SolidBrush]::new($textColor)
@@ -882,7 +998,7 @@ function Draw-Key {
         }
         $icon = Get-PreviewIconName $Label
         if (Test-DotLegendLabel -Theme $Theme -Label $Label) {
-            $diameter = (Get-DotsLineWeight -W $W -H $H) * 0.84
+            $diameter = (Get-DotsLineWeight -W $W -H $H) * 1.38
             if ($Label -eq "." -or $Label -eq "/") {
                 $gap = [Math]::Max($diameter * 0.82, 3.0)
                 $cx = $X + $W / 2.0
@@ -958,8 +1074,8 @@ function Draw-QwertySample {
             @(@("1",2,"number"), @("2",2,"number"), @("3",2,"number"), @("4",2,"number"), @("5",2,"number"), @("6",2,"number"), @("7",2,"number"), @("8",2,"number"), @("9",2,"number"), @("0",2,"number")),
             @(@("q",2,"normal"), @("w",2,"normal"), @("e",2,"pressed"), @("r",2,"normal"), @("t",2,"normal"), @("y",2,"normal"), @("u",2,"normal"), @("i",2,"normal"), @("o",2,"normal"), @("p",2,"normal")),
             @(@("a",2,"normal"), @("s",2,"normal"), @("d",2,"normal"), @("f",2,"normal"), @("g",2,"normal"), @("h",2,"normal"), @("j",2,"normal"), @("k",2,"normal"), @("l",2,"normal")),
-            @(@("shift",3,"primary"), @("z",2,"normal"), @("x",2,"normal"), @("c",2,"normal"), @("v",2,"normal"), @("b",2,"normal"), @("n",2,"normal"), @("m",2,"normal"), @("bksp",3,"primary")),
-            @(@("settings",3,"function"), @("reserved",2,"function"), @("space",10,"normal"), @("language",2,"function"), @("enter",3,"primary"))
+            @(@("shift",3,"modifier"), @("z",2,"normal"), @("x",2,"normal"), @("c",2,"normal"), @("v",2,"normal"), @("b",2,"normal"), @("n",2,"normal"), @("m",2,"normal"), @("bksp",3,"modifier")),
+            @(@("settings",3,"modifier"), @("reserved",2,"modifier"), @("space",10,"normal"), @("language",2,"modifier"), @("enter",3,"modifier"))
         )
 
         foreach ($row in $rows) {
@@ -1025,11 +1141,11 @@ function Draw-DingulSample {
 
         $rows = @(
             @(@("1",30,"number"), @("2",30,"number"), @("3",30,"number"), @("4",30,"number"), @("5",30,"number"), @("6",30,"number"), @("7",30,"number"), @("8",30,"number"), @("9",30,"number"), @("0",30,"number")),
-            @(@($g,83,"normal"), @($n,83,"normal"), @($ui,83,"normal"), @("bksp",51,"primary")),
+            @(@($g,83,"normal"), @($n,83,"normal"), @($ui,83,"normal"), @("bksp",51,"modifier")),
             @(@($r,83,"normal"), @($m,83,"normal"), @("$i.",83,"normal"), @("?",51,"normal")),
-            @(@($s,83,"normal"), @($o,83,"pressed"), @("$eu$ae",83,"normal"), @(".",51,"function")),
-            @(@($j,83,"normal"), @($hieut,83,"normal"), @("..",83,"normal"), @("/",51,"function")),
-            @(@("settings",45,"function"), @("reserved",30,"function"), @("space",150,"normal"), @("language",30,"function"), @("enter",45,"primary"))
+            @(@($s,83,"normal"), @($o,83,"pressed"), @("$eu$ae",83,"normal"), @(".",51,"modifier")),
+            @(@($j,83,"normal"), @($hieut,83,"normal"), @("..",83,"normal"), @("/",51,"modifier")),
+            @(@("settings",45,"modifier"), @("reserved",30,"modifier"), @("space",150,"normal"), @("language",30,"modifier"), @("enter",45,"modifier"))
         )
 
         $rowIndex = 0

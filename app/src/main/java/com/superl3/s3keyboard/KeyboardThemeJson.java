@@ -267,13 +267,17 @@ final class KeyboardThemeJson {
 
             Map<String, Integer> overrides = new HashMap<>(themed.keyColorOverrides);
             overrides.putAll(decodeDingulColors(dingulColors, themed));
+            Map<String, Integer> explicitOverrides = new HashMap<>();
+            explicitOverrides.putAll(decodeKeyColorOverrides(keyColorOverrides));
+            explicitOverrides.putAll(decodeKeyBackgroundColorOverrides(keyBackgroundColorOverrides));
+            Map<String, Integer> policyOverrides = new HashMap<>(overrides);
+            policyOverrides.putAll(explicitOverrides);
             overrides.putAll(decodeAccentPolicy(
                     root.optJSONObject("accentPolicy"),
                     themed,
-                    overrides,
+                    policyOverrides,
                     keyBackgroundColorOverrides == null));
-            overrides.putAll(decodeKeyColorOverrides(keyColorOverrides));
-            overrides.putAll(decodeKeyBackgroundColorOverrides(keyBackgroundColorOverrides));
+            overrides.putAll(explicitOverrides);
             themed = themed.withKeyColorOverrides(overrides);
             Map<String, KeyDisplayOverride> displayOverrides = new HashMap<>(themed.keyDisplayOverrides);
             Map<String, KeyDisplayOverride> importedDisplayOverrides = decodeKeyDisplayOverrides(
@@ -578,14 +582,23 @@ final class KeyboardThemeJson {
         if (targets == null) {
             return;
         }
-        int foreground = accentPolicyForeground(settings, inheritedOverrides);
-        int background = accentPolicyBackground(settings, inheritedOverrides);
         for (int index = 0; index < targets.length(); index++) {
-            for (String key : accentPolicyKeys(targets.optString(index, ""), dingul, settings)) {
+            String target = targets.optString(index, "");
+            int foreground = accentPolicyForeground(target, settings, inheritedOverrides);
+            int background = accentPolicyBackground(target, settings, inheritedOverrides);
+            for (String key : accentPolicyKeys(target, dingul, settings)) {
                 overrides.put(key, foreground);
                 overrides.put("background:" + key, background);
             }
         }
+    }
+
+    private static int accentPolicyForeground(
+            String target,
+            KeyboardSettings settings,
+            Map<String, Integer> inheritedOverrides) {
+        Integer override = colorOverride(inheritedOverrides, target);
+        return override == null ? accentPolicyForeground(settings, inheritedOverrides) : override;
     }
 
     private static int accentPolicyForeground(
@@ -609,6 +622,35 @@ final class KeyboardThemeJson {
     }
 
     private static int accentPolicyBackground(
+            String target,
+            KeyboardSettings settings,
+            Map<String, Integer> inheritedOverrides) {
+        Integer override = colorOverride(inheritedOverrides, "background:" + target);
+        return override == null ? accentPolicyBackground(settings, inheritedOverrides) : override;
+    }
+
+    private static Integer colorOverride(Map<String, Integer> overrides, String key) {
+        if (overrides == null || key == null) {
+            return null;
+        }
+        Integer color = overrides.get(key);
+        if (color != null) {
+            return color;
+        }
+        String normalized = KeyboardSettings.normalizeKeyOverrideName(key);
+        color = overrides.get(normalized);
+        if (color != null) {
+            return color;
+        }
+        for (Map.Entry<String, Integer> entry : overrides.entrySet()) {
+            if (normalized.equals(KeyboardSettings.normalizeKeyOverrideName(entry.getKey()))) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private static int accentPolicyBackground(
             KeyboardSettings settings,
             Map<String, Integer> inheritedOverrides) {
         Integer modInv = inheritedOverrides.get("background:modInv");
@@ -628,6 +670,9 @@ final class KeyboardThemeJson {
     private static String[] accentPolicyKeys(String target, boolean dingul, KeyboardSettings settings) {
         if ("modCtrl".equals(target) || "settingsEnter".equals(target)) {
             return new String[]{"options", "settings", "enter"};
+        }
+        if ("enter".equals(target)) {
+            return new String[]{"enter"};
         }
         if ("modMeta".equals(target)) {
             return new String[]{"reserved", "language"};
@@ -930,6 +975,11 @@ final class KeyboardThemeJson {
             JSONObject previewBubble = new JSONObject();
             previewBubble.put("style", safeEffects.angularPreviewBubble ? "angular" : "rounded");
             object.put("previewBubble", previewBubble);
+
+            JSONObject keyFaceGradient = new JSONObject();
+            keyFaceGradient.put("enabled", safeEffects.keyFaceGradientEnabled);
+            keyFaceGradient.put("strengthPercent", safeEffects.keyFaceGradientStrengthPercent);
+            object.put("keyFaceGradient", keyFaceGradient);
         } catch (JSONException exception) {
             throw new IllegalStateException("Failed to encode visual effects.", exception);
         }
@@ -944,6 +994,10 @@ final class KeyboardThemeJson {
         JSONObject blur = object.optJSONObject("blur");
         JSONObject metal = object.optJSONObject("metal");
         JSONObject previewBubble = object.optJSONObject("previewBubble");
+        JSONObject keyFaceGradient = object.optJSONObject("keyFaceGradient");
+        if (keyFaceGradient == null) {
+            keyFaceGradient = object.optJSONObject("keyGradient");
+        }
         boolean blurEnabled = blur == null
                 ? object.optBoolean("blurEnabled", safeFallback.blurEnabled)
                 : blur.optBoolean("enabled", safeFallback.blurEnabled);
@@ -963,12 +1017,26 @@ final class KeyboardThemeJson {
                 : previewBubble.optString(
                         "style",
                         safeFallback.angularPreviewBubble ? "angular" : "rounded");
+        boolean keyFaceGradientEnabled = keyFaceGradient == null
+                ? object.optBoolean(
+                        "keyFaceGradientEnabled",
+                        safeFallback.keyFaceGradientEnabled)
+                : keyFaceGradient.optBoolean("enabled", safeFallback.keyFaceGradientEnabled);
+        int keyFaceGradientStrength = keyFaceGradient == null
+                ? object.optInt(
+                        "keyFaceGradientStrengthPercent",
+                        safeFallback.keyFaceGradientStrengthPercent)
+                : keyFaceGradient.optInt(
+                        "strengthPercent",
+                        safeFallback.keyFaceGradientStrengthPercent);
         return new KeyboardVisualEffects(
                 blurEnabled,
                 blurRadiusDp,
                 metallicEnabled,
                 metallicStrength,
-                !"rounded".equals(previewStyle));
+                !"rounded".equals(previewStyle),
+                keyFaceGradientEnabled,
+                keyFaceGradientStrength);
     }
 
     private static Map<String, KeyDisplayOverride> legacyDotDisplayOverrides() {

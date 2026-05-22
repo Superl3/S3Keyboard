@@ -98,13 +98,14 @@ public final class ThemePreviewSettingsTest {
                 KeyboardSettings.defaults(),
                 KeyboardMode.ENGLISH,
                 AccentPlacementPolicy.themeDefault());
+        int enterAccentBackground = preview.keyColorOverrides.get("background:enter");
 
         assertEquals(
-                preview.accentKeyColor,
+                enterAccentBackground,
                 KeyboardKeyVisualClassifier.colorFor(
                         preview,
                         GestureKey.command("", KeyboardCommands.CMD_ENTER)));
-        assertEquals(
+        assertNotEquals(
                 preview.accentKeyColor,
                 KeyboardKeyVisualClassifier.colorFor(
                         preview,

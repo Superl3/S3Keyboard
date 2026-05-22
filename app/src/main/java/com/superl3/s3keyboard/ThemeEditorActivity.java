@@ -63,10 +63,12 @@ public final class ThemeEditorActivity extends Activity {
     private SeekBar keyBorderWidthSeekBar;
     private SeekBar keyGapSeekBar;
     private SeekBar keyDepthSeekBar;
+    private SeekBar keyFaceGradientStrengthSeekBar;
     private SeekBar primaryTextSizeSeekBar;
     private SeekBar secondaryTextSizeSeekBar;
     private CheckBox keyDepthCheckBox;
     private CheckBox customDepthColorCheckBox;
+    private CheckBox keyFaceGradientCheckBox;
     private CheckBox primaryTextBoldCheckBox;
     private CheckBox primaryTextItalicCheckBox;
     private CheckBox secondaryTextBoldCheckBox;
@@ -77,6 +79,7 @@ public final class ThemeEditorActivity extends Activity {
     private TextView keyBorderWidthValue;
     private TextView keyGapValue;
     private TextView keyDepthValue;
+    private TextView keyFaceGradientStrengthValue;
     private TextView primaryTextSizeValue;
     private TextView secondaryTextSizeValue;
     private View keyIdleColorSwatch;
@@ -436,6 +439,22 @@ public final class ThemeEditorActivity extends Activity {
                 updateSettings(settings.withKeyDepth(settings.keyDepthEnabled, progress)));
         root.addView(keyDepthValue, matchWrapWithTop(8));
         root.addView(keyDepthSeekBar, matchWrap());
+
+        keyFaceGradientCheckBox = checkBox("\uD0A4 \uD45C\uBA74 \uADF8\uB77C\uB370\uC774\uC158", checked ->
+                updateSettings(settings.withVisualEffects(
+                        settings.visualEffects.withKeyFaceGradient(
+                                checked,
+                                settings.visualEffects.keyFaceGradientStrengthPercent))));
+        root.addView(keyFaceGradientCheckBox, matchWrapWithTop(12));
+
+        keyFaceGradientStrengthValue = label("");
+        keyFaceGradientStrengthSeekBar = seekBar(100, progress ->
+                updateSettings(settings.withVisualEffects(
+                        settings.visualEffects.withKeyFaceGradient(
+                                settings.visualEffects.keyFaceGradientEnabled,
+                                progress))));
+        root.addView(keyFaceGradientStrengthValue, matchWrapWithTop(8));
+        root.addView(keyFaceGradientStrengthSeekBar, matchWrap());
     }
 
     private void addTypographyControls(LinearLayout root) {
@@ -532,6 +551,9 @@ public final class ThemeEditorActivity extends Activity {
         setProgress(keyBorderWidthSeekBar, settings.keyBorderWidthDp);
         setProgress(keyGapSeekBar, settings.keyGapDp);
         setProgress(keyDepthSeekBar, settings.keyDepthDp);
+        setProgress(
+                keyFaceGradientStrengthSeekBar,
+                settings.visualEffects.keyFaceGradientStrengthPercent);
         setProgress(primaryTextSizeSeekBar, settings.primaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
         setProgress(secondaryTextSizeSeekBar, settings.secondaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
         setSelection(keyIdleColorSpinner, indexOfColor(settings.keyIdleColor));
@@ -548,12 +570,17 @@ public final class ThemeEditorActivity extends Activity {
         setSelection(keyDisplayPackSpinner, indexOfKeyDisplayPack(settings.keyDisplayThemePackId));
         setChecked(keyDepthCheckBox, settings.keyDepthEnabled);
         setChecked(customDepthColorCheckBox, settings.customDepthColorEnabled);
+        setChecked(keyFaceGradientCheckBox, settings.visualEffects.keyFaceGradientEnabled);
         setChecked(primaryTextBoldCheckBox, settings.primaryTextBold);
         setChecked(primaryTextItalicCheckBox, settings.primaryTextItalic);
         setChecked(secondaryTextBoldCheckBox, settings.secondaryTextBold);
         setChecked(secondaryTextItalicCheckBox, settings.secondaryTextItalic);
         setEnabled(depthColorSpinner, settings.customDepthColorEnabled);
         setEnabled(keyDepthSeekBar, settings.keyDepthEnabled);
+        setEnabled(keyFaceGradientCheckBox, settings.keyDepthEnabled);
+        setEnabled(
+                keyFaceGradientStrengthSeekBar,
+                settings.keyDepthEnabled && settings.visualEffects.keyFaceGradientEnabled);
         setSwatch(keyIdleColorSwatch, settings.keyIdleColor);
         setSwatch(functionKeyColorSwatch, settings.functionKeyColor);
         setSwatch(accentKeyColorSwatch, settings.accentKeyColor);
@@ -569,6 +596,11 @@ public final class ThemeEditorActivity extends Activity {
         setText(keyGapValue, "키 사이 시각 간격: " + settings.keyGapDp + "dp");
         setText(keyDepthValue, "입체 높이: " + settings.keyDepthDp + "dp"
                 + (settings.keyDepthEnabled ? "" : " (flat)"));
+        setText(
+                keyFaceGradientStrengthValue,
+                "\uD45C\uBA74 \uADF8\uB77C\uB370\uC774\uC158 \uAC15\uB3C4: "
+                        + settings.visualEffects.keyFaceGradientStrengthPercent
+                        + "%");
         setText(primaryTextSizeValue, "주 글자 크기: " + settings.primaryTextSizePercent + "%");
         setText(secondaryTextSizeValue, "보조 힌트 크기: " + settings.secondaryTextSizePercent + "%");
         previewMeta.setText((settings.keyboardMode == KeyboardMode.ENGLISH ? "쿼티" : "딩굴")

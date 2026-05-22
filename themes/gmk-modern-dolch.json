@@ -43,7 +43,15 @@
     "secondaryTextItalic": false
   },
   "keyTextColorOverrides": {
-    "shiftIndicator": "#55C7C8"
+    "shiftIndicator": "#55C7C8",
+    "escPoint": "#E8ECEF",
+    "enter": "#E8ECEF",
+    "dingulDot": "#E8ECEF"
+  },
+  "keyBackgroundColorOverrides": {
+    "escPoint": "#F05B6E",
+    "enter": "#66E6D8",
+    "dingulDot": "#66E6D8"
   },
   "dingulColors": {
     "alpha": {
@@ -61,12 +69,10 @@
   },
   "accentPolicy": {
     "qwerty": [
-      "modMeta",
-      "qwertyShift",
-      "backspace"
+      "escPoint",
+      "enter"
     ],
     "dingul": [
-      "modCtrl",
       "dingulDot"
     ]
   }

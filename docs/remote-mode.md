@@ -5,17 +5,19 @@
 - Remote mode is a user setting and defaults to off.
 - When enabled, the keyboard keeps the normal input engine but overlays a Windows-oriented runtime layout. It must not mutate the saved Hangul/English number-row visibility preferences or theme/icon choices.
 - The current target is remote desktop style apps that accept Android IME `InputConnection.sendKeyEvent(...)` events and forward them to Windows.
-- Remote mode disables theme display/icon overrides and renders plain text labels so command keys remain predictable. The Menu key still exposes quick settings, and Menu long press remains the local escape path to app settings.
+- Remote mode forces fixed text labels only for the visible PC modifier keys: `Ctrl`, `Win`, and `Alt`. Shift, Backspace, Space, Lang, Menu, and Enter keep the normal icon/display-pack rendering path. The Menu key still exposes quick settings, and Menu long press remains the local escape path to app settings.
+- When remote mode is on, quick settings exposes a small test pad that sends `Esc`, `Tab`, `F1`, `Ctrl+A`, `Alt+Shift`, `Ctrl+Space`, `Win+Space`, and `LanguageSwitch` to the currently focused remote app.
 
 ## Default PC keyboard mapping
 
 - Bottom row: `Ctrl Win Alt Space Lang Menu Enter`. Remote mode keeps this order fixed even when the normal keyboard handedness preset is left-handed.
-- `Ctrl`, `Win`, and `Alt`: tap one-shot latches the modifier for the next remote key or next English letter/digit; long press toggles a sticky modifier lock.
+- `Ctrl`, `Win`, and `Alt`: tap one-shot latches the modifier for the next remote key or next English letter/digit without a persistent indicator. Long press toggles a sticky modifier lock with an indicator, and tapping the same modifier while locked turns that lock off.
 - Space: tap `Space`; slide up/down/left/right sends arrow keys.
 - Lang: tap remote IME shortcut; long press internal Hangul/English toggle.
 - Menu: tap quick settings; long press app settings.
 - Enter: tap `Enter`; long press `Ctrl+Enter`.
-- Number row: remote mode force-enables the row at runtime. Tap keeps digits, down slide maps `1..0 = F1..F10`, `9 left = F11`, `0 right = F12`, and long press is intentionally empty.
+- Number row: remote mode force-enables the row at runtime. Tap keeps digits. Down slide maps `1..0 = F1..F10`; up slide maps `1 = Esc`, `9 = F11`, and `0 = F12`. Normal non-remote number rows keep only tap digits and down-slide symbols.
+- QWERTY alpha remote cluster uses up/down slide hints where they are most readable: `q` up slide is `Tab`; `r/t/y` up slide maps `Shift+Tab/Ctrl+Tab/Alt+Tab`; `i/o/p` up slide maps `Ins/Home/PgUp`; and `i/o/p` down slide maps `Del/End/PgDn`. Other QWERTY keys stay close to the normal layout.
 - QWERTY alpha keys do not use long press for alternate input in either normal or remote mode.
 
 ## Compatibility risk
@@ -64,15 +66,14 @@ Before adding it, verify:
 
 Keep the v1 remote mode on `InputConnection.sendKeyEvent(...)` and add proof tooling before adding a privileged bridge:
 
-1. Build a remote key test screen that sends the exact shortcuts and records which remote app receives them.
+1. Use the quick-settings remote test pad in the target remote app and record which shortcuts arrive.
 2. Add per-app compatibility profiles only after real-device evidence, because RDP, Moonlight, Chrome Remote Desktop, and WebView-backed clients do not treat soft keyboard events identically.
 3. If a Moonlight/Sunshine path is needed, prefer a client-specific integration or companion transport over a generic Accessibility workaround.
-4. Only add Accessibility as an explicit opt-in experimental transport when the test screen proves which failures it fixes.
+4. Only add Accessibility as an explicit opt-in experimental transport when the test pad proves which failures it fixes.
 5. Treat Bluetooth HID or a small companion bridge as separate future transports for cases where the Android IME path is fundamentally insufficient.
 
 ## Recommended next work
 
-- Add a remote key test screen that sends `Esc`, `Tab`, `F1`, `Ctrl+A`, `Alt+Shift`, `Ctrl+Space`, `Win+Space`, and `LanguageSwitch`.
 - Add remote-app compatibility presets after real-device testing, for example Moonlight, Microsoft Remote Desktop, Chrome Remote Desktop, and generic WebView/RDP.
 - Add a transport selector only after the test screen proves where `sendKeyEvent` fails.
 - Keep Bluetooth HID and Accessibility bridge work out of the default path until the compatibility cost is proven worth it.

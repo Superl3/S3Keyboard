@@ -52,13 +52,15 @@ public final class HangulAutomataTest {
 
     @Test
     public void repeatedSimpleVowelsStayAsRepeatedInput() {
-        assertEquals("가아", type("ㄱㅏㅏ"));
-        assertEquals("거어", type("ㄱㅓㅓ"));
-        assertEquals("고오", type("ㄱㅗㅗ"));
-        assertEquals("구우", type("ㄱㅜㅜ"));
-        assertEquals("게에", type("ㄱㅔㅔ"));
-        assertEquals("개애", type("ㄱㅐㅐ"));
-        assertEquals("ㅜㅜ", type("ㅜㅜ"));
+        assertEquals("\uAC00\u314F", type("\u3131\u314F\u314F"));
+        assertEquals("\uAC70\u3153", type("\u3131\u3153\u3153"));
+        assertEquals("\uACE0\u3157", type("\u3131\u3157\u3157"));
+        assertEquals("\uAD6C\u315C", type("\u3131\u315C\u315C"));
+        assertEquals("\uAC8C\u3154", type("\u3131\u3154\u3154"));
+        assertEquals("\uAC1C\u3150", type("\u3131\u3150\u3150"));
+        assertEquals("\uAE30\u3163", type("\u3131\u3163\u3163"));
+        assertEquals("\u3163\u3163", type("\u3163\u3163"));
+        assertEquals("\u3160\u3160", type("\u3160\u3160"));
     }
 
     @Test

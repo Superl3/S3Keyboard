@@ -15,7 +15,7 @@
   "colors": {
     "alphaKey": "#B9C7CD",
     "modifierKey": "#132633",
-    "accentKey": "#27AFA3",
+    "accentKey": "#0AA29A",
     "keyPressed": "#8EA2A9",
     "keyboardBackground": "#DDE4DE",
     "border": "#7C8D93",
@@ -56,7 +56,7 @@
     },
     "modInv": {
       "foreground": "#132633",
-      "background": "#27AFA3"
+      "background": "#0AA29A"
     }
   },
   "accentPolicy": {

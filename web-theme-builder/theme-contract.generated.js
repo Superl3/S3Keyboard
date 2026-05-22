@@ -36,12 +36,12 @@ window.S3_THEME_CONTRACT = {
     {
       "key": "border",
       "label": "테두리",
-      "description": "키 외곽선 색상입니다. 입체 효과 색상을 따로 지정하지 않으면 이 색상을 쓰니다."
+      "description": "키 외곽선 색상입니다."
     },
     {
       "key": "depth",
       "label": "입체 효과 색상",
-      "description": "키 아래쪽 입체 효과 색상입니다.",
+      "description": "키 아래쪽 입체 효과 색상입니다. null이면 각 키 배경색을 자동으로 dim 처리합니다.",
       "nullable": true
     },
     {
@@ -184,6 +184,12 @@ window.S3_THEME_CONTRACT = {
       "description": "Backspace/delete command key."
     },
     {
+      "id": "enter",
+      "label": "Enter",
+      "contrastIntent": "primary",
+      "description": "The actual Enter/send command key without options or settings."
+    },
+    {
       "id": "settingsEnter",
       "label": "Settings and enter",
       "contrastIntent": "primary",
@@ -267,6 +273,9 @@ window.S3_THEME_CONTRACT = {
         "settings",
         "enter"
       ],
+      "enter": [
+        "enter"
+      ],
       "settingsEnter": [
         "options",
         "settings",
@@ -336,6 +345,9 @@ window.S3_THEME_CONTRACT = {
         "settings",
         "enter"
       ],
+      "enter": [
+        "enter"
+      ],
       "settingsEnter": [
         "options",
         "settings",
@@ -370,6 +382,7 @@ window.S3_THEME_CONTRACT = {
     "modCtrl",
     "modMeta",
     "modCommand",
+    "enter",
     "settingsEnter",
     "qwertyShift",
     "backspace",

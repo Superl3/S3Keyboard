@@ -20,6 +20,10 @@ final class RemoteKeyEventMap {
                 return KeyEvent.KEYCODE_DPAD_LEFT;
             case KeyboardCommands.CMD_REMOTE_ARROW_RIGHT:
                 return KeyEvent.KEYCODE_DPAD_RIGHT;
+            case KeyboardCommands.CMD_REMOTE_INSERT:
+                return KeyEvent.KEYCODE_INSERT;
+            case KeyboardCommands.CMD_REMOTE_FORWARD_DELETE:
+                return KeyEvent.KEYCODE_FORWARD_DEL;
             case KeyboardCommands.CMD_REMOTE_HOME:
                 return KeyEvent.KEYCODE_MOVE_HOME;
             case KeyboardCommands.CMD_REMOTE_END:

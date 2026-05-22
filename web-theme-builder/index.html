@@ -14,16 +14,18 @@
           <h1>New Dingul Theme Builder</h1>
           <p>Builds schemaVersion 1 theme JSON for the Android importer.</p>
         </div>
-        <button id="copyJson" type="button">Copy JSON</button>
       </header>
 
-      <div class="panel">
-        <label>Name <input id="themeName" type="text" value="Untitled Theme"></label>
-        <label>Author <input id="themeAuthor" type="text" value="local"></label>
-        <label>Preset
-          <select id="presetSelect"></select>
-        </label>
-      </div>
+      <section class="panel json-panel">
+        <h2>Theme JSON</h2>
+        <textarea id="jsonOutput" spellcheck="false"></textarea>
+        <div class="actions">
+          <button id="importJson" type="button">Load JSON</button>
+          <button id="copyJson" type="button">Copy JSON</button>
+          <button id="downloadJson" type="button">Download</button>
+        </div>
+        <p id="status" class="status"></p>
+      </section>
 
       <div class="grid">
         <section class="panel">
@@ -35,36 +37,43 @@
           <h2>Shape</h2>
           <div id="shapeControls" class="controls"></div>
           <label class="check"><input id="depthEnabled" type="checkbox"> Depth enabled</label>
-          <label class="check"><input id="customDepth" type="checkbox"> Export custom depth color</label>
+          <label class="check"><input id="customDepth" type="checkbox"> Use fixed custom depth color</label>
+          <p class="hint">When fixed depth is off, the depth face is auto-dimmed from each key background.</p>
+          <label class="check"><input id="keyFaceGradientEnabled" type="checkbox"> Subtle key face gradient</label>
+          <label>Key face gradient strength <input id="keyFaceGradientStrengthPercent" type="range" min="0" max="100"></label>
+          <output id="keyFaceGradientOut"></output>
+          <p class="hint">This adds a background-derived top highlight and lower shade while depth is enabled.</p>
         </section>
 
         <section class="panel">
           <h2>Typography</h2>
-          <label>Font
+          <label>Font for main/subitem legends
             <select id="fontFamily"></select>
           </label>
-          <label>Primary text <input id="primaryTextSizePercent" type="range" min="70" max="150"></label>
+          <label>Main legend size <input id="primaryTextSizePercent" type="range" min="70" max="150"></label>
           <output id="primaryOut"></output>
-          <label>Secondary text <input id="secondaryTextSizePercent" type="range" min="70" max="150"></label>
+          <label>Subitem legend size <input id="secondaryTextSizePercent" type="range" min="70" max="150"></label>
           <output id="secondaryOut"></output>
-          <label class="check"><input id="primaryTextBold" type="checkbox"> Primary bold</label>
-          <label class="check"><input id="primaryTextItalic" type="checkbox"> Primary italic</label>
-          <label class="check"><input id="secondaryTextBold" type="checkbox"> Secondary bold</label>
-          <label class="check"><input id="secondaryTextItalic" type="checkbox"> Secondary italic</label>
+          <label class="check"><input id="primaryTextBold" type="checkbox"> Main legend bold</label>
+          <label class="check"><input id="primaryTextItalic" type="checkbox"> Main legend italic</label>
+          <label class="check"><input id="secondaryTextBold" type="checkbox"> Subitem legend bold</label>
+          <label class="check"><input id="secondaryTextItalic" type="checkbox"> Subitem legend italic</label>
         </section>
 
         <section class="panel">
           <h2>Additional Number Row</h2>
-          <label>Color mode
+          <label>Number row color mode
             <select id="numberRowMode"></select>
           </label>
-          <p class="hint">This is independent of whether the number row is shown. Choose whether the whole row, the center keys, or the outer keys follow alpha, mod, or accent styling.</p>
+          <p class="hint">This controls only the optional number row colorway. It does not turn the number row on or off.</p>
+          <p class="hint">Default reading is outer digits 1 2 3 8 9 0 as alpha and center digits 4 5 6 7 as mod, but any alpha/mod/accent split can be selected.</p>
+          <div id="numberRowModeGuide" class="number-row-guide" aria-label="Number row color mode guide"></div>
         </section>
 
         <section class="panel">
           <h2>Dingul Color Roles</h2>
           <div id="dingulRoleControls" class="controls"></div>
-          <p class="hint">Default colorway is alpha, mod, and mod inv. Inv swaps foreground/background for accent-style modifier keys.</p>
+          <p class="hint">Alpha and mod define the base colorway. Mod inv is only for a real third accent tone; do not use it just to manufacture a 3-tone theme.</p>
         </section>
 
         <section class="panel">
@@ -80,28 +89,44 @@
       </div>
 
       <section class="panel">
-        <h2>Per-Key Text/Icon Overrides</h2>
-        <p class="hint">One per line: <code>tap:q = #C75DFF</code>, <code>space = #F7EEDB</code>, <code>__dingul_center_vowel__ = #FFD25A</code>.</p>
-        <textarea id="textOverridesText" spellcheck="false"></textarea>
+        <div class="section-header">
+          <div>
+            <h2>Image-to-Theme Chat Prompt</h2>
+            <p class="hint">Attach a keyboard image in a web chat, paste this prompt, and ask for JSON only. Icon packs are intentionally excluded.</p>
+          </div>
+          <button id="copyAiPrompt" type="button">Copy Prompt</button>
+        </div>
+        <h3 class="subhead">Role-first mapping guide</h3>
+        <ol class="role-guide">
+          <li><strong>1. Global roles:</strong> set <code>alphaKey</code>, <code>modifierKey</code>, <code>accentKey</code>, <code>accent</code>, and <code>secondary</code> first.</li>
+          <li><strong>2. Tone count:</strong> decide whether the image is 2-tone or 3-tone. For 2-tone themes, keep <code>accentPolicy</code> empty and do not force <code>modInv</code> as an accent.</li>
+          <li><strong>3. Dingul roles:</strong> mirror the same colorway through <code>dingulColors.alpha</code> and <code>dingulColors.mod</code>; use <code>dingulColors.modInv</code> only for a real third tone.</li>
+          <li><strong>4. Number row:</strong> start from <code>half_mod_4567</code> unless the image clearly uses another number row split.</li>
+          <li><strong>5. Accent policy:</strong> if a whole visual group is visibly accented, use <code>accentPolicy</code> targets instead of individual keys.</li>
+          <li><strong>6. Per-key fallback:</strong> use <code>keyTextColorOverrides</code> or <code>keyBackgroundColorOverrides</code> only for isolated keys that cannot be expressed by roles or policy.</li>
+        </ol>
+        <div id="accentPolicyMap" class="mapping-grid" aria-label="Accent policy target map"></div>
+        <h3 class="subhead">Per-key override keys</h3>
+        <p class="hint">Use these exact names for sparse foreground/background overrides. Role colors should still cover the main colorway.</p>
+        <div id="perKeyOverrideMap" class="mapping-grid per-key-map" aria-label="Per-key override key map"></div>
+        <textarea id="aiPrompt" spellcheck="false" readonly></textarea>
       </section>
 
-      <section class="panel">
-        <h2>Per-Key Background Overrides</h2>
-        <p class="hint">Optional. One per line: <code>enter = #F59E0B</code>, <code>backspace = #FBCFE8</code>, <code>tap:q = #222222</code>.</p>
-        <textarea id="backgroundOverridesText" spellcheck="false"></textarea>
-      </section>
     </section>
 
     <aside class="preview">
-      <section class="keyboard" id="keyboardPreview" aria-label="Theme preview"></section>
-      <section class="panel">
-        <h2>Theme JSON</h2>
-        <textarea id="jsonOutput" spellcheck="false"></textarea>
-        <div class="actions">
-          <button id="importJson" type="button">Import JSON</button>
-          <button id="downloadJson" type="button">Download</button>
+      <section class="panel preview-meta">
+        <h2>Preview</h2>
+        <div class="json-meta">
+          <label>Name <input id="themeName" type="text" value="Untitled Theme"></label>
+          <label>Author <input id="themeAuthor" type="text" value="local"></label>
         </div>
-        <p id="status" class="status"></p>
+      </section>
+      <section class="panel preview-card">
+        <div class="preview-pair" aria-label="Theme preview pair">
+          <section class="keyboard" id="keyboardPreview" aria-label="QWERTY theme preview"></section>
+          <section class="keyboard dingul-keyboard" id="dingulKeyboardPreview" aria-label="Dingul theme preview"></section>
+        </div>
       </section>
     </aside>
   </main>

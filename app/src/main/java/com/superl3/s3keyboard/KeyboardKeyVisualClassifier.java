@@ -56,13 +56,9 @@ final class KeyboardKeyVisualClassifier {
     }
 
     static int hintColorFor(KeyboardSettings settings, GestureKey key) {
-        if (isAdditionalNumberRowKey(key)) {
-            return textColorFor(settings, key);
-        }
         int background = colorFor(settings, key);
-        return contrastRatio(settings.secondaryColor, background) >= 1.6
-                ? settings.secondaryColor
-                : textColorFor(settings, key);
+        int foreground = textColorFor(settings, key);
+        return softenedForegroundFor(foreground, background, 0.62f, 1.45);
     }
 
     static int iconColorFor(KeyboardSettings settings, GestureKey key, boolean selected) {
@@ -78,7 +74,19 @@ final class KeyboardKeyVisualClassifier {
         if (override == null) {
             override = findOverride(settings, "shift_indicator");
         }
-        return override == null ? 0xFF06B6D4 : override;
+        int alphaText = textColorForRole(settings, KeyVisualRole.ALPHA);
+        int modifierText = textColorForRole(settings, KeyVisualRole.MODIFIER);
+        int modifierBackground = backgroundColorForRole(settings, KeyVisualRole.MODIFIER);
+        int base = override == null ? alphaText : blendColor(override, alphaText, 0.34f);
+        return ensureContrast(
+                base,
+                modifierBackground,
+                2.1,
+                alphaText,
+                modifierText,
+                override == null ? alphaText : override,
+                0xFF111827,
+                0xFFFFFFFF);
     }
 
     static boolean drawsDotLegendFor(KeyboardSettings settings, GestureKey key) {
@@ -528,6 +536,54 @@ final class KeyboardKeyVisualClassifier {
         double lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background));
         double darker = Math.min(relativeLuminance(foreground), relativeLuminance(background));
         return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    private static int softenedForegroundFor(
+            int foreground,
+            int background,
+            float foregroundAmount,
+            double minimumContrast) {
+        float amount = Math.max(0f, Math.min(1f, foregroundAmount));
+        int color = blendColor(foreground, background, amount);
+        while (amount < 1f && contrastRatio(color, background) < minimumContrast) {
+            amount = Math.min(1f, amount + 0.08f);
+            color = blendColor(foreground, background, amount);
+        }
+        return contrastRatio(color, background) >= minimumContrast ? color : foreground;
+    }
+
+    private static int ensureContrast(
+            int preferred,
+            int background,
+            double minimumContrast,
+            int... fallbacks) {
+        if (contrastRatio(preferred, background) >= minimumContrast) {
+            return preferred;
+        }
+        int best = preferred;
+        double bestContrast = contrastRatio(preferred, background);
+        for (int fallback : fallbacks) {
+            double contrast = contrastRatio(fallback, background);
+            if (contrast > bestContrast) {
+                best = fallback;
+                bestContrast = contrast;
+            }
+        }
+        return best;
+    }
+
+    private static int blendColor(int foreground, int background, float foregroundAmount) {
+        float amount = Math.max(0f, Math.min(1f, foregroundAmount));
+        float inverse = 1f - amount;
+        int a = Math.round(((foreground >>> 24) & 0xFF) * amount
+                + ((background >>> 24) & 0xFF) * inverse);
+        int r = Math.round(((foreground >> 16) & 0xFF) * amount
+                + ((background >> 16) & 0xFF) * inverse);
+        int g = Math.round(((foreground >> 8) & 0xFF) * amount
+                + ((background >> 8) & 0xFF) * inverse);
+        int b = Math.round((foreground & 0xFF) * amount
+                + (background & 0xFF) * inverse);
+        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
     private static double relativeLuminance(int color) {

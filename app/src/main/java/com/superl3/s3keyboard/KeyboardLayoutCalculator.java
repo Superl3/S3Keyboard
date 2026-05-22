@@ -37,6 +37,7 @@ final class KeyboardLayoutCalculator {
         float numberRowBottomGap = hasAdditionalNumberRow(settings, rows)
                 ? dp(settings.numberRowBottomGapDp, safeDensity)
                 : 0f;
+        float keyGap = dp(settings.keyGapDp, safeDensity);
         boolean hasNumberRow = hasAdditionalNumberRow(settings, rows);
         float usableHeight = Math.max(rows.size(), height - topPadding - bottomPadding);
         float bottomRowHeight = bottomRowHeight(usableHeight, bottomRowTopPadding, rows.size(), safeDensity);
@@ -61,6 +62,7 @@ final class KeyboardLayoutCalculator {
                     ? Math.min(dp(settings.hangulMainSpecialGapDp, safeDensity), Math.max(0f, availableWidth - 1f))
                     : 0f;
             float rowAvailableWidth = Math.max(1f, availableWidth - rowSpecialGap);
+            float rowGap = rowGap(row, rowAvailableWidth, keyGap);
             float top = topPadding + topForRow(
                     rowIndex,
                     rows.size(),
@@ -69,14 +71,17 @@ final class KeyboardLayoutCalculator {
                     numberRowHeight,
                     numberRowBottomGap,
                     bottomRowTopPadding);
-            float unitWidth = Math.max(0.1f, rowAvailableWidth / (float) row.baseUnits);
-            float contentWidth = KeyboardRowMetrics.contentWidth(row, unitWidth, 0f) + rowSpecialGap;
-            float maxContentWidth = KeyboardRowMetrics.maxContentWidth(row, unitWidth, 0f) + rowSpecialGap;
+            float unitWidth = Math.max(
+                    0.1f,
+                    (rowAvailableWidth - rowGap * Math.max(0, row.keys.size() - 1))
+                            / (float) row.baseUnits);
+            float contentWidth = KeyboardRowMetrics.contentWidth(row, unitWidth, rowGap) + rowSpecialGap;
+            float maxContentWidth = KeyboardRowMetrics.maxContentWidth(row, unitWidth, rowGap) + rowSpecialGap;
             float left = leftInset + Math.max(0f, (maxContentWidth - contentWidth) / 2f);
 
             for (int keyIndex = 0; keyIndex < row.keys.size(); keyIndex++) {
                 GestureKey key = row.keys.get(keyIndex);
-                float right = left + KeyboardRowMetrics.keyWidth(key, unitWidth, 0f);
+                float right = left + KeyboardRowMetrics.keyWidth(key, unitWidth, rowGap);
                 boolean primaryBottomControl = bottomRow
                         && (KeyboardCommands.CMD_SPACE.equals(key.tap)
                         || KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)
@@ -89,7 +94,7 @@ final class KeyboardLayoutCalculator {
                         top + rowHeight,
                         primaryBottomControl,
                         hangulCharacterRow && keyIndex == row.keys.size() - 1));
-                left = right;
+                left = right + rowGap;
                 if (hangulCharacterRow && keyIndex == 2) {
                     left += rowSpecialGap;
                 }
@@ -156,6 +161,14 @@ final class KeyboardLayoutCalculator {
 
     private static float dp(int value, float density) {
         return value * density;
+    }
+
+    private static float rowGap(KeyboardRow row, float rowAvailableWidth, float requestedGap) {
+        if (row.keys.size() <= 1 || requestedGap <= 0f) {
+            return 0f;
+        }
+        float maxGap = rowAvailableWidth / (float) Math.max(1, row.keys.size() - 1);
+        return Math.min(requestedGap, Math.max(0f, maxGap - 0.1f));
     }
 
     static final class Slot {

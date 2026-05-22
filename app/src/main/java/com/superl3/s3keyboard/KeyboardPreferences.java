@@ -90,6 +90,8 @@ final class KeyboardPreferences {
     static final String RESERVED_UP_TEXT = "reserved_up_text";
     static final String DIFFERENTIATED_HAPTIC_ENABLED = "differentiated_haptic_enabled";
     static final String TOUCH_BIAS_AUTO_CORRECTION_ENABLED = "touch_bias_auto_correction_enabled";
+    static final String PALM_REJECTION_ENABLED = "palm_rejection_enabled";
+    static final String MOTION_EFFECT_LEVEL = "motion_effect_level";
     static final String CLIPBOARD_HISTORY_ENABLED = "clipboard_history_enabled";
     static final String FLOATING_MODE_ENABLED = "floating_mode_enabled";
 
@@ -109,6 +111,7 @@ final class KeyboardPreferences {
     static final int DEFAULT_HAPTIC_TICK_GAP_MS = 18;
     static final int MIN_HAPTIC_TICK_GAP_MS = 4;
     static final int MAX_HAPTIC_TICK_GAP_MS = 60;
+    static final MotionEffectLevel DEFAULT_MOTION_EFFECT_LEVEL = MotionEffectLevel.NORMAL;
 
     private KeyboardPreferences() {
     }
@@ -408,6 +411,20 @@ final class KeyboardPreferences {
                 .apply();
     }
 
+    static MotionEffectLevel loadMotionEffectLevel(Context context) {
+        return MotionEffectLevel.fromPreference(prefs(context).getString(
+                MOTION_EFFECT_LEVEL,
+                DEFAULT_MOTION_EFFECT_LEVEL.preferenceValue));
+    }
+
+    static void saveMotionEffectLevel(Context context, MotionEffectLevel level) {
+        prefs(context).edit()
+                .putString(
+                        MOTION_EFFECT_LEVEL,
+                        (level == null ? DEFAULT_MOTION_EFFECT_LEVEL : level).preferenceValue)
+                .apply();
+    }
+
     static AccentPlacementMode loadAccentPlacementMode(Context context) {
         return AccentPlacementMode.fromPreference(prefs(context).getString(
                 ACCENT_PLACEMENT_MODE,
@@ -535,6 +552,14 @@ final class KeyboardPreferences {
 
     static void saveTouchBiasAutoCorrectionEnabled(Context context, boolean enabled) {
         prefs(context).edit().putBoolean(TOUCH_BIAS_AUTO_CORRECTION_ENABLED, enabled).apply();
+    }
+
+    static boolean loadPalmRejectionEnabled(Context context) {
+        return prefs(context).getBoolean(PALM_REJECTION_ENABLED, false);
+    }
+
+    static void savePalmRejectionEnabled(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(PALM_REJECTION_ENABLED, enabled).apply();
     }
 
     static boolean loadClipboardHistoryEnabled(Context context) {

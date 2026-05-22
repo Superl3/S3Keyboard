@@ -278,7 +278,7 @@ final class HangulAutomata {
             }
 
             committed.append(getComposingText());
-            initial = INITIAL_BY_CHAR.get('ㅇ');
+            initial = -1;
             vowel = nextVowel;
             finalConsonant = 0;
             return committed.toString();

@@ -470,6 +470,11 @@ function validateEffects(effects, at, errors) {
   }
   validateEffectToggle(effects.blur, at("effects.blur"), errors, ["enabled", "radiusDp"]);
   validateEffectToggle(effects.metal, at("effects.metal"), errors, ["enabled", "strengthPercent"]);
+  validateEffectToggle(
+    effects.keyFaceGradient,
+    at("effects.keyFaceGradient"),
+    errors,
+    ["enabled", "strengthPercent"]);
   if (effects.previewBubble !== undefined) {
     const style = effects.previewBubble?.style;
     if (style !== "rounded" && style !== "angular") {
@@ -1037,6 +1042,9 @@ function inferredFeatures(theme) {
   if (json.effects?.metal?.enabled) {
     features.add("metal");
   }
+  if (json.effects?.keyFaceGradient?.enabled) {
+    features.add("keyFaceGradient");
+  }
   if (json.effects?.previewBubble?.style === "angular") {
     features.add("angularPreview");
   }
@@ -1072,6 +1080,9 @@ function effectSummary(effects) {
   }
   if (effects?.metal?.enabled) {
     result.push(`metal${effects.metal.strengthPercent ?? ""}`);
+  }
+  if (effects?.keyFaceGradient?.enabled) {
+    result.push(`keyGradient${effects.keyFaceGradient.strengthPercent ?? ""}`);
   }
   if (effects?.previewBubble?.style === "angular") {
     result.push("angular");

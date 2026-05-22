@@ -216,10 +216,10 @@ public final class KeyboardKeyVisualClassifierTest {
 
         assertEquals(halfMod.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(halfMod, three));
         assertEquals(halfMod.accentColor, KeyboardKeyVisualClassifier.textColorFor(halfMod, three));
-        assertEquals(halfMod.accentColor, KeyboardKeyVisualClassifier.hintColorFor(halfMod, three));
+        assertEquals(0xFF747474, KeyboardKeyVisualClassifier.hintColorFor(halfMod, three));
         assertEquals(halfMod.functionKeyColor, KeyboardKeyVisualClassifier.colorFor(halfMod, five));
         assertEquals(halfMod.secondaryColor, KeyboardKeyVisualClassifier.textColorFor(halfMod, five));
-        assertEquals(halfMod.secondaryColor, KeyboardKeyVisualClassifier.hintColorFor(halfMod, five));
+        assertEquals(0xFF999A9C, KeyboardKeyVisualClassifier.hintColorFor(halfMod, five));
         assertEquals(fullAlpha.keyIdleColor, KeyboardKeyVisualClassifier.colorFor(fullAlpha, five));
         assertEquals(fullAlpha.accentColor, KeyboardKeyVisualClassifier.textColorFor(fullAlpha, five));
         assertEquals(fullMod.functionKeyColor, KeyboardKeyVisualClassifier.colorFor(fullMod, three));
@@ -273,12 +273,12 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
-    public void shiftIndicatorCanUseThemeOverride() {
+    public void shiftIndicatorUsesThemeOverrideAsHueButHarmonizesWithKeyRoles() {
         Map<String, Integer> overrides = new HashMap<>();
         overrides.put("shiftIndicator", 0x0000A676);
         KeyboardSettings settings = KeyboardSettings.defaults().withKeyColorOverrides(overrides);
 
-        assertEquals(0xFF00A676, KeyboardKeyVisualClassifier.shiftIndicatorColorFor(settings));
+        assertEquals(0xFF17503F, KeyboardKeyVisualClassifier.shiftIndicatorColorFor(settings));
     }
 
     @Test
@@ -355,16 +355,53 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
-    public void remoteModeIgnoresThemeDisplayOverrides() {
+    public void remoteModeOnlyForcesVisiblePcModifierText() {
         Map<String, KeyDisplayOverride> displayOverrides = new HashMap<>();
         displayOverrides.put("alpha", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_DOT));
+        displayOverrides.put("modifiers", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_ESC));
+        displayOverrides.put("shift", KeyDisplayOverride.text("shift-pack"));
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withKeyDisplayOverrides(displayOverrides)
                 .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
 
-        assertNull(KeyDisplayOverrideResolver.resolve(
+        assertEquals(ModifierIconCatalog.GLYPH_DOT, KeyDisplayOverrideResolver.resolve(
                 settings,
-                new GestureKey("q", "q", "Q", "1", null, null, null)));
+                new GestureKey("q", "q", "Q", "1", null, null, null)).value);
+        KeyDisplayOverride ctrl = KeyDisplayOverrideResolver.resolve(
+                settings,
+                new GestureKey(
+                        "Ctrl",
+                        KeyboardCommands.CMD_REMOTE_CTRL_LATCH,
+                        null,
+                        null,
+                        null,
+                        null,
+                        KeyboardCommands.CMD_REMOTE_CTRL_LOCK,
+                        2));
+        assertEquals("text", ctrl.type);
+        assertEquals("Ctrl", ctrl.value);
+        KeyDisplayOverride space = KeyDisplayOverrideResolver.resolve(
+                settings,
+                new GestureKey(
+                        "스페이스",
+                        KeyboardCommands.CMD_SPACE,
+                        KeyboardCommands.CMD_REMOTE_ARROW_UP,
+                        KeyboardCommands.CMD_REMOTE_ARROW_DOWN,
+                        KeyboardCommands.CMD_REMOTE_ARROW_LEFT,
+                        KeyboardCommands.CMD_REMOTE_ARROW_RIGHT,
+                        null,
+                        8,
+                        KeyIcon.SPACE));
+        assertEquals(ModifierIconCatalog.GLYPH_ESC, space.value);
+        KeyDisplayOverride shift = KeyDisplayOverrideResolver.resolve(
+                settings,
+                GestureKey.command(
+                        "Shift",
+                        KeyboardCommands.CMD_SHIFT_ONCE,
+                        KeyboardCommands.CMD_SHIFT_LOCK,
+                        3,
+                        KeyIcon.SHIFT));
+        assertEquals("shift-pack", shift.value);
     }
 
     @Test
@@ -775,7 +812,7 @@ public final class KeyboardKeyVisualClassifierTest {
     }
 
     @Test
-    public void hintColorFallsBackWhenSecondaryIsTooCloseToKeyBackground() {
+    public void hintColorUsesSoftenedRoleForegroundForAlphaKeys() {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withExtendedThemeColors(
                         0x008C929D,
@@ -790,13 +827,11 @@ public final class KeyboardKeyVisualClassifierTest {
                         KeyboardSettings.DEFAULT_DEPTH_COLOR);
         GestureKey alpha = new GestureKey("a", "a", "A", "!", null, null, "!", 2);
 
-        assertEquals(
-                KeyboardKeyVisualClassifier.textColorFor(settings, alpha),
-                KeyboardKeyVisualClassifier.hintColorFor(settings, alpha));
+        assertEquals(0xFF434650, KeyboardKeyVisualClassifier.hintColorFor(settings, alpha));
     }
 
     @Test
-    public void hintColorKeepsSecondaryWhenItContrastsWithKeyBackground() {
+    public void hintColorUsesSoftenedRoleForegroundForModifierKeys() {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withExtendedThemeColors(
                         0x008C929D,
@@ -811,7 +846,7 @@ public final class KeyboardKeyVisualClassifierTest {
                         KeyboardSettings.DEFAULT_DEPTH_COLOR);
         GestureKey modifier = GestureKey.command("", KeyboardCommands.CMD_TOGGLE_LANGUAGE);
 
-        assertEquals(settings.secondaryColor, KeyboardKeyVisualClassifier.hintColorFor(settings, modifier));
+        assertEquals(0xFF747781, KeyboardKeyVisualClassifier.hintColorFor(settings, modifier));
     }
 
     @Test

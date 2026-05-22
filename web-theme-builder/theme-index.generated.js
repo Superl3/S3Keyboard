@@ -898,7 +898,7 @@ window.S3_THEME_INDEX = [
       "colors": {
         "alphaKey": "#B9C7CD",
         "modifierKey": "#132633",
-        "accentKey": "#27AFA3",
+        "accentKey": "#0AA29A",
         "keyPressed": "#8EA2A9",
         "keyboardBackground": "#DDE4DE",
         "border": "#7C8D93",
@@ -939,7 +939,7 @@ window.S3_THEME_INDEX = [
         },
         "modInv": {
           "foreground": "#132633",
-          "background": "#27AFA3"
+          "background": "#0AA29A"
         }
       },
       "accentPolicy": {
@@ -1169,7 +1169,15 @@ window.S3_THEME_INDEX = [
         "secondaryTextItalic": false
       },
       "keyTextColorOverrides": {
-        "shiftIndicator": "#55C7C8"
+        "shiftIndicator": "#55C7C8",
+        "escPoint": "#E8ECEF",
+        "enter": "#E8ECEF",
+        "dingulDot": "#E8ECEF"
+      },
+      "keyBackgroundColorOverrides": {
+        "escPoint": "#F05B6E",
+        "enter": "#66E6D8",
+        "dingulDot": "#66E6D8"
       },
       "dingulColors": {
         "alpha": {
@@ -1187,12 +1195,10 @@ window.S3_THEME_INDEX = [
       },
       "accentPolicy": {
         "qwerty": [
-          "modMeta",
-          "qwertyShift",
-          "backspace"
+          "escPoint",
+          "enter"
         ],
         "dingul": [
-          "modCtrl",
           "dingulDot"
         ]
       }

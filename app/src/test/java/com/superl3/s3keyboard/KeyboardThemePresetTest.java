@@ -228,7 +228,96 @@ public final class KeyboardThemePresetTest {
         assertDefaultAccentPlacement("gmk-bento");
         assertDefaultAccentPlacement("gmk-hammerhead");
         assertDefaultAccentPlacement("gmk-8008");
-        assertDefaultAccentPlacement("gmk-modern-dolch");
+    }
+
+    @Test
+    public void modernDolchUsesEscAndEnterAccentPlacement() {
+        KeyboardThemePreset preset = KeyboardThemePreset.find("gmk-modern-dolch");
+        assertNotNull(preset);
+        KeyboardSettings settings = preset.applyTo(KeyboardSettings.defaults().withEnglishNumberRow(false));
+        int redBackground = settings.keyColorOverrides.get("background:escpoint");
+        int greenBackground = settings.keyColorOverrides.get("background:enter");
+        int alphaLegend = settings.keyColorOverrides.get("alpha");
+        assertEquals(
+                "modern dolch dot should use visual enter accent",
+                greenBackground,
+                KeyboardKeyVisualClassifier.colorFor(settings, new GestureKey(
+                        ".",
+                        ".",
+                        "\"",
+                        "`",
+                        ",",
+                        KeyboardCommands.CMD_NOOP,
+                        null)));
+        assertEquals(
+                "modern dolch dot legend should use alpha legend color",
+                alphaLegend,
+                KeyboardKeyVisualClassifier.textColorFor(settings, new GestureKey(
+                        ".",
+                        ".",
+                        "\"",
+                        "`",
+                        ",",
+                        KeyboardCommands.CMD_NOOP,
+                        null)));
+
+        KeyboardSettings english = settings.withKeyboardMode(KeyboardMode.ENGLISH);
+        assertEquals(
+                "modern dolch q should use esc point accent when number row is hidden",
+                redBackground,
+                KeyboardKeyVisualClassifier.colorFor(english, new GestureKey(
+                        "q",
+                        "q",
+                        "Q",
+                        null,
+                        null,
+                        null,
+                        "!")));
+        assertEquals(
+                "modern dolch q legend should use alpha legend color",
+                alphaLegend,
+                KeyboardKeyVisualClassifier.textColorFor(english, new GestureKey(
+                        "q",
+                        "q",
+                        "Q",
+                        null,
+                        null,
+                        null,
+                        "!")));
+        assertEquals(
+                "modern dolch enter should use accent",
+                greenBackground,
+                KeyboardKeyVisualClassifier.colorFor(english, GestureKey.command("", KeyboardCommands.CMD_ENTER)));
+        assertEquals(
+                "modern dolch enter legend should use alpha legend color",
+                alphaLegend,
+                KeyboardKeyVisualClassifier.textColorFor(english, GestureKey.command("", KeyboardCommands.CMD_ENTER)));
+        assertNotEquals(
+                "modern dolch language should stay modifier",
+                greenBackground,
+                KeyboardKeyVisualClassifier.colorFor(english, GestureKey.command("", KeyboardCommands.CMD_TOGGLE_LANGUAGE)));
+        assertNotEquals(
+                "modern dolch shift should stay modifier",
+                greenBackground,
+                KeyboardKeyVisualClassifier.colorFor(english, GestureKey.command("", KeyboardCommands.CMD_SHIFT_ONCE)));
+        assertNotEquals(
+                "modern dolch backspace should stay modifier",
+                greenBackground,
+                KeyboardKeyVisualClassifier.colorFor(english, GestureKey.command("", KeyboardCommands.CMD_DELETE)));
+
+        KeyboardSettings englishWithNumberRow = preset.applyTo(KeyboardSettings.defaults())
+                .withKeyboardMode(KeyboardMode.ENGLISH);
+        assertEquals(
+                "modern dolch number-row 1 should use esc accent when number row is visible",
+                redBackground,
+                KeyboardKeyVisualClassifier.colorFor(englishWithNumberRow, new GestureKey(
+                        "1",
+                        "1",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null)));
     }
 
     @Test
@@ -311,6 +400,12 @@ public final class KeyboardThemePresetTest {
         assertEquals(id, builtIn.visualEffects.blurEnabled, external.visualEffects.blurEnabled);
         assertEquals(id, builtIn.visualEffects.metallicEnabled, external.visualEffects.metallicEnabled);
         assertEquals(id, builtIn.visualEffects.angularPreviewBubble, external.visualEffects.angularPreviewBubble);
+        assertEquals(id,
+                builtIn.visualEffects.keyFaceGradientEnabled,
+                external.visualEffects.keyFaceGradientEnabled);
+        assertEquals(id,
+                builtIn.visualEffects.keyFaceGradientStrengthPercent,
+                external.visualEffects.keyFaceGradientStrengthPercent);
         assertEquals(id,
                 builtIn.keyColorOverrides.get("shiftIndicator"),
                 external.keyColorOverrides.get("shiftIndicator"));

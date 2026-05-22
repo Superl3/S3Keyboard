@@ -24,8 +24,13 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class S3KeyboardService extends InputMethodService
         implements HangulKeyboardView.OnKeyGestureListener, HangulKeyboardView.OnPreviewOverlayListener {
+    private static final int PREVIEW_POPUP_TOP_RESERVE_DP = 112;
+
     private final HangulAutomata automata = new HangulAutomata();
     private final DoubleSpacePeriodState doubleSpacePeriodState = new DoubleSpacePeriodState();
     private final EnglishShiftState englishShiftState = new EnglishShiftState();
@@ -34,10 +39,13 @@ public final class S3KeyboardService extends InputMethodService
     private EditorInputPolicy editorPolicy = EditorInputPolicy.DEFAULT;
     private HangulKeyboardView inputView;
     private FrameLayout inputRoot;
+    private FrameLayout previewOverlayContainer;
     private TextView previewOverlay;
+    private final List<TextView> previewOverlayPool = new ArrayList<>();
     private TextView remoteIndicator;
     private PopupWindow previewPopup;
     private PopupWindow quickSettingsPopup;
+    private int previewPopupTopPadPx;
     private int pendingRemoteMetaState;
     private int lockedRemoteMetaState;
 
@@ -106,7 +114,7 @@ public final class S3KeyboardService extends InputMethodService
         clipboardBtn.setLayoutParams(btnParams);
 
         remoteIndicator = new TextView(this);
-        remoteIndicator.setText("REMOTE");
+        remoteIndicator.setText("");
         remoteIndicator.setTextSize(12);
         remoteIndicator.setTypeface(Typeface.DEFAULT_BOLD);
         remoteIndicator.setTextColor(contrastColor(settings.keyboardBackgroundColor));
@@ -149,17 +157,15 @@ public final class S3KeyboardService extends InputMethodService
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
-        previewOverlay = new TextView(this);
-        previewOverlay.setGravity(Gravity.CENTER);
-        previewOverlay.setSingleLine(true);
-        previewOverlay.setIncludeFontPadding(false);
-        previewOverlay.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        previewOverlay.setVisibility(View.VISIBLE);
-        previewPopup = new PopupWindow(previewOverlay, 1, 1);
+        previewOverlayContainer = new FrameLayout(this);
+        previewOverlayContainer.setClipChildren(false);
+        previewOverlayContainer.setClipToPadding(false);
+        previewPopup = new PopupWindow(previewOverlayContainer, 1, 1);
         previewPopup.setTouchable(false);
         previewPopup.setFocusable(false);
         previewPopup.setClippingEnabled(false);
         previewPopup.setBackgroundDrawable(null);
+        ensurePreviewOverlay(0);
 
         floatingModeController.setOnPositionChangedListener(new FloatingModeController.OnPositionChangedListener() {
             @Override
@@ -182,13 +188,12 @@ public final class S3KeyboardService extends InputMethodService
         if (toolbarLayout != null && floatingModeController != null && clipboardStore != null) {
             boolean floatingEnabled = false;
             boolean clipboardEnabled = clipboardStore.isEnabled() && !editorPolicy.password;
-            boolean remoteEnabled = settings.remoteModeEnabled;
-            boolean showToolbar = floatingEnabled || clipboardEnabled || remoteEnabled;
+            boolean showToolbar = floatingEnabled || clipboardEnabled;
             toolbarLayout.setVisibility(showToolbar ? View.VISIBLE : View.GONE);
             dragHandle.setVisibility(floatingEnabled ? View.VISIBLE : View.INVISIBLE);
             clipboardBtn.setVisibility(clipboardEnabled ? View.VISIBLE : View.GONE);
             if (remoteIndicator != null) {
-                remoteIndicator.setVisibility(remoteEnabled ? View.VISIBLE : View.GONE);
+                remoteIndicator.setVisibility(View.GONE);
                 remoteIndicator.setTextColor(contrastColor(settings.keyboardBackgroundColor));
             }
             if (!clipboardEnabled && clipboardView != null) {
@@ -564,10 +569,13 @@ public final class S3KeyboardService extends InputMethodService
     private void inputText(InputConnection inputConnection, String text) {
         doubleSpacePeriodState.reset();
         if (settings.remoteModeEnabled && (pendingRemoteMetaState | lockedRemoteMetaState) != 0) {
-            int remoteKeyCode = remotePrintableKeyCode(text);
+            String remoteText = settings.keyboardMode == KeyboardMode.ENGLISH
+                    ? englishShiftState.applyToInput(text)
+                    : text;
+            int remoteKeyCode = remotePrintableKeyCode(remoteText);
             if (remoteKeyCode != 0) {
                 commitCurrent(inputConnection);
-                sendRemoteKey(inputConnection, remoteKeyCode, 0);
+                sendRemoteKey(inputConnection, remoteKeyCode, remoteShiftMetaForText(remoteText));
                 return;
             }
         }
@@ -749,6 +757,7 @@ public final class S3KeyboardService extends InputMethodService
             inputView.setEnglishShiftState(
                     settings.keyboardMode == KeyboardMode.ENGLISH && englishShiftState.isActive(),
                     settings.keyboardMode == KeyboardMode.ENGLISH && englishShiftState.isLocked());
+            inputView.setRemoteMetaState(pendingRemoteMetaState, lockedRemoteMetaState);
         }
     }
 
@@ -852,27 +861,28 @@ public final class S3KeyboardService extends InputMethodService
     private void handleRemoteCommand(InputConnection inputConnection, String command) {
         commitCurrent(inputConnection);
         doubleSpacePeriodState.reset();
-        englishShiftState.reset();
-        updateShiftStateView();
 
         switch (command) {
             case KeyboardCommands.CMD_REMOTE_CTRL_LATCH:
-                pendingRemoteMetaState = togglePendingRemoteMeta(remoteCtrlMeta());
+                handleRemoteMetaTap(remoteCtrlMeta());
                 return;
             case KeyboardCommands.CMD_REMOTE_WIN_LATCH:
-                pendingRemoteMetaState = togglePendingRemoteMeta(remoteWinMeta());
+                handleRemoteMetaTap(remoteWinMeta());
                 return;
             case KeyboardCommands.CMD_REMOTE_ALT_LATCH:
-                pendingRemoteMetaState = togglePendingRemoteMeta(remoteAltMeta());
+                handleRemoteMetaTap(remoteAltMeta());
                 return;
             case KeyboardCommands.CMD_REMOTE_CTRL_LOCK:
                 lockedRemoteMetaState = toggleLockedRemoteMeta(remoteCtrlMeta());
+                updateShiftStateView();
                 return;
             case KeyboardCommands.CMD_REMOTE_WIN_LOCK:
                 lockedRemoteMetaState = toggleLockedRemoteMeta(remoteWinMeta());
+                updateShiftStateView();
                 return;
             case KeyboardCommands.CMD_REMOTE_ALT_LOCK:
                 lockedRemoteMetaState = toggleLockedRemoteMeta(remoteAltMeta());
+                updateShiftStateView();
                 return;
             case KeyboardCommands.CMD_REMOTE_SHIFT_TAB:
                 sendRemoteKey(inputConnection, KeyEvent.KEYCODE_TAB, KeyEvent.META_SHIFT_ON);
@@ -898,7 +908,19 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private int togglePendingRemoteMeta(int metaState) {
-        return pendingRemoteMetaState == metaState ? 0 : metaState;
+        return (pendingRemoteMetaState & metaState) == metaState
+                ? pendingRemoteMetaState & ~metaState
+                : pendingRemoteMetaState | metaState;
+    }
+
+    private void handleRemoteMetaTap(int metaState) {
+        if ((lockedRemoteMetaState & metaState) == metaState) {
+            lockedRemoteMetaState &= ~metaState;
+            pendingRemoteMetaState &= ~metaState;
+        } else {
+            pendingRemoteMetaState = togglePendingRemoteMeta(metaState);
+        }
+        updateShiftStateView();
     }
 
     private int toggleLockedRemoteMeta(int metaState) {
@@ -945,6 +967,7 @@ public final class S3KeyboardService extends InputMethodService
     private void sendRemoteKey(InputConnection inputConnection, int keyCode, int metaState) {
         int combinedMetaState = metaState | pendingRemoteMetaState | lockedRemoteMetaState;
         pendingRemoteMetaState = 0;
+        updateShiftStateView();
         inputConnection.sendKeyEvent(new KeyEvent(
                 0,
                 0,
@@ -980,6 +1003,16 @@ public final class S3KeyboardService extends InputMethodService
             return KeyEvent.KEYCODE_0;
         }
         return 0;
+    }
+
+    private int remoteShiftMetaForText(String text) {
+        if (text == null || text.length() != 1) {
+            return 0;
+        }
+        char ch = text.charAt(0);
+        return ch >= 'A' && ch <= 'Z'
+                ? KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON
+                : 0;
     }
 
     private void showInputPicker() {
@@ -1041,6 +1074,9 @@ public final class S3KeyboardService extends InputMethodService
         panel.addView(title, matchWrap());
 
         panel.addView(quickButton(remoteModeToggleLabel(), settings.remoteModeEnabled, v -> toggleRemoteMode()), topWrap(8));
+        if (settings.remoteModeEnabled) {
+            addRemoteTestControls(panel);
+        }
         panel.addView(quickButton(numberRowToggleLabel(), activeNumberRowVisible(), v -> toggleActiveNumberRow()), topWrap(8));
         LinearLayout handRow = new LinearLayout(this);
         handRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1066,6 +1102,76 @@ public final class S3KeyboardService extends InputMethodService
         quickSettingsPopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         quickSettingsPopup.setClippingEnabled(false);
         quickSettingsPopup.showAtLocation(inputRoot, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, dp(12));
+    }
+
+    private void addRemoteTestControls(LinearLayout panel) {
+        TextView label = new TextView(this);
+        label.setText("원격 키 테스트");
+        label.setTextColor(SettingsUiPalette.from(this).textSecondary);
+        label.setTextSize(13);
+        panel.addView(label, topWrap(10));
+
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        row1.addView(remoteTestButton("Esc", v -> sendRemoteTestKey(KeyEvent.KEYCODE_ESCAPE, 0)),
+                weightedQuickParams(0, 4));
+        row1.addView(remoteTestButton("Tab", v -> sendRemoteTestKey(KeyEvent.KEYCODE_TAB, 0)),
+                weightedQuickParams(0, 4));
+        row1.addView(remoteTestButton("F1", v -> sendRemoteTestKey(KeyEvent.KEYCODE_F1, 0)),
+                weightedQuickParams(0, 4));
+        row1.addView(remoteTestButton("Ctrl+A", v -> sendRemoteTestKey(
+                KeyEvent.KEYCODE_A,
+                KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON)),
+                weightedQuickParams(0, 0));
+        panel.addView(row1, topWrap(4));
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        row2.addView(remoteTestButton("Alt+Shift", v -> sendRemoteTestAltShift()),
+                weightedQuickParams(0, 4));
+        row2.addView(remoteTestButton("Ctrl+Space", v -> sendRemoteTestKey(
+                KeyEvent.KEYCODE_SPACE,
+                KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON)),
+                weightedQuickParams(0, 4));
+        row2.addView(remoteTestButton("Win+Space", v -> sendRemoteTestKey(
+                KeyEvent.KEYCODE_SPACE,
+                KeyEvent.META_META_ON | KeyEvent.META_META_LEFT_ON)),
+                weightedQuickParams(0, 4));
+        row2.addView(remoteTestButton("Lang", v -> sendRemoteTestKey(
+                KeyEvent.KEYCODE_LANGUAGE_SWITCH,
+                0)), weightedQuickParams(0, 0));
+        panel.addView(row2, topWrap(4));
+    }
+
+    private Button remoteTestButton(String text, View.OnClickListener listener) {
+        Button button = quickButton(text, false, listener);
+        button.setTextSize(11);
+        button.setMinHeight(dp(38));
+        button.setPadding(dp(8), 0, dp(8), 0);
+        return button;
+    }
+
+    private void sendRemoteTestKey(int keyCode, int metaState) {
+        InputConnection inputConnection = getCurrentInputConnection();
+        if (inputConnection == null) {
+            return;
+        }
+        commitCurrent(inputConnection);
+        sendRemoteKey(inputConnection, keyCode, metaState);
+    }
+
+    private void sendRemoteTestAltShift() {
+        InputConnection inputConnection = getCurrentInputConnection();
+        if (inputConnection == null) {
+            return;
+        }
+        commitCurrent(inputConnection);
+        pendingRemoteMetaState = 0;
+        lockedRemoteMetaState = 0;
+        inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ALT_LEFT));
+        inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT));
+        inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT));
+        inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ALT_LEFT));
     }
 
     private void dismissQuickSettings() {
@@ -1237,47 +1343,109 @@ public final class S3KeyboardService extends InputMethodService
 
     @Override
     public void onPreviewOverlayChanged(HangulKeyboardView.PreviewOverlaySpec spec) {
-        if (previewOverlay == null || previewPopup == null || spec == null || inputView == null) {
+        if (spec == null) {
             return;
         }
-        previewOverlay.setText(spec.label);
-        previewOverlay.setTextColor(spec.textColor);
-        previewOverlay.setTextSize(TypedValue.COMPLEX_UNIT_PX, spec.textSizePx);
-        previewOverlay.setTypeface(KeyboardTypefaceCatalog.typefaceFor(
+        List<HangulKeyboardView.PreviewOverlaySpec> specs = new ArrayList<>();
+        specs.add(spec);
+        onPreviewOverlaysChanged(specs);
+    }
+
+    @Override
+    public void onPreviewOverlaysChanged(List<HangulKeyboardView.PreviewOverlaySpec> specs) {
+        if (inputView == null || previewPopup == null || previewOverlayContainer == null
+                || specs == null || specs.isEmpty()) {
+            dismissPreviewPopup();
+            return;
+        }
+        int[] windowLocation = new int[2];
+        inputView.getLocationInWindow(windowLocation);
+        int maxBottom = inputView.getHeight();
+        int requiredTopPad = dp(PREVIEW_POPUP_TOP_RESERVE_DP);
+        for (HangulKeyboardView.PreviewOverlaySpec spec : specs) {
+            requiredTopPad = Math.max(requiredTopPad, Math.max(0, -spec.y) + dp(4));
+            maxBottom = Math.max(maxBottom, spec.y + spec.height);
+        }
+        int topPad = previewPopup.isShowing()
+                ? Math.max(requiredTopPad, previewPopupTopPadPx)
+                : requiredTopPad;
+        previewPopupTopPadPx = topPad;
+        int popupWidth = Math.max(inputView.getWidth(), 1);
+        int popupHeight = Math.max(1, topPad + maxBottom + dp(4));
+        previewOverlayContainer.setMinimumWidth(popupWidth);
+        previewOverlayContainer.setMinimumHeight(popupHeight);
+        for (int i = 0; i < specs.size(); i++) {
+            TextView overlay = ensurePreviewOverlay(i);
+            HangulKeyboardView.PreviewOverlaySpec spec = specs.get(i);
+            applyPreviewOverlaySpec(overlay, spec);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(spec.width, spec.height);
+            params.leftMargin = spec.x;
+            params.topMargin = spec.y + topPad;
+            overlay.setLayoutParams(params);
+            overlay.setVisibility(View.VISIBLE);
+        }
+        for (int i = specs.size(); i < previewOverlayPool.size(); i++) {
+            previewOverlayPool.get(i).setVisibility(View.GONE);
+        }
+        int popupX = windowLocation[0];
+        int popupY = windowLocation[1] - topPad;
+        if (previewPopup.isShowing()) {
+            previewPopup.update(popupX, popupY, popupWidth, popupHeight);
+        } else {
+            previewPopup.setWidth(popupWidth);
+            previewPopup.setHeight(popupHeight);
+            previewPopup.showAtLocation(inputView, Gravity.NO_GRAVITY, popupX, popupY);
+        }
+    }
+
+    private TextView ensurePreviewOverlay(int index) {
+        while (previewOverlayPool.size() <= index) {
+            TextView overlay = new TextView(this);
+            overlay.setGravity(Gravity.CENTER);
+            overlay.setSingleLine(true);
+            overlay.setIncludeFontPadding(false);
+            overlay.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            overlay.setVisibility(View.VISIBLE);
+            previewOverlayPool.add(overlay);
+            previewOverlayContainer.addView(overlay, new FrameLayout.LayoutParams(1, 1));
+            if (previewOverlay == null) {
+                previewOverlay = overlay;
+            }
+        }
+        return previewOverlayPool.get(index);
+    }
+
+    private void applyPreviewOverlaySpec(TextView overlay, HangulKeyboardView.PreviewOverlaySpec spec) {
+        overlay.setText(spec.label);
+        overlay.setTextColor(spec.textColor);
+        overlay.setTextSize(TypedValue.COMPLEX_UNIT_PX, spec.textSizePx);
+        overlay.setAlpha(spec.alpha);
+        overlay.setPivotX(spec.width / 2f);
+        overlay.setPivotY(spec.height);
+        overlay.setScaleX(spec.scale);
+        overlay.setScaleY(spec.scale);
+        overlay.setTypeface(KeyboardTypefaceCatalog.typefaceFor(
                 this,
                 settings.fontFamily,
                 settings.primaryTextBold,
                 settings.primaryTextItalic));
         if (spec.angularBubble) {
-            previewOverlay.setPadding(0, 0, 0, dp(7));
-            previewOverlay.setBackground(new PreviewBubbleDrawable(
+            overlay.setPadding(0, 0, 0, dp(22));
+            overlay.setBackground(new PreviewBubbleDrawable(
                     spec.backgroundColor,
                     spec.borderColor,
                     spec.borderWidthPx,
                     spec.cornerRadiusPx,
-                    dp(7)));
+                    dp(22)));
         } else {
-            previewOverlay.setPadding(0, 0, 0, 0);
+            overlay.setPadding(0, 0, 0, 0);
             GradientDrawable background = new GradientDrawable();
             background.setColor(spec.backgroundColor);
             background.setCornerRadius(spec.cornerRadiusPx);
             if (spec.borderWidthPx > 0) {
                 background.setStroke(spec.borderWidthPx, spec.borderColor);
             }
-            previewOverlay.setBackground(background);
-        }
-
-        int[] windowLocation = new int[2];
-        inputView.getLocationInWindow(windowLocation);
-        int popupX = windowLocation[0] + spec.x;
-        int popupY = windowLocation[1] + spec.y;
-
-        if (previewPopup.isShowing()) {
-            previewPopup.update(popupX, popupY, spec.width, spec.height);
-        } else {
-            previewPopup.setWidth(spec.width);
-            previewPopup.setHeight(spec.height);
-            previewPopup.showAtLocation(inputView, Gravity.NO_GRAVITY, popupX, popupY);
+            overlay.setBackground(background);
         }
     }
 
@@ -1290,6 +1458,10 @@ public final class S3KeyboardService extends InputMethodService
         if (previewPopup != null && previewPopup.isShowing()) {
             previewPopup.dismiss();
         }
+        for (TextView overlay : previewOverlayPool) {
+            overlay.setVisibility(View.GONE);
+        }
+        previewPopupTopPadPx = 0;
     }
 
     @Override

@@ -13,6 +13,18 @@ final class KeyboardLayoutFactory {
             single("1"), single("2"), single("3"), single("4"), single("5"),
             single("6"), single("7"), single("8"), single("9"), single("0")
     };
+    private static final EnglishSlideSpec[] REMOTE_TOP_QWERTY_SLIDES = {
+            up(KeyboardCommands.CMD_REMOTE_TAB),
+            none(),
+            none(),
+            up(KeyboardCommands.CMD_REMOTE_SHIFT_TAB),
+            up(KeyboardCommands.CMD_REMOTE_CTRL_TAB),
+            up(KeyboardCommands.CMD_REMOTE_ALT_TAB),
+            none(),
+            vertical(KeyboardCommands.CMD_REMOTE_INSERT, KeyboardCommands.CMD_REMOTE_FORWARD_DELETE),
+            vertical(KeyboardCommands.CMD_REMOTE_HOME, KeyboardCommands.CMD_REMOTE_END),
+            vertical(KeyboardCommands.CMD_REMOTE_PAGE_UP, KeyboardCommands.CMD_REMOTE_PAGE_DOWN)
+    };
     private static final EnglishSlideSpec[] HOME_QWERTY_SLIDES = {
             single("@"), pair("#", "%"), single("/"), single("*"), pair("~", "^"),
             pair("_", "-"), pair("+", "="), pair("<", ">"), single("♥")
@@ -47,12 +59,29 @@ final class KeyboardLayoutFactory {
 
     private static GestureKey numberKey(String number, String symbol, boolean remoteModeEnabled, int index) {
         if (remoteModeEnabled) {
-            String fKey = remoteFunctionCommand(index);
-            String left = index == 9 ? KeyboardCommands.CMD_REMOTE_F11 : null;
-            String right = index == 10 ? KeyboardCommands.CMD_REMOTE_F12 : null;
-            return new GestureKey(number, number, null, fKey, left, right, null);
+            return remoteNumberKey(number, index);
         }
-        return new GestureKey(number, number, null, symbol, null, null, symbol);
+        return new GestureKey(number, number, null, symbol, null, null, null);
+    }
+
+    private static GestureKey remoteNumberKey(String number, int index) {
+        String up;
+        String down = remoteFunctionCommand(index);
+        switch (index) {
+            case 1:
+                up = KeyboardCommands.CMD_REMOTE_ESC;
+                break;
+            case 9:
+                up = KeyboardCommands.CMD_REMOTE_F11;
+                break;
+            case 10:
+                up = KeyboardCommands.CMD_REMOTE_F12;
+                break;
+            default:
+                up = null;
+                break;
+        }
+        return new GestureKey(number, number, up, down, null, null, null);
     }
 
     private static String remoteFunctionCommand(int index) {
@@ -122,13 +151,14 @@ final class KeyboardLayoutFactory {
                 new KeyboardRow(Arrays.asList(
                         mainKey("ㅈ", "ㅈ", "ㅉ", "~", "ㅊ", "ㅊ", mainUnits),
                         mainKey("ㅎ", "ㅎ", "0", "8", "7", "9", mainUnits),
-                        mainKey(". .", " ", "ㅛ", "ㅑ", "ㅠ", "ㅕ", mainUnits),
+                        mainKey(". .", " ", "\u315B", "\u3160", "\u3155", "\u3151", mainUnits),
                         specialKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits));
     }
 
     private static List<KeyboardRow> englishRows(boolean remoteModeEnabled) {
+        EnglishSlideSpec[] topSlides = remoteModeEnabled ? REMOTE_TOP_QWERTY_SLIDES : TOP_QWERTY_SLIDES;
         return Arrays.asList(
-                englishRow("qwertyuiop", TOP_QWERTY_SLIDES),
+                englishRow("qwertyuiop", topSlides),
                 englishRow("asdfghjkl", HOME_QWERTY_SLIDES),
                 new KeyboardRow(Arrays.asList(
                         GestureKey.command(
@@ -136,7 +166,7 @@ final class KeyboardLayoutFactory {
                                 KeyboardCommands.CMD_SHIFT_ONCE,
                                 KeyboardCommands.CMD_SHIFT_LOCK,
                                 3,
-                                remoteModeEnabled ? KeyIcon.NONE : KeyIcon.SHIFT),
+                                KeyIcon.SHIFT),
                         englishKey('z', pair("(", ")"), 2),
                         englishKey('x', pair("[", "]"), 2),
                         englishKey('c', pair(";", ":"), 2),
@@ -145,11 +175,11 @@ final class KeyboardLayoutFactory {
                         englishKey('n', single("!"), 2),
                         englishKey('m', single("?"), 2),
                         GestureKey.command(
-                                remoteModeEnabled ? "Bksp" : "삭제",
+                                "삭제",
                                 KeyboardCommands.CMD_DELETE,
                                 null,
                                 3,
-                                remoteModeEnabled ? KeyIcon.NONE : KeyIcon.BACKSPACE)), 20));
+                                KeyIcon.BACKSPACE)), 20));
     }
 
     private static KeyboardRow englishRow(String letters, EnglishSlideSpec[] slides) {
@@ -166,25 +196,37 @@ final class KeyboardLayoutFactory {
         return new GestureKey(
                 lowercase,
                 lowercase,
-                uppercase,
+                slide.up == null ? uppercase : slide.up,
                 slide.down,
                 slide.left,
                 slide.right,
-                null,
+                slide.longPress,
                 widthUnits);
     }
 
     private static EnglishSlideSpec single(String value) {
-        return new EnglishSlideSpec(value, null, null, value);
+        return new EnglishSlideSpec(null, value, null, null, null);
     }
 
     private static EnglishSlideSpec pair(String left, String right) {
-        return new EnglishSlideSpec(null, left, right, null);
+        return new EnglishSlideSpec(null, null, left, right, null);
+    }
+
+    private static EnglishSlideSpec up(String value) {
+        return new EnglishSlideSpec(value, null, null, null, null);
+    }
+
+    private static EnglishSlideSpec vertical(String up, String down) {
+        return new EnglishSlideSpec(up, down, null, null, null);
+    }
+
+    private static EnglishSlideSpec none() {
+        return new EnglishSlideSpec(null, null, null, null, null);
     }
 
     private static KeyboardRow bottomRow(KeyboardSettings settings) {
         if (settings.remoteModeEnabled && settings.remoteKeyPreset == RemoteKeyPreset.PC_KEYBOARD) {
-            return remoteBottomRow();
+            return remoteBottomRow(settings);
         }
         List<GestureKey> rightHandOrder = Arrays.asList(
                 new GestureKey(
@@ -225,7 +267,7 @@ final class KeyboardLayoutFactory {
         return new KeyboardRow(leftHandOrder, 20);
     }
 
-    private static KeyboardRow remoteBottomRow() {
+    private static KeyboardRow remoteBottomRow(KeyboardSettings settings) {
         List<GestureKey> rightHandOrder = Arrays.asList(
                 new GestureKey(
                         "Ctrl",
@@ -258,7 +300,7 @@ final class KeyboardLayoutFactory {
                         2,
                         KeyIcon.NONE),
                 new GestureKey(
-                        "Space",
+                        "스페이스",
                         KeyboardCommands.CMD_SPACE,
                         KeyboardCommands.CMD_REMOTE_ARROW_UP,
                         KeyboardCommands.CMD_REMOTE_ARROW_DOWN,
@@ -266,9 +308,9 @@ final class KeyboardLayoutFactory {
                         KeyboardCommands.CMD_REMOTE_ARROW_RIGHT,
                         null,
                         8,
-                        KeyIcon.NONE),
+                        KeyIcon.SPACE),
                 new GestureKey(
-                        "Lang",
+                        "한/영",
                         KeyboardCommands.CMD_REMOTE_IME_TOGGLE,
                         null,
                         null,
@@ -276,9 +318,9 @@ final class KeyboardLayoutFactory {
                         null,
                         KeyboardCommands.CMD_TOGGLE_LANGUAGE,
                         2,
-                        KeyIcon.NONE),
+                        KeyIcon.LANGUAGE),
                 new GestureKey(
-                        "Menu",
+                        "옵션",
                         KeyboardCommands.CMD_QUICK_SETTINGS,
                         null,
                         null,
@@ -286,9 +328,9 @@ final class KeyboardLayoutFactory {
                         null,
                         KeyboardCommands.CMD_OPEN_OPTIONS,
                         2,
-                        KeyIcon.NONE),
+                        KeyIcon.OPTIONS),
                 new GestureKey(
-                        "Enter",
+                        settings.enterKeyLabel,
                         KeyboardCommands.CMD_ENTER,
                         null,
                         null,
@@ -296,7 +338,7 @@ final class KeyboardLayoutFactory {
                         null,
                         KeyboardCommands.CMD_REMOTE_CTRL_ENTER,
                         2,
-                        KeyIcon.NONE));
+                        KeyIcon.enterForLabel(settings.enterKeyLabel)));
 
         return new KeyboardRow(rightHandOrder, 20);
     }
@@ -376,7 +418,10 @@ final class KeyboardLayoutFactory {
         final String right;
         final String longPress;
 
-        EnglishSlideSpec(String down, String left, String right, String longPress) {
+        final String up;
+
+        EnglishSlideSpec(String up, String down, String left, String right, String longPress) {
+            this.up = up;
             this.down = down;
             this.left = left;
             this.right = right;

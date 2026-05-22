@@ -35,12 +35,12 @@ export const themeContract = {
     {
       key: "border",
       label: "\uD14C\uB450\uB9AC",
-      description: "\uD0A4 \uC678\uACFD\uC120 \uC0C9\uC0C1\uC785\uB2C8\uB2E4. \uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1\uC744 \uB530\uB85C \uC9C0\uC815\uD558\uC9C0 \uC54A\uC73C\uBA74 \uC774 \uC0C9\uC0C1\uC744 \uC4F0\uB2C8\uB2E4."
+      description: "\uD0A4 \uC678\uACFD\uC120 \uC0C9\uC0C1\uC785\uB2C8\uB2E4."
     },
     {
       key: "depth",
       label: "\uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1",
-      description: "\uD0A4 \uC544\uB798\uCABD \uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1\uC785\uB2C8\uB2E4.",
+      description: "\uD0A4 \uC544\uB798\uCABD \uC785\uCCB4 \uD6A8\uACFC \uC0C9\uC0C1\uC785\uB2C8\uB2E4. null\uC774\uBA74 \uAC01 \uD0A4 \uBC30\uACBD\uC0C9\uC744 \uC790\uB3D9\uC73C\uB85C dim \uCC98\uB9AC\uD569\uB2C8\uB2E4.",
       nullable: true
     },
     {
@@ -142,6 +142,12 @@ export const themeContract = {
       description: "Backspace/delete command key."
     },
     {
+      id: "enter",
+      label: "Enter",
+      contrastIntent: "primary",
+      description: "The actual Enter/send command key without options or settings."
+    },
+    {
       id: "settingsEnter",
       label: "Settings and enter",
       contrastIntent: "primary",
@@ -193,6 +199,7 @@ export const themeContract = {
       question: ["?"],
       escPoint: ["1", "tap:\u3131"],
       modCtrl: ["options", "settings", "enter"],
+      enter: ["enter"],
       settingsEnter: ["options", "settings", "enter"],
       modMeta: ["reserved", "language"],
       modCommand: ["shift", "backspace"],
@@ -232,6 +239,7 @@ export const themeContract = {
         "space"
       ],
       modCtrl: ["options", "settings", "enter"],
+      enter: ["enter"],
       settingsEnter: ["options", "settings", "enter"],
       modMeta: ["reserved", "language"],
       modCommand: ["shift", "backspace"],
@@ -249,6 +257,7 @@ export const themeContract = {
     "modCtrl",
     "modMeta",
     "modCommand",
+    "enter",
     "settingsEnter",
     "qwertyShift",
     "backspace",

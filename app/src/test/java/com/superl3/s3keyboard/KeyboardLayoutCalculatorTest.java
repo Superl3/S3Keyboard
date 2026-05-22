@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
@@ -43,8 +44,10 @@ public final class KeyboardLayoutCalculatorTest {
         KeyboardLayoutCalculator.Slot bottomSecond = slots.get(17);
         KeyboardLayoutCalculator.Slot bottomLast = slots.get(20);
 
-        assertEquals(8f, specialKey.left - thirdMainKey.right, 0.001f);
-        assertEquals(0f, bottomSecond.left - bottomFirst.right, 0.001f);
+        assertEquals(settings.hangulMainSpecialGapDp + settings.keyGapDp,
+                specialKey.left - thirdMainKey.right,
+                0.001f);
+        assertEquals(settings.keyGapDp, bottomSecond.left - bottomFirst.right, 0.001f);
         assertEquals(200f, bottomFirst.top, 0.001f);
         assertEquals(246f, bottomLast.bottom, 0.001f);
     }
@@ -172,9 +175,12 @@ public final class KeyboardLayoutCalculatorTest {
     }
 
     @Test
-    public void visualKeyGapDoesNotChangePhysicalLayoutSlots() {
-        KeyboardSettings withoutGap = KeyboardSettings.defaults().withKeyGap(0);
-        KeyboardSettings withGap = KeyboardSettings.defaults().withKeyGap(18);
+    public void keyGapCreatesPhysicalSpaceAndShrinksKeys() {
+        KeyboardSettings withoutGap = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withEnglishNumberRow(false)
+                .withKeyGap(0);
+        KeyboardSettings withGap = withoutGap.withKeyGap(18);
 
         List<KeyboardLayoutCalculator.Slot> first = KeyboardLayoutCalculator.layout(
                 KeyboardLayoutFactory.build(withoutGap),
@@ -189,8 +195,12 @@ public final class KeyboardLayoutCalculatorTest {
                 250f,
                 1f);
 
+        float noGapWidth = first.get(0).right - first.get(0).left;
+        float withGapWidth = second.get(0).right - second.get(0).left;
+
+        assertEquals(18f, second.get(1).left - second.get(0).right, 0.001f);
         assertEquals(first.get(0).left, second.get(0).left, 0.001f);
-        assertEquals(first.get(0).right, second.get(0).right, 0.001f);
-        assertEquals(first.get(20).bottom, second.get(20).bottom, 0.001f);
+        assertTrue(withGapWidth < noGapWidth);
+        assertEquals(first.get(first.size() - 1).bottom, second.get(second.size() - 1).bottom, 0.001f);
     }
 }

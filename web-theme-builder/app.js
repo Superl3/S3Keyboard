@@ -10,6 +10,8 @@ const numberRowModes = themeContract.numberRowModes || [];
 const fontFamilies = themeContract.fontFamilies || [];
 const modifierIconPacks = themeContract.modifierIconPacks || [];
 const keyDisplayPacks = themeContract.keyDisplayPacks || [];
+const accentPolicyReference = buildAccentPolicyReference();
+const perKeyOverrideReference = buildPerKeyOverrideReference();
 const presets = {};
 const themeIndex = Array.isArray(window.S3_THEME_INDEX) ? window.S3_THEME_INDEX : [];
 
@@ -24,6 +26,9 @@ const ids = {
   dingulRoles: document.getElementById("dingulRoleControls"),
   depthEnabled: document.getElementById("depthEnabled"),
   customDepth: document.getElementById("customDepth"),
+  keyFaceGradientEnabled: document.getElementById("keyFaceGradientEnabled"),
+  keyFaceGradientStrength: document.getElementById("keyFaceGradientStrengthPercent"),
+  keyFaceGradientOut: document.getElementById("keyFaceGradientOut"),
   fontFamily: document.getElementById("fontFamily"),
   primary: document.getElementById("primaryTextSizePercent"),
   secondary: document.getElementById("secondaryTextSizePercent"),
@@ -34,12 +39,17 @@ const ids = {
   secondaryBold: document.getElementById("secondaryTextBold"),
   secondaryItalic: document.getElementById("secondaryTextItalic"),
   numberRow: document.getElementById("numberRowMode"),
+  numberRowGuide: document.getElementById("numberRowModeGuide"),
   modifierPack: document.getElementById("modifierPackId"),
   keyDisplayPack: document.getElementById("keyDisplayPackId"),
+  accentPolicyMap: document.getElementById("accentPolicyMap"),
+  perKeyMap: document.getElementById("perKeyOverrideMap"),
+  aiPrompt: document.getElementById("aiPrompt"),
   textOverrides: document.getElementById("textOverridesText"),
   backgroundOverrides: document.getElementById("backgroundOverridesText"),
   output: document.getElementById("jsonOutput"),
   preview: document.getElementById("keyboardPreview"),
+  dingulPreview: document.getElementById("dingulKeyboardPreview"),
   status: document.getElementById("status")
 };
 
@@ -50,15 +60,20 @@ async function init() {
   if (presets["ios-clean-light"]) {
     state = cloneTheme(presets["ios-clean-light"]);
   }
-  Object.entries(presets).forEach(([id, preset]) => {
-    const option = document.createElement("option");
-    option.value = id;
-    option.textContent = preset.name;
-    ids.preset.appendChild(option);
-  });
+  if (ids.preset) {
+    Object.entries(presets).forEach(([id, preset]) => {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = preset.name;
+      ids.preset.appendChild(option);
+    });
+  }
   buildColorControls();
   buildShapeControls();
   buildDingulRoleControls();
+  renderNumberRowModeGuide();
+  renderAccentPolicyMap();
+  renderPerKeyOverrideMap();
   populateContractSelects();
   bindStaticControls();
   renderForm();
@@ -102,12 +117,12 @@ function createDefaultTheme() {
     },
     shape: { roundnessDp: 5, borderWidthDp: 1, keyGapDp: 5, depthEnabled: false, depthDp: 0 },
     typography: defaultTypography(),
-    additionalNumberRow: { colorMode: "full_mod" },
+    additionalNumberRow: { colorMode: "half_mod_4567" },
     accentPolicy: cloneAccentPolicy(themeContract.defaultAccentPolicy),
     icons: {},
-    effects: {},
+    effects: defaultVisualEffects(),
     keyDisplayOverrides: {},
-    keyTextColorOverrides: { shiftIndicator: "#2563EB" },
+    keyTextColorOverrides: {},
     keyBackgroundColorOverrides: {}
   };
   theme.dingulColors = normalizedDingulColors(theme);
@@ -126,12 +141,131 @@ function defaultTypography() {
   };
 }
 
+function defaultVisualEffects() {
+  return {
+    keyFaceGradient: {
+      enabled: true,
+      strengthPercent: 22
+    }
+  };
+}
+
 function defaultDingulColors(colors) {
   return {
     alpha: { foreground: colors.accent, background: colors.alphaKey },
     mod: { foreground: colors.secondary, background: colors.modifierKey },
     modInv: { foreground: colors.modifierKey, background: colors.accentKey }
   };
+}
+
+function buildAccentPolicyReference() {
+  const explicit = {
+    modMeta: {
+      qwerty: "bottom Reserved + Lang",
+      dingul: "bottom Reserved + Lang"
+    },
+    modCtrl: {
+      qwerty: "bottom Settings/Options + Enter",
+      dingul: "bottom Settings/Options + Enter"
+    },
+    settingsEnter: {
+      qwerty: "bottom Settings/Options + Enter",
+      dingul: "bottom Settings/Options + Enter"
+    },
+    enter: {
+      qwerty: "bottom Enter only",
+      dingul: "bottom Enter only"
+    },
+    modCommand: {
+      qwerty: "Shift + Backspace",
+      dingul: "Backspace; Shift if present"
+    },
+    qwertyShift: {
+      qwerty: "QWERTY Shift",
+      dingul: "not used"
+    },
+    shift: {
+      qwerty: "QWERTY Shift",
+      dingul: "Shift if present"
+    },
+    backspace: {
+      qwerty: "Backspace",
+      dingul: "Backspace"
+    },
+    modEnter: {
+      qwerty: "not used",
+      dingul: "right column . visual Enter"
+    },
+    dingulDot: {
+      qwerty: "not used",
+      dingul: "right column . visual Enter"
+    },
+    modShift: {
+      qwerty: "not used",
+      dingul: "right column / visual Shift"
+    },
+    dingulSlash: {
+      qwerty: "not used",
+      dingul: "right column / visual Shift"
+    },
+    punctuation: {
+      qwerty: "not used",
+      dingul: "right column . + /"
+    },
+    question: {
+      qwerty: "not used",
+      dingul: "right column ?"
+    },
+    escPoint: {
+      qwerty: "number row 1 when visible; otherwise q",
+      dingul: "number row 1 when visible; otherwise ㄱ"
+    },
+    perKey: {
+      qwerty: "no group; use exact key overrides",
+      dingul: "no group; use exact key overrides"
+    },
+    none: {
+      qwerty: "no accent keys",
+      dingul: "no accent keys"
+    }
+  };
+  const targetSet = new Set(themeContract.accentPolicyTargets || []);
+  return Object.entries(explicit)
+    .filter(([id]) => targetSet.has(id))
+    .map(([id, value]) => ({ id, ...value }));
+}
+
+function buildPerKeyOverrideReference() {
+  return [
+    {
+      scope: "QWERTY alpha",
+      keys: "tap:q ... tap:p, tap:a ... tap:l, tap:z ... tap:m"
+    },
+    {
+      scope: "Dingul alpha",
+      keys: "tap:\u3131, tap:\u3134, tap:\u3139, tap:\u3141, tap:\u3145, tap:\u3147, tap:\u3148, tap:\u314E, __dingul_center_vowel__, __dingul_wide_vowel__, \u3163., \u3161\u3150, .."
+    },
+    {
+      scope: "Dingul punctuation",
+      keys: "?, ., /"
+    },
+    {
+      scope: "Bottom controls",
+      keys: "settings, options, reserved, space, language, enter"
+    },
+    {
+      scope: "Command keys",
+      keys: "shift, backspace, shiftIndicator"
+    },
+    {
+      scope: "Number row",
+      keys: "1, 2, 3, 4, 5, 6, 7, 8, 9, 0"
+    },
+    {
+      scope: "Semantic groups",
+      keys: "alpha, modifiers, modInv"
+    }
+  ];
 }
 
 function dotTextOverrides(dark) {
@@ -230,6 +364,65 @@ function buildDingulRoleControls() {
       });
 }
 
+function renderAccentPolicyMap() {
+  ids.accentPolicyMap.innerHTML = "";
+  [
+    ["Target", "QWERTY keys", "Dingul keys"],
+    ...accentPolicyReference.map(item => [item.id, item.qwerty, item.dingul])
+  ].forEach((row, index) => {
+    row.forEach((value, column) => {
+      const cell = document.createElement("div");
+      cell.className = `mapping-cell${index === 0 ? " mapping-head" : ""}${column === 0 && index > 0 ? " mapping-target" : ""}`;
+      cell.textContent = value;
+      ids.accentPolicyMap.appendChild(cell);
+    });
+  });
+}
+
+function renderPerKeyOverrideMap() {
+  ids.perKeyMap.innerHTML = "";
+  [
+    ["Scope", "Override keys"],
+    ...perKeyOverrideReference.map(item => [item.scope, item.keys])
+  ].forEach((row, index) => {
+    row.forEach((value, column) => {
+      const cell = document.createElement("div");
+      cell.className = `mapping-cell${index === 0 ? " mapping-head" : ""}${column === 1 && index > 0 ? " mapping-target" : ""}`;
+      cell.textContent = value;
+      ids.perKeyMap.appendChild(cell);
+    });
+  });
+}
+
+function renderNumberRowModeGuide() {
+  if (!ids.numberRowGuide) {
+    return;
+  }
+  ids.numberRowGuide.innerHTML = "";
+  numberRowModes.forEach(option => {
+    const row = document.createElement("div");
+    row.className = "number-row-mode";
+
+    const name = document.createElement("span");
+    name.className = "number-row-mode-name";
+    name.textContent = option.label;
+
+    const detail = document.createElement("span");
+    detail.className = "number-row-mode-detail";
+    detail.textContent = `1 2 3 8 9 0 = ${option.outerRole}; 4 5 6 7 = ${option.innerRole}`;
+
+    row.appendChild(name);
+    row.appendChild(detail);
+    ids.numberRowGuide.appendChild(row);
+  });
+}
+
+function numberRowModePromptGuide() {
+  return numberRowModes
+    .map(option => `- ${option.id}: 1 2 3 8 9 0 = ${option.outerRole}; 4 5 6 7 = ${option.innerRole}`)
+    .join("\n");
+}
+
 function populateContractSelects() {
   replaceOptions(ids.fontFamily, fontFamilies);
   replaceOptions(ids.numberRow, numberRowModes);
@@ -250,16 +443,28 @@ function replaceOptions(select, options) {
 function bindStaticControls() {
   ids.name.addEventListener("input", update);
   ids.author.addEventListener("input", update);
-  ids.preset.addEventListener("change", () => {
-    state = cloneTheme(presets[ids.preset.value]);
-    renderForm();
-    update();
-  });
+  if (ids.preset) {
+    ids.preset.addEventListener("change", () => {
+      state = cloneTheme(presets[ids.preset.value]);
+      renderForm();
+      update();
+    });
+  }
   ids.depthEnabled.addEventListener("change", () => {
     state.shape.depthEnabled = ids.depthEnabled.checked;
     update();
   });
   ids.customDepth.addEventListener("change", update);
+  ids.keyFaceGradientEnabled.addEventListener("change", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.keyFaceGradient.enabled = ids.keyFaceGradientEnabled.checked;
+    update();
+  });
+  ids.keyFaceGradientStrength.addEventListener("input", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.keyFaceGradient.strengthPercent = Number(ids.keyFaceGradientStrength.value);
+    update();
+  });
   ids.fontFamily.addEventListener("change", () => {
     state.typography.fontFamily = ids.fontFamily.value;
     update();
@@ -293,15 +498,20 @@ function bindStaticControls() {
     state.icons = setIconPack(state.icons, "keyDisplayPackId", ids.keyDisplayPack.value);
     update();
   });
-  ids.textOverrides.addEventListener("input", () => {
-    state.keyTextColorOverrides = parseOverrides(ids.textOverrides.value);
-    update();
-  });
-  ids.backgroundOverrides.addEventListener("input", () => {
-    state.keyBackgroundColorOverrides = parseOverrides(ids.backgroundOverrides.value);
-    update();
-  });
+  if (ids.textOverrides) {
+    ids.textOverrides.addEventListener("input", () => {
+      state.keyTextColorOverrides = parseOverrides(ids.textOverrides.value);
+      update();
+    });
+  }
+  if (ids.backgroundOverrides) {
+    ids.backgroundOverrides.addEventListener("input", () => {
+      state.keyBackgroundColorOverrides = parseOverrides(ids.backgroundOverrides.value);
+      update();
+    });
+  }
   document.getElementById("copyJson").addEventListener("click", copyJson);
+  document.getElementById("copyAiPrompt").addEventListener("click", copyAiPrompt);
   document.getElementById("importJson").addEventListener("click", importJson);
   document.getElementById("downloadJson").addEventListener("click", downloadJson);
 }
@@ -319,6 +529,9 @@ function renderForm() {
   });
   ids.depthEnabled.checked = Boolean(state.shape.depthEnabled);
   ids.customDepth.checked = Boolean(state.colors.depth);
+  state.effects = normalizedVisualEffects(state.effects);
+  ids.keyFaceGradientEnabled.checked = Boolean(state.effects.keyFaceGradient.enabled);
+  ids.keyFaceGradientStrength.value = state.effects.keyFaceGradient.strengthPercent;
   ids.fontFamily.value = state.typography.fontFamily;
   ids.primary.value = state.typography.primaryTextSizePercent;
   ids.secondary.value = state.typography.secondaryTextSizePercent;
@@ -335,8 +548,12 @@ function renderForm() {
     document.getElementById(`dingul-${role}-foreground`).value = state.dingulColors[role].foreground;
     document.getElementById(`dingul-${role}-background`).value = state.dingulColors[role].background;
   });
-  ids.textOverrides.value = formatOverrides(state.keyTextColorOverrides);
-  ids.backgroundOverrides.value = formatOverrides(state.keyBackgroundColorOverrides);
+  if (ids.textOverrides) {
+    ids.textOverrides.value = formatOverrides(state.keyTextColorOverrides);
+  }
+  if (ids.backgroundOverrides) {
+    ids.backgroundOverrides.value = formatOverrides(state.keyBackgroundColorOverrides);
+  }
 }
 
 function update() {
@@ -345,8 +562,11 @@ function update() {
   });
   ids.primaryOut.textContent = `${state.typography.primaryTextSizePercent}%`;
   ids.secondaryOut.textContent = `${state.typography.secondaryTextSizePercent}%`;
+  ids.keyFaceGradientOut.textContent =
+    `${normalizedVisualEffects(state.effects).keyFaceGradient.strengthPercent}%`;
   const theme = buildTheme();
   ids.output.value = JSON.stringify(theme, null, 2);
+  ids.aiPrompt.value = buildImageThemePrompt(theme);
   renderPreview(theme);
   ids.status.textContent = validateTheme(theme);
 }
@@ -398,9 +618,7 @@ function buildTheme() {
       theme.icons.keyDisplayPackId = icons.keyDisplayPackId;
     }
   }
-  if (state.effects) {
-    theme.effects = { ...state.effects };
-  }
+  theme.effects = normalizedVisualEffects(state.effects);
   if (Object.keys(state.keyDisplayOverrides || {}).length > 0) {
     theme.keyDisplayOverrides = { ...state.keyDisplayOverrides };
   }
@@ -411,91 +629,224 @@ function buildTheme() {
 }
 
 function renderPreview(theme) {
-  ids.preview.style.background = theme.colors.panelBackground || theme.colors.keyboardBackground;
-  ids.preview.style.backdropFilter = theme.effects?.blur?.enabled ? `blur(${theme.effects.blur.radiusDp || 8}px)` : "none";
-  ids.preview.style.boxShadow = theme.effects?.metal?.enabled ? `inset 0 18px 28px rgba(255,255,255,.18), inset 0 -22px 35px rgba(0,0,0,.22)` : "none";
-  ids.preview.style.gap = `${theme.shape.keyGapDp}px`;
-  ids.preview.style.paddingTop = "16px";
-  ids.preview.style.setProperty("--depth-color", theme.colors.depth || theme.colors.border);
-  ids.preview.style.fontFamily = fontCss(theme.typography.fontFamily);
-  ids.preview.innerHTML = "";
+  renderKeyboardPreview(ids.preview, theme, "qwerty", qwertyPreviewRows());
+  renderKeyboardPreview(ids.dingulPreview, theme, "dingul", dingulPreviewRows());
+}
 
-  const rows = [
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-    ["Shift", "z", "x", "c", "v", "b", "n", "m", "Bksp"],
-    ["Settings", "Reserved", "Space", "Lang", "Enter"]
+function qwertyPreviewRows() {
+  return [
+    { labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] },
+    { labels: ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"] },
+    { labels: ["a", "s", "d", "f", "g", "h", "j", "k", "l"] },
+    { labels: ["Shift", "z", "x", "c", "v", "b", "n", "m", "Bksp"] },
+    { labels: ["Settings", "Reserved", "Space", "Lang", "Enter"] }
   ];
+}
+
+function dingulPreviewRows() {
+  const mainColumns = ["1.67fr", "1.67fr", "1.67fr", "1fr"];
+  return [
+    { labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] },
+    { labels: ["\u3131", "\u3134", "\u3162", "Bksp"], columns: mainColumns },
+    { labels: ["\u3139", "\u3141", "\u3163.", "?"], columns: mainColumns },
+    { labels: ["\u3145", "\u3147", "\u3161\u3150", "."], columns: mainColumns },
+    { labels: ["\u3148", "\u314e", "..", "/"], columns: mainColumns },
+    { labels: ["Settings", "Reserved", "Space", "Lang", "Enter"] }
+  ];
+}
+
+function renderKeyboardPreview(container, theme, layout, rows) {
+  const effects = normalizedVisualEffects(theme.effects);
+  container.style.background = theme.colors.panelBackground || theme.colors.keyboardBackground;
+  container.style.backdropFilter = effects.blur?.enabled ? `blur(${effects.blur.radiusDp || 8}px)` : "none";
+  container.style.boxShadow = effects.metal?.enabled ? `inset 0 18px 28px rgba(255,255,255,.18), inset 0 -22px 35px rgba(0,0,0,.22)` : "none";
+  container.style.gap = `${theme.shape.keyGapDp}px`;
+  container.style.paddingTop = "16px";
+  container.style.setProperty("--depth-color", normalizeColor(theme.colors.depth) || "transparent");
+  container.style.fontFamily = fontCss(theme.typography.fontFamily);
+  container.innerHTML = "";
 
   rows.forEach(row => {
+    const labels = row.labels || row;
     const rowEl = document.createElement("div");
-    rowEl.className = "key-row";
-    rowEl.style.gridTemplateColumns = row.map(key => key === "Space" ? "2.5fr" : "1fr").join(" ");
-    row.forEach(label => {
-      const key = document.createElement("div");
-      const role = roleForPreview(label, "qwerty", theme);
-      const number = /^[0-9]$/.test(label);
-      const numberRole = number ? numberRowRoleForPreview(
-        theme.additionalNumberRow.colorMode,
-        label,
-        theme,
-        "qwerty") : null;
-      const bgOverride = backgroundColorFor(label, theme);
-      key.className = "key";
-      key.style.background = bgOverride || backgroundForRole(numberRole || role, theme);
-      key.style.borderColor = theme.colors.border;
-      key.style.borderWidth = `${theme.shape.borderWidthDp}px`;
-      key.style.borderRadius = `${theme.shape.roundnessDp}px`;
-      key.style.boxShadow = theme.shape.depthEnabled
-        ? `inset 0 -${theme.shape.depthDp}px ${theme.colors.depth || theme.colors.border}`
-        : "none";
-      key.style.color = number ? textColorForNumberRole(numberRole, theme) : textColorFor(label, theme);
-      key.style.fontSize = `${14 * theme.typography.primaryTextSizePercent / 100}px`;
-      key.style.fontWeight = theme.typography.primaryTextBold ? "700" : "400";
-      const displayOverride = displayOverrideFor(label, theme);
-      if (displayOverride?.type === "icon" && displayOverride.value === "dot") {
-        if ((label === "." || label === "/") && (theme.icons?.modifierPackId || "") === "dots-lines") {
-          const twoDots = document.createElement("span");
-          twoDots.className = "main-dot two-dot-legend";
-          twoDots.style.color = textColorFor(label, theme);
-          key.appendChild(twoDots);
-        } else {
-          const mainDot = document.createElement("span");
-          mainDot.className = "main-dot";
-          mainDot.style.background = textColorFor(label, theme);
-          key.appendChild(mainDot);
-        }
-      } else if (displayOverride?.type === "text") {
-        if (displayOverride.value === "hihihi" && isSimpleTextPack(theme.icons?.keyDisplayPackId)) {
-          appendHihihiGlyph(key, textColorFor(label, theme));
-        } else {
-          key.textContent = displayOverride.value;
-        }
-        if (displayOverride.value !== "hihihi" && isSimpleTextPack(theme.icons?.keyDisplayPackId)) {
-          key.style.fontWeight = "700";
-        }
-      } else if (iconForPreview(label) && renderModifierPackGlyph(key, label, theme)) {
-        // rendered by helper
-      } else {
-        key.textContent = label;
-      }
-      appendSubLegend(key, label, theme);
-      if (label === "Shift") {
-        const dot = document.createElement("span");
-        dot.className = "shift-dot";
-        dot.style.background = theme.keyTextColorOverrides.shiftIndicator || theme.colors.accent;
-        key.appendChild(dot);
-      }
-      rowEl.appendChild(key);
-    });
-    ids.preview.appendChild(rowEl);
+      rowEl.className = "key-row";
+      rowEl.style.gridTemplateColumns = previewGridColumns(labels, row.columns);
+      rowEl.style.gap = `${theme.shape.keyGapDp}px`;
+      labels.forEach(label => {
+        rowEl.appendChild(renderPreviewKey(label, theme, layout));
+      });
+      container.appendChild(rowEl);
   });
 }
 
-function appendSubLegend(key, label, theme) {
-  const sub = subLegendFor(label);
-  if (!sub || shouldHideSubLegend(label, theme)) {
+function previewGridColumns(labels, columns) {
+  if (columns) {
+    return columns.join(" ");
+  }
+  return labels.map(label => label === "Space" ? "2.5fr" : "1fr").join(" ");
+}
+
+function renderPreviewKey(label, theme, layout) {
+  const key = document.createElement("div");
+  const role = roleForPreview(label, layout, theme);
+  const number = /^[0-9]$/.test(label);
+  const numberRole = number ? numberRowRoleForPreview(
+    theme.additionalNumberRow.colorMode,
+    label,
+    theme,
+    layout) : null;
+  const textColor = number ? textColorForNumberRole(numberRole, theme) : textColorFor(label, theme, layout);
+  const bgOverride = backgroundColorFor(label, theme, layout);
+  const background = bgOverride || backgroundForRole(numberRole || role, theme);
+  key.className = "key";
+  key.style.background = keyFaceBackgroundForPreview(theme, background);
+  key.style.borderColor = theme.colors.border;
+  key.style.borderWidth = `${theme.shape.borderWidthDp}px`;
+  key.style.borderRadius = `${theme.shape.roundnessDp}px`;
+  key.style.boxShadow = theme.shape.depthEnabled
+    ? `inset 0 -${theme.shape.depthDp}px ${depthColorForPreview(theme, background)}`
+    : "none";
+  key.style.color = textColor;
+  key.style.fontSize = `${14 * theme.typography.primaryTextSizePercent / 100}px`;
+  key.style.fontWeight = theme.typography.primaryTextBold ? "700" : "400";
+  key.style.fontStyle = theme.typography.primaryTextItalic ? "italic" : "normal";
+  const displayOverride = displayOverrideFor(label, theme, layout);
+  if (displayOverride?.type === "icon" && displayOverride.value === "dot") {
+    if ((label === "." || label === "/") && (theme.icons?.modifierPackId || "") === "dots-lines") {
+      const twoDots = document.createElement("span");
+      twoDots.className = "main-dot two-dot-legend";
+      twoDots.style.color = textColor;
+      key.appendChild(twoDots);
+    } else {
+      const mainDot = document.createElement("span");
+      mainDot.className = "main-dot";
+      mainDot.style.background = textColor;
+      key.appendChild(mainDot);
+    }
+  } else if (displayOverride?.type === "text") {
+    if (displayOverride.value === "hihihi" && isSimpleTextPack(theme.icons?.keyDisplayPackId)) {
+      appendHihihiGlyph(key, textColor);
+    } else {
+      key.textContent = displayOverride.value;
+    }
+    if (displayOverride.value !== "hihihi" && isSimpleTextPack(theme.icons?.keyDisplayPackId)) {
+      key.style.fontWeight = "700";
+    }
+  } else if (iconForPreview(label) && renderModifierPackGlyph(key, label, theme, layout)) {
+    // rendered by helper
+  } else {
+    key.textContent = label;
+  }
+  appendSubLegend(key, label, theme, layout);
+  appendSlidePreviewHints(key, label, theme, layout);
+  if (label === "Shift") {
+    const dot = document.createElement("span");
+    dot.className = "shift-dot";
+    dot.style.background = indicatorColorForPreview(theme);
+    key.appendChild(dot);
+  }
+  attachPreviewGestureHandlers(key, label, theme, layout);
+  return key;
+}
+
+function attachPreviewGestureHandlers(key, label, theme, layout) {
+  let gesture = null;
+  const begin = (event, pointerId) => {
+    if (gesture) {
+      return;
+    }
+    gesture = {
+      pointerId,
+      startX: event.clientX,
+      startY: event.clientY
+    };
+    if (typeof pointerId === "number") {
+      key.setPointerCapture?.(pointerId);
+    }
+    updatePreviewGestureState(key, label, theme, layout, "tap");
+  };
+  const move = (event, pointerId) => {
+    if (!gesture || gesture.pointerId !== pointerId) {
+      return;
+    }
+    updatePreviewGestureState(
+      key,
+      label,
+      theme,
+      layout,
+      previewActionFromPointer(gesture.startX, gesture.startY, event.clientX, event.clientY));
+  };
+  const release = (event, pointerId) => {
+    if (!gesture || gesture.pointerId !== pointerId) {
+      return;
+    }
+    gesture = null;
+    schedulePreviewGestureClear(key);
+  };
+  key.addEventListener("pointerdown", event => begin(event, event.pointerId));
+  key.addEventListener("pointermove", event => move(event, event.pointerId));
+  key.addEventListener("pointerup", event => release(event, event.pointerId));
+  key.addEventListener("pointercancel", event => release(event, event.pointerId));
+  key.addEventListener("mousedown", event => begin(event, "mouse"));
+  key.addEventListener("mousemove", event => move(event, "mouse"));
+  key.addEventListener("mouseup", event => release(event, "mouse"));
+  key.addEventListener("mouseleave", event => release(event, "mouse"));
+}
+
+function previewActionFromPointer(startX, startY, x, y) {
+  const dx = x - startX;
+  const dy = y - startY;
+  const threshold = 10;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < threshold) {
+    return "tap";
+  }
+  if (Math.abs(dy) >= Math.abs(dx)) {
+    return dy < 0 ? "up" : "down";
+  }
+  return dx < 0 ? "left" : "right";
+}
+
+function updatePreviewGestureState(key, label, theme, layout, action) {
+  key.classList.toggle("is-preview-pressed", action === "tap");
+  key.classList.toggle("is-preview-dragged", action !== "tap");
+  ["tap", "up", "down", "left", "right"].forEach(name => {
+    key.classList.toggle(`preview-action-${name}`, action === name);
+  });
+  key.dataset.previewAction = action;
+  key.querySelector(".preview-gesture-bubble")?.remove();
+
+  const value = gestureValueForPreview(label, layout, action);
+  if (!value) {
+    return;
+  }
+  const bubble = document.createElement("span");
+  bubble.className = "preview-gesture-bubble";
+  bubble.textContent = action === "tap" ? value : `${gestureArrow(action)} ${value}`;
+  bubble.style.background = key.style.background;
+  bubble.style.borderColor = theme.colors.border;
+  bubble.style.color = key.style.color;
+  key.appendChild(bubble);
+}
+
+function schedulePreviewGestureClear(key) {
+  const token = String(Date.now());
+  key.dataset.previewToken = token;
+  setTimeout(() => {
+    if (key.dataset.previewToken !== token) {
+      return;
+    }
+    key.classList.remove("is-preview-pressed", "is-preview-dragged");
+    ["tap", "up", "down", "left", "right"].forEach(name => {
+      key.classList.remove(`preview-action-${name}`);
+    });
+    delete key.dataset.previewAction;
+    key.querySelector(".preview-gesture-bubble")?.remove();
+  }, 420);
+}
+
+function appendSubLegend(key, label, theme, layout = "qwerty") {
+  const sub = subLegendFor(label, layout);
+  if (!sub || shouldHideSubLegend(label, theme, layout)) {
     return;
   }
   if (!theme.metadata?.previewSlideHints) {
@@ -504,36 +855,181 @@ function appendSubLegend(key, label, theme) {
   const item = document.createElement("span");
   item.className = "sublegend";
   item.textContent = sub;
-  item.style.color = hintColorFor(label, theme);
+  item.style.color = hintColorFor(label, theme, layout);
   item.style.fontSize = `${10 * theme.typography.secondaryTextSizePercent / 100}px`;
   item.style.fontWeight = theme.typography.secondaryTextBold ? "700" : "600";
+  item.style.fontStyle = theme.typography.secondaryTextItalic ? "italic" : "normal";
   key.appendChild(item);
 }
 
-function hintColorFor(label, theme) {
-  const secondary = normalizeColor(theme.colors.secondary);
-  const role = roleForPreview(label, "qwerty", theme);
+function appendSlidePreviewHints(key, label, theme, layout = "qwerty") {
+  if (shouldHideSubLegend(label, theme, layout)) {
+    return;
+  }
+  const map = gestureMapForPreview(label, layout);
+  const entries = [
+    ["up", map.up],
+    ["down", map.down],
+    ["left", map.left],
+    ["right", map.right]
+  ].filter(([, value]) => value);
+  if (entries.length === 0) {
+    return;
+  }
+  const hintColor = hintColorFor(label, theme, layout);
+  entries.forEach(([direction, value]) => {
+    const item = document.createElement("span");
+    item.className = `slide-preview-hint slide-preview-${direction}`;
+    item.textContent = value;
+    item.style.color = hintColor;
+    item.style.fontSize = `${9.5 * theme.typography.secondaryTextSizePercent / 100}px`;
+    item.style.fontWeight = theme.typography.secondaryTextBold ? "700" : "600";
+    item.style.fontStyle = theme.typography.secondaryTextItalic ? "italic" : "normal";
+    key.appendChild(item);
+  });
+}
+
+function hintColorFor(label, theme, layout = "qwerty") {
+  const role = roleForPreview(label, layout, theme);
   const number = /^[0-9]$/.test(label);
   const numberRole = number ? numberRowRoleForPreview(
     theme.additionalNumberRow.colorMode,
     label,
     theme,
-    "qwerty") : null;
-  const background = normalizeColor(backgroundColorFor(label, theme))
+    layout) : null;
+  const background = normalizeColor(backgroundColorFor(label, theme, layout))
     || normalizeColor(backgroundForRole(numberRole || role, theme));
-  if (secondary && background && contrastRatio(secondary, background) >= 1.6) {
-    return secondary;
-  }
-  return number ? textColorForNumberRole(numberRole, theme) : textColorFor(label, theme);
+  const foreground = normalizeColor(number ? textColorForNumberRole(numberRole, theme) : textColorFor(label, theme, layout));
+  return softenedForegroundFor(foreground, background, 0.62, 1.45);
 }
 
-function subLegendFor(label) {
-  const map = {
+function subLegendFor(label, layout = "qwerty") {
+  const qwertyMap = {
     q: "1", w: "2", e: "3", r: "4", t: "5", y: "6", u: "7", i: "8", o: "9", p: "0",
     a: "@", s: "#%", d: "/", f: "*", g: "~^", h: "-_", j: "+=", k: "<>", l: "\u2665",
     z: "()", x: "[]", c: ":", v: "\"", b: "&|", n: "!", m: "?"
   };
-  return map[label] || "";
+  const dingulMap = {
+    "\u3131": "\u314b \u3132 #",
+    "\u3134": "\u314c \u3138 \u3137",
+    "\u3162": "\u315d \u315a \u3158 \u315f",
+    "\u3139": "= - ^ ~",
+    "\u3141": "\u314d \u3143 \u3142",
+    "\u3163.": "\u3153 \u314f \u3157 \u315c",
+    "\u3145": "1 \u3146 2",
+    "\u3147": "4 \u2665 6 5",
+    "\u3161\u3150": "\u3154 \u3150 \u3159 \u315e",
+    "\u3148": "\u314a \u3149 ~",
+    "\u314e": "7 9 0 8",
+    "..": "\u3155 \u315b \u3151 \u3160",
+    "?": "+ ! *",
+    ".": ", \" `",
+    "/": "@ : ;"
+  };
+  return (layout === "dingul" ? dingulMap : qwertyMap)[label] || "";
+}
+
+function gestureValueForPreview(label, layout = "qwerty", action = "tap") {
+  const map = gestureMapForPreview(label, layout);
+  return map[action] || "";
+}
+
+function gestureMapForPreview(label, layout = "qwerty") {
+  const sharedCommands = {
+    Settings: { tap: "settings" },
+    Options: { tap: "settings" },
+    Reserved: { tap: "reserved" },
+    Space: { tap: "space", left: "\u2190", right: "\u2192" },
+    Lang: { tap: "\ud55c/\uc601" },
+    Enter: { tap: "\u21b5" },
+    Shift: { tap: "shift" },
+    Bksp: { tap: "bksp" }
+  };
+  if (sharedCommands[label]) {
+    return sharedCommands[label];
+  }
+  const numberDown = {
+    "1": "!", "2": "@", "3": "#", "4": "$", "5": "%",
+    "6": "^", "7": "&", "8": "*", "9": "(", "0": ")"
+  };
+  if (/^[0-9]$/.test(label)) {
+    return { tap: label, down: numberDown[label] };
+  }
+  if (layout === "dingul") {
+    return dingulGestureMap()[label] || { tap: label };
+  }
+  return qwertyGestureMap()[label] || { tap: label };
+}
+
+function qwertyGestureMap() {
+  const map = {};
+  "qwertyuiopasdfghjklzxcvbnm".split("").forEach(letter => {
+    map[letter] = { tap: letter, up: letter.toUpperCase() };
+  });
+  Object.assign(map, {
+    q: { tap: "q", up: "Q", down: "1" },
+    w: { tap: "w", up: "W", down: "2" },
+    e: { tap: "e", up: "E", down: "3" },
+    r: { tap: "r", up: "R", down: "4" },
+    t: { tap: "t", up: "T", down: "5" },
+    y: { tap: "y", up: "Y", down: "6" },
+    u: { tap: "u", up: "U", down: "7" },
+    i: { tap: "i", up: "I", down: "8" },
+    o: { tap: "o", up: "O", down: "9" },
+    p: { tap: "p", up: "P", down: "0" },
+    a: { tap: "a", up: "A", down: "@" },
+    s: { tap: "s", up: "S", left: "#", right: "%" },
+    d: { tap: "d", up: "D", down: "/" },
+    f: { tap: "f", up: "F", down: "*" },
+    g: { tap: "g", up: "G", left: "~", right: "^" },
+    h: { tap: "h", up: "H", left: "_", right: "-" },
+    j: { tap: "j", up: "J", left: "+", right: "=" },
+    k: { tap: "k", up: "K", left: "<", right: ">" },
+    l: { tap: "l", up: "L", down: "\u2665" },
+    z: { tap: "z", up: "Z", left: "(", right: ")" },
+    x: { tap: "x", up: "X", left: "[", right: "]" },
+    c: { tap: "c", up: "C", left: ";", right: ":" },
+    v: { tap: "v", up: "V", left: "'", right: "\"" },
+    b: { tap: "b", up: "B", left: "&", right: "|" },
+    n: { tap: "n", up: "N", down: "!" },
+    m: { tap: "m", up: "M", down: "?" }
+  });
+  return map;
+}
+
+function dingulGestureMap() {
+  return {
+    "\u3131": { tap: "\u3131", up: "\u314b", left: "\u314b", right: "\u3132", down: "#" },
+    "\u3134": { tap: "\u3134", up: "\u314c", left: "\u314c", right: "\u3138", down: "\u3137" },
+    "\u3162": { tap: "\u3162", up: "\u315a", left: "\u315d", right: "\u3158", down: "\u315f" },
+    "\u3139": { tap: "\u3139", up: "^", left: "=", right: "-", down: "~" },
+    "\u3141": { tap: "\u3141", up: "\u314d", left: "\u314d", right: "\u3143", down: "\u3142" },
+    "\u3163.": { tap: "\u3163", up: "\u3157", left: "\u3153", right: "\u314f", down: "\u315c" },
+    "\u3145": { tap: "\u3145", up: "\u3146", left: "1", right: "3", down: "2" },
+    "\u3147": { tap: "\u3147", up: "\u2665", left: "4", right: "6", down: "5" },
+    "\u3161\u3150": { tap: "\u3161", up: "\u3159", left: "\u3154", right: "\u3150", down: "\u315e" },
+    "\u3148": { tap: "\u3148", up: "\u314a", left: "\u314a", right: "\u3149", down: "~" },
+    "\u314e": { tap: "\u314e", up: "0", left: "7", right: "9", down: "8" },
+    "..": { tap: "space", up: "\u315b", left: "\u3155", right: "\u3151", down: "\u3160" },
+    "?": { tap: "?", up: "!", left: "+", down: "*" },
+    ".": { tap: ".", up: "\"", left: ",", down: "`" },
+    "/": { tap: "/", up: ":", left: "@", down: ";" }
+  };
+}
+
+function gestureArrow(action) {
+  switch (action) {
+    case "up":
+      return "\u2191";
+    case "down":
+      return "\u2193";
+    case "left":
+      return "\u2190";
+    case "right":
+      return "\u2192";
+    default:
+      return "";
+  }
 }
 
 function roleForPreview(label, layout = "qwerty", theme = null) {
@@ -544,7 +1040,7 @@ function roleForPreview(label, layout = "qwerty", theme = null) {
     return questionRoleForPreview(theme);
   }
   if (label === "Enter") {
-    return accentPolicyIncludesAny(theme, layout, ["settingsEnter", "modCtrl"]) ? "accent" : "modifier";
+    return accentPolicyIncludesAny(theme, layout, ["enter", "settingsEnter", "modCtrl"]) ? "accent" : "modifier";
   }
   if (["Shift", "Bksp", "Lang", "Options", "Reserved", "Settings", "?", ".", "/"].includes(label)) {
     const targets = semanticTargetsForPreview(label, layout);
@@ -600,8 +1096,11 @@ function backgroundForRole(role, theme) {
 
 function semanticTargetsForPreview(label, layout) {
   const normalized = label.toLowerCase();
+  if (normalized === "1") {
+    return ["escPoint"];
+  }
   if (["options", "settings", "enter"].includes(normalized)) {
-    return ["settingsEnter", "modCtrl"];
+    return normalized === "enter" ? ["enter", "settingsEnter", "modCtrl"] : ["settingsEnter", "modCtrl"];
   }
   if (["reserved", "lang", "language"].includes(normalized)) {
     return ["modMeta"];
@@ -684,6 +1183,147 @@ function contrastRatio(left, right) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function softenedForegroundFor(foreground, background, foregroundAmount = 0.62, minimumContrast = 1.45) {
+  const fg = normalizeColor(foreground);
+  const bg = normalizeColor(background);
+  if (!fg || !bg) {
+    return fg || foreground || "#232323";
+  }
+  let amount = Math.max(0, Math.min(1, foregroundAmount));
+  let color = blendColors(fg, bg, amount);
+  while (amount < 1 && contrastRatio(color, bg) < minimumContrast) {
+    amount = Math.min(1, amount + 0.08);
+    color = blendColors(fg, bg, amount);
+  }
+  return contrastRatio(color, bg) >= minimumContrast ? color : fg;
+}
+
+function indicatorColorForPreview(theme) {
+  const dingul = normalizedDingulColors(theme);
+  const override = normalizeColor(theme.keyTextColorOverrides?.shiftIndicator)
+    || normalizeColor(theme.keyTextColorOverrides?.shift_indicator);
+  const alphaText = normalizeColor(dingul.alpha.foreground) || normalizeColor(theme.colors.accent) || "#232323";
+  const modifierText = normalizeColor(dingul.mod.foreground) || normalizeColor(theme.colors.secondary) || alphaText;
+  const modifierBackground = normalizeColor(dingul.mod.background)
+    || normalizeColor(theme.colors.modifierKey)
+    || "#E7EAF0";
+  const base = override ? blendColors(override, alphaText, 0.34) : alphaText;
+  return ensureContrast(base, modifierBackground, 2.1, [
+    alphaText,
+    modifierText,
+    override,
+    "#111827",
+    "#FFFFFF"
+  ]);
+}
+
+function depthColorForPreview(theme, background) {
+  const customDepth = normalizeColor(theme.colors.depth);
+  if (customDepth) {
+    return customDepth;
+  }
+  return dimmedDepthColorForBackground(background);
+}
+
+function keyFaceBackgroundForPreview(theme, background) {
+  const bg = normalizeColor(background) || "#F8F8F8";
+  const effects = normalizedVisualEffects(theme.effects);
+  const strength = effects.keyFaceGradient.strengthPercent;
+  if (!theme.shape?.depthEnabled || !theme.shape?.depthDp
+      || !effects.keyFaceGradient.enabled || strength <= 0) {
+    return bg;
+  }
+  const [top, middle, bottom] = keyFaceGradientColors(bg, strength);
+  return `linear-gradient(180deg, ${top} 0%, ${middle} 42%, ${bottom} 100%)`;
+}
+
+function keyFaceGradientColors(background, strengthPercent) {
+  const bg = normalizeColor(background) || "#F8F8F8";
+  const rgb = parseHexColor(bg);
+  if (!rgb) {
+    return [bg, bg, bg];
+  }
+  const luminance = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
+  const strength = Math.max(0, Math.min(100, Number(strengthPercent) || 0)) / 100;
+  const topAmount = (luminance < 42 ? 0.08 : 0.06) + 0.24 * strength;
+  const bottomAmount = (luminance < 42 ? 0.04 : 0.05) + 0.18 * strength;
+  return [
+    blendColors("#FFFFFF", bg, topAmount),
+    bg,
+    blendColors("#000000", bg, bottomAmount)
+  ];
+}
+
+function dimmedDepthColorForBackground(background) {
+  const bg = normalizeColor(background) || "#F8F8F8";
+  const rgb = parseHexColor(bg);
+  if (!rgb) {
+    return bg;
+  }
+  const luminance = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
+  return luminance < 42
+    ? blendColors("#FFFFFF", bg, 0.10)
+    : blendColors("#000000", bg, 0.16);
+}
+
+function normalizedVisualEffects(effects) {
+  const raw = effects || {};
+  const keyFaceGradient = raw.keyFaceGradient || raw.keyGradient || {};
+  const strength = Number(
+    keyFaceGradient.strengthPercent
+      ?? raw.keyFaceGradientStrengthPercent
+      ?? defaultVisualEffects().keyFaceGradient.strengthPercent);
+  return {
+    ...raw,
+    keyFaceGradient: {
+      enabled: keyFaceGradient.enabled
+        ?? raw.keyFaceGradientEnabled
+        ?? defaultVisualEffects().keyFaceGradient.enabled,
+      strengthPercent: Math.max(0, Math.min(100, Number.isFinite(strength)
+        ? Math.round(strength)
+        : defaultVisualEffects().keyFaceGradient.strengthPercent))
+    }
+  };
+}
+
+function ensureContrast(preferred, background, minimumContrast, fallbacks = []) {
+  const bg = normalizeColor(background);
+  const candidate = normalizeColor(preferred);
+  if (!candidate || !bg) {
+    return candidate || preferred;
+  }
+  if (contrastRatio(candidate, bg) >= minimumContrast) {
+    return candidate;
+  }
+  let best = candidate;
+  let bestContrast = contrastRatio(candidate, bg);
+  fallbacks
+    .map(normalizeColor)
+    .filter(Boolean)
+    .forEach(color => {
+      const contrast = contrastRatio(color, bg);
+      if (contrast > bestContrast) {
+        best = color;
+        bestContrast = contrast;
+      }
+    });
+  return best;
+}
+
+function blendColors(foreground, background, foregroundAmount) {
+  const fg = parseHexColor(foreground);
+  const bg = parseHexColor(background);
+  if (!fg || !bg) {
+    return normalizeColor(foreground) || normalizeColor(background) || "#232323";
+  }
+  const amount = Math.max(0, Math.min(1, foregroundAmount));
+  const inverse = 1 - amount;
+  return `#${fg.map((channel, index) => {
+    const value = Math.round(channel * amount + bg[index] * inverse);
+    return value.toString(16).padStart(2, "0");
+  }).join("").toUpperCase()}`;
+}
+
 function relativeLuminance(value) {
   const rgb = parseHexColor(value);
   if (!rgb) {
@@ -710,8 +1350,8 @@ function parseHexColor(value) {
   ];
 }
 
-function shouldHideSubLegend(label, theme) {
-  if (displayOverrideFor(label, theme)) {
+function shouldHideSubLegend(label, theme, layout = "qwerty") {
+  if (displayOverrideFor(label, theme, layout)) {
     return true;
   }
   const pack = theme.icons?.modifierPackId || "line-mono";
@@ -748,7 +1388,22 @@ function textColorForNumberRole(role, theme) {
   }
 }
 
-function overrideKeyForLabel(label) {
+function overrideKeyForLabel(label, layout = "qwerty") {
+  if (layout === "dingul") {
+    switch (label) {
+      case "\u3162":
+        return "tap:\u3162";
+      case "\u3163.":
+        return "__dingul_center_vowel__";
+      case "\u3161\u3150":
+        return "__dingul_wide_vowel__";
+      case "..":
+      case ". .":
+        return "..";
+      default:
+        break;
+    }
+  }
   if (label === "Shift") {
     return "shift";
   }
@@ -771,10 +1426,10 @@ function iconForPreview(label) {
   return ["Shift", "Bksp", "Options", "Reserved", "Space", "Lang", "Settings", "Enter"].includes(label);
 }
 
-function displayOverrideFor(label, theme) {
+function displayOverrideFor(label, theme, layout = "qwerty") {
   const overrides = theme.keyDisplayOverrides || {};
   const keys = overrides.keys || {};
-  const key = overrideKeyForLabel(label);
+  const key = overrideKeyForLabel(label, layout);
   const exact = keys[key] || keys[label.toLowerCase()] || keys[label];
   if (exact) {
     return exact;
@@ -830,7 +1485,7 @@ function keyDisplayPackOverrideFor(label, pack) {
   return null;
 }
 
-function renderModifierPackGlyph(key, label, theme) {
+function renderModifierPackGlyph(key, label, theme, layout = "qwerty") {
   const pack = theme.icons?.modifierPackId || "line-mono";
   if (pack === "dots-lines") {
     const line = document.createElement("span");
@@ -843,24 +1498,24 @@ function renderModifierPackGlyph(key, label, theme) {
     } else {
       line.className = "mod-pack-line dotted-line";
     }
-    line.style.background = textColorFor(label, theme);
-    line.style.color = textColorFor(label, theme);
+    line.style.background = textColorFor(label, theme, layout);
+    line.style.color = textColorFor(label, theme, layout);
     key.appendChild(line);
     return true;
   }
   if (pack === "metropolis-graph" || pack === "metropolis-points") {
-    appendLineIcon(key, label, metropolisIconColorFor(label, theme));
+    appendLineIcon(key, label, metropolisIconColorFor(label, theme, layout));
     return true;
   }
-  appendLineIcon(key, label, modifierIconColorFor(pack, label, theme));
+  appendLineIcon(key, label, modifierIconColorFor(pack, label, theme, layout));
   return true;
 }
 
-function modifierIconColorFor(pack, label, theme) {
+function modifierIconColorFor(pack, label, theme, layout = "qwerty") {
   if (pack === "accent-color") {
     return "#06B6D4";
   }
-  return textColorFor(label, theme);
+  return textColorFor(label, theme, layout);
 }
 
 function appendLineIcon(key, label, color) {
@@ -962,9 +1617,9 @@ function metropolisColorFor(label) {
   }
 }
 
-function metropolisIconColorFor(label, theme) {
+function metropolisIconColorFor(label, theme, layout = "qwerty") {
   const overrides = theme.keyTextColorOverrides || {};
-  const key = overrideKeyForLabel(label);
+  const key = overrideKeyForLabel(label, layout);
   return overrides[key]
     || overrides[label.toLowerCase()]
     || overrides[label]
@@ -992,10 +1647,14 @@ function legacyDisplayOverrides(legendStyle) {
     : {};
 }
 
-function textColorFor(label, theme) {
-  const key = overrideKeyForLabel(label);
-  const role = roleForPreview(label, "qwerty", theme);
+function textColorFor(label, theme, layout = "qwerty") {
+  const key = overrideKeyForLabel(label, layout);
+  const role = roleForPreview(label, layout, theme);
   const dingul = normalizedDingulColors(theme);
+  const targetColor = colorForSemanticTarget(label, theme.keyTextColorOverrides || {}, theme, layout);
+  if (targetColor) {
+    return targetColor;
+  }
   return theme.keyTextColorOverrides[key]
     || theme.keyTextColorOverrides[label.toLowerCase()]
     || theme.keyTextColorOverrides[label]
@@ -1010,17 +1669,28 @@ function textColorFor(label, theme) {
     || theme.colors.accent;
 }
 
-function backgroundColorFor(label, theme) {
-  const key = overrideKeyForLabel(label);
+function backgroundColorFor(label, theme, layout = "qwerty") {
+  const key = overrideKeyForLabel(label, layout);
   const overrides = theme.keyBackgroundColorOverrides || {};
-  const role = roleForPreview(label, "qwerty", theme);
-  return overrides[key]
+  const role = roleForPreview(label, layout, theme);
+  return colorForSemanticTarget(label, overrides, theme, layout)
+    || overrides[key]
     || overrides[label.toLowerCase()]
     || overrides[label]
     || (role === "alpha" ? overrides.alpha : null)
     || (role === "modInv" ? (overrides.modInv || overrides.mod_inv) : null)
     || (role === "modifier" ? (overrides.mod || overrides.modifiers) : null)
     || null;
+}
+
+function colorForSemanticTarget(label, overrides, theme, layout = "qwerty") {
+  const targets = semanticTargetsForPreview(label, layout, theme);
+  for (const target of targets) {
+    if (overrides[target]) {
+      return overrides[target];
+    }
+  }
+  return null;
 }
 
 function fontCss(fontFamily) {
@@ -1078,7 +1748,7 @@ function themeJsonToPreset(parsed) {
     shape: { ...base.shape, ...(parsed.shape || {}) },
     typography: normalizeTypography(parsed.typography, base.typography),
     metadata: parsed.metadata || {},
-    effects: parsed.effects || base.effects || {},
+    effects: normalizedVisualEffects(parsed.effects || base.effects || {}),
     icons: normalizedIconPacks(parsed.icons || {}),
     accentPolicy: normalizeAccentPolicy(parsed.accentPolicy || base.accentPolicy),
     additionalNumberRow: {
@@ -1191,6 +1861,11 @@ async function copyJson() {
   ids.status.textContent = "Copied JSON to clipboard.";
 }
 
+async function copyAiPrompt() {
+  await navigator.clipboard.writeText(ids.aiPrompt.value);
+  ids.status.textContent = "Copied image-to-theme prompt to clipboard.";
+}
+
 function downloadJson() {
   const blob = new Blob([ids.output.value], { type: "application/json" });
   const link = document.createElement("a");
@@ -1233,6 +1908,142 @@ function normalizeColor(value) {
     return `#${text.toUpperCase()}`;
   }
   return null;
+}
+
+function buildImageThemePrompt(theme) {
+  const colorKeys = colorFields.map(([key]) => key).join(", ");
+  const shapeKeys = shapeFields.map(([key]) => key).join(", ");
+  const fontIds = fontFamilies.map(option => option.id).join(", ");
+  const numberModes = numberRowModes.map(option => option.id).join(", ");
+  const accentTargets = (themeContract.accentPolicyTargets || []).join(", ");
+  const accentMap = accentPolicyReference
+    .map(item => `- ${item.id}: QWERTY = ${item.qwerty}; Dingul = ${item.dingul}`)
+    .join("\n");
+  const perKeyMap = perKeyOverrideReference
+    .map(item => `- ${item.scope}: ${item.keys}`)
+    .join("\n");
+  const baseName = JSON.stringify(theme.name || "Image Inspired Theme");
+  const baseAuthor = JSON.stringify(theme.author || "local");
+  const sample = {
+    schemaVersion: 1,
+    name: "Image Inspired Theme",
+    author: "local",
+    colors: {
+      alphaKey: "#F8F8F8",
+      modifierKey: "#E5E7EB",
+      accentKey: "#E5E7EB",
+      keyPressed: "#CBD5E1",
+      keyboardBackground: "#D1D5DB",
+      panelBackground: "#D1D5DB",
+      border: "#9CA3AF",
+      depth: null,
+      accent: "#111827",
+      secondary: "#6B7280"
+    },
+    shape: {
+      roundnessDp: 5,
+      borderWidthDp: 1,
+      keyGapDp: 5,
+      depthEnabled: true,
+      depthDp: 2
+    },
+    additionalNumberRow: { colorMode: "half_mod_4567" },
+    accentPolicy: {
+      qwerty: [],
+      dingul: [],
+      spacebar: "default",
+      question: "default"
+    },
+    dingulColors: {
+      alpha: { foreground: "#111827", background: "#F8F8F8" },
+      mod: { foreground: "#6B7280", background: "#E5E7EB" },
+      modInv: { foreground: "#6B7280", background: "#E5E7EB" }
+    },
+    typography: {
+      fontFamily: "noto_sans_kr",
+      primaryTextSizePercent: 78,
+      secondaryTextSizePercent: 80,
+      primaryTextBold: false,
+      primaryTextItalic: false,
+      secondaryTextBold: true,
+      secondaryTextItalic: false
+    },
+    effects: defaultVisualEffects(),
+    keyTextColorOverrides: {},
+    keyBackgroundColorOverrides: {}
+  };
+  sample.name = JSON.parse(baseName);
+  sample.author = JSON.parse(baseAuthor);
+
+  return [
+    "Use the attached keyboard image as visual reference and create a New Dingul Keyboard theme JSON.",
+    "Return JSON only. Do not wrap it in markdown, do not add comments, and do not add explanation.",
+    "",
+    "Hard rules:",
+    "- schemaVersion must be 1.",
+    "- Do not include icons, iconPacks, modifierPacks, keyDisplayPacks, keyDisplayOverrides, legendStyle, layers, layout, hints, or user preference fields.",
+    "- Do not invent raster/vector assets. Icon pack selection is handled separately.",
+    "- Use only #RRGGBB colors.",
+    "- Preserve readability: alpha and mod foreground/background pairs should be readable.",
+    "- Prefer alpha/mod/accent role colors over many per-key overrides. Use per-key overrides only for obvious special keycap or legend colors in the image.",
+    "- Per-key foreground/background theming is supported with keyTextColorOverrides and keyBackgroundColorOverrides. Per-key shape, icon pack, layout, and hint settings are not part of this theme JSON.",
+    "- Exact per-key overrides take precedence over alpha/mod/accent role colors. Keep them sparse.",
+    "- Before choosing accent placement, classify the source keycap colorway as 2-tone or 3-tone.",
+    "- 2-tone = alpha + mod only. Do not force accentKey, modInv, or accentPolicy just to create a third tone.",
+    "- 3-tone = alpha + mod + a clearly distinct accent keycap color visible in the reference image. Use accentKey/modInv/accentPolicy only for those visible accent targets.",
+    "- Spacebar is alpha unless the image clearly treats it as mod or accent.",
+    "- Dingul punctuation can use accentPolicy rather than exact per-key colors when possible.",
+    "- For the optional number row/numpad, default to additionalNumberRow.colorMode = half_mod_4567: digits 1 2 3 8 9 0 use alpha and digits 4 5 6 7 use mod.",
+    "- If the reference image treats the number row differently, choose another additionalNumberRow.colorMode instead of adding per-key overrides.",
+    "",
+    `Allowed color keys: ${colorKeys}.`,
+    `Allowed shape keys: ${shapeKeys}.`,
+    "Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100. Use this only for subtle key-surface depth; omit or keep the default unless the image clearly has glossy key faces.",
+    `Allowed fontFamily values: ${fontIds}.`,
+    `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
+    `Allowed accentPolicy targets: ${accentTargets}.`,
+    "",
+    "Number row / numpad color mode map:",
+    numberRowModePromptGuide(),
+    "",
+    "Role-first decision guide:",
+    "1. First solve the theme with global roles: alphaKey/modifierKey/accentKey for backgrounds and accent/secondary for legends.",
+    "2. Decide tone count from the image. For 2-tone themes, keep accentPolicy.qwerty/dingul as [] and let dingulColors.modInv mirror mod rather than inventing an inverted accent.",
+    "3. For 3-tone themes, set accentKey and dingulColors.modInv to the visible point-keycap color pair, then choose accentPolicy targets for the keys that actually use it.",
+    "4. Mirror alpha/mod roles into dingulColors.alpha and dingulColors.mod so QWERTY and Dingul stay visually consistent.",
+    "5. If a whole visual group is accented, use accentPolicy.qwerty or accentPolicy.dingul targets instead of per-key overrides.",
+    "6. Use keyTextColorOverrides and keyBackgroundColorOverrides only for isolated keys that cannot be expressed by alpha/modifier/accent roles or accentPolicy.",
+    "7. If several keys share the same special style, prefer a role or accentPolicy target. Do not list many per-key overrides for a pattern.",
+    "",
+    "Accent policy target map. Use these names exactly when choosing accentPolicy.qwerty or accentPolicy.dingul:",
+    accentMap,
+    "",
+    "Per-key override key map. Use these names exactly in keyTextColorOverrides or keyBackgroundColorOverrides:",
+    perKeyMap,
+    "",
+    "Per-key override example. Use this only for exact key exceptions, not for the whole keyboard:",
+    JSON.stringify({
+      keyTextColorOverrides: {
+        "tap:q": "#E11D48",
+        "enter": "#111827"
+      },
+      keyBackgroundColorOverrides: {
+        "tap:q": "#FFF7ED",
+        "enter": "#A7F3D0"
+      }
+    }, null, 2),
+    "",
+    "Map the image to these roles:",
+    "- alphaKey: main typing keycap background.",
+    "- modifierKey: command/modifier keycap background.",
+    "- accentKey: point/accent keycap background, only if the image has a clear third keycap color. In a 2-tone theme it may match modifierKey and should not be actively placed.",
+    "- accent: main legend/icon color.",
+    "- secondary: sub legend and modifier legend color.",
+    "- dingulColors.alpha/mod define the 2-tone base. dingulColors.modInv should mirror mod unless the image is truly 3-tone.",
+    "",
+    "Use this exact JSON shape and replace values based on the image:",
+    JSON.stringify(sample, null, 2)
+  ].join("\n");
 }
 
 function cloneTheme(theme) {

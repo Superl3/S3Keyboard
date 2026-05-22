@@ -99,12 +99,14 @@ public final class MainActivity extends Activity {
     private Spinner additionalNumberRowColorModeSpinner;
     private Spinner remoteKeyPresetSpinner;
     private Spinner remoteImeShortcutSpinner;
+    private Spinner motionEffectLevelSpinner;
     private Button deleteThemeButton;
     private CheckBox hangulNumberRowCheckBox;
     private CheckBox englishNumberRowCheckBox;
     private CheckBox hapticCheckBox;
     private CheckBox differentiatedHapticCheckBox;
     private CheckBox touchBiasAutoCorrectionCheckBox;
+    private CheckBox palmRejectionCheckBox;
     private CheckBox clipboardHistoryCheckBox;
     private CheckBox doubleSpacePeriodCheckBox;
     private CheckBox keyDepthCheckBox;
@@ -825,6 +827,10 @@ public final class MainActivity extends Activity {
             }
         });
         root.addView(beginnerTooltipPreviewCheckBox, matchWrapWithTop(8));
+
+        motionEffectLevelSpinner = motionEffectLevelSpinner();
+        root.addView(label("\uC5F0\uCD9C \uAC15\uB3C4"), matchWrapWithTop(12));
+        root.addView(motionEffectLevelSpinner, matchWrap());
     }
 
     private void addVisualControls(LinearLayout unusedRoot) {
@@ -1036,6 +1042,17 @@ public final class MainActivity extends Activity {
         });
         root.addView(touchBiasAutoCorrectionCheckBox, matchWrapWithTop(8));
 
+        palmRejectionCheckBox = new CheckBox(this);
+        palmRejectionCheckBox.setText("\uD31C \uB9AC\uC81D\uC158");
+        palmRejectionCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                KeyboardPreferences.savePalmRejectionEnabled(MainActivity.this, isChecked);
+                syncControls();
+            }
+        });
+        root.addView(palmRejectionCheckBox, matchWrapWithTop(8));
+
         clipboardHistoryCheckBox = new CheckBox(this);
         clipboardHistoryCheckBox.setText("\uD074\uB9BD\uBCF4\uB4DC \uAE30\uB85D");
         clipboardHistoryCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
@@ -1240,6 +1257,7 @@ public final class MainActivity extends Activity {
         styleCheckBox(hapticCheckBox);
         styleCheckBox(differentiatedHapticCheckBox);
         styleCheckBox(touchBiasAutoCorrectionCheckBox);
+        styleCheckBox(palmRejectionCheckBox);
         styleCheckBox(clipboardHistoryCheckBox);
         styleCheckBox(doubleSpacePeriodCheckBox);
         styleCheckBox(keyDepthCheckBox);
@@ -1311,6 +1329,9 @@ public final class MainActivity extends Activity {
         if (additionalNumberRowColorModeSpinner != null) {
             additionalNumberRowColorModeSpinner.setSelection(settings.additionalNumberRowColorMode.ordinal());
         }
+        if (motionEffectLevelSpinner != null) {
+            motionEffectLevelSpinner.setSelection(KeyboardPreferences.loadMotionEffectLevel(this).ordinal());
+        }
         remoteKeyPresetSpinner.setSelection(settings.remoteKeyPreset.ordinal());
         remoteImeShortcutSpinner.setSelection(settings.remoteImeShortcut.ordinal());
         primaryTextSizeSeekBar.setProgress(
@@ -1336,6 +1357,7 @@ public final class MainActivity extends Activity {
         differentiatedHapticCheckBox.setChecked(KeyboardPreferences.loadDifferentiatedHapticEnabled(this));
         touchBiasAutoCorrectionCheckBox.setChecked(
                 KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(this));
+        palmRejectionCheckBox.setChecked(KeyboardPreferences.loadPalmRejectionEnabled(this));
         clipboardHistoryCheckBox.setChecked(KeyboardPreferences.loadClipboardHistoryEnabled(this));
         hapticDurationSeekBar.setEnabled(settings.hapticFeedbackEnabled);
         hapticGapSeekBar.setEnabled(settings.hapticFeedbackEnabled);
@@ -1726,6 +1748,30 @@ public final class MainActivity extends Activity {
                     selectedThemePresetIndex = 0;
                     settings = settings.withFontFamily(FontOption.BASIC_OPTIONS[position].value);
                     saveAndSync();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        return spinner;
+    }
+
+    private Spinner motionEffectLevelSpinner() {
+        Spinner spinner = new Spinner(this);
+        MotionEffectLevel[] values = MotionEffectLevel.values();
+        String[] labels = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            labels[i] = values[i].displayName;
+        }
+        spinner.setAdapter(new SettingsArrayAdapter<>(this, labels));
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!syncing) {
+                    KeyboardPreferences.saveMotionEffectLevel(MainActivity.this, values[position]);
+                    syncControls();
                 }
             }
 

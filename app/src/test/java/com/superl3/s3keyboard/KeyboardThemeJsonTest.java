@@ -228,7 +228,7 @@ public final class KeyboardThemeJsonTest {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withModifierIconThemePack(ModifierIconCatalog.PACK_ACCENT_COLOR)
                 .withKeyDisplayThemePack(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT)
-                .withVisualEffects(new KeyboardVisualEffects(true, 12, true, 24, true))
+                .withVisualEffects(new KeyboardVisualEffects(true, 12, true, 24, true, true, 38))
                 .withKeyDisplayOverrides(display);
 
         KeyboardSettings imported = KeyboardThemeJson.importTheme(
@@ -243,6 +243,8 @@ public final class KeyboardThemeJsonTest {
         assertEquals(12, imported.visualEffects.blurRadiusDp);
         assertEquals(true, imported.visualEffects.metallicEnabled);
         assertEquals(24, imported.visualEffects.metallicStrengthPercent);
+        assertEquals(true, imported.visualEffects.keyFaceGradientEnabled);
+        assertEquals(38, imported.visualEffects.keyFaceGradientStrengthPercent);
     }
 
     @Test

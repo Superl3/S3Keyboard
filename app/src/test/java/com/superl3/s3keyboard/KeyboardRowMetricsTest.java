@@ -36,8 +36,8 @@ public final class KeyboardRowMetricsTest {
         float gap = 1f;
 
         assertEquals(18, KeyboardRowMetrics.contentUnits(rows.get(1)));
-        assertEquals(215f, contentWidth(rows.get(1), availableWidth, gap), 0.001f);
-        assertEquals(238f, maxContentWidth(rows.get(1), availableWidth, gap), 0.001f);
+        assertEquals(216.8f, contentWidth(rows.get(1), availableWidth, gap), 0.001f);
+        assertEquals(240f, maxContentWidth(rows.get(1), availableWidth, gap), 0.001f);
     }
 
     @Test
@@ -102,6 +102,6 @@ public final class KeyboardRowMetricsTest {
     }
 
     private float unitWidth(KeyboardRow row, float availableWidth, float gap) {
-        return (availableWidth - gap * (row.keys.size() + 1)) / row.baseUnits;
+        return (availableWidth - gap * Math.max(0, row.keys.size() - 1)) / row.baseUnits;
     }
 }
