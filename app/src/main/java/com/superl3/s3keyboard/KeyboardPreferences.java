@@ -497,6 +497,10 @@ final class KeyboardPreferences {
                 return theme.json;
             }
         }
+        UserThemeStore.UserTheme externalTheme = ExternalThemeStore.find(context, selectedThemeId);
+        if (externalTheme != null) {
+            return externalTheme.json;
+        }
         return null;
     }
 

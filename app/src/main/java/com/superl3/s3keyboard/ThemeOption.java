@@ -5,38 +5,58 @@ final class ThemeOption {
     final KeyboardThemePreset preset;
     final String userThemeId;
     final String userThemeJson;
+    final boolean externalTheme;
+    final String sourcePath;
 
     private ThemeOption(
             String label,
             KeyboardThemePreset preset,
             String userThemeId,
-            String userThemeJson) {
+            String userThemeJson,
+            boolean externalTheme,
+            String sourcePath) {
         this.label = label;
         this.preset = preset;
         this.userThemeId = userThemeId;
         this.userThemeJson = userThemeJson;
+        this.externalTheme = externalTheme;
+        this.sourcePath = sourcePath == null ? "" : sourcePath;
     }
 
     static ThemeOption[] buildOptions(
             UserThemeStore.UserTheme[] userThemes,
             boolean includeCurrentCustom) {
+        return buildOptions(userThemes, null, includeCurrentCustom);
+    }
+
+    static ThemeOption[] buildOptions(
+            UserThemeStore.UserTheme[] userThemes,
+            UserThemeStore.UserTheme[] externalThemes,
+            boolean includeCurrentCustom) {
         int userCount = userThemes == null ? 0 : userThemes.length;
+        int externalCount = externalThemes == null ? 0 : externalThemes.length;
         int customOffset = includeCurrentCustom ? 1 : 0;
         ThemeOption[] options = new ThemeOption[
-                KeyboardThemePreset.PRESETS.length + userCount + customOffset];
+                KeyboardThemePreset.PRESETS.length + userCount + externalCount + customOffset];
 
         if (includeCurrentCustom) {
-            options[0] = new ThemeOption("Current custom", null, null, null);
+            options[0] = new ThemeOption("Current custom", null, null, null, false, "");
         }
 
         for (int i = 0; i < KeyboardThemePreset.PRESETS.length; i++) {
             KeyboardThemePreset preset = KeyboardThemePreset.PRESETS[i];
-            options[i + customOffset] = new ThemeOption(preset.displayName, preset, null, null);
+            options[i + customOffset] = new ThemeOption(preset.displayName, preset, null, null, false, "");
         }
         for (int i = 0; i < userCount; i++) {
             UserThemeStore.UserTheme theme = userThemes[i];
             options[KeyboardThemePreset.PRESETS.length + customOffset + i] =
-                    new ThemeOption(theme.name, null, theme.id, theme.json);
+                    new ThemeOption(theme.name, null, theme.id, theme.json, theme.external, theme.sourcePath);
+        }
+        int externalOffset = KeyboardThemePreset.PRESETS.length + customOffset + userCount;
+        for (int i = 0; i < externalCount; i++) {
+            UserThemeStore.UserTheme theme = externalThemes[i];
+            options[externalOffset + i] =
+                    new ThemeOption("External: " + theme.name, null, theme.id, theme.json, true, theme.sourcePath);
         }
         return options;
     }
@@ -74,6 +94,10 @@ final class ThemeOption {
             return preset.id;
         }
         return userThemeId == null ? "" : userThemeId;
+    }
+
+    boolean isDeletableUserTheme() {
+        return userThemeId != null && !externalTheme;
     }
 
     @Override

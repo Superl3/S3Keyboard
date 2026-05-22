@@ -838,7 +838,7 @@ public final class MainActivity extends Activity {
         deleteThemeButton.setText("\uC120\uD0DD\uD55C \uC0AC\uC6A9\uC790 \uD14C\uB9C8 \uC0AD\uC81C");
         deleteThemeButton.setOnClickListener(v -> {
             ThemeOption option = selectedThemeOption();
-            if (option == null || option.userThemeId == null) {
+            if (option == null || !option.isDeletableUserTheme()) {
                 return;
             }
             UserThemeStore.delete(this, option.userThemeId);
@@ -1377,7 +1377,7 @@ public final class MainActivity extends Activity {
         remoteImeShortcutSpinner.setEnabled(settings.remoteModeEnabled);
         keyDepthSeekBar.setEnabled(settings.keyDepthEnabled);
         depthColorSpinner.setEnabled(settings.customDepthColorEnabled);
-        deleteThemeButton.setEnabled(selectedThemeOption() != null && selectedThemeOption().userThemeId != null);
+        deleteThemeButton.setEnabled(selectedThemeOption() != null && selectedThemeOption().isDeletableUserTheme());
         leftMarginValue.setText("\uC88C\uC6B0 \uD328\uB529: " + settings.leftMarginDp + "dp");
         rightMarginValue.setText("\uC88C\uC6B0 \uD328\uB529: " + settings.rightMarginDp + "dp");
         hangulHeightValue.setText("\uB529\uAD74 \uB192\uC774: " + settings.hangulKeyboardHeightDp + "dp"
@@ -1615,7 +1615,7 @@ public final class MainActivity extends Activity {
     }
 
     private void reloadThemeOptions() {
-        themeOptions = ThemeOption.buildOptions(UserThemeStore.load(this), true);
+        themeOptions = ThemeOption.buildOptions(UserThemeStore.load(this), ExternalThemeStore.load(this), true);
     }
 
     private void applyThemeOption(int position) {
@@ -1721,7 +1721,7 @@ public final class MainActivity extends Activity {
     private int indexOfUserTheme(String userThemeId) {
         reloadThemeOptions();
         for (int i = 0; i < themeOptions.length; i++) {
-            if (userThemeId != null && userThemeId.equals(themeOptions[i].userThemeId)) {
+            if (userThemeId != null && userThemeId.equals(themeOptions[i].stableId())) {
                 return i;
             }
         }

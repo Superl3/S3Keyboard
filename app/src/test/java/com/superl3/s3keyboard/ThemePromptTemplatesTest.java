@@ -13,6 +13,7 @@ public final class ThemePromptTemplatesTest {
         assertTrue(prompt.contains("keyboard or keycap image"));
         assertTrue(prompt.contains("alphaKey"));
         assertTrue(prompt.contains("accentPolicy"));
+        assertTrue(prompt.contains("effects.panelGradient"));
         assertTrue(prompt.contains("\"schemaVersion\":1"));
         assertFalse(prompt.contains("```"));
     }
@@ -24,6 +25,7 @@ public final class ThemePromptTemplatesTest {
         assertTrue(prompt.contains("drawing, illustration, photo"));
         assertTrue(prompt.contains("Extract 4 to 7 dominant colors"));
         assertTrue(prompt.contains("do not simulate the image texture"));
+        assertTrue(prompt.contains("backplate gradient"));
         assertTrue(prompt.contains("\"schemaVersion\":1"));
         assertFalse(prompt.contains("```"));
     }

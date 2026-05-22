@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -9,9 +10,11 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public final class ThemeSelectorActivity extends Activity {
     private KeyboardSettings settings;
@@ -21,6 +24,7 @@ public final class ThemeSelectorActivity extends Activity {
     private KeyboardMode previewMode = KeyboardMode.HANGUL;
     private Button dingulPreviewButton;
     private Button qwertyPreviewButton;
+    private TextView externalThemeSummary;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +75,25 @@ public final class ThemeSelectorActivity extends Activity {
         resetButton.setOnClickListener(v -> resetThemeToDefault());
         root.addView(resetButton, topParams(8));
 
+        ExternalThemeStore.ensureThemeDirectory(this);
+        externalThemeSummary = label("");
+        externalThemeSummary.setTextColor(ui.textSecondary);
+        root.addView(externalThemeSummary, topParams(10));
+
+        LinearLayout externalRow = new LinearLayout(this);
+        externalRow.setOrientation(LinearLayout.HORIZONTAL);
+        Button externalPathButton = new Button(this);
+        externalPathButton.setText("\uC678\uBD80 \uD14C\uB9C8 \uD3F4\uB354 \uC124\uC815");
+        styleSystemButton(externalPathButton, false);
+        externalPathButton.setOnClickListener(v -> showExternalThemePathDialog());
+        externalRow.addView(externalPathButton, weightedButtonParams());
+        Button refreshExternalButton = new Button(this);
+        refreshExternalButton.setText("\uC0C8\uB85C\uACE0\uCE68");
+        styleSystemButton(refreshExternalButton, false);
+        refreshExternalButton.setOnClickListener(v -> rebuildCards());
+        externalRow.addView(refreshExternalButton, weightedButtonParams());
+        root.addView(externalRow, topParams(8));
+
         LinearLayout previewModeRow = new LinearLayout(this);
         previewModeRow.setOrientation(LinearLayout.HORIZONTAL);
         dingulPreviewButton = previewModeButton("Dingul", KeyboardMode.HANGUL);
@@ -90,9 +113,11 @@ public final class ThemeSelectorActivity extends Activity {
         if (cards == null) {
             return;
         }
-        themeOptions = ThemeOption.buildOptions(UserThemeStore.load(this), false);
+        UserThemeStore.UserTheme[] externalThemes = ExternalThemeStore.load(this);
+        themeOptions = ThemeOption.buildOptions(UserThemeStore.load(this), externalThemes, false);
         selectedIndex = indexOfSelectedTheme(KeyboardPreferences.loadSelectedThemeId(this));
         updatePreviewModeButtons();
+        updateExternalThemeSummary(externalThemes.length);
         cards.removeAllViews();
         for (int i = 0; i < themeOptions.length; i++) {
             LinearLayout.LayoutParams params = matchWrap();
@@ -150,6 +175,45 @@ public final class ThemeSelectorActivity extends Activity {
         card.addView(previewKeyboard(englishPreview ? englishSettings : hangulSettings, index),
                 previewParams(englishPreview ? 88 : 108));
         return card;
+    }
+
+    private void updateExternalThemeSummary(int externalThemeCount) {
+        if (externalThemeSummary == null) {
+            return;
+        }
+        externalThemeSummary.setText("\uC678\uBD80 JSON \uD14C\uB9C8: "
+                + externalThemeCount
+                + "\uAC1C\n"
+                + ExternalThemeStore.loadDirectoryPath(this));
+    }
+
+    private void showExternalThemePathDialog() {
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setSelectAllOnFocus(true);
+        input.setText(ExternalThemeStore.loadDirectoryPath(this));
+        SettingsViewStyler.editText(input, this);
+        int padding = dp(18);
+        LinearLayout container = new LinearLayout(this);
+        container.setPadding(padding, padding, padding, 0);
+        container.addView(input, matchWrap());
+
+        new AlertDialog.Builder(this)
+                .setTitle("\uC678\uBD80 \uD14C\uB9C8 \uD3F4\uB354")
+                .setMessage("JSON \uD14C\uB9C8 \uD30C\uC77C\uC744 \uC77D\uC5B4\uC62C \uD3F4\uB354 \uACBD\uB85C\uC785\uB2C8\uB2E4. \uAE30\uBCF8\uAC12\uC740 \uC571 \uC678\uBD80 files/themes \uD3F4\uB354\uC785\uB2C8\uB2E4.")
+                .setView(container)
+                .setNegativeButton("\uCDE8\uC18C", null)
+                .setNeutralButton("\uAE30\uBCF8\uACBD\uB85C", (dialog, which) -> {
+                    ExternalThemeStore.saveDirectoryPath(this, ExternalThemeStore.defaultDirectoryPath(this));
+                    rebuildCards();
+                    Toast.makeText(this, "\uAE30\uBCF8 \uC678\uBD80 \uD14C\uB9C8 \uD3F4\uB354\uB85C \uBCF5\uC6D0\uD588\uC2B5\uB2C8\uB2E4.", Toast.LENGTH_SHORT).show();
+                })
+                .setPositiveButton("\uC800\uC7A5", (dialog, which) -> {
+                    ExternalThemeStore.saveDirectoryPath(this, input.getText().toString());
+                    rebuildCards();
+                    Toast.makeText(this, "\uC678\uBD80 \uD14C\uB9C8 \uD3F4\uB354\uB97C \uC800\uC7A5\uD588\uC2B5\uB2C8\uB2E4.", Toast.LENGTH_SHORT).show();
+                })
+                .show();
     }
 
     private TextView selectedBadge(SettingsUiPalette ui) {

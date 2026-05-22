@@ -46,6 +46,8 @@ public final class ThemeEditorActivity extends Activity {
     private Spinner accentKeyColorSpinner;
     private Spinner keyPressedColorSpinner;
     private Spinner keyboardBackgroundColorSpinner;
+    private Spinner panelGradientStartColorSpinner;
+    private Spinner panelGradientEndColorSpinner;
     private Spinner accentColorSpinner;
     private Spinner secondaryColorSpinner;
     private Spinner borderColorSpinner;
@@ -69,6 +71,7 @@ public final class ThemeEditorActivity extends Activity {
     private CheckBox keyDepthCheckBox;
     private CheckBox customDepthColorCheckBox;
     private CheckBox keyFaceGradientCheckBox;
+    private CheckBox panelGradientCheckBox;
     private CheckBox primaryTextBoldCheckBox;
     private CheckBox primaryTextItalicCheckBox;
     private CheckBox secondaryTextBoldCheckBox;
@@ -87,6 +90,8 @@ public final class ThemeEditorActivity extends Activity {
     private View accentKeyColorSwatch;
     private View keyPressedColorSwatch;
     private View keyboardBackgroundColorSwatch;
+    private View panelGradientStartColorSwatch;
+    private View panelGradientEndColorSwatch;
     private View borderColorSwatch;
     private View depthColorSwatch;
     private View accentColorSwatch;
@@ -391,6 +396,41 @@ public final class ThemeEditorActivity extends Activity {
         keyboardBackgroundColorSwatch = addColorControl(root, "키보드 배경", "키 사이와 키 뒤쪽 영역의 색상입니다.", keyboardBackgroundColorSpinner, keyboardBackgroundListener);
         root.addView(keyboardBackgroundColorSpinner, matchWrap());
 
+        panelGradientCheckBox = checkBox("\uD0A4\uBCF4\uB4DC \uB4A4\uD310 \uADF8\uB77C\uB370\uC774\uC158", checked ->
+                updateSettings(settings.withVisualEffects(settings.visualEffects.withPanelGradient(
+                        checked,
+                        settings.visualEffects.panelGradientStartColor,
+                        settings.visualEffects.panelGradientEndColor))));
+        root.addView(panelGradientCheckBox, matchWrapWithTop(12));
+
+        ColorChangeListener panelGradientStartListener = color -> updateSettings(settings.withVisualEffects(
+                settings.visualEffects.withPanelGradient(
+                        true,
+                        color,
+                        settings.visualEffects.panelGradientEndColor)));
+        panelGradientStartColorSpinner = colorSpinner(panelGradientStartListener);
+        panelGradientStartColorSwatch = addColorControl(
+                root,
+                "\uB4A4\uD310 \uADF8\uB77C\uB370\uC774\uC158 \uC2DC\uC791",
+                "\uD0A4 \uB4A4\uCABD \uD328\uB110\uC758 \uC704\uCABD\uC5D0\uC11C \uC2DC\uC791\uD558\uB294 \uBC30\uACBD \uADF8\uB77C\uB370\uC774\uC158 \uC0C9\uC0C1\uC785\uB2C8\uB2E4.",
+                panelGradientStartColorSpinner,
+                panelGradientStartListener);
+        root.addView(panelGradientStartColorSpinner, matchWrap());
+
+        ColorChangeListener panelGradientEndListener = color -> updateSettings(settings.withVisualEffects(
+                settings.visualEffects.withPanelGradient(
+                        true,
+                        settings.visualEffects.panelGradientStartColor,
+                        color)));
+        panelGradientEndColorSpinner = colorSpinner(panelGradientEndListener);
+        panelGradientEndColorSwatch = addColorControl(
+                root,
+                "\uB4A4\uD310 \uADF8\uB77C\uB370\uC774\uC158 \uB05D",
+                "\uD0A4 \uB4A4\uCABD \uD328\uB110\uC758 \uC544\uB798\uCABD\uC73C\uB85C \uC774\uC5B4\uC9C0\uB294 \uBC30\uACBD \uADF8\uB77C\uB370\uC774\uC158 \uC0C9\uC0C1\uC785\uB2C8\uB2E4.",
+                panelGradientEndColorSpinner,
+                panelGradientEndListener);
+        root.addView(panelGradientEndColorSpinner, matchWrap());
+
         ColorChangeListener borderListener = color -> updateSettings(settings.withExtendedThemeColors(
                 settings.keyIdleColor,
                 settings.keyPressedColor,
@@ -586,6 +626,8 @@ public final class ThemeEditorActivity extends Activity {
         setSelection(accentKeyColorSpinner, indexOfColor(settings.accentKeyColor));
         setSelection(keyPressedColorSpinner, indexOfColor(settings.keyPressedColor));
         setSelection(keyboardBackgroundColorSpinner, indexOfColor(settings.keyboardBackgroundColor));
+        setSelection(panelGradientStartColorSpinner, indexOfColor(settings.visualEffects.panelGradientStartColor));
+        setSelection(panelGradientEndColorSpinner, indexOfColor(settings.visualEffects.panelGradientEndColor));
         setSelection(accentColorSpinner, indexOfColor(settings.accentColor));
         setSelection(secondaryColorSpinner, indexOfColor(settings.secondaryColor));
         setSelection(borderColorSpinner, indexOfColor(settings.borderColor));
@@ -596,11 +638,14 @@ public final class ThemeEditorActivity extends Activity {
         setChecked(keyDepthCheckBox, settings.keyDepthEnabled);
         setChecked(customDepthColorCheckBox, settings.customDepthColorEnabled);
         setChecked(keyFaceGradientCheckBox, settings.visualEffects.keyFaceGradientEnabled);
+        setChecked(panelGradientCheckBox, settings.visualEffects.panelGradientEnabled);
         setChecked(primaryTextBoldCheckBox, settings.primaryTextBold);
         setChecked(primaryTextItalicCheckBox, settings.primaryTextItalic);
         setChecked(secondaryTextBoldCheckBox, settings.secondaryTextBold);
         setChecked(secondaryTextItalicCheckBox, settings.secondaryTextItalic);
         setEnabled(depthColorSpinner, settings.customDepthColorEnabled);
+        setEnabled(panelGradientStartColorSpinner, settings.visualEffects.panelGradientEnabled);
+        setEnabled(panelGradientEndColorSpinner, settings.visualEffects.panelGradientEnabled);
         setEnabled(keyDepthSeekBar, settings.keyDepthEnabled);
         setEnabled(keyFaceGradientCheckBox, settings.keyDepthEnabled);
         setEnabled(
@@ -611,6 +656,8 @@ public final class ThemeEditorActivity extends Activity {
         setSwatch(accentKeyColorSwatch, settings.accentKeyColor);
         setSwatch(keyPressedColorSwatch, settings.keyPressedColor);
         setSwatch(keyboardBackgroundColorSwatch, settings.keyboardBackgroundColor);
+        setSwatch(panelGradientStartColorSwatch, settings.visualEffects.panelGradientStartColor);
+        setSwatch(panelGradientEndColorSwatch, settings.visualEffects.panelGradientEndColor);
         setSwatch(borderColorSwatch, settings.borderColor);
         setSwatch(depthColorSwatch, settings.customDepthColorEnabled ? settings.depthColor : settings.borderColor);
         setSwatch(accentColorSwatch, settings.accentColor);

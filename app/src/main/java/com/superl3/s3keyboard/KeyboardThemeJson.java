@@ -980,6 +980,12 @@ final class KeyboardThemeJson {
             keyFaceGradient.put("enabled", safeEffects.keyFaceGradientEnabled);
             keyFaceGradient.put("strengthPercent", safeEffects.keyFaceGradientStrengthPercent);
             object.put("keyFaceGradient", keyFaceGradient);
+
+            JSONObject panelGradient = new JSONObject();
+            panelGradient.put("enabled", safeEffects.panelGradientEnabled);
+            panelGradient.put("startColor", colorToString(safeEffects.panelGradientStartColor));
+            panelGradient.put("endColor", colorToString(safeEffects.panelGradientEndColor));
+            object.put("panelGradient", panelGradient);
         } catch (JSONException exception) {
             throw new IllegalStateException("Failed to encode visual effects.", exception);
         }
@@ -997,6 +1003,10 @@ final class KeyboardThemeJson {
         JSONObject keyFaceGradient = object.optJSONObject("keyFaceGradient");
         if (keyFaceGradient == null) {
             keyFaceGradient = object.optJSONObject("keyGradient");
+        }
+        JSONObject panelGradient = object.optJSONObject("panelGradient");
+        if (panelGradient == null) {
+            panelGradient = object.optJSONObject("backgroundGradient");
         }
         boolean blurEnabled = blur == null
                 ? object.optBoolean("blurEnabled", safeFallback.blurEnabled)
@@ -1029,6 +1039,23 @@ final class KeyboardThemeJson {
                 : keyFaceGradient.optInt(
                         "strengthPercent",
                         safeFallback.keyFaceGradientStrengthPercent);
+        boolean panelGradientEnabled = panelGradient == null
+                ? object.optBoolean("panelGradientEnabled", safeFallback.panelGradientEnabled)
+                : panelGradient.optBoolean("enabled", safeFallback.panelGradientEnabled);
+        int panelGradientStartColor = panelGradient == null
+                ? parseColor(
+                        object.optString("panelGradientStartColor", ""),
+                        safeFallback.panelGradientStartColor)
+                : parseColor(
+                        panelGradient.optString("startColor", ""),
+                        safeFallback.panelGradientStartColor);
+        int panelGradientEndColor = panelGradient == null
+                ? parseColor(
+                        object.optString("panelGradientEndColor", ""),
+                        safeFallback.panelGradientEndColor)
+                : parseColor(
+                        panelGradient.optString("endColor", ""),
+                        safeFallback.panelGradientEndColor);
         return new KeyboardVisualEffects(
                 blurEnabled,
                 blurRadiusDp,
@@ -1036,7 +1063,10 @@ final class KeyboardThemeJson {
                 metallicStrength,
                 !"rounded".equals(previewStyle),
                 keyFaceGradientEnabled,
-                keyFaceGradientStrength);
+                keyFaceGradientStrength,
+                panelGradientEnabled,
+                panelGradientStartColor,
+                panelGradientEndColor);
     }
 
     private static Map<String, KeyDisplayOverride> legacyDotDisplayOverrides() {

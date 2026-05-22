@@ -32,6 +32,32 @@ public final class ThemeOptionTest {
     }
 
     @Test
+    public void buildOptionsAppendsExternalThemesAfterUserThemes() {
+        UserThemeStore.UserTheme[] customThemes = {
+                new UserThemeStore.UserTheme("custom-1", "My Theme", "{}")
+        };
+        UserThemeStore.UserTheme[] externalThemes = {
+                new UserThemeStore.UserTheme(
+                        "external-theme-1",
+                        "Disk Theme",
+                        "{}",
+                        true,
+                        "/themes/disk.json")
+        };
+
+        ThemeOption[] options = ThemeOption.buildOptions(customThemes, externalThemes, true);
+
+        ThemeOption userOption = options[KeyboardThemePreset.PRESETS.length + 1];
+        ThemeOption externalOption = options[options.length - 1];
+        assertEquals("My Theme", userOption.label);
+        assertEquals(true, userOption.isDeletableUserTheme());
+        assertEquals("External: Disk Theme", externalOption.label);
+        assertEquals("external-theme-1", externalOption.stableId());
+        assertEquals(false, externalOption.isDeletableUserTheme());
+        assertEquals(true, externalOption.externalTheme);
+    }
+
+    @Test
     public void themeSelectionDoesNotCarryPreviousThemeAppearance() {
         ThemeOption metropolis = option("gmk-metropolis");
         ThemeOption clean = option("ios-clean-light");

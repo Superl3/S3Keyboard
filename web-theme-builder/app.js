@@ -29,6 +29,9 @@ const ids = {
   keyFaceGradientEnabled: document.getElementById("keyFaceGradientEnabled"),
   keyFaceGradientStrength: document.getElementById("keyFaceGradientStrengthPercent"),
   keyFaceGradientOut: document.getElementById("keyFaceGradientOut"),
+  panelGradientEnabled: document.getElementById("panelGradientEnabled"),
+  panelGradientStart: document.getElementById("panelGradientStartColor"),
+  panelGradientEnd: document.getElementById("panelGradientEndColor"),
   fontFamily: document.getElementById("fontFamily"),
   primary: document.getElementById("primaryTextSizePercent"),
   secondary: document.getElementById("secondaryTextSizePercent"),
@@ -147,6 +150,11 @@ function defaultVisualEffects() {
     keyFaceGradient: {
       enabled: true,
       strengthPercent: 22
+    },
+    panelGradient: {
+      enabled: false,
+      startColor: "#D1D5DB",
+      endColor: "#D1D5DB"
     }
   };
 }
@@ -466,6 +474,23 @@ function bindStaticControls() {
     state.effects.keyFaceGradient.strengthPercent = Number(ids.keyFaceGradientStrength.value);
     update();
   });
+  ids.panelGradientEnabled.addEventListener("change", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.panelGradient.enabled = ids.panelGradientEnabled.checked;
+    update();
+  });
+  ids.panelGradientStart.addEventListener("input", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.panelGradient.enabled = true;
+    state.effects.panelGradient.startColor = ids.panelGradientStart.value;
+    update();
+  });
+  ids.panelGradientEnd.addEventListener("input", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.panelGradient.enabled = true;
+    state.effects.panelGradient.endColor = ids.panelGradientEnd.value;
+    update();
+  });
   ids.fontFamily.addEventListener("change", () => {
     state.typography.fontFamily = ids.fontFamily.value;
     update();
@@ -534,6 +559,9 @@ function renderForm() {
   state.effects = normalizedVisualEffects(state.effects);
   ids.keyFaceGradientEnabled.checked = Boolean(state.effects.keyFaceGradient.enabled);
   ids.keyFaceGradientStrength.value = state.effects.keyFaceGradient.strengthPercent;
+  ids.panelGradientEnabled.checked = Boolean(state.effects.panelGradient.enabled);
+  ids.panelGradientStart.value = state.effects.panelGradient.startColor;
+  ids.panelGradientEnd.value = state.effects.panelGradient.endColor;
   ids.fontFamily.value = state.typography.fontFamily;
   ids.primary.value = state.typography.primaryTextSizePercent;
   ids.secondary.value = state.typography.secondaryTextSizePercent;
@@ -659,7 +687,7 @@ function dingulPreviewRows() {
 
 function renderKeyboardPreview(container, theme, layout, rows) {
   const effects = normalizedVisualEffects(theme.effects);
-  container.style.background = theme.colors.panelBackground || theme.colors.keyboardBackground;
+  container.style.background = panelBackgroundForPreview(theme, effects);
   container.style.backdropFilter = effects.blur?.enabled ? `blur(${effects.blur.radiusDp || 8}px)` : "none";
   container.style.boxShadow = effects.metal?.enabled ? `inset 0 18px 28px rgba(255,255,255,.18), inset 0 -22px 35px rgba(0,0,0,.22)` : "none";
   container.style.gap = `${theme.shape.keyGapDp}px`;
@@ -1271,10 +1299,21 @@ function dimmedDepthColorForBackground(background) {
 function normalizedVisualEffects(effects) {
   const raw = effects || {};
   const keyFaceGradient = raw.keyFaceGradient || raw.keyGradient || {};
+  const panelGradient = raw.panelGradient || raw.backgroundGradient || {};
   const strength = Number(
     keyFaceGradient.strengthPercent
       ?? raw.keyFaceGradientStrengthPercent
       ?? defaultVisualEffects().keyFaceGradient.strengthPercent);
+  const panelStart = normalizeColor(
+    panelGradient.startColor
+      ?? raw.panelGradientStartColor
+      ?? defaultVisualEffects().panelGradient.startColor)
+      || defaultVisualEffects().panelGradient.startColor;
+  const panelEnd = normalizeColor(
+    panelGradient.endColor
+      ?? raw.panelGradientEndColor
+      ?? defaultVisualEffects().panelGradient.endColor)
+      || defaultVisualEffects().panelGradient.endColor;
   return {
     ...raw,
     keyFaceGradient: {
@@ -1284,8 +1323,24 @@ function normalizedVisualEffects(effects) {
       strengthPercent: Math.max(0, Math.min(100, Number.isFinite(strength)
         ? Math.round(strength)
         : defaultVisualEffects().keyFaceGradient.strengthPercent))
+    },
+    panelGradient: {
+      enabled: Boolean(panelGradient.enabled ?? raw.panelGradientEnabled ?? defaultVisualEffects().panelGradient.enabled),
+      startColor: panelStart,
+      endColor: panelEnd
     }
   };
+}
+
+function panelBackgroundForPreview(theme, effects) {
+  const panelColor = theme.colors.panelBackground || theme.colors.keyboardBackground;
+  const gradient = effects.panelGradient || {};
+  if (!gradient.enabled) {
+    return panelColor;
+  }
+  const start = normalizeColor(gradient.startColor) || panelColor;
+  const end = normalizeColor(gradient.endColor) || panelColor;
+  return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
 }
 
 function ensureContrast(preferred, background, minimumContrast, fallbacks = []) {
@@ -2005,7 +2060,7 @@ function buildImageThemePrompt(theme) {
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100. Use this only for subtle key-surface depth; omit or keep the default unless the image clearly has glossy key faces.",
+    "Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,
@@ -2085,10 +2140,11 @@ function buildPaletteImageThemePrompt(theme) {
     "- accent is the main legend/icon color and must remain readable on alphaKey.",
     "- secondary is the sub legend/modifier legend color and must remain readable on modifierKey.",
     "- Use effects.keyFaceGradient only for subtle key-surface depth; do not simulate the image texture.",
+    "- Use effects.panelGradient only for a quiet backplate/background gradient behind the keys.",
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100.",
+    "Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,

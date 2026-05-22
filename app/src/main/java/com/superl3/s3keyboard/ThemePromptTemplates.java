@@ -40,6 +40,7 @@ final class ThemePromptTemplates {
                 "- modifierKey should be visibly different from alphaKey but still comfortable for repeated command keys.",
                 "- accentKey should use the most memorable vivid color only when the image has a clear point color.",
                 "- keyboardBackground and panelBackground should be a quiet backdrop derived from the image, not the loudest color.",
+                "- Use effects.panelGradient only when the image suggests a quiet keyboard backplate gradient behind the keys.",
                 "- accent is the main legend/icon color and must remain readable on alphaKey.",
                 "- secondary is the sub legend/modifier legend color and must remain readable on modifierKey.",
                 "- If the image is colorful but not keycap-like, do not create many per-key overrides. Keep the keyboard coherent.",
@@ -64,7 +65,7 @@ final class ThemePromptTemplates {
                 "- Allowed shape keys: roundnessDp, borderWidthDp, keyGapDp, depthEnabled, depthDp.",
                 "- Allowed typography keys: fontFamily, primaryTextSizePercent, secondaryTextSizePercent, primaryTextBold, primaryTextItalic, secondaryTextBold, secondaryTextItalic.",
                 "- Allowed fontFamily values: default, noto_sans_kr, noto_serif_kr, d2coding.",
-                "- Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100.",
+                "- Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
                 "- Allowed number row color modes: full_alpha, half_mod_4567, alpha_accent, mod_alpha, full_mod, mod_accent, accent_alpha, accent_mod, full_accent.",
                 "- Allowed accentPolicy targets: none, modEnter, modShift, dingulDot, dingulSlash, modCtrl, modMeta, modCommand, enter, settingsEnter, qwertyShift, backspace, question, escPoint, shift, punctuation, perKey.");
     }
@@ -103,6 +104,10 @@ final class ThemePromptTemplates {
                     + "    \"depth\": null,\n"
                     + "    \"accent\": \"#111827\",\n"
                     + "    \"secondary\": \"#6B7280\"\n"
+                    + "  },\n"
+                    + "  \"effects\": {\n"
+                    + "    \"keyFaceGradient\": { \"enabled\": true, \"strengthPercent\": 22 },\n"
+                    + "    \"panelGradient\": { \"enabled\": false, \"startColor\": \"#D1D5DB\", \"endColor\": \"#D1D5DB\" }\n"
                     + "  }\n"
                     + "}";
         }

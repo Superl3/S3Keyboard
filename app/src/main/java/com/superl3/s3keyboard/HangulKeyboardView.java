@@ -187,9 +187,21 @@ public final class HangulKeyboardView extends View {
 
     private void drawKeyboardPanel(Canvas canvas) {
         keyPaint.setShader(null);
-        keyPaint.setColor(settings.keyboardBackgroundColor);
+        if (settings.visualEffects.panelGradientEnabled) {
+            keyPaint.setShader(new LinearGradient(
+                    0,
+                    0,
+                    0,
+                    Math.max(1, getHeight()),
+                    settings.visualEffects.panelGradientStartColor,
+                    settings.visualEffects.panelGradientEndColor,
+                    Shader.TileMode.CLAMP));
+        } else {
+            keyPaint.setColor(settings.keyboardBackgroundColor);
+        }
         keyPaint.setStyle(Paint.Style.FILL);
         canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
+        keyPaint.setShader(null);
         if (settings.visualEffects.blurEnabled && settings.visualEffects.blurRadiusDp > 0) {
             drawPanelBlurWash(canvas);
         }

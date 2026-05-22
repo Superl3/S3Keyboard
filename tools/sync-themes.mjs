@@ -475,11 +475,31 @@ function validateEffects(effects, at, errors) {
     at("effects.keyFaceGradient"),
     errors,
     ["enabled", "strengthPercent"]);
+  validatePanelGradient(effects.panelGradient, at("effects.panelGradient"), errors);
   if (effects.previewBubble !== undefined) {
     const style = effects.previewBubble?.style;
     if (style !== "rounded" && style !== "angular") {
       errors.push(`${at("effects.previewBubble.style")}: expected rounded or angular`);
     }
+  }
+}
+
+function validatePanelGradient(object, label, errors) {
+  if (object === undefined) {
+    return;
+  }
+  if (!object || typeof object !== "object" || Array.isArray(object)) {
+    errors.push(`${label}: expected object`);
+    return;
+  }
+  if (object.enabled !== undefined && typeof object.enabled !== "boolean") {
+    errors.push(`${label}.enabled: expected boolean`);
+  }
+  if (object.startColor !== undefined && !isColor(object.startColor)) {
+    errors.push(`${label}.startColor: expected #RRGGBB color`);
+  }
+  if (object.endColor !== undefined && !isColor(object.endColor)) {
+    errors.push(`${label}.endColor: expected #RRGGBB color`);
   }
 }
 
@@ -1045,6 +1065,9 @@ function inferredFeatures(theme) {
   if (json.effects?.keyFaceGradient?.enabled) {
     features.add("keyFaceGradient");
   }
+  if (json.effects?.panelGradient?.enabled) {
+    features.add("panelGradient");
+  }
   if (json.effects?.previewBubble?.style === "angular") {
     features.add("angularPreview");
   }
@@ -1083,6 +1106,9 @@ function effectSummary(effects) {
   }
   if (effects?.keyFaceGradient?.enabled) {
     result.push(`keyGradient${effects.keyFaceGradient.strengthPercent ?? ""}`);
+  }
+  if (effects?.panelGradient?.enabled) {
+    result.push("panelGradient");
   }
   if (effects?.previewBubble?.style === "angular") {
     result.push("angular");

@@ -89,7 +89,7 @@ final class UserThemeStore {
         JSONArray array = new JSONArray();
         if (themes != null) {
             for (UserTheme theme : themes) {
-                if (theme == null || theme.id.isEmpty() || theme.json.isEmpty()) {
+                if (theme == null || theme.external || theme.id.isEmpty() || theme.json.isEmpty()) {
                     continue;
                 }
                 JSONObject object = new JSONObject();
@@ -141,11 +141,19 @@ final class UserThemeStore {
         final String id;
         final String name;
         final String json;
+        final boolean external;
+        final String sourcePath;
 
         UserTheme(String id, String name, String json) {
+            this(id, name, json, false, "");
+        }
+
+        UserTheme(String id, String name, String json, boolean external, String sourcePath) {
             this.id = id == null ? "" : id;
             this.name = name == null || name.isEmpty() ? "Custom Theme" : name;
             this.json = json == null ? "" : json;
+            this.external = external;
+            this.sourcePath = sourcePath == null ? "" : sourcePath;
         }
 
         private static UserTheme empty(int index) {

@@ -220,6 +220,30 @@ function New-KeyFaceBrush {
     return $brush
 }
 
+function New-PanelBackgroundBrush {
+    param(
+        [object] $Theme,
+        [float] $X,
+        [float] $Y,
+        [float] $W,
+        [float] $H
+    )
+    $panelColor = if ($null -ne $Theme.colors.panelBackground) { $Theme.colors.panelBackground } else { $Theme.colors.keyboardBackground }
+    $fallback = Convert-ThemeColor $panelColor "#EBEBEB"
+    $gradient = if ($null -ne $Theme.effects) { $Theme.effects.panelGradient } else { $null }
+    if ($null -eq $gradient -or -not (Get-ThemeBool $gradient.enabled $false)) {
+        return [System.Drawing.SolidBrush]::new($fallback)
+    }
+    $start = Convert-ThemeColor $gradient.startColor $panelColor
+    $end = Convert-ThemeColor $gradient.endColor $panelColor
+    $rect = [System.Drawing.RectangleF]::new($X, $Y, [Math]::Max(1, $W), [Math]::Max(1, $H))
+    return [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            $rect,
+            $start,
+            $end,
+            [System.Drawing.Drawing2D.LinearGradientMode]::Vertical)
+}
+
 function Get-FontFamilyName {
     param([object] $Theme)
     $fontFamily = if ($null -ne $Theme.typography) { [string]$Theme.typography.fontFamily } else { "default" }
@@ -1042,8 +1066,7 @@ function Draw-KeyboardBackground {
         [float] $W,
         [float] $H
     )
-    $panelColor = if ($null -ne $Theme.colors.panelBackground) { $Theme.colors.panelBackground } else { $Theme.colors.keyboardBackground }
-    $brush = [System.Drawing.SolidBrush]::new((Convert-ThemeColor $panelColor "#EBEBEB"))
+    $brush = New-PanelBackgroundBrush -Theme $Theme -X $X -Y $Y -W $W -H $H
     $pen = [System.Drawing.Pen]::new((Convert-ThemeColor $Theme.colors.border "#696969"), 1)
     try {
         Draw-RoundRect -Graphics $Graphics -Brush $brush -Pen $pen -X $X -Y $Y -W $W -H $H -Radius 18
