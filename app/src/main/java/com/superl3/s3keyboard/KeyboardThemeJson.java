@@ -979,6 +979,9 @@ final class KeyboardThemeJson {
             JSONObject keyFaceGradient = new JSONObject();
             keyFaceGradient.put("enabled", safeEffects.keyFaceGradientEnabled);
             keyFaceGradient.put("strengthPercent", safeEffects.keyFaceGradientStrengthPercent);
+            keyFaceGradient.put("startColor", colorToString(safeEffects.keyFaceGradientStartColor));
+            keyFaceGradient.put("endColor", colorToString(safeEffects.keyFaceGradientEndColor));
+            keyFaceGradient.put("curve", safeEffects.keyFaceGradientCurve);
             object.put("keyFaceGradient", keyFaceGradient);
 
             JSONObject panelGradient = new JSONObject();
@@ -1039,6 +1042,28 @@ final class KeyboardThemeJson {
                 : keyFaceGradient.optInt(
                         "strengthPercent",
                         safeFallback.keyFaceGradientStrengthPercent);
+        int keyFaceGradientStartColor = keyFaceGradient == null
+                ? parseColor(
+                        object.optString("keyFaceGradientStartColor", ""),
+                        safeFallback.keyFaceGradientStartColor)
+                : parseColor(
+                        keyFaceGradient.optString("startColor", ""),
+                        safeFallback.keyFaceGradientStartColor);
+        int keyFaceGradientEndColor = keyFaceGradient == null
+                ? parseColor(
+                        object.optString("keyFaceGradientEndColor", ""),
+                        safeFallback.keyFaceGradientEndColor)
+                : parseColor(
+                        keyFaceGradient.optString("endColor", ""),
+                        safeFallback.keyFaceGradientEndColor);
+        String keyFaceGradientCurve = KeyboardVisualEffects.normalizeKeyFaceGradientCurve(
+                keyFaceGradient == null
+                        ? object.optString(
+                                "keyFaceGradientCurve",
+                                safeFallback.keyFaceGradientCurve)
+                        : keyFaceGradient.optString(
+                                "curve",
+                                safeFallback.keyFaceGradientCurve));
         boolean panelGradientEnabled = panelGradient == null
                 ? object.optBoolean("panelGradientEnabled", safeFallback.panelGradientEnabled)
                 : panelGradient.optBoolean("enabled", safeFallback.panelGradientEnabled);
@@ -1064,6 +1089,9 @@ final class KeyboardThemeJson {
                 !"rounded".equals(previewStyle),
                 keyFaceGradientEnabled,
                 keyFaceGradientStrength,
+                keyFaceGradientStartColor,
+                keyFaceGradientEndColor,
+                keyFaceGradientCurve,
                 panelGradientEnabled,
                 panelGradientStartColor,
                 panelGradientEndColor);

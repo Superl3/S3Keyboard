@@ -34,17 +34,54 @@ final class KeyboardLayoutFactory {
     }
 
     static List<KeyboardRow> build(KeyboardSettings settings) {
+        return build(settings, KeyboardSurface.NORMAL);
+    }
+
+    static List<KeyboardRow> build(KeyboardSettings settings, KeyboardSurface surface) {
+        KeyboardSurface effectiveSurface = effectiveSurface(settings, surface);
         List<KeyboardRow> rows = new ArrayList<>();
-        if (settings.showNumberRow) {
-            rows.add(numberRow(settings));
-        }
-        if (settings.keyboardMode == KeyboardMode.ENGLISH) {
-            rows.addAll(englishRows(settings.remoteModeEnabled));
+        if (replacesMainRows(effectiveSurface)) {
+            rows.addAll(surfaceRows(effectiveSurface));
         } else {
-            rows.addAll(hangulRows(settings.hangulSpecialColumnPercent));
+            if (settings.showNumberRow) {
+                rows.add(numberRow(settings));
+            }
+            if (settings.keyboardMode == KeyboardMode.ENGLISH) {
+                rows.addAll(englishRows(settings.remoteModeEnabled));
+            } else {
+                rows.addAll(hangulRows(settings.hangulSpecialColumnPercent));
+            }
         }
         rows.add(bottomRow(settings));
         return rows;
+    }
+
+    private static KeyboardSurface effectiveSurface(KeyboardSettings settings, KeyboardSurface surface) {
+        if (settings.remoteModeEnabled) {
+            return KeyboardSurface.NORMAL;
+        }
+        return surface == null ? KeyboardSurface.NORMAL : surface;
+    }
+
+    private static boolean replacesMainRows(KeyboardSurface surface) {
+        return surface == KeyboardSurface.NUMPAD
+                || surface == KeyboardSurface.PHONEPAD
+                || surface == KeyboardSurface.DATEPAD
+                || surface == KeyboardSurface.PINPAD;
+    }
+
+    private static List<KeyboardRow> surfaceRows(KeyboardSurface surface) {
+        switch (surface) {
+            case PHONEPAD:
+                return phonepadRows();
+            case DATEPAD:
+                return datepadRows();
+            case PINPAD:
+                return pinpadRows();
+            case NUMPAD:
+            default:
+                return numpadRows();
+        }
     }
 
     private static KeyboardRow numberRow(KeyboardSettings settings) {
@@ -109,6 +146,62 @@ final class KeyboardLayoutFactory {
             default:
                 return null;
         }
+    }
+
+    private static List<KeyboardRow> numpadRows() {
+        return Arrays.asList(
+                surfaceRow(textKey("1"), textKey("2"), textKey("3"), deleteKey(4)),
+                surfaceRow(textKey("4"), textKey("5"), textKey("6"), textKey("-")),
+                surfaceRow(textKey("7"), textKey("8"), textKey("9"), textKey(".")),
+                surfaceRow(textKey("+"), textKey("0"), textKey("00"), textKey("/")));
+    }
+
+    private static List<KeyboardRow> phonepadRows() {
+        return Arrays.asList(
+                surfaceRow(textKey("1"), textKey("2"), textKey("3"), deleteKey(4)),
+                surfaceRow(textKey("4"), textKey("5"), textKey("6"), textKey("+")),
+                surfaceRow(textKey("7"), textKey("8"), textKey("9"), textKey("*")),
+                surfaceRow(textKey("-"), textKey("0"), textKey("#"), textKey(",")));
+    }
+
+    private static List<KeyboardRow> datepadRows() {
+        return Arrays.asList(
+                surfaceRow(textKey("1"), textKey("2"), textKey("3"), deleteKey(4)),
+                surfaceRow(textKey("4"), textKey("5"), textKey("6"), textKey("-")),
+                surfaceRow(textKey("7"), textKey("8"), textKey("9"), textKey("/")),
+                surfaceRow(textKey(":"), textKey("0"), textKey("."), textKey(",")));
+    }
+
+    private static List<KeyboardRow> pinpadRows() {
+        return Arrays.asList(
+                surfaceRow(12, textKey("1", 4), textKey("2", 4), textKey("3", 4)),
+                surfaceRow(12, textKey("4", 4), textKey("5", 4), textKey("6", 4)),
+                surfaceRow(12, textKey("7", 4), textKey("8", 4), textKey("9", 4)),
+                surfaceRow(12, deleteKey(4), textKey("0", 4), enterKey(4)));
+    }
+
+    private static KeyboardRow surfaceRow(GestureKey... keys) {
+        return surfaceRow(16, keys);
+    }
+
+    private static KeyboardRow surfaceRow(int baseUnits, GestureKey... keys) {
+        return new KeyboardRow(Arrays.asList(keys), baseUnits);
+    }
+
+    private static GestureKey textKey(String value) {
+        return textKey(value, 4);
+    }
+
+    private static GestureKey textKey(String value, int widthUnits) {
+        return new GestureKey(value, value, null, null, null, null, null, widthUnits);
+    }
+
+    private static GestureKey deleteKey(int widthUnits) {
+        return GestureKey.command("Del", KeyboardCommands.CMD_DELETE, null, widthUnits, KeyIcon.BACKSPACE);
+    }
+
+    private static GestureKey enterKey(int widthUnits) {
+        return GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, null, widthUnits, KeyIcon.ENTER);
     }
 
     private static List<KeyboardRow> hangulRows(int specialColumnPercent) {
@@ -231,14 +324,14 @@ final class KeyboardLayoutFactory {
         List<GestureKey> rightHandOrder = Arrays.asList(
                 new GestureKey(
                         "옵션",
+                        KeyboardCommands.CMD_OPEN_OPTIONS,
                         KeyboardCommands.CMD_QUICK_SETTINGS,
                         KeyboardCommands.CMD_HAND_BALANCED,
-                        null,
                         KeyboardCommands.CMD_HAND_LEFT,
                         KeyboardCommands.CMD_HAND_RIGHT,
-                        KeyboardCommands.CMD_OPEN_OPTIONS,
+                        KeyboardCommands.CMD_QUICK_SETTINGS,
                         3,
-                        KeyIcon.OPTIONS),
+                        KeyIcon.SETTINGS),
                 new GestureKey(
                         "예약어",
                         KeyboardCommands.CMD_RESERVED_PHRASES,
@@ -321,14 +414,14 @@ final class KeyboardLayoutFactory {
                         KeyIcon.LANGUAGE),
                 new GestureKey(
                         "옵션",
+                        KeyboardCommands.CMD_OPEN_OPTIONS,
                         KeyboardCommands.CMD_QUICK_SETTINGS,
                         null,
                         null,
                         null,
-                        null,
-                        KeyboardCommands.CMD_OPEN_OPTIONS,
+                        KeyboardCommands.CMD_QUICK_SETTINGS,
                         2,
-                        KeyIcon.OPTIONS),
+                        KeyIcon.SETTINGS),
                 new GestureKey(
                         settings.enterKeyLabel,
                         KeyboardCommands.CMD_ENTER,
@@ -347,7 +440,7 @@ final class KeyboardLayoutFactory {
         return new GestureKey(
                 "스페이스",
                 KeyboardCommands.CMD_SPACE,
-                KeyboardCommands.CMD_NOOP,
+                ".com",
                 null,
                 KeyboardCommands.CMD_MOVE_LEFT,
                 KeyboardCommands.CMD_MOVE_RIGHT,
@@ -357,19 +450,16 @@ final class KeyboardLayoutFactory {
     }
 
     private static GestureKey languageKey(KeyboardSettings settings) {
-        if (settings.keyboardMode == KeyboardMode.ENGLISH) {
-            return new GestureKey(
-                    "한/영",
-                    KeyboardCommands.CMD_TOGGLE_LANGUAGE,
-                    KeyboardCommands.CMD_NOOP,
-                    KeyboardCommands.CMD_NOOP,
-                    ",",
-                    ",",
-                    ".",
-                    2,
-                    KeyIcon.LANGUAGE);
-        }
-        return GestureKey.command("한/영", KeyboardCommands.CMD_TOGGLE_LANGUAGE, 2);
+        return new GestureKey(
+                "한/영",
+                KeyboardCommands.CMD_TOGGLE_LANGUAGE,
+                KeyboardCommands.CMD_NOOP,
+                KeyboardCommands.CMD_NOOP,
+                ",",
+                ".",
+                null,
+                2,
+                KeyIcon.LANGUAGE);
     }
 
     private static GestureKey mainKey(

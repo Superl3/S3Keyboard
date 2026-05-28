@@ -16,7 +16,7 @@ final class ThemePreviewSettings {
             KeyboardSettings baseSettings,
             KeyboardMode mode,
             AccentPlacementPolicy accentPlacementPolicy) {
-        KeyboardSettings preview = option.applyTo(baseSettings)
+        KeyboardSettings preview = applyPreviewAppearance(option, baseSettings)
                 .withKeyboardMode(mode)
                 .withHintVisibility(false, false, false)
                 .withHangulNumberRow(false)
@@ -26,5 +26,11 @@ final class ThemePreviewSettings {
                 : accentPlacementPolicy;
         boolean themeLocksAccentPlacement = option != null && option.locksUserAccentPlacement();
         return policy.themeDefault || themeLocksAccentPlacement ? preview : policy.applyTo(preview);
+    }
+
+    private static KeyboardSettings applyPreviewAppearance(ThemeOption option, KeyboardSettings settings) {
+        KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings appearance = option == null ? null : option.appearanceSettings();
+        return appearance == null ? base : base.withFullAppearanceFrom(appearance);
     }
 }

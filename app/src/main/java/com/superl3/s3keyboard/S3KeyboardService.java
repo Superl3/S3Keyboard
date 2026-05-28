@@ -17,15 +17,18 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public final class S3KeyboardService extends InputMethodService
         implements HangulKeyboardView.OnKeyGestureListener, HangulKeyboardView.OnPreviewOverlayListener {
@@ -128,7 +131,9 @@ public final class S3KeyboardService extends InputMethodService
         toolbarLayout.addView(clipboardBtn);
 
         inputView = new HangulKeyboardView(this);
+        inputView.setKeyboardSurface(editorPolicy.surface);
         inputView.setSettings(settings);
+        inputView.setRedactTypingEventText(!editorPolicy.allowTextConveniences);
         updateShiftStateView();
         inputView.setOnKeyGestureListener(this);
         inputView.setOnPreviewOverlayListener(this);
@@ -270,8 +275,8 @@ public final class S3KeyboardService extends InputMethodService
         super.onStartInputView(info, restarting);
         loadSettingsForEditor(info);
         if (inputView != null) {
-            inputView.setSettings(settings);
-            updateShiftStateView();
+            inputView.setRedactTypingEventText(!editorPolicy.allowTextConveniences);
+            applyCurrentSettingsToInputView();
         }
         if (floatingModeController != null) {
             updateToolbarVisibility();
@@ -291,6 +296,10 @@ public final class S3KeyboardService extends InputMethodService
         englishShiftState.reset();
         pendingRemoteMetaState = 0;
         lockedRemoteMetaState = 0;
+        if (inputView != null) {
+            inputView.setRedactTypingEventText(!editorPolicy.allowTextConveniences);
+            applyCurrentSettingsToInputView();
+        }
         updateShiftStateView();
     }
 
@@ -720,18 +729,16 @@ public final class S3KeyboardService extends InputMethodService
         commitCurrent(inputConnection);
         doubleSpacePeriodState.reset();
         englishShiftState.reset();
-        boolean lockedToEnglish = editorPolicy.locksLanguageToggle();
-        KeyboardMode nextMode = lockedToEnglish ? KeyboardMode.ENGLISH : settings.keyboardMode.next();
+        if (editorPolicy.locksLanguageToggle()) {
+            updateShiftStateView();
+            return;
+        }
+        KeyboardMode nextMode = settings.keyboardMode.next();
         settings = settings.withKeyboardMode(nextMode)
                 .withEnterKeyLabel(enterAction.label)
                 .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
-        if (!lockedToEnglish) {
-            KeyboardPreferences.saveKeyboardMode(this, nextMode);
-        }
-        if (inputView != null) {
-            inputView.setSettings(settings);
-            updateShiftStateView();
-        }
+        KeyboardPreferences.saveKeyboardMode(this, nextMode);
+        applyCurrentSettingsToInputView();
     }
 
     private void handleShiftOnce() {
@@ -1035,10 +1042,7 @@ public final class S3KeyboardService extends InputMethodService
                 .withEnterKeyLabel(enterAction.label)
                 .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
         KeyboardPreferences.saveHandednessPreset(this, settings);
-        if (inputView != null) {
-            inputView.setSettings(settings);
-            updateShiftStateView();
-        }
+        applyCurrentSettingsToInputView();
     }
 
     private void openInputSettings() {
@@ -1084,12 +1088,7 @@ public final class S3KeyboardService extends InputMethodService
         handRow.addView(handednessButton("양손", HandednessMode.BALANCED), weightedQuickParams(0, 4));
         handRow.addView(handednessButton("오른쪽", HandednessMode.RIGHT), weightedQuickParams(0, 0));
         panel.addView(handRow, topWrap(6));
-        panel.addView(quickButton("테마 선택", false, v -> {
-            dismissQuickSettings();
-            Intent intent = new Intent(this, ThemeSelectorActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-        }), topWrap(6));
+        addQuickThemeSpinner(panel);
         panel.addView(quickButton("클립보드 테마 불러오기", false, v -> importThemeFromClipboard()), topWrap(6));
 
         panel.addView(quickButton("OK", false, v -> dismissQuickSettings()), topWrap(8));
@@ -1102,6 +1101,78 @@ public final class S3KeyboardService extends InputMethodService
         quickSettingsPopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         quickSettingsPopup.setClippingEnabled(false);
         quickSettingsPopup.showAtLocation(inputRoot, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, dp(12));
+    }
+
+    private void addQuickThemeSpinner(LinearLayout panel) {
+        ThemeOption[] options = ThemeOption.buildOptions(
+                UserThemeStore.load(this),
+                ExternalThemeStore.load(this),
+                false);
+        if (options.length == 0) {
+            return;
+        }
+
+        SettingsUiPalette ui = SettingsUiPalette.from(this);
+        TextView label = new TextView(this);
+        label.setText("Theme");
+        label.setTextColor(ui.textSecondary);
+        label.setTextSize(13);
+        panel.addView(label, topWrap(10));
+
+        Spinner spinner = new Spinner(this);
+        spinner.setAdapter(new SettingsArrayAdapter<>(this, options));
+        spinner.setMinimumHeight(dp(44));
+        spinner.setPadding(dp(8), 0, dp(8), 0);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(ui.controlFill);
+        background.setCornerRadius(dp(8));
+        background.setStroke(Math.max(1, dp(1)), ui.border);
+        spinner.setBackground(background);
+        int selectedIndex = ThemeOption.indexOfStableId(
+                options,
+                KeyboardPreferences.loadSelectedThemeId(this));
+        spinner.setSelection(selectedIndex, false);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            private boolean initialized;
+
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!initialized) {
+                    initialized = true;
+                    return;
+                }
+                if (position >= 0 && position < options.length) {
+                    applyQuickTheme(options[position]);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        panel.addView(spinner, topWrap(4));
+    }
+
+    private void applyQuickTheme(ThemeOption option) {
+        if (option == null || option.stableId().isEmpty()) {
+            return;
+        }
+        try {
+            KeyboardSettings storedSettings = KeyboardPreferences.load(this);
+            KeyboardSettings savedSettings = option.applyTo(storedSettings);
+            KeyboardPreferences.saveSelectedThemeId(this, option.stableId());
+            savedSettings = KeyboardPreferences.applyAccentPlacementPolicy(this, savedSettings);
+            KeyboardPreferences.saveSettings(this, savedSettings);
+            settings = savedSettings
+                    .withKeyboardMode(settings.keyboardMode)
+                    .withEnterKeyLabel(enterAction.label)
+                    .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
+            applyCurrentSettingsToInputView();
+            Toast.makeText(this, option.label, Toast.LENGTH_SHORT).show();
+            dismissQuickSettings();
+        } catch (IllegalArgumentException exception) {
+            Toast.makeText(this, "테마를 적용할 수 없습니다", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void addRemoteTestControls(LinearLayout panel) {
@@ -1221,6 +1292,9 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private String numberRowToggleLabel() {
+        if (editorPolicy.replacesMainRows()) {
+            return "Field layout: " + editorPolicy.surface.name().toLowerCase(Locale.ROOT);
+        }
         String layout = settings.keyboardMode == KeyboardMode.ENGLISH ? "쿼티" : "딩굴";
         return layout + " number row: " + (activeNumberRowVisible() ? "on" : "off");
     }
@@ -1246,6 +1320,11 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void toggleActiveNumberRow() {
+        if (editorPolicy.replacesMainRows()) {
+            Toast.makeText(this, numberRowToggleLabel(), Toast.LENGTH_SHORT).show();
+            dismissQuickSettings();
+            return;
+        }
         if (settings.remoteModeEnabled) {
             Toast.makeText(this, "Remote mode forces number row", Toast.LENGTH_SHORT).show();
             dismissQuickSettings();
@@ -1257,10 +1336,7 @@ public final class S3KeyboardService extends InputMethodService
                 .withEnterKeyLabel(enterAction.label)
                 .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
         KeyboardPreferences.saveSettings(this, settings);
-        if (inputView != null) {
-            inputView.setSettings(settings);
-            updateShiftStateView();
-        }
+        applyCurrentSettingsToInputView();
         Toast.makeText(this, numberRowToggleLabel(), Toast.LENGTH_SHORT).show();
         dismissQuickSettings();
     }
@@ -1302,6 +1378,7 @@ public final class S3KeyboardService extends InputMethodService
             toolbarLayout.setBackgroundColor(settings.keyboardBackgroundColor);
         }
         if (inputView != null) {
+            inputView.setKeyboardSurface(editorPolicy.surface);
             inputView.setSettings(settings);
             updateShiftStateView();
         }

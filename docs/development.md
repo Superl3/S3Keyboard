@@ -177,6 +177,11 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   make modifier keys visually distinctive once the theme JSON policy is stable.
   New packs must be added to Android runtime, `tools/theme-contract.mjs`,
   web builder preview, static preview, and focused tests together.
+- `DecorativeGlyphCatalog` owns built-in decorative glyph metrics and the
+  normalized `hihihi` path plus the semantic point glyph ids used by display
+  packs. Android, web preview, and static preview should mirror these values so
+  dot, two-dot, four-dot space, point glyph, and script glyph sizing does not
+  drift by renderer.
 - `metropolis-graph` is a modifier glyph pack, not a preview line pattern. It
   should render the same recognizable command icons as the normal modifier pack;
   colored Metropolis keycaps should use explicit text overrides for visible
@@ -184,6 +189,14 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 - `KeyDisplayOverridePackCatalog` owns built-in text/icon replacement packs. The
   simple text pack is separate from a theme and only replaces enter-like keys
   with the `hihihi` vector glyph; other command keys remain modifier icons.
+  Point packs such as `geo-points`, `soft-symbols`, `terminal-points`,
+  `punctuation-points`, and `full-decorative` should remain predefined semantic
+  mappings, with exact key overrides as the user-facing escape hatch. Keyboard
+  packs such as `keyboard-symbols` and `keyboard-navigation` should keep
+  Material Symbols-aligned glyph ids instead of hard-coding theme-specific
+  image assets. GMK-style packs should model the recurring kit vocabulary
+  (accent bars, novelty minis, macro marks, spacebar marks) rather than
+  exact product artwork.
 - `KeyboardThemeJson` accepts imported icon/display pack metadata. In v1,
   external packs select a built-in renderer through `extends` and can add
   `keyDisplayOverrides`; future path renderers can consume the preserved glyph

@@ -156,25 +156,26 @@ public final class KeyboardLayoutFactoryTest {
         GestureKey space = findKey(KeyboardLayoutFactory.build(KeyboardSettings.defaults()), "스페이스");
 
         assertEquals(KeyboardCommands.CMD_SPACE, space.valueFor(GestureAction.TAP));
+        assertEquals(".com", space.valueFor(GestureAction.UP));
         assertEquals(KeyboardCommands.CMD_MOVE_LEFT, space.valueFor(GestureAction.LEFT));
         assertEquals(KeyboardCommands.CMD_MOVE_RIGHT, space.valueFor(GestureAction.RIGHT));
     }
 
     @Test
-    public void englishBottomLanguageOffersPunctuationAndSpaceHidesUrlGesture() {
+    public void languageKeyOffersCommaAndPeriodGestures() {
         KeyboardSettings settings = KeyboardSettings.defaults().withKeyboardMode(KeyboardMode.ENGLISH);
         List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
         GestureKey space = findKey(rows, "스페이스");
         GestureKey language = findKey(rows, "한/영");
 
-        assertEquals(KeyboardCommands.CMD_NOOP, space.valueFor(GestureAction.UP));
+        assertEquals(".com", space.valueFor(GestureAction.UP));
         assertEquals(KeyboardCommands.CMD_MOVE_LEFT, space.valueFor(GestureAction.LEFT));
         assertEquals(KeyboardCommands.CMD_MOVE_RIGHT, space.valueFor(GestureAction.RIGHT));
         assertEquals(KeyboardCommands.CMD_TOGGLE_LANGUAGE, language.valueFor(GestureAction.TAP));
         assertEquals(KeyboardCommands.CMD_NOOP, language.valueFor(GestureAction.UP));
         assertEquals(",", language.valueFor(GestureAction.LEFT));
-        assertEquals(",", language.valueFor(GestureAction.RIGHT));
-        assertEquals(".", language.valueFor(GestureAction.LONG_PRESS));
+        assertEquals(".", language.valueFor(GestureAction.RIGHT));
+        assertNull(language.valueFor(GestureAction.LONG_PRESS));
     }
 
     @Test
@@ -201,6 +202,51 @@ public final class KeyboardLayoutFactoryTest {
                         + KeyboardSettings.NUMBER_ROW_HEIGHT_DP
                         + KeyboardSettings.DEFAULT_NUMBER_ROW_BOTTOM_GAP_DP,
                 withNumberRow.measuredHeightDp());
+    }
+
+    @Test
+    public void numpadSurfaceReplacesMainRowsEvenWhenNumberRowIsEnabled() {
+        KeyboardSettings settings = KeyboardSettings.defaults().withNumberRow(true);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings, KeyboardSurface.NUMPAD);
+
+        assertEquals(5, rows.size());
+        assertEquals("1,2,3,Del", labels(rows.get(0)));
+        assertEquals("4,5,6,-", labels(rows.get(1)));
+        assertEquals("7,8,9,.", labels(rows.get(2)));
+        assertEquals("+,0,00,/", labels(rows.get(3)));
+        assertEquals(KeyboardCommands.CMD_DELETE, findKey(rows, "Del").valueFor(GestureAction.TAP));
+    }
+
+    @Test
+    public void fieldSpecificSurfacesUsePhoneDateAndPinSymbols() {
+        List<KeyboardRow> phone = KeyboardLayoutFactory.build(
+                KeyboardSettings.defaults(),
+                KeyboardSurface.PHONEPAD);
+        List<KeyboardRow> date = KeyboardLayoutFactory.build(
+                KeyboardSettings.defaults(),
+                KeyboardSurface.DATEPAD);
+        List<KeyboardRow> pin = KeyboardLayoutFactory.build(
+                KeyboardSettings.defaults(),
+                KeyboardSurface.PINPAD);
+
+        assertEquals("+", phone.get(1).keys.get(3).tap);
+        assertEquals("*", phone.get(2).keys.get(3).tap);
+        assertEquals("#", phone.get(3).keys.get(2).tap);
+        assertEquals("-", date.get(1).keys.get(3).tap);
+        assertEquals("/", date.get(2).keys.get(3).tap);
+        assertEquals(":", date.get(3).keys.get(0).tap);
+        assertEquals("Enter", pin.get(3).keys.get(2).label);
+        assertEquals(KeyboardCommands.CMD_ENTER, pin.get(3).keys.get(2).tap);
+    }
+
+    @Test
+    public void remoteModeIgnoresFieldSurfaceLayouts() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings, KeyboardSurface.NUMPAD);
+
+        assertEquals(10, rows.get(0).keys.size());
+        assertEquals(KeyboardCommands.CMD_REMOTE_F1, rows.get(0).keys.get(0).downSlide);
     }
 
     @Test
@@ -365,11 +411,12 @@ public final class KeyboardLayoutFactoryTest {
     public void optionsKeySlidesSwitchHandednessModes() {
         GestureKey options = findKey(KeyboardLayoutFactory.build(KeyboardSettings.defaults()), "옵션");
 
-        assertEquals(KeyboardCommands.CMD_QUICK_SETTINGS, options.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_OPEN_OPTIONS, options.valueFor(GestureAction.TAP));
         assertEquals(KeyboardCommands.CMD_HAND_LEFT, options.valueFor(GestureAction.LEFT));
         assertEquals(KeyboardCommands.CMD_HAND_RIGHT, options.valueFor(GestureAction.RIGHT));
-        assertEquals(KeyboardCommands.CMD_HAND_BALANCED, options.valueFor(GestureAction.UP));
-        assertEquals(KeyboardCommands.CMD_OPEN_OPTIONS, options.valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_QUICK_SETTINGS, options.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_HAND_BALANCED, options.valueFor(GestureAction.DOWN));
+        assertEquals(KeyboardCommands.CMD_QUICK_SETTINGS, options.valueFor(GestureAction.LONG_PRESS));
     }
 
     @Test
@@ -412,8 +459,9 @@ public final class KeyboardLayoutFactoryTest {
         assertNull(space.valueFor(GestureAction.LONG_PRESS));
         assertEquals(KeyboardCommands.CMD_REMOTE_IME_TOGGLE, language.valueFor(GestureAction.TAP));
         assertEquals(KeyboardCommands.CMD_TOGGLE_LANGUAGE, language.valueFor(GestureAction.LONG_PRESS));
-        assertEquals(KeyboardCommands.CMD_QUICK_SETTINGS, menu.valueFor(GestureAction.TAP));
-        assertEquals(KeyboardCommands.CMD_OPEN_OPTIONS, menu.valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyboardCommands.CMD_OPEN_OPTIONS, menu.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_QUICK_SETTINGS, menu.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_QUICK_SETTINGS, menu.valueFor(GestureAction.LONG_PRESS));
         assertEquals(KeyboardCommands.CMD_ENTER, enter.valueFor(GestureAction.TAP));
         assertEquals(KeyboardCommands.CMD_REMOTE_CTRL_ENTER, enter.valueFor(GestureAction.LONG_PRESS));
     }

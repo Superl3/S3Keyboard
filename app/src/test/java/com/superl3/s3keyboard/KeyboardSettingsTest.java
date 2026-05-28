@@ -23,6 +23,8 @@ public final class KeyboardSettingsTest {
         assertEquals(KeyboardSettings.DEFAULT_KEY_BORDER_WIDTH_DP, settings.keyBorderWidthDp);
         assertEquals(KeyboardSettings.DEFAULT_KEY_ROUNDNESS_DP, settings.keyRoundnessDp);
         assertEquals(KeyboardSettings.DEFAULT_KEY_GAP_DP, settings.keyGapDp);
+        assertEquals(KeyboardSettings.DEFAULT_KEY_GAP_DP, settings.hangulKeyGapDp);
+        assertEquals(KeyboardSettings.DEFAULT_KEY_GAP_DP, settings.englishKeyGapDp);
         assertEquals(KeyboardSettings.DEFAULT_KEY_DEPTH_ENABLED, settings.keyDepthEnabled);
         assertEquals(KeyboardSettings.DEFAULT_KEY_DEPTH_DP, settings.keyDepthDp);
         assertEquals(KeyboardSettings.DEFAULT_CUSTOM_DEPTH_COLOR_ENABLED, settings.customDepthColorEnabled);
@@ -210,6 +212,29 @@ public final class KeyboardSettingsTest {
         assertEquals(0, tooSmall.keyGapDp);
         assertEquals(0, tooSmall.keyDepthDp);
         assertEquals(false, tooSmall.keyDepthEnabled);
+    }
+
+    @Test
+    public void keyGapsCanDifferByKeyboardMode() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withHangulKeyGap(9)
+                .withEnglishKeyGap(3);
+
+        assertEquals(9, settings.hangulKeyGapDp);
+        assertEquals(3, settings.englishKeyGapDp);
+        assertEquals(9, settings.keyGapDp);
+        assertEquals(3, settings.withKeyboardMode(KeyboardMode.ENGLISH).keyGapDp);
+
+        KeyboardSettings changedEnglish = settings
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withEnglishKeyGap(7)
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+
+        assertEquals(9, changedEnglish.hangulKeyGapDp);
+        assertEquals(7, changedEnglish.englishKeyGapDp);
+        assertEquals(9, changedEnglish.withKeyboardMode(KeyboardMode.HANGUL).keyGapDp);
+        assertEquals(4, changedEnglish.withKeyGap(4).hangulKeyGapDp);
+        assertEquals(4, changedEnglish.withKeyGap(4).englishKeyGapDp);
     }
 
     @Test

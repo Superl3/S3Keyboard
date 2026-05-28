@@ -172,7 +172,7 @@ public final class ThemeSelectorActivity extends Activity {
         card.addView(header, matchWrap());
 
         boolean englishPreview = previewMode == KeyboardMode.ENGLISH;
-        card.addView(previewKeyboard(englishPreview ? englishSettings : hangulSettings, index),
+        card.addView(previewKeyboard(englishPreview ? englishSettings : hangulSettings),
                 previewParams(englishPreview ? 88 : 108));
         return card;
     }
@@ -275,18 +275,13 @@ public final class ThemeSelectorActivity extends Activity {
         rebuildCards();
     }
 
-    private HangulKeyboardView previewKeyboard(KeyboardSettings previewSettings, int themeIndex) {
+    private HangulKeyboardView previewKeyboard(KeyboardSettings previewSettings) {
         HangulKeyboardView preview = new HangulKeyboardView(this);
         preview.setCompactPreviewRendering(true);
         preview.setSettings(previewSettings);
         preview.setClickable(true);
         preview.setFocusable(false);
-        preview.setOnTouchListener((v, event) -> {
-            if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
-                applyTheme(themeIndex);
-            }
-            return true;
-        });
+        preview.setOnTouchListener((v, event) -> true);
         preview.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         return preview;
     }

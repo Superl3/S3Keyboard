@@ -6,11 +6,12 @@ New Dingul Research is a clean-room research keyboard for closed beta testing.
 
 - Keystrokes, Hangul composing state, English shift state, and gesture decisions are processed locally.
 - The app does not request network permissions.
-- The app can store local typed key pattern events for input correction research. These events may include the raw typed key value, gesture action, and immediate-delete correction metadata.
+- The app can store local typed key pattern events and a local gesture-intent journal for input correction research. These events may include the raw typed key value, key code points, gesture action, touch geometry, shadow correction candidates, and delete/replacement correction metadata.
+- Password, number-like, URI, and email fields redact typed key values in the local gesture-intent journal.
 - Touch correction also stores aggregate local offset statistics when a typed key is immediately deleted.
 - Clipboard history can store recent clipboard text locally when the clipboard history setting is enabled.
 - The app does not transmit typed content, passwords, clipboard contents, contacts, account data, or identifiers.
-- Users can reset touch correction and the local typing pattern log from app settings. Clipboard history can be disabled and cleared from app settings.
+- Users can reset touch correction, the local typing pattern log, and the local gesture-intent journal from app settings. Clipboard history can be disabled and cleared from app settings.
 
 ## Data sharing
 
@@ -18,11 +19,11 @@ The app does not transmit app data to the developer, third parties, analytics se
 
 ## Retention and deletion
 
-Local keyboard settings, touch correction statistics, typing pattern logs, and optional clipboard history remain on the device until the user changes settings, resets correction, clears clipboard history, clears app storage, or uninstalls the app.
+Local keyboard settings, touch correction statistics, typing pattern logs, gesture-intent journal entries, and optional clipboard history remain on the device until the user changes settings, resets correction, clears clipboard history, clears app storage, or uninstalls the app.
 
 ## Closed beta disclosure text
 
-This keyboard processes input locally on your device. It has no network permission and does not send data off the device. For local input improvement, it may store recent typed key pattern events and immediate-delete correction statistics on the device; these can be reset from settings.
+This keyboard processes input locally on your device. It has no network permission and does not send data off the device. For local input improvement, it may store recent typed key pattern events, gesture-intent journal entries, and correction statistics on the device; these can be reset from settings.
 
 ## Release checklist
 

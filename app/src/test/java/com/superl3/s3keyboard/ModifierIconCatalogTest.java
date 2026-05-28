@@ -90,7 +90,161 @@ public final class ModifierIconCatalogTest {
                 KeyDisplayOverridePackCatalog.overridesForPack(
                         KeyDisplayOverridePackCatalog.PACK_GIT_COMMANDS)
                         .get("shift")
+                .value);
+    }
+
+    @Test
+    public void pointDisplayPacksExposeSemanticGlyphs() {
+        assertEquals(
+                KeyDisplayOverridePackCatalog.PACK_GEO_POINTS,
+                KeyDisplayOverridePackCatalog.normalizePackId(
+                        KeyDisplayOverridePackCatalog.PACK_GEO_POINTS));
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_CHEVRON_UP,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GEO_POINTS)
+                        .get("shift")
                         .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_SPACE_DOTS,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_SOFT_SYMBOLS)
+                        .get("space")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_SLASH_DOT,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_PUNCTUATION_POINTS)
+                        .get("label:/")
+                        .value);
+        assertEquals(
+                ModifierIconCatalog.GLYPH_DOT,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_FULL_DECORATIVE)
+                        .get("alpha")
+                        .value);
+    }
+
+    @Test
+    public void keyboardDisplayPacksExposeKeyboardGlyphs() {
+        assertEquals(
+                KeyDisplayOverridePackCatalog.PACK_KEYBOARD_SYMBOLS,
+                KeyDisplayOverridePackCatalog.normalizePackId(
+                        KeyDisplayOverridePackCatalog.PACK_KEYBOARD_SYMBOLS));
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_KEYBOARD_RETURN,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_KEYBOARD_SYMBOLS)
+                        .get("enter")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_KEYBOARD_COMMAND,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_KEYBOARD_SYMBOLS)
+                        .get("settings")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_KEYBOARD_DOUBLE_LEFT,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_KEYBOARD_NAVIGATION)
+                        .get("options")
+                        .value);
+    }
+
+    @Test
+    public void gmkStyleDisplayPacksExposeGenericNoveltyGlyphs() {
+        assertEquals(
+                KeyDisplayOverridePackCatalog.PACK_GMK_STYLE_POINTS,
+                KeyDisplayOverridePackCatalog.normalizePackId(
+                        KeyDisplayOverridePackCatalog.PACK_GMK_STYLE_POINTS));
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_GMK_SPACE_DASH,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GMK_STYLE_POINTS)
+                        .get("space")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_GMK_FLOWER,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GMK_STYLE_NOVELTIES)
+                        .get("options")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_GMK_PIXEL_STEPS,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GMK_STYLE_MACROS)
+                        .get("reserved")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_GMK_CONSTELLATION,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GMK_STYLE_CELESTIAL)
+                        .get("shift")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_GMK_FLOWER_ALT,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GMK_STYLE_NATURE)
+                        .get("enter")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_GMK_SPLIT_BAR,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_GMK_STYLE_SPACEBARS)
+                        .get("space")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_FONT_RETURN_ARROW,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_FONT_SYMBOLS)
+                        .get("enter")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_IMG_ARC_GATE,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_IMAGE_MASK_MARKS)
+                        .get("enter")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_IMG_ARC_GATE,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_TALL_MOD_GLYPHS)
+                        .get("enter")
+                        .value);
+        assertEquals(
+                DecorativeGlyphCatalog.GLYPH_FONT_RETURN_ARROW,
+                KeyDisplayOverridePackCatalog.overridesForPack(
+                        KeyDisplayOverridePackCatalog.PACK_MIXED_SOURCE_NOVELTIES)
+                        .get("enter")
+                        .value);
+    }
+
+    @Test
+    public void importedSourcePacksKeepStrongModifiersSemantic() {
+        assertStrongModifierGlyphs(
+                KeyDisplayOverridePackCatalog.PACK_FONT_SYMBOLS,
+                DecorativeGlyphCatalog.GLYPH_FONT_RETURN_ARROW,
+                DecorativeGlyphCatalog.GLYPH_FONT_DELETE_LEFT,
+                DecorativeGlyphCatalog.GLYPH_FONT_SHIFT_ARROW,
+                DecorativeGlyphCatalog.GLYPH_FONT_KEYBOARD);
+        assertStrongModifierGlyphs(
+                KeyDisplayOverridePackCatalog.PACK_IMAGE_MASK_MARKS,
+                DecorativeGlyphCatalog.GLYPH_IMG_ARC_GATE,
+                DecorativeGlyphCatalog.GLYPH_IMG_SIDE_NOTCH,
+                DecorativeGlyphCatalog.GLYPH_IMG_FLAG_TAB,
+                DecorativeGlyphCatalog.GLYPH_IMG_HORIZON_BARS);
+        assertStrongModifierGlyphs(
+                KeyDisplayOverridePackCatalog.PACK_TALL_MOD_GLYPHS,
+                DecorativeGlyphCatalog.GLYPH_IMG_ARC_GATE,
+                DecorativeGlyphCatalog.GLYPH_IMG_TALL_BRACKET,
+                DecorativeGlyphCatalog.GLYPH_IMG_VERTICAL_RIBBON,
+                DecorativeGlyphCatalog.GLYPH_IMG_HORIZON_BARS);
+        assertStrongModifierGlyphs(
+                KeyDisplayOverridePackCatalog.PACK_MIXED_SOURCE_NOVELTIES,
+                DecorativeGlyphCatalog.GLYPH_FONT_RETURN_ARROW,
+                DecorativeGlyphCatalog.GLYPH_FONT_DELETE_LEFT,
+                DecorativeGlyphCatalog.GLYPH_FONT_SHIFT_ARROW,
+                DecorativeGlyphCatalog.GLYPH_IMG_HORIZON_BARS);
     }
 
     @Test
@@ -119,5 +273,25 @@ public final class ModifierIconCatalogTest {
         assertNotEquals(
                 ModifierIconCatalog.metropolisColorFor(KeyIcon.SHIFT),
                 ModifierIconCatalog.metropolisColorFor(KeyIcon.BACKSPACE));
+    }
+
+    private static void assertStrongModifierGlyphs(
+            String packId,
+            String enter,
+            String backspace,
+            String shift,
+            String space) {
+        assertEquals(
+                enter,
+                KeyDisplayOverridePackCatalog.overridesForPack(packId).get("enter").value);
+        assertEquals(
+                backspace,
+                KeyDisplayOverridePackCatalog.overridesForPack(packId).get("backspace").value);
+        assertEquals(
+                shift,
+                KeyDisplayOverridePackCatalog.overridesForPack(packId).get("shift").value);
+        assertEquals(
+                space,
+                KeyDisplayOverridePackCatalog.overridesForPack(packId).get("space").value);
     }
 }

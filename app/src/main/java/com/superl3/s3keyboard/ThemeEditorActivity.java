@@ -28,6 +28,7 @@ import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public final class ThemeEditorActivity extends Activity {
     private static final int MODE_HANGUL_ID = 101;
@@ -46,6 +47,9 @@ public final class ThemeEditorActivity extends Activity {
     private Spinner accentKeyColorSpinner;
     private Spinner keyPressedColorSpinner;
     private Spinner keyboardBackgroundColorSpinner;
+    private Spinner keyFaceGradientStartColorSpinner;
+    private Spinner keyFaceGradientEndColorSpinner;
+    private Spinner keyFaceGradientCurveSpinner;
     private Spinner panelGradientStartColorSpinner;
     private Spinner panelGradientEndColorSpinner;
     private Spinner accentColorSpinner;
@@ -90,6 +94,8 @@ public final class ThemeEditorActivity extends Activity {
     private View accentKeyColorSwatch;
     private View keyPressedColorSwatch;
     private View keyboardBackgroundColorSwatch;
+    private View keyFaceGradientStartColorSwatch;
+    private View keyFaceGradientEndColorSwatch;
     private View panelGradientStartColorSwatch;
     private View panelGradientEndColorSwatch;
     private View borderColorSwatch;
@@ -520,6 +526,42 @@ public final class ThemeEditorActivity extends Activity {
                                 progress))));
         root.addView(keyFaceGradientStrengthValue, matchWrapWithTop(8));
         root.addView(keyFaceGradientStrengthSeekBar, matchWrap());
+
+        ColorChangeListener keyFaceGradientStartListener = color -> updateSettings(settings.withVisualEffects(
+                settings.visualEffects.withKeyFaceGradient(
+                        true,
+                        settings.visualEffects.keyFaceGradientStrengthPercent,
+                        color,
+                        settings.visualEffects.keyFaceGradientEndColor,
+                        settings.visualEffects.keyFaceGradientCurve)));
+        keyFaceGradientStartColorSpinner = colorSpinner(keyFaceGradientStartListener);
+        keyFaceGradientStartColorSwatch = addColorControl(
+                root,
+                "Key face gradient highlight",
+                "Top blend color for the key face gradient.",
+                keyFaceGradientStartColorSpinner,
+                keyFaceGradientStartListener);
+        root.addView(keyFaceGradientStartColorSpinner, matchWrap());
+
+        ColorChangeListener keyFaceGradientEndListener = color -> updateSettings(settings.withVisualEffects(
+                settings.visualEffects.withKeyFaceGradient(
+                        true,
+                        settings.visualEffects.keyFaceGradientStrengthPercent,
+                        settings.visualEffects.keyFaceGradientStartColor,
+                        color,
+                        settings.visualEffects.keyFaceGradientCurve)));
+        keyFaceGradientEndColorSpinner = colorSpinner(keyFaceGradientEndListener);
+        keyFaceGradientEndColorSwatch = addColorControl(
+                root,
+                "Key face gradient shade",
+                "Bottom blend color for the key face gradient.",
+                keyFaceGradientEndColorSpinner,
+                keyFaceGradientEndListener);
+        root.addView(keyFaceGradientEndColorSpinner, matchWrap());
+
+        root.addView(label("Key face gradient curve"), matchWrapWithTop(8));
+        keyFaceGradientCurveSpinner = createKeyFaceGradientCurveSpinner();
+        root.addView(keyFaceGradientCurveSpinner, matchWrap());
     }
 
     private void addTypographyControls(LinearLayout root) {
@@ -606,6 +648,14 @@ public final class ThemeEditorActivity extends Activity {
         syncControls();
     }
 
+    private boolean shouldHandleSpinnerSelection(Spinner spinner) {
+        if (Boolean.FALSE.equals(spinner.getTag())) {
+            spinner.setTag(Boolean.TRUE);
+            return false;
+        }
+        return !syncing;
+    }
+
     private void syncControls() {
         if (preview == null) {
             return;
@@ -626,6 +676,9 @@ public final class ThemeEditorActivity extends Activity {
         setSelection(accentKeyColorSpinner, indexOfColor(settings.accentKeyColor));
         setSelection(keyPressedColorSpinner, indexOfColor(settings.keyPressedColor));
         setSelection(keyboardBackgroundColorSpinner, indexOfColor(settings.keyboardBackgroundColor));
+        setSelection(keyFaceGradientStartColorSpinner, indexOfColor(settings.visualEffects.keyFaceGradientStartColor));
+        setSelection(keyFaceGradientEndColorSpinner, indexOfColor(settings.visualEffects.keyFaceGradientEndColor));
+        setSelection(keyFaceGradientCurveSpinner, indexOfKeyFaceGradientCurve(settings.visualEffects.keyFaceGradientCurve));
         setSelection(panelGradientStartColorSpinner, indexOfColor(settings.visualEffects.panelGradientStartColor));
         setSelection(panelGradientEndColorSpinner, indexOfColor(settings.visualEffects.panelGradientEndColor));
         setSelection(accentColorSpinner, indexOfColor(settings.accentColor));
@@ -651,11 +704,22 @@ public final class ThemeEditorActivity extends Activity {
         setEnabled(
                 keyFaceGradientStrengthSeekBar,
                 settings.keyDepthEnabled && settings.visualEffects.keyFaceGradientEnabled);
+        setEnabled(
+                keyFaceGradientStartColorSpinner,
+                settings.keyDepthEnabled && settings.visualEffects.keyFaceGradientEnabled);
+        setEnabled(
+                keyFaceGradientEndColorSpinner,
+                settings.keyDepthEnabled && settings.visualEffects.keyFaceGradientEnabled);
+        setEnabled(
+                keyFaceGradientCurveSpinner,
+                settings.keyDepthEnabled && settings.visualEffects.keyFaceGradientEnabled);
         setSwatch(keyIdleColorSwatch, settings.keyIdleColor);
         setSwatch(functionKeyColorSwatch, settings.functionKeyColor);
         setSwatch(accentKeyColorSwatch, settings.accentKeyColor);
         setSwatch(keyPressedColorSwatch, settings.keyPressedColor);
         setSwatch(keyboardBackgroundColorSwatch, settings.keyboardBackgroundColor);
+        setSwatch(keyFaceGradientStartColorSwatch, settings.visualEffects.keyFaceGradientStartColor);
+        setSwatch(keyFaceGradientEndColorSwatch, settings.visualEffects.keyFaceGradientEndColor);
         setSwatch(panelGradientStartColorSwatch, settings.visualEffects.panelGradientStartColor);
         setSwatch(panelGradientEndColorSwatch, settings.visualEffects.panelGradientEndColor);
         setSwatch(borderColorSwatch, settings.borderColor);
@@ -1097,11 +1161,7 @@ public final class ThemeEditorActivity extends Activity {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (Boolean.FALSE.equals(spinner.getTag())) {
-                    spinner.setTag(Boolean.TRUE);
-                    return;
-                }
-                if (!syncing) {
+                if (shouldHandleSpinnerSelection(spinner)) {
                     listener.onColorChanged(ColorOption.EDITOR_OPTIONS[position].color);
                 }
             }
@@ -1115,6 +1175,7 @@ public final class ThemeEditorActivity extends Activity {
 
     private Spinner fontSpinner() {
         Spinner spinner = new Spinner(this);
+        spinner.setTag(Boolean.FALSE);
         ArrayAdapter<FontOption> adapter = new SettingsArrayAdapter<>(
                 this,
                 FontOption.EDITOR_OPTIONS);
@@ -1122,8 +1183,10 @@ public final class ThemeEditorActivity extends Activity {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!syncing) {
-                    updateSettings(settings.withFontFamily(FontOption.EDITOR_OPTIONS[position].value));
+                String fontFamily = FontOption.EDITOR_OPTIONS[position].value;
+                if (shouldHandleSpinnerSelection(spinner)
+                        && !Objects.equals(settings.fontFamily, fontFamily)) {
+                    updateSettings(settings.withFontFamily(fontFamily));
                 }
             }
 
@@ -1136,6 +1199,7 @@ public final class ThemeEditorActivity extends Activity {
 
     private Spinner modifierIconPackSpinner() {
         Spinner spinner = new Spinner(this);
+        spinner.setTag(Boolean.FALSE);
         String[] ids = ModifierIconCatalog.selectablePackIds(false);
         String[] labels = new String[ids.length];
         for (int i = 0; i < ids.length; i++) {
@@ -1146,8 +1210,10 @@ public final class ThemeEditorActivity extends Activity {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!syncing) {
-                    updateSettings(settings.withModifierIconThemePack(ids[position]));
+                String packId = ids[position];
+                if (shouldHandleSpinnerSelection(spinner)
+                        && !Objects.equals(settings.modifierIconThemePackId, packId)) {
+                    updateSettings(settings.withModifierIconThemePack(packId));
                 }
             }
 
@@ -1160,6 +1226,7 @@ public final class ThemeEditorActivity extends Activity {
 
     private Spinner keyDisplayPackSpinner() {
         Spinner spinner = new Spinner(this);
+        spinner.setTag(Boolean.FALSE);
         String[] ids = KeyDisplayOverridePackCatalog.selectablePackIds(false);
         String[] labels = new String[ids.length];
         for (int i = 0; i < ids.length; i++) {
@@ -1170,8 +1237,10 @@ public final class ThemeEditorActivity extends Activity {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!syncing) {
-                    updateSettings(settings.withKeyDisplayThemePack(ids[position]));
+                String packId = ids[position];
+                if (shouldHandleSpinnerSelection(spinner)
+                        && !Objects.equals(settings.keyDisplayThemePackId, packId)) {
+                    updateSettings(settings.withKeyDisplayThemePack(packId));
                 }
             }
 
@@ -1180,6 +1249,50 @@ public final class ThemeEditorActivity extends Activity {
             }
         });
         return spinner;
+    }
+
+    private Spinner createKeyFaceGradientCurveSpinner() {
+        Spinner spinner = new Spinner(this);
+        spinner.setTag(Boolean.FALSE);
+        String[] ids = keyFaceGradientCurveIds();
+        String[] labels = {
+                "Soft",
+                "Linear",
+                "Top glow",
+                "Bottom shade"
+        };
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(this, labels);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String curve = ids[position];
+                if (shouldHandleSpinnerSelection(spinner)
+                        && !Objects.equals(settings.visualEffects.keyFaceGradientCurve, curve)) {
+                    updateSettings(settings.withVisualEffects(
+                            settings.visualEffects.withKeyFaceGradient(
+                                    settings.visualEffects.keyFaceGradientEnabled,
+                                    settings.visualEffects.keyFaceGradientStrengthPercent,
+                                    settings.visualEffects.keyFaceGradientStartColor,
+                                    settings.visualEffects.keyFaceGradientEndColor,
+                                    curve)));
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        return spinner;
+    }
+
+    private String[] keyFaceGradientCurveIds() {
+        return new String[] {
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_SOFT,
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_LINEAR,
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_TOP_GLOW,
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE
+        };
     }
 
     private CheckBox checkBox(String label, BooleanChangeListener listener) {
@@ -1325,6 +1438,17 @@ public final class ThemeEditorActivity extends Activity {
     private int indexOfKeyDisplayPack(String packId) {
         String[] ids = KeyDisplayOverridePackCatalog.selectablePackIds(false);
         String normalized = KeyDisplayOverridePackCatalog.normalizePackId(packId);
+        for (int i = 0; i < ids.length; i++) {
+            if (ids[i].equals(normalized)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private int indexOfKeyFaceGradientCurve(String curve) {
+        String normalized = KeyboardVisualEffects.normalizeKeyFaceGradientCurve(curve);
+        String[] ids = keyFaceGradientCurveIds();
         for (int i = 0; i < ids.length; i++) {
             if (ids[i].equals(normalized)) {
                 return i;

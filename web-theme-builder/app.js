@@ -14,6 +14,153 @@ const accentPolicyReference = buildAccentPolicyReference();
 const perKeyOverrideReference = buildPerKeyOverrideReference();
 const presets = {};
 const themeIndex = Array.isArray(window.S3_THEME_INDEX) ? window.S3_THEME_INDEX : [];
+const decorativeGlyphCatalog = {
+  dotSizePx: 7,
+  twoDotWidthRatio: 2.75,
+  pointGlyphIds: new Set([
+    "ring",
+    "diamond",
+    "square",
+    "plus",
+    "cross",
+    "star",
+    "spark",
+    "chevron_up",
+    "chevron_left",
+    "chevron_right",
+    "slash_dot",
+    "orbit",
+    "gear_dot",
+    "bookmark_dot",
+    "space_dots",
+    "two_dots",
+    "grid_4",
+    "terminal",
+    "cursor",
+    "keyboard_return",
+    "keyboard_tab",
+    "keyboard_capslock",
+    "keyboard_command",
+    "keyboard_option",
+    "keyboard_control",
+    "keyboard_hide",
+    "keyboard_full",
+    "keyboard_keys",
+    "keyboard_language",
+    "keyboard_arrow_up",
+    "keyboard_arrow_down",
+    "keyboard_arrow_left",
+    "keyboard_arrow_right",
+    "keyboard_double_left",
+    "keyboard_double_right",
+    "keyboard_backspace",
+    "keyboard_space",
+    "gmk_accent_bar",
+    "gmk_accent_corner",
+    "gmk_accent_stripe",
+    "gmk_triple_dot",
+    "gmk_twin_ticks",
+    "gmk_space_dash",
+    "gmk_macro_stack",
+    "gmk_macro_brackets",
+    "gmk_target",
+    "gmk_pulse",
+    "gmk_wave",
+    "gmk_moon",
+    "gmk_sun",
+    "gmk_leaf",
+    "gmk_flower",
+    "gmk_mountain",
+    "gmk_droplet",
+    "gmk_orbit_star",
+    "gmk_diamond_cluster",
+    "gmk_pixel_steps",
+    "gmk_constellation",
+    "gmk_planet_ring",
+    "gmk_comet_tail",
+    "gmk_crescent_star",
+    "gmk_sparkle_pair",
+    "gmk_plus_cluster",
+    "gmk_dot_matrix",
+    "gmk_corner_dots",
+    "gmk_side_stripes",
+    "gmk_center_cross",
+    "gmk_arcade_diamond",
+    "gmk_iso_enter_mark",
+    "gmk_split_bar",
+    "gmk_long_bar_ticks",
+    "gmk_stepped_bar",
+    "gmk_rising_blocks",
+    "gmk_equalizer",
+    "gmk_wave_double",
+    "gmk_flower_alt",
+    "gmk_leaf_pair",
+    "gmk_sprout",
+    "gmk_petals",
+    "gmk_rain",
+    "gmk_snow",
+    "gmk_cloud",
+    "gmk_flame",
+    "gmk_bolt",
+    "gmk_crystal",
+    "gmk_compass",
+    "gmk_lab_flask",
+    "font_return_arrow",
+    "font_tab_arrow",
+    "font_back_tab",
+    "font_shift_arrow",
+    "font_delete_left",
+    "font_delete_right",
+    "font_command",
+    "font_option",
+    "font_control",
+    "font_escape",
+    "font_home",
+    "font_end",
+    "font_page_up",
+    "font_page_down",
+    "font_power",
+    "font_eject",
+    "font_play_pause",
+    "font_record",
+    "font_rewind",
+    "font_fast_forward",
+    "font_triangle_up",
+    "font_triangle_down",
+    "font_star_outline",
+    "font_star_solid",
+    "font_keyboard",
+    "img_tall_capsule",
+    "img_vertical_ribbon",
+    "img_split_pill",
+    "img_keyhole",
+    "img_badge_cut",
+    "img_side_notch",
+    "img_stacked_tiles",
+    "img_folded_corner",
+    "img_flag_tab",
+    "img_tall_bracket",
+    "img_horizon_bars",
+    "img_ladder",
+    "img_dual_posts",
+    "img_pin_drop",
+    "img_ticket",
+    "img_leaf_slab",
+    "img_blob_star",
+    "img_arc_gate",
+    "img_corner_frame",
+    "img_capsule_dots",
+    "img_wave_tile",
+    "img_diamond_stack",
+    "img_tall_orbit",
+    "img_punch_card",
+    "img_soft_cross"
+  ]),
+  hihihi: {
+    viewBox: "0 0 120 32",
+    path: "M8 22C10 10 17 10 17 22M8 16H18M25 12C30 9 33 11 31 16C29 21 24 20 26 14M41 22C43 10 50 10 50 22M41 16H51M58 12C63 9 66 11 64 16C62 21 57 20 59 14M75 22C77 10 84 10 84 22M75 16H85M92 12C97 9 100 11 98 16C96 21 91 20 93 14M109 12C114 9 117 11 115 16C113 21 108 20 110 14"
+  }
+};
 
 let state = createDefaultTheme();
 
@@ -28,6 +175,9 @@ const ids = {
   customDepth: document.getElementById("customDepth"),
   keyFaceGradientEnabled: document.getElementById("keyFaceGradientEnabled"),
   keyFaceGradientStrength: document.getElementById("keyFaceGradientStrengthPercent"),
+  keyFaceGradientStart: document.getElementById("keyFaceGradientStartColor"),
+  keyFaceGradientEnd: document.getElementById("keyFaceGradientEndColor"),
+  keyFaceGradientCurve: document.getElementById("keyFaceGradientCurve"),
   keyFaceGradientOut: document.getElementById("keyFaceGradientOut"),
   panelGradientEnabled: document.getElementById("panelGradientEnabled"),
   panelGradientStart: document.getElementById("panelGradientStartColor"),
@@ -149,7 +299,10 @@ function defaultVisualEffects() {
   return {
     keyFaceGradient: {
       enabled: true,
-      strengthPercent: 22
+      strengthPercent: 22,
+      startColor: "#FFFFFF",
+      endColor: "#000000",
+      curve: "soft"
     },
     panelGradient: {
       enabled: false,
@@ -227,7 +380,7 @@ function buildAccentPolicyReference() {
     },
     escPoint: {
       qwerty: "number row 1 when visible; otherwise q",
-      dingul: "number row 1 when visible; otherwise ㄱ"
+      dingul: "number row 1 when visible; otherwise visual dot"
     },
     perKey: {
       qwerty: "no group; use exact key overrides",
@@ -474,6 +627,23 @@ function bindStaticControls() {
     state.effects.keyFaceGradient.strengthPercent = Number(ids.keyFaceGradientStrength.value);
     update();
   });
+  ids.keyFaceGradientStart.addEventListener("input", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.keyFaceGradient.enabled = true;
+    state.effects.keyFaceGradient.startColor = ids.keyFaceGradientStart.value;
+    update();
+  });
+  ids.keyFaceGradientEnd.addEventListener("input", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.keyFaceGradient.enabled = true;
+    state.effects.keyFaceGradient.endColor = ids.keyFaceGradientEnd.value;
+    update();
+  });
+  ids.keyFaceGradientCurve.addEventListener("change", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.keyFaceGradient.curve = ids.keyFaceGradientCurve.value;
+    update();
+  });
   ids.panelGradientEnabled.addEventListener("change", () => {
     state.effects = normalizedVisualEffects(state.effects);
     state.effects.panelGradient.enabled = ids.panelGradientEnabled.checked;
@@ -559,6 +729,9 @@ function renderForm() {
   state.effects = normalizedVisualEffects(state.effects);
   ids.keyFaceGradientEnabled.checked = Boolean(state.effects.keyFaceGradient.enabled);
   ids.keyFaceGradientStrength.value = state.effects.keyFaceGradient.strengthPercent;
+  ids.keyFaceGradientStart.value = state.effects.keyFaceGradient.startColor;
+  ids.keyFaceGradientEnd.value = state.effects.keyFaceGradient.endColor;
+  ids.keyFaceGradientCurve.value = state.effects.keyFaceGradient.curve;
   ids.panelGradientEnabled.checked = Boolean(state.effects.panelGradient.enabled);
   ids.panelGradientStart.value = state.effects.panelGradient.startColor;
   ids.panelGradientEnd.value = state.effects.panelGradient.endColor;
@@ -696,14 +869,19 @@ function renderKeyboardPreview(container, theme, layout, rows) {
   container.style.fontFamily = fontCss(theme.typography.fontFamily);
   container.innerHTML = "";
 
-  rows.forEach(row => {
+  rows.forEach((row, rowIndex) => {
     const labels = row.labels || row;
+    const bottomRow = rowIndex === rows.length - 1;
+    const spaceIndex = labels.findIndex(label => label === "Space");
     const rowEl = document.createElement("div");
       rowEl.className = "key-row";
       rowEl.style.gridTemplateColumns = previewGridColumns(labels, row.columns);
-      rowEl.style.gap = `${theme.shape.keyGapDp}px`;
-      labels.forEach(label => {
-        rowEl.appendChild(renderPreviewKey(label, theme, layout));
+      rowEl.style.gap = bottomRow ? "0px" : `${theme.shape.keyGapDp}px`;
+      labels.forEach((label, index) => {
+        const bottomSpaceDirection = bottomRow && spaceIndex >= 0 && index !== spaceIndex
+          ? (index < spaceIndex ? 1 : -1)
+          : 0;
+        rowEl.appendChild(renderPreviewKey(label, theme, layout, bottomSpaceDirection));
       });
       container.appendChild(rowEl);
   });
@@ -716,7 +894,7 @@ function previewGridColumns(labels, columns) {
   return labels.map(label => label === "Space" ? "2.5fr" : "1fr").join(" ");
 }
 
-function renderPreviewKey(label, theme, layout) {
+function renderPreviewKey(label, theme, layout, bottomSpaceDirection = 0) {
   const key = document.createElement("div");
   const role = roleForPreview(label, layout, theme);
   const number = /^[0-9]$/.test(label);
@@ -736,6 +914,11 @@ function renderPreviewKey(label, theme, layout) {
   key.style.boxShadow = theme.shape.depthEnabled
     ? `inset 0 -${theme.shape.depthDp}px ${depthColorForPreview(theme, background)}`
     : "none";
+  if (bottomSpaceDirection < 0) {
+    key.style.marginLeft = `${theme.shape.keyGapDp}px`;
+  } else if (bottomSpaceDirection > 0) {
+    key.style.marginRight = `${theme.shape.keyGapDp}px`;
+  }
   key.style.color = textColor;
   key.style.fontSize = `${14 * theme.typography.primaryTextSizePercent / 100}px`;
   key.style.fontWeight = theme.typography.primaryTextBold ? "700" : "400";
@@ -746,13 +929,17 @@ function renderPreviewKey(label, theme, layout) {
       const twoDots = document.createElement("span");
       twoDots.className = "main-dot two-dot-legend";
       twoDots.style.color = textColor;
+      applyDotGlyphVars(twoDots);
       key.appendChild(twoDots);
     } else {
       const mainDot = document.createElement("span");
       mainDot.className = "main-dot";
       mainDot.style.background = textColor;
+      applyDotGlyphVars(mainDot);
       key.appendChild(mainDot);
     }
+  } else if (displayOverride?.type === "icon" && appendPointGlyph(key, displayOverride.value, textColor)) {
+    // rendered by helper
   } else if (displayOverride?.type === "text") {
     if (displayOverride.value === "hihihi" && isSimpleTextPack(theme.icons?.keyDisplayPackId)) {
       appendHihihiGlyph(key, textColor);
@@ -1263,11 +1450,16 @@ function keyFaceBackgroundForPreview(theme, background) {
       || !effects.keyFaceGradient.enabled || strength <= 0) {
     return bg;
   }
-  const [top, middle, bottom] = keyFaceGradientColors(bg, strength);
-  return `linear-gradient(180deg, ${top} 0%, ${middle} 42%, ${bottom} 100%)`;
+  const [top, middle, bottom] = keyFaceGradientColors(
+    bg,
+    strength,
+    effects.keyFaceGradient.startColor,
+    effects.keyFaceGradient.endColor);
+  const middleStop = keyFaceGradientMiddleStop(effects.keyFaceGradient.curve);
+  return `linear-gradient(180deg, ${top} 0%, ${middle} ${middleStop}%, ${bottom} 100%)`;
 }
 
-function keyFaceGradientColors(background, strengthPercent) {
+function keyFaceGradientColors(background, strengthPercent, startColor = "#FFFFFF", endColor = "#000000") {
   const bg = normalizeColor(background) || "#F8F8F8";
   const rgb = parseHexColor(bg);
   if (!rgb) {
@@ -1278,10 +1470,24 @@ function keyFaceGradientColors(background, strengthPercent) {
   const topAmount = (luminance < 42 ? 0.08 : 0.06) + 0.24 * strength;
   const bottomAmount = (luminance < 42 ? 0.04 : 0.05) + 0.18 * strength;
   return [
-    blendColors("#FFFFFF", bg, topAmount),
+    blendColors(normalizeColor(startColor) || "#FFFFFF", bg, topAmount),
     bg,
-    blendColors("#000000", bg, bottomAmount)
+    blendColors(normalizeColor(endColor) || "#000000", bg, bottomAmount)
   ];
+}
+
+function keyFaceGradientMiddleStop(curve) {
+  switch (curve) {
+    case "linear":
+      return 50;
+    case "top_glow":
+      return 30;
+    case "bottom_shade":
+      return 62;
+    case "soft":
+    default:
+      return 42;
+  }
 }
 
 function dimmedDepthColorForBackground(background) {
@@ -1304,6 +1510,20 @@ function normalizedVisualEffects(effects) {
     keyFaceGradient.strengthPercent
       ?? raw.keyFaceGradientStrengthPercent
       ?? defaultVisualEffects().keyFaceGradient.strengthPercent);
+  const keyFaceGradientStart = normalizeColor(
+    keyFaceGradient.startColor
+      ?? raw.keyFaceGradientStartColor
+      ?? defaultVisualEffects().keyFaceGradient.startColor)
+      || defaultVisualEffects().keyFaceGradient.startColor;
+  const keyFaceGradientEnd = normalizeColor(
+    keyFaceGradient.endColor
+      ?? raw.keyFaceGradientEndColor
+      ?? defaultVisualEffects().keyFaceGradient.endColor)
+      || defaultVisualEffects().keyFaceGradient.endColor;
+  const keyFaceGradientCurve = normalizeKeyFaceGradientCurve(
+    keyFaceGradient.curve
+      ?? raw.keyFaceGradientCurve
+      ?? defaultVisualEffects().keyFaceGradient.curve);
   const panelStart = normalizeColor(
     panelGradient.startColor
       ?? raw.panelGradientStartColor
@@ -1322,7 +1542,10 @@ function normalizedVisualEffects(effects) {
         ?? defaultVisualEffects().keyFaceGradient.enabled,
       strengthPercent: Math.max(0, Math.min(100, Number.isFinite(strength)
         ? Math.round(strength)
-        : defaultVisualEffects().keyFaceGradient.strengthPercent))
+        : defaultVisualEffects().keyFaceGradient.strengthPercent)),
+      startColor: keyFaceGradientStart,
+      endColor: keyFaceGradientEnd,
+      curve: keyFaceGradientCurve
     },
     panelGradient: {
       enabled: Boolean(panelGradient.enabled ?? raw.panelGradientEnabled ?? defaultVisualEffects().panelGradient.enabled),
@@ -1330,6 +1553,10 @@ function normalizedVisualEffects(effects) {
       endColor: panelEnd
     }
   };
+}
+
+function normalizeKeyFaceGradientCurve(curve) {
+  return ["linear", "soft", "top_glow", "bottom_shade"].includes(curve) ? curve : "soft";
 }
 
 function panelBackgroundForPreview(theme, effects) {
@@ -1505,6 +1732,7 @@ function displayOverrideFor(label, theme, layout = "qwerty") {
 }
 
 function keyDisplayPackOverrideFor(label, pack) {
+  const normalizedPack = normalizeKeyDisplayPackId(pack);
   if (isSimpleTextPack(pack)) {
     switch (label) {
       case ".":
@@ -1513,7 +1741,7 @@ function keyDisplayPackOverrideFor(label, pack) {
         return null;
     }
   }
-  if (isGitCommandPack(pack)) {
+  if (isGitCommandPack(normalizedPack)) {
     switch (label) {
       case "Enter":
         return { type: "text", value: "exec" };
@@ -1539,6 +1767,268 @@ function keyDisplayPackOverrideFor(label, pack) {
         return null;
     }
   }
+  const pointGlyph = pointDisplayPackGlyphFor(label, normalizedPack);
+  return pointGlyph ? { type: "icon", value: pointGlyph } : null;
+}
+
+function normalizeKeyDisplayPackId(pack) {
+  if (pack === "olivia-script-text") {
+    return "simple-text";
+  }
+  return pack || "none";
+}
+
+function pointDisplayPackGlyphFor(label, pack) {
+  const geo = {
+    Enter: "spark",
+    Bksp: "chevron_left",
+    Shift: "chevron_up",
+    Space: "space_dots",
+    Lang: "orbit",
+    Options: "grid_4",
+    Settings: "gear_dot",
+    Reserved: "bookmark_dot",
+    ".": "two_dots",
+    "/": "slash_dot",
+    "?": "ring"
+  };
+  const soft = {
+    Enter: "ring",
+    Bksp: "cross",
+    Shift: "plus",
+    Space: "space_dots",
+    Lang: "ring",
+    Options: "grid_4",
+    Settings: "square",
+    Reserved: "diamond",
+    ".": "two_dots",
+    "/": "slash_dot",
+    "?": "diamond"
+  };
+  const terminal = {
+    Enter: "terminal",
+    Bksp: "cross",
+    Shift: "chevron_up",
+    Space: "cursor",
+    Lang: "orbit",
+    Options: "terminal",
+    Settings: "grid_4",
+    Reserved: "square",
+    ".": "two_dots",
+    "/": "slash_dot",
+    "?": "cursor"
+  };
+  const punctuation = {
+    Enter: "spark",
+    Bksp: "chevron_left",
+    ".": "two_dots",
+    "/": "slash_dot",
+    "?": "ring"
+  };
+  const keyboardSymbols = {
+    Enter: "keyboard_return",
+    Bksp: "keyboard_backspace",
+    Shift: "keyboard_capslock",
+    Space: "keyboard_space",
+    Lang: "keyboard_language",
+    Options: "keyboard_option",
+    Settings: "keyboard_command",
+    Reserved: "keyboard_control",
+    ".": "two_dots",
+    "/": "slash_dot",
+    "?": "keyboard_keys"
+  };
+  const keyboardNavigation = {
+    Enter: "keyboard_return",
+    Bksp: "keyboard_arrow_left",
+    Shift: "keyboard_arrow_up",
+    Space: "keyboard_space",
+    Lang: "keyboard_language",
+    Options: "keyboard_double_left",
+    Settings: "keyboard_double_right",
+    Reserved: "keyboard_control",
+    ".": "keyboard_arrow_down",
+    "/": "keyboard_arrow_up",
+    "?": "keyboard_tab"
+  };
+  const gmkStylePoints = {
+    Enter: "gmk_accent_bar",
+    Bksp: "gmk_accent_corner",
+    Shift: "gmk_accent_stripe",
+    Space: "gmk_space_dash",
+    Lang: "gmk_orbit_star",
+    Options: "gmk_macro_stack",
+    Settings: "gmk_target",
+    Reserved: "gmk_diamond_cluster",
+    ".": "gmk_triple_dot",
+    "/": "gmk_twin_ticks",
+    "?": "gmk_target"
+  };
+  const gmkStyleNovelties = {
+    Enter: "gmk_sun",
+    Bksp: "gmk_moon",
+    Shift: "gmk_mountain",
+    Space: "gmk_space_dash",
+    Lang: "gmk_leaf",
+    Options: "gmk_flower",
+    Settings: "gmk_orbit_star",
+    Reserved: "gmk_droplet",
+    ".": "gmk_triple_dot",
+    "/": "gmk_wave",
+    "?": "gmk_flower"
+  };
+  const gmkStyleMacros = {
+    Enter: "gmk_macro_brackets",
+    Bksp: "gmk_pulse",
+    Shift: "gmk_macro_stack",
+    Space: "gmk_space_dash",
+    Lang: "gmk_orbit_star",
+    Options: "gmk_macro_stack",
+    Settings: "gmk_target",
+    Reserved: "gmk_pixel_steps",
+    ".": "gmk_triple_dot",
+    "/": "gmk_accent_stripe",
+    "?": "gmk_macro_brackets"
+  };
+  const gmkStyleCelestial = {
+    Enter: "gmk_planet_ring",
+    Bksp: "gmk_crescent_star",
+    Shift: "gmk_constellation",
+    Space: "gmk_space_dash",
+    Lang: "gmk_orbit_star",
+    Options: "gmk_sparkle_pair",
+    Settings: "gmk_compass",
+    Reserved: "gmk_snow",
+    ".": "gmk_triple_dot",
+    "/": "gmk_comet_tail",
+    "?": "gmk_planet_ring"
+  };
+  const gmkStyleNature = {
+    Enter: "gmk_flower_alt",
+    Bksp: "gmk_cloud",
+    Shift: "gmk_sprout",
+    Space: "gmk_wave_double",
+    Lang: "gmk_leaf",
+    Options: "gmk_petals",
+    Settings: "gmk_rain",
+    Reserved: "gmk_flame",
+    ".": "gmk_droplet",
+    "/": "gmk_wave_double",
+    "?": "gmk_sprout"
+  };
+  const gmkStyleSpacebars = {
+    Enter: "gmk_iso_enter_mark",
+    Bksp: "gmk_side_stripes",
+    Shift: "gmk_stepped_bar",
+    Space: "gmk_split_bar",
+    Lang: "gmk_corner_dots",
+    Options: "gmk_equalizer",
+    Settings: "gmk_rising_blocks",
+    Reserved: "gmk_arcade_diamond",
+    ".": "gmk_dot_matrix",
+    "/": "gmk_center_cross",
+    "?": "gmk_lab_flask"
+  };
+  const fontSymbols = {
+    Enter: "font_return_arrow",
+    Bksp: "font_delete_left",
+    Shift: "font_shift_arrow",
+    Space: "font_keyboard",
+    Lang: "font_command",
+    Options: "font_option",
+    Settings: "font_control",
+    Reserved: "font_escape",
+    ".": "font_star_outline",
+    "/": "font_triangle_up",
+    "?": "font_power"
+  };
+  const imageMasks = {
+    Enter: "img_arc_gate",
+    Bksp: "img_side_notch",
+    Shift: "img_flag_tab",
+    Space: "img_horizon_bars",
+    Lang: "img_tall_orbit",
+    Options: "img_punch_card",
+    Settings: "img_ladder",
+    Reserved: "img_ticket",
+    ".": "img_capsule_dots",
+    "/": "img_wave_tile",
+    "?": "img_blob_star"
+  };
+  const tallMods = {
+    Enter: "img_arc_gate",
+    Bksp: "img_tall_bracket",
+    Shift: "img_vertical_ribbon",
+    Space: "img_horizon_bars",
+    Lang: "img_dual_posts",
+    Options: "img_stacked_tiles",
+    Settings: "img_corner_frame",
+    Reserved: "img_tall_capsule",
+    ".": "img_diamond_stack",
+    "/": "img_soft_cross",
+    "?": "img_pin_drop"
+  };
+  const mixedSource = {
+    Enter: "font_return_arrow",
+    Bksp: "font_delete_left",
+    Shift: "font_shift_arrow",
+    Space: "img_horizon_bars",
+    Lang: "img_tall_orbit",
+    Options: "img_punch_card",
+    Settings: "font_home",
+    Reserved: "img_blob_star",
+    ".": "font_star_solid",
+    "/": "img_leaf_slab",
+    "?": "font_eject"
+  };
+  if (pack === "geo-points" || pack === "full-decorative") {
+    return geo[label] || (pack === "full-decorative" && isAlphaPreviewLabel(label) ? "dot" : null);
+  }
+  if (pack === "soft-symbols") {
+    return soft[label] || null;
+  }
+  if (pack === "terminal-points") {
+    return terminal[label] || null;
+  }
+  if (pack === "punctuation-points") {
+    return punctuation[label] || null;
+  }
+  if (pack === "keyboard-symbols") {
+    return keyboardSymbols[label] || null;
+  }
+  if (pack === "keyboard-navigation") {
+    return keyboardNavigation[label] || null;
+  }
+  if (pack === "gmk-style-points") {
+    return gmkStylePoints[label] || null;
+  }
+  if (pack === "gmk-style-novelties") {
+    return gmkStyleNovelties[label] || null;
+  }
+  if (pack === "gmk-style-macros") {
+    return gmkStyleMacros[label] || null;
+  }
+  if (pack === "gmk-style-celestial") {
+    return gmkStyleCelestial[label] || null;
+  }
+  if (pack === "gmk-style-nature") {
+    return gmkStyleNature[label] || null;
+  }
+  if (pack === "gmk-style-spacebars") {
+    return gmkStyleSpacebars[label] || null;
+  }
+  if (pack === "font-symbols") {
+    return fontSymbols[label] || null;
+  }
+  if (pack === "image-mask-marks") {
+    return imageMasks[label] || null;
+  }
+  if (pack === "tall-mod-glyphs") {
+    return tallMods[label] || null;
+  }
+  if (pack === "mixed-source-novelties") {
+    return mixedSource[label] || null;
+  }
   return null;
 }
 
@@ -1548,8 +2038,10 @@ function renderModifierPackGlyph(key, label, theme, layout = "qwerty") {
     const line = document.createElement("span");
     if (label === "Space") {
       line.className = "mod-pack-line five-dot-line";
+      applyDotGlyphVars(line);
     } else if (label === "Lang" || label === "Reserved") {
       line.className = "mod-pack-line single-dot-line";
+      applyDotGlyphVars(line);
     } else if (label === "Options" || label === "Settings" || label === "Enter") {
       line.className = "mod-pack-line dotted-line short-mod-line";
     } else {
@@ -1598,11 +2090,11 @@ function appendLineIcon(key, label, color) {
 function appendHihihiGlyph(key, color) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("class", "hihihi-glyph");
-  svg.setAttribute("viewBox", "0 0 120 32");
+  svg.setAttribute("viewBox", decorativeGlyphCatalog.hihihi.viewBox);
   svg.setAttribute("aria-hidden", "true");
   svg.style.color = color;
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", "M8 22C10 10 17 10 17 22M8 16H18M25 12C30 9 33 11 31 16C29 21 24 20 26 14M41 22C43 10 50 10 50 22M41 16H51M58 12C63 9 66 11 64 16C62 21 57 20 59 14M75 22C77 10 84 10 84 22M75 16H85M92 12C97 9 100 11 98 16C96 21 91 20 93 14M109 12C114 9 117 11 115 16C113 21 108 20 110 14");
+  path.setAttribute("d", decorativeGlyphCatalog.hihihi.path);
   path.setAttribute("fill", "none");
   path.setAttribute("stroke", "currentColor");
   path.setAttribute("stroke-width", "4");
@@ -1610,6 +2102,472 @@ function appendHihihiGlyph(key, color) {
   path.setAttribute("stroke-linejoin", "round");
   svg.appendChild(path);
   key.appendChild(svg);
+}
+
+function appendPointGlyph(key, glyphId, color) {
+  const shapes = pointGlyphSvgFor(glyphId);
+  if (!shapes) {
+    return false;
+  }
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "key-glyph point-glyph");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.style.color = color;
+  for (const shape of shapes) {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", shape.type);
+    for (const [name, value] of Object.entries(shape.attrs)) {
+      node.setAttribute(name, value);
+    }
+    if (shape.text) {
+      node.textContent = shape.text;
+    }
+    svg.appendChild(node);
+  }
+  key.appendChild(svg);
+  return true;
+}
+
+function pointGlyphSvgFor(glyphId) {
+  if (!decorativeGlyphCatalog.pointGlyphIds.has(glyphId)) {
+    return null;
+  }
+  const stroke = {
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": "2",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  };
+  const fill = { fill: "currentColor" };
+  const fontGlyphText = {
+    font_return_arrow: "\u21B5",
+    font_tab_arrow: "\u21E5",
+    font_back_tab: "\u21E4",
+    font_shift_arrow: "\u21E7",
+    font_delete_left: "\u232B",
+    font_delete_right: "\u2326",
+    font_command: "\u2318",
+    font_option: "\u2325",
+    font_control: "\u2303",
+    font_escape: "\u238B",
+    font_home: "\u21F1",
+    font_end: "\u21F2",
+    font_page_up: "\u21DE",
+    font_page_down: "\u21DF",
+    font_power: "\u23FB",
+    font_eject: "\u23CF",
+    font_play_pause: "\u23EF",
+    font_record: "\u23FA",
+    font_rewind: "\u23EA",
+    font_fast_forward: "\u23E9",
+    font_triangle_up: "\u25B2",
+    font_triangle_down: "\u25BC",
+    font_star_outline: "\u2606",
+    font_star_solid: "\u2605",
+    font_keyboard: "\u2328"
+  };
+  if (fontGlyphText[glyphId]) {
+    return [{
+      type: "text",
+      text: fontGlyphText[glyphId],
+      attrs: {
+        ...fill,
+        x: "12",
+        y: "13.2",
+        "dominant-baseline": "middle",
+        "text-anchor": "middle",
+        "font-family": "Segoe UI Symbol, Noto Sans Symbols, sans-serif",
+        "font-size": "15.5",
+        "font-weight": "700"
+      }
+    }];
+  }
+  const maskGlyphs = {
+    img_tall_capsule: [{ type: "rect", attrs: { ...fill, x: "8", y: "3", width: "8", height: "18", rx: "4" } }],
+    img_vertical_ribbon: [{ type: "path", attrs: { ...fill, d: "M8 3h8v18l-4-3-4 3Z" } }],
+    img_split_pill: [
+      { type: "rect", attrs: { ...fill, x: "5", y: "6", width: "6", height: "12", rx: "3" } },
+      { type: "rect", attrs: { ...fill, x: "13", y: "6", width: "6", height: "12", rx: "3" } }
+    ],
+    img_keyhole: [{ type: "path", attrs: { ...fill, d: "M12 3a4 4 0 0 1 2 7.5L17 21H7l3-10.5A4 4 0 0 1 12 3Z" } }],
+    img_badge_cut: [{ type: "path", attrs: { ...fill, d: "M12 2 19 7l-2 10-5 5-5-5L5 7Z" } }],
+    img_side_notch: [{ type: "path", attrs: { ...fill, d: "M5 4h14v16H5v-5l4-3-4-3Z" } }],
+    img_stacked_tiles: [
+      { type: "rect", attrs: { ...fill, x: "8", y: "4", width: "8", height: "4" } },
+      { type: "rect", attrs: { ...fill, x: "6", y: "10", width: "12", height: "4" } },
+      { type: "rect", attrs: { ...fill, x: "8", y: "16", width: "8", height: "4" } }
+    ],
+    img_folded_corner: [{ type: "path", attrs: { ...fill, d: "M6 3h12v18H6Zm8 0v5h4Z" } }],
+    img_flag_tab: [{ type: "path", attrs: { ...fill, d: "M7 3h3v18H7Zm3 1 9 3-9 5Z" } }],
+    img_tall_bracket: [{ type: "path", attrs: { ...stroke, d: "M16 4H8v16h8" } }],
+    img_horizon_bars: [{ type: "path", attrs: { ...stroke, d: "M5 8h14M4 12h16M5 16h14" } }],
+    img_ladder: [{ type: "path", attrs: { ...stroke, d: "M8 4v16M16 4v16M8 8h8M8 12h8M8 16h8" } }],
+    img_dual_posts: [
+      { type: "rect", attrs: { ...fill, x: "7", y: "4", width: "4", height: "16", rx: "2" } },
+      { type: "rect", attrs: { ...fill, x: "13", y: "4", width: "4", height: "16", rx: "2" } }
+    ],
+    img_pin_drop: [{ type: "path", attrs: { ...fill, d: "M12 22 8 10a4 4 0 1 1 8 0Z" } }],
+    img_ticket: [{ type: "path", attrs: { ...fill, d: "M5 5h14v5a2 2 0 0 0 0 4v5H5v-5a2 2 0 0 0 0-4Z" } }],
+    img_leaf_slab: [{ type: "path", attrs: { ...fill, d: "M5 16C6 5 17 4 19 6c-.5 9-7 13-14 10Z" } }],
+    img_blob_star: [{ type: "path", attrs: { ...fill, d: "M12 3 14.5 9H21l-5 4 2 7-6-4-6 4 2-7-5-4h6.5Z" } }],
+    img_arc_gate: [{ type: "path", attrs: { ...stroke, d: "M5 20V10a7 7 0 0 1 14 0v10" } }],
+    img_corner_frame: [{ type: "path", attrs: { ...stroke, d: "M5 5h8M5 5v8M19 19h-8M19 19v-8" } }],
+    img_capsule_dots: [
+      { type: "rect", attrs: { ...fill, x: "6", y: "5", width: "12", height: "14", rx: "6" } },
+      { type: "circle", attrs: { fill: "currentColor", opacity: "0.38", cx: "12", cy: "9", r: "0.9" } },
+      { type: "circle", attrs: { fill: "currentColor", opacity: "0.38", cx: "12", cy: "12", r: "0.9" } },
+      { type: "circle", attrs: { fill: "currentColor", opacity: "0.38", cx: "12", cy: "15", r: "0.9" } }
+    ],
+    img_wave_tile: [{ type: "path", attrs: { ...fill, d: "M4 13c4-8 8 6 16-2v7c-8 6-12-8-16 1Z" } }],
+    img_diamond_stack: [
+      { type: "path", attrs: { ...fill, d: "M12 3 16 7 12 11 8 7Z" } },
+      { type: "path", attrs: { ...fill, d: "M12 9 16 13 12 17 8 13Z" } },
+      { type: "path", attrs: { ...fill, d: "M12 15 16 19 12 23 8 19Z" } }
+    ],
+    img_tall_orbit: [
+      { type: "ellipse", attrs: { ...stroke, cx: "12", cy: "12", rx: "4", ry: "8" } },
+      { type: "circle", attrs: { ...fill, cx: "15.5", cy: "8", r: "1.4" } }
+    ],
+    img_punch_card: [
+      { type: "rect", attrs: { ...fill, x: "6", y: "4", width: "12", height: "16", rx: "2" } },
+      { type: "circle", attrs: { fill: "currentColor", opacity: "0.38", cx: "9", cy: "8", r: "0.8" } },
+      { type: "circle", attrs: { fill: "currentColor", opacity: "0.38", cx: "12", cy: "12", r: "0.8" } },
+      { type: "circle", attrs: { fill: "currentColor", opacity: "0.38", cx: "15", cy: "16", r: "0.8" } }
+    ],
+    img_soft_cross: [
+      { type: "rect", attrs: { ...fill, x: "10", y: "4", width: "4", height: "16", rx: "2" } },
+      { type: "rect", attrs: { ...fill, x: "5", y: "10", width: "14", height: "4", rx: "2" } }
+    ]
+  };
+  if (maskGlyphs[glyphId]) {
+    return maskGlyphs[glyphId];
+  }
+  switch (glyphId) {
+    case "ring":
+      return [{ type: "circle", attrs: { ...stroke, cx: "12", cy: "12", r: "4.2" } }];
+    case "diamond":
+      return [{ type: "path", attrs: { ...fill, d: "M12 5 19 12 12 19 5 12Z" } }];
+    case "square":
+      return [{ type: "rect", attrs: { ...fill, x: "6.5", y: "6.5", width: "11", height: "11", rx: "2" } }];
+    case "plus":
+      return [{ type: "path", attrs: { ...stroke, d: "M12 6v12M6 12h12" } }];
+    case "cross":
+      return [{ type: "path", attrs: { ...stroke, d: "M7 7l10 10M17 7 7 17" } }];
+    case "star":
+      return [{ type: "path", attrs: { ...stroke, d: "M12 4v16M4 12h16M6.5 6.5l11 11M17.5 6.5l-11 11" } }];
+    case "spark":
+      return [{ type: "path", attrs: { ...stroke, d: "M12 4v16M7 12h10" } }];
+    case "chevron_up":
+      return [{ type: "path", attrs: { ...stroke, d: "m5 15 7-7 7 7" } }];
+    case "chevron_left":
+      return [{ type: "path", attrs: { ...stroke, d: "m15 5-7 7 7 7" } }];
+    case "chevron_right":
+      return [{ type: "path", attrs: { ...stroke, d: "m9 5 7 7-7 7" } }];
+    case "slash_dot":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M7 17 17 7" } },
+        { type: "circle", attrs: { ...fill, cx: "18", cy: "17", r: "1.8" } }
+      ];
+    case "orbit":
+      return [
+        { type: "ellipse", attrs: { ...stroke, cx: "12", cy: "12", rx: "7", ry: "3.8" } },
+        { type: "circle", attrs: { ...fill, cx: "16.5", cy: "9.8", r: "1.8" } }
+      ];
+    case "gear_dot":
+      return [
+        { type: "circle", attrs: { ...stroke, cx: "12", cy: "12", r: "4.2" } },
+        { type: "path", attrs: { ...stroke, d: "M4.5 12h2M17.5 12h2M12 4.5v2M12 17.5v2" } },
+        { type: "circle", attrs: { ...fill, cx: "12", cy: "12", r: "1.5" } }
+      ];
+    case "bookmark_dot":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M8 5h8v14l-4-2.5L8 19Z" } },
+        { type: "circle", attrs: { ...fill, cx: "12", cy: "11", r: "1.4" } }
+      ];
+    case "space_dots":
+      return [7, 10.4, 13.8, 17.2].map(cx => ({
+        type: "circle",
+        attrs: { ...fill, cx: String(cx), cy: "12", r: "1.7" }
+      }));
+    case "two_dots":
+      return [
+        { type: "circle", attrs: { ...fill, cx: "9", cy: "12", r: "2.1" } },
+        { type: "circle", attrs: { ...fill, cx: "15", cy: "12", r: "2.1" } }
+      ];
+    case "grid_4":
+      return [
+        { type: "circle", attrs: { ...fill, cx: "8.5", cy: "8.5", r: "1.8" } },
+        { type: "circle", attrs: { ...fill, cx: "15.5", cy: "8.5", r: "1.8" } },
+        { type: "circle", attrs: { ...fill, cx: "8.5", cy: "15.5", r: "1.8" } },
+        { type: "circle", attrs: { ...fill, cx: "15.5", cy: "15.5", r: "1.8" } }
+      ];
+    case "terminal":
+      return [{ type: "path", attrs: { ...stroke, d: "m7 8 4 4-4 4M13 16h5" } }];
+    case "cursor":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M11 5v14" } },
+        { type: "circle", attrs: { ...fill, cx: "15.5", cy: "16.5", r: "1.4" } }
+      ];
+    case "keyboard_return":
+      return [{ type: "path", attrs: { ...stroke, d: "M17 5v8H7m0 0 4-4m-4 4 4 4" } }];
+    case "keyboard_tab":
+      return [{ type: "path", attrs: { ...stroke, d: "M19 5v14M5 12h10m0 0-4-4m4 4-4 4" } }];
+    case "keyboard_capslock":
+      return [{ type: "path", attrs: { ...stroke, d: "M5 15 12 8l7 7M6 19h12" } }];
+    case "keyboard_command":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M9 9h6v6H9Z" } },
+        { type: "path", attrs: { ...stroke, d: "M9 9H7a2.5 2.5 0 1 1 2.5-2.5V9M15 9h2a2.5 2.5 0 1 0-2.5-2.5V9M9 15H7a2.5 2.5 0 1 0 2.5 2.5V15M15 15h2a2.5 2.5 0 1 1-2.5 2.5V15" } }
+      ];
+    case "keyboard_option":
+      return [{ type: "path", attrs: { ...stroke, d: "M5 7h5l5 10h4M15 7h4" } }];
+    case "keyboard_control":
+      return [{ type: "path", attrs: { ...stroke, d: "m5 15 7-7 7 7" } }];
+    case "keyboard_hide":
+      return [
+        { type: "rect", attrs: { ...stroke, x: "4", y: "5", width: "16", height: "10", rx: "2" } },
+        { type: "path", attrs: { ...stroke, d: "m9 18 3 3 3-3" } },
+        { type: "path", attrs: { ...stroke, d: "M7 8h1M10 8h1M13 8h1M16 8h1M7 11h10" } }
+      ];
+    case "keyboard_full":
+      return [
+        { type: "rect", attrs: { ...stroke, x: "4", y: "5", width: "16", height: "14", rx: "2" } },
+        { type: "path", attrs: { ...stroke, d: "M8 15h8" } },
+        { type: "path", attrs: { ...stroke, d: "M7 8h1M10 8h1M13 8h1M16 8h1M7 11h1M10 11h1M13 11h1M16 11h1" } }
+      ];
+    case "keyboard_keys":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M7 16h10" } },
+        { type: "path", attrs: { ...stroke, d: "M5 8h1M9 8h1M13 8h1M17 8h1M5 12h1M9 12h1M13 12h1M17 12h1" } }
+      ];
+    case "keyboard_language":
+      return [
+        { type: "circle", attrs: { ...stroke, cx: "12", cy: "12", r: "7" } },
+        { type: "path", attrs: { ...stroke, d: "M5 12h14M12 5c2 2 3 4.3 3 7s-1 5-3 7M12 5c-2 2-3 4.3-3 7s1 5 3 7" } }
+      ];
+    case "keyboard_arrow_up":
+      return [{ type: "path", attrs: { ...stroke, d: "m5 15 7-7 7 7" } }];
+    case "keyboard_arrow_down":
+      return [{ type: "path", attrs: { ...stroke, d: "m5 9 7 7 7-7" } }];
+    case "keyboard_arrow_left":
+      return [{ type: "path", attrs: { ...stroke, d: "m15 5-7 7 7 7" } }];
+    case "keyboard_arrow_right":
+      return [{ type: "path", attrs: { ...stroke, d: "m9 5 7 7-7 7" } }];
+    case "keyboard_double_left":
+      return [{ type: "path", attrs: { ...stroke, d: "m11 5-7 7 7 7M20 5l-7 7 7 7" } }];
+    case "keyboard_double_right":
+      return [{ type: "path", attrs: { ...stroke, d: "m4 5 7 7-7 7M13 5l7 7-7 7" } }];
+    case "keyboard_backspace":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M4 12 8 7h12v10H8Z" } },
+        { type: "path", attrs: { ...stroke, d: "m11 9 5 6M16 9l-5 6" } }
+      ];
+    case "keyboard_space":
+      return [{ type: "path", attrs: { ...stroke, d: "M5 9v5h14V9" } }];
+    case "gmk_accent_bar":
+      return [{ type: "path", attrs: { ...stroke, d: "M5 12h14" } }];
+    case "gmk_accent_corner":
+      return [{ type: "path", attrs: { ...stroke, d: "M6 7h12v10" } }];
+    case "gmk_accent_stripe":
+      return [{ type: "path", attrs: { ...stroke, d: "M5 8h14M5 16h14" } }];
+    case "gmk_triple_dot":
+      return [
+        { type: "circle", attrs: { ...fill, cx: "7.5", cy: "12", r: "1.8" } },
+        { type: "circle", attrs: { ...fill, cx: "12", cy: "12", r: "1.8" } },
+        { type: "circle", attrs: { ...fill, cx: "16.5", cy: "12", r: "1.8" } }
+      ];
+    case "gmk_twin_ticks":
+      return [{ type: "path", attrs: { ...stroke, d: "m9 6-2 12M17 6l-2 12" } }];
+    case "gmk_space_dash":
+      return [{ type: "path", attrs: { ...stroke, d: "M4 14h16M4 10h3M17 10h3" } }];
+    case "gmk_macro_stack":
+      return [{ type: "path", attrs: { ...stroke, d: "M5 7h14M7 12h10M5 17h14" } }];
+    case "gmk_macro_brackets":
+      return [{ type: "path", attrs: { ...stroke, d: "M9 6H6v12h3M15 6h3v12h-3" } }];
+    case "gmk_target":
+      return [
+        { type: "circle", attrs: { ...stroke, cx: "12", cy: "12", r: "5.5" } },
+        { type: "circle", attrs: { ...stroke, cx: "12", cy: "12", r: "2.1" } },
+        { type: "path", attrs: { ...stroke, d: "M3.5 12H6M18 12h2.5" } }
+      ];
+    case "gmk_pulse":
+      return [{ type: "path", attrs: { ...stroke, d: "M4 12h4l1.5-4 3 8 2-4H20" } }];
+    case "gmk_wave":
+      return [{ type: "path", attrs: { ...stroke, d: "M4 13c2.5-4 5-4 7.5 0s5 4 8.5-.5" } }];
+    case "gmk_moon":
+      return [{ type: "path", attrs: { ...fill, d: "M15.8 19.4a7.4 7.4 0 0 1-4.9-13A7.8 7.8 0 1 0 20 15.5a7.4 7.4 0 0 1-4.2 3.9Z" } }];
+    case "gmk_sun":
+      return [
+        { type: "circle", attrs: { ...stroke, cx: "12", cy: "12", r: "3.2" } },
+        { type: "path", attrs: { ...stroke, d: "M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18" } }
+      ];
+    case "gmk_leaf":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M6 17c.5-8 8.5-9 12-8-.3 5.8-5.8 9.5-12 8Z" } },
+        { type: "path", attrs: { ...stroke, d: "M7 16 16 9" } }
+      ];
+    case "gmk_flower":
+      return [
+        { type: "circle", attrs: { ...fill, cx: "12", cy: "7.5", r: "2" } },
+        { type: "circle", attrs: { ...fill, cx: "16.2", cy: "12", r: "2" } },
+        { type: "circle", attrs: { ...fill, cx: "12", cy: "16.5", r: "2" } },
+        { type: "circle", attrs: { ...fill, cx: "7.8", cy: "12", r: "2" } },
+        { type: "circle", attrs: { ...fill, cx: "12", cy: "12", r: "1.2" } }
+      ];
+    case "gmk_mountain":
+      return [{ type: "path", attrs: { ...stroke, d: "M4 17 9 8l3 5 2-3 6 7" } }];
+    case "gmk_droplet":
+      return [{ type: "path", attrs: { ...stroke, d: "M12 4c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10Z" } }];
+    case "gmk_orbit_star":
+      return [
+        { type: "ellipse", attrs: { ...stroke, cx: "12", cy: "12", rx: "7.5", ry: "3.4" } },
+        { type: "path", attrs: { ...stroke, d: "M16.5 7.5v5M14 10h5" } }
+      ];
+    case "gmk_diamond_cluster":
+      return [
+        { type: "path", attrs: { ...fill, d: "M12 5 15 8 12 11 9 8Z" } },
+        { type: "path", attrs: { ...fill, d: "M7.5 13 10.3 15.8 7.5 18.5 4.7 15.8Z" } },
+        { type: "path", attrs: { ...fill, d: "M16.5 13 19.3 15.8 16.5 18.5 13.7 15.8Z" } }
+      ];
+    case "gmk_pixel_steps":
+      return [
+        { type: "rect", attrs: { ...fill, x: "5", y: "15", width: "3", height: "3" } },
+        { type: "rect", attrs: { ...fill, x: "8", y: "12", width: "3", height: "6" } },
+        { type: "rect", attrs: { ...fill, x: "11", y: "9", width: "3", height: "9" } },
+        { type: "rect", attrs: { ...fill, x: "14", y: "6", width: "3", height: "12" } }
+      ];
+    case "gmk_constellation":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M6.5 9 11.5 12 16.5 8.5 18 16" } },
+        { type: "circle", attrs: { ...fill, cx: "6.5", cy: "9", r: "1.1" } },
+        { type: "circle", attrs: { ...fill, cx: "11.5", cy: "12", r: "1.2" } },
+        { type: "circle", attrs: { ...fill, cx: "16.5", cy: "8.5", r: "1.1" } },
+        { type: "circle", attrs: { ...fill, cx: "18", cy: "16", r: "1.1" } }
+      ];
+    case "gmk_planet_ring":
+      return [
+        { type: "circle", attrs: { ...stroke, cx: "12", cy: "12", r: "3.8" } },
+        { type: "ellipse", attrs: { ...stroke, cx: "12", cy: "12", rx: "7.5", ry: "2.6" } }
+      ];
+    case "gmk_comet_tail":
+      return [
+        { type: "circle", attrs: { ...fill, cx: "16.5", cy: "8.5", r: "2" } },
+        { type: "path", attrs: { ...stroke, d: "M14 10 5 16.5M13.5 8.5 6.5 10.5" } }
+      ];
+    case "gmk_crescent_star":
+      return [
+        ...pointGlyphSvgFor("gmk_moon"),
+        { type: "path", attrs: { ...stroke, d: "M17.5 5.5v4M15.5 7.5h4" } }
+      ];
+    case "gmk_sparkle_pair":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M8.5 5.5v5M6 8h5M16 13.5v5.5M13.2 16.2h5.6" } }
+      ];
+    case "gmk_plus_cluster":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M8 8v4M6 10h4M16 14v4M14 16h4" } }
+      ];
+    case "gmk_dot_matrix":
+      return [7.8, 12, 16.2].flatMap(cx => [7.8, 12, 16.2].map(cy => ({
+        type: "circle",
+        attrs: { ...fill, cx: String(cx), cy: String(cy), r: "0.95" }
+      })));
+    case "gmk_corner_dots":
+      return [
+        { type: "circle", attrs: { ...fill, cx: "6.5", cy: "6.5", r: "1.2" } },
+        { type: "circle", attrs: { ...fill, cx: "10", cy: "6.5", r: "1.2" } },
+        { type: "circle", attrs: { ...fill, cx: "6.5", cy: "10", r: "1.2" } },
+        { type: "circle", attrs: { ...fill, cx: "17.5", cy: "17.5", r: "1.2" } }
+      ];
+    case "gmk_side_stripes":
+      return [{ type: "path", attrs: { ...stroke, d: "M5.5 6v12M18.5 6v12" } }];
+    case "gmk_center_cross":
+      return [
+        { type: "circle", attrs: { ...stroke, cx: "12", cy: "12", r: "6" } },
+        { type: "path", attrs: { ...stroke, d: "M8.5 12h7M12 8.5v7" } }
+      ];
+    case "gmk_arcade_diamond":
+      return [
+        { type: "path", attrs: { ...fill, d: "M12 6 18 12 12 18 6 12Z" } },
+        { type: "path", attrs: { ...stroke, d: "M4 12h2.2M17.8 12H20" } }
+      ];
+    case "gmk_iso_enter_mark":
+      return [{ type: "path", attrs: { ...stroke, d: "M17 5v8H7m0 0 3-3m-3 3 3 3" } }];
+    case "gmk_split_bar":
+      return [{ type: "path", attrs: { ...stroke, d: "M4 14h7M13 14h7" } }];
+    case "gmk_long_bar_ticks":
+      return [{ type: "path", attrs: { ...stroke, d: "M4 12h16M8 9v6M16 9v6" } }];
+    case "gmk_stepped_bar":
+      return [{ type: "path", attrs: { ...stroke, d: "M4.5 16h5V10h10" } }];
+    case "gmk_rising_blocks":
+      return [
+        { type: "rect", attrs: { ...fill, x: "5.5", y: "15", width: "2.5", height: "3" } },
+        { type: "rect", attrs: { ...fill, x: "9", y: "13", width: "2.5", height: "5" } },
+        { type: "rect", attrs: { ...fill, x: "12.5", y: "10.5", width: "2.5", height: "7.5" } },
+        { type: "rect", attrs: { ...fill, x: "16", y: "8", width: "2.5", height: "10" } }
+      ];
+    case "gmk_equalizer":
+      return [{ type: "path", attrs: { ...stroke, d: "M7 17V9M12 17V6M17 17v-6" } }];
+    case "gmk_wave_double":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M4 10c2.5-3.5 5-3.5 7.5 0s5 3.5 8.5 0" } },
+        { type: "path", attrs: { ...stroke, d: "M4 15c2.5-3.5 5-3.5 7.5 0s5 3.5 8.5 0" } }
+      ];
+    case "gmk_flower_alt":
+      return [
+        { type: "circle", attrs: { ...stroke, cx: "9.5", cy: "10", r: "2.3" } },
+        { type: "circle", attrs: { ...stroke, cx: "14.5", cy: "10", r: "2.3" } },
+        { type: "circle", attrs: { ...stroke, cx: "12", cy: "15", r: "2.3" } },
+        { type: "circle", attrs: { ...fill, cx: "12", cy: "12", r: "1" } }
+      ];
+    case "gmk_leaf_pair":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M6 16c.5-5.5 5-6.2 7-5.5-.2 4-3.5 6-7 5.5ZM18 16c-.5-5.5-5-6.2-7-5.5.2 4 3.5 6 7 5.5Z" } },
+        { type: "path", attrs: { ...stroke, d: "M7 15 12 11M17 15l-5-4" } }
+      ];
+    case "gmk_sprout":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M12 18V10" } },
+        { type: "path", attrs: { ...stroke, d: "M12 11c-4-3-6 .5-1 1.5M12 10c4-3 6 .5 1 1.5" } }
+      ];
+    case "gmk_petals":
+      return [0, 1, 2, 3, 4].map(i => {
+        const angle = -90 + i * 72;
+        return { type: "ellipse", attrs: { ...fill, cx: "12", cy: "12", rx: "1.25", ry: "3", transform: `rotate(${angle} 12 12) translate(0 -3)` } };
+      });
+    case "gmk_rain":
+      return [{ type: "path", attrs: { ...stroke, d: "m8 6-2 4M12 10l-2 4M16 14l-2 4" } }];
+    case "gmk_snow":
+      return [{ type: "path", attrs: { ...stroke, d: "M6 12h12M9 6l6 12M15 6 9 18" } }];
+    case "gmk_cloud":
+      return [{ type: "path", attrs: { ...stroke, d: "M6 16h10.5a3 3 0 0 0 .2-6 4.5 4.5 0 0 0-8.2-1.2A3.8 3.8 0 0 0 6 16Z" } }];
+    case "gmk_flame":
+      return [{ type: "path", attrs: { ...fill, d: "M12 4c4 4 4 8 0 13-3-1.2-4.8-4.5-1-8.5.3 1.7 1 2.7 2.4 3.5.8-2.7.2-5-1.4-8Z" } }];
+    case "gmk_bolt":
+      return [{ type: "path", attrs: { ...fill, d: "M13 3 7 13h4l-2 8 8-12h-4l3-6Z" } }];
+    case "gmk_crystal":
+      return [
+        { type: "path", attrs: { ...stroke, d: "M12 4 17 9l-2.5 10h-5L7 9Z" } },
+        { type: "path", attrs: { ...stroke, d: "M12 4v15M7 9h10" } }
+      ];
+    case "gmk_compass":
+      return [
+        { type: "circle", attrs: { ...stroke, cx: "12", cy: "12", r: "6.2" } },
+        { type: "path", attrs: { ...fill, d: "M12 6.8 14 14l-2-1.1-2 1.1Z" } }
+      ];
+    case "gmk_lab_flask":
+      return [{ type: "path", attrs: { ...stroke, d: "M10 5h4M10.5 5v5l-4 8h11l-4-8V5" } }];
+    default:
+      return null;
+  }
+}
+
+function applyDotGlyphVars(node) {
+  node.style.setProperty("--dot-source-size", `${decorativeGlyphCatalog.dotSizePx}px`);
+  node.style.setProperty(
+    "--two-dot-width",
+    `${decorativeGlyphCatalog.dotSizePx * decorativeGlyphCatalog.twoDotWidthRatio}px`);
 }
 
 function iconSvgFor(label) {
@@ -2060,7 +3018,7 @@ function buildImageThemePrompt(theme) {
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
+    "Allowed effects: effects.keyFaceGradient.enabled boolean, strengthPercent integer 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,
@@ -2139,12 +3097,12 @@ function buildPaletteImageThemePrompt(theme) {
     "- keyboardBackground and panelBackground should be a quiet backdrop derived from the image, not the loudest color.",
     "- accent is the main legend/icon color and must remain readable on alphaKey.",
     "- secondary is the sub legend/modifier legend color and must remain readable on modifierKey.",
-    "- Use effects.keyFaceGradient only for subtle key-surface depth; do not simulate the image texture.",
+    "- Use effects.keyFaceGradient only for subtle key-surface depth; minimal themes should disable it or keep strengthPercent at 12 or lower.",
     "- Use effects.panelGradient only for a quiet backplate/background gradient behind the keys.",
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
+    "Allowed effects: effects.keyFaceGradient.enabled boolean, strengthPercent integer 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,

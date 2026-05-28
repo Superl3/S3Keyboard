@@ -19,6 +19,11 @@ final class TouchResolver {
             return primaryBottomHit;
         }
 
+        T rawCoreHit = resolveRawCoreHit(targets, x, y, hitSlop);
+        if (rawCoreHit != null) {
+            return rawCoreHit;
+        }
+
         float adjustedX = x + biasX;
         float adjustedY = y + touchYOffset + biasY;
 
@@ -48,6 +53,27 @@ final class TouchResolver {
         return bestContained != null ? bestContained : bestExpanded;
     }
 
+    private static <T extends Target> T resolveRawCoreHit(
+            List<T> targets,
+            float x,
+            float y,
+            float hitSlop) {
+        T best = null;
+        float bestDistance = Float.MAX_VALUE;
+        float coreInset = Math.max(0f, hitSlop * 0.75f);
+        for (T target : targets) {
+            if (!target.coreContains(x, y, coreInset)) {
+                continue;
+            }
+            float distance = target.distanceSquaredTo(x, y);
+            if (distance < bestDistance) {
+                best = target;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
     private static <T extends Target> T resolvePrimaryBottomHit(List<T> targets, float x, float y) {
         T best = null;
         float bestDistance = Float.MAX_VALUE;
@@ -68,6 +94,8 @@ final class TouchResolver {
         boolean contains(float x, float y);
 
         boolean expandedContains(float x, float y, float slop);
+
+        boolean coreContains(float x, float y, float inset);
 
         float distanceSquaredTo(float x, float y);
 

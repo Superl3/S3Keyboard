@@ -44,7 +44,7 @@ final class ThemePromptTemplates {
                 "- accent is the main legend/icon color and must remain readable on alphaKey.",
                 "- secondary is the sub legend/modifier legend color and must remain readable on modifierKey.",
                 "- If the image is colorful but not keycap-like, do not create many per-key overrides. Keep the keyboard coherent.",
-                "- Use effects.keyFaceGradient only for subtle surface depth; do not simulate the image texture.",
+                "- Use effects.keyFaceGradient only for subtle surface depth; do not simulate the image texture. Minimal themes should disable it or keep strengthPercent at 12 or lower.",
                 "",
                 roleGuide(),
                 "",
@@ -65,7 +65,7 @@ final class ThemePromptTemplates {
                 "- Allowed shape keys: roundnessDp, borderWidthDp, keyGapDp, depthEnabled, depthDp.",
                 "- Allowed typography keys: fontFamily, primaryTextSizePercent, secondaryTextSizePercent, primaryTextBold, primaryTextItalic, secondaryTextBold, secondaryTextItalic.",
                 "- Allowed fontFamily values: default, noto_sans_kr, noto_serif_kr, d2coding.",
-                "- Allowed effects: effects.keyFaceGradient.enabled boolean and effects.keyFaceGradient.strengthPercent integer 0..100; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
+                "- Allowed effects: effects.keyFaceGradient.enabled boolean, strengthPercent integer 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
                 "- Allowed number row color modes: full_alpha, half_mod_4567, alpha_accent, mod_alpha, full_mod, mod_accent, accent_alpha, accent_mod, full_accent.",
                 "- Allowed accentPolicy targets: none, modEnter, modShift, dingulDot, dingulSlash, modCtrl, modMeta, modCommand, enter, settingsEnter, qwertyShift, backspace, question, escPoint, shift, punctuation, perKey.");
     }
@@ -106,7 +106,7 @@ final class ThemePromptTemplates {
                     + "    \"secondary\": \"#6B7280\"\n"
                     + "  },\n"
                     + "  \"effects\": {\n"
-                    + "    \"keyFaceGradient\": { \"enabled\": true, \"strengthPercent\": 22 },\n"
+                    + "    \"keyFaceGradient\": { \"enabled\": true, \"strengthPercent\": 22, \"startColor\": \"#FFFFFF\", \"endColor\": \"#000000\", \"curve\": \"soft\" },\n"
                     + "    \"panelGradient\": { \"enabled\": false, \"startColor\": \"#D1D5DB\", \"endColor\": \"#D1D5DB\" }\n"
                     + "  }\n"
                     + "}";

@@ -47,6 +47,8 @@ final class KeyboardPreferences {
     static final String KEY_BORDER_WIDTH_DP = "key_border_width_dp";
     static final String KEY_ROUNDNESS_DP = "key_roundness_dp";
     static final String KEY_GAP_DP = "key_gap_dp";
+    static final String HANGUL_KEY_GAP_DP = "hangul_key_gap_dp";
+    static final String ENGLISH_KEY_GAP_DP = "english_key_gap_dp";
     static final String KEY_DEPTH_ENABLED = "key_depth_enabled";
     static final String KEY_DEPTH_DP = "key_depth_dp";
     static final String CUSTOM_DEPTH_COLOR_ENABLED = "custom_depth_color_enabled";
@@ -215,6 +217,9 @@ final class KeyboardPreferences {
                 prefs.getInt(TOUCH_Y_OFFSET_DP, defaults.touchYOffsetDp),
                 LEGACY_DEFAULT_TOUCH_Y_OFFSET_DP,
                 defaults.touchYOffsetDp);
+        int legacyKeyGapDp = prefs.getInt(KEY_GAP_DP, defaults.keyGapDp);
+        int hangulKeyGapDp = prefs.getInt(HANGUL_KEY_GAP_DP, legacyKeyGapDp);
+        int englishKeyGapDp = prefs.getInt(ENGLISH_KEY_GAP_DP, legacyKeyGapDp);
         KeyboardSettings loaded = new KeyboardSettings(
                 KeyboardMode.fromPreference(prefs.getString(
                         KEYBOARD_MODE_LAST,
@@ -249,7 +254,7 @@ final class KeyboardPreferences {
                 prefs.getInt(BORDER_COLOR, defaults.borderColor),
                 prefs.getInt(KEY_BORDER_WIDTH_DP, defaults.keyBorderWidthDp),
                 prefs.getInt(KEY_ROUNDNESS_DP, defaults.keyRoundnessDp),
-                prefs.getInt(KEY_GAP_DP, defaults.keyGapDp),
+                legacyKeyGapDp,
                 prefs.getBoolean(KEY_DEPTH_ENABLED, defaults.keyDepthEnabled),
                 prefs.getInt(KEY_DEPTH_DP, defaults.keyDepthDp),
                 prefs.getBoolean(CUSTOM_DEPTH_COLOR_ENABLED, defaults.customDepthColorEnabled),
@@ -260,6 +265,7 @@ final class KeyboardPreferences {
                 prefs.getBoolean(SHOW_BEGINNER_TOOLTIP_PREVIEW, defaults.showBeginnerTooltipPreview),
                 hangulSpecialColumnPercent(prefs, defaults));
         loaded = loaded
+                .withKeyGaps(hangulKeyGapDp, englishKeyGapDp)
                 .withHangulSidePadding(hangulLeftPaddingDp, hangulRightPaddingDp)
                 .withEnglishSidePadding(englishLeftPaddingDp, englishRightPaddingDp)
                 .withLayoutSpacing(
@@ -356,6 +362,8 @@ final class KeyboardPreferences {
                 .putInt(KEY_BORDER_WIDTH_DP, settings.keyBorderWidthDp)
                 .putInt(KEY_ROUNDNESS_DP, settings.keyRoundnessDp)
                 .putInt(KEY_GAP_DP, settings.keyGapDp)
+                .putInt(HANGUL_KEY_GAP_DP, settings.hangulKeyGapDp)
+                .putInt(ENGLISH_KEY_GAP_DP, settings.englishKeyGapDp)
                 .putBoolean(KEY_DEPTH_ENABLED, settings.keyDepthEnabled)
                 .putInt(KEY_DEPTH_DP, settings.keyDepthDp)
                 .putBoolean(CUSTOM_DEPTH_COLOR_ENABLED, settings.customDepthColorEnabled)

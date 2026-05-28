@@ -111,11 +111,12 @@ Built-in modifier pack ids:
 - `dots-lines`: dot alpha legends, solid modifier lines, and a four-color spacebar dot cluster.
 - `metropolis-graph`: normal modifier icon shapes for Metropolis-style command keys. Legacy `metropolis-points` imports normalize to this id.
 
-Dot sizing rules currently live in `HangulKeyboardView`:
+Dot sizing rules are owned by the built-in decorative glyph catalog and mirrored by the web/static preview renderers:
 
-- Dots use one visual weight family: alpha dot diameter, modifier line stroke, and single modifier dot diameter should match by ratio.
-- alpha dot legend scales from the real key surface bounds.
+- Dots use one visual weight family: alpha dot diameter, number-row/numpad dots, modifier line stroke, single meta dot diameter, and the spacebar four-dot cluster derive from the same small meta-dot source.
+- alpha dot legends render as centered icon glyphs rather than letter-positioned text, so QWERTY alpha dots align visually with shift/backspace modifier glyphs.
 - `space` uses four vivid dots with tight horizontal gaps.
+- Dingul `.` and `/` two-dot glyphs use a wider center gap than the old renderer so the two dots do not overlap.
 - Dots pack `language` and `reserved` use a single dot, not a line-dot motif.
 - `backspace`, `enter`, `settings`, `shift`, and related command variants use solid line treatment with the same visual weight as alpha dots.
 - metropolis icons must use recognizable modifier glyph shapes and scale to the actual key bounds. If the keycap background is itself red/yellow/teal, the glyph color should come from the theme text override so it stays visible.
@@ -129,12 +130,15 @@ Display packs replace labels or command icons with either:
 
 ```json
 { "type": "icon", "value": "dot" }
+{ "type": "icon", "value": "ring" }
 { "type": "text", "value": "hihihi" }
 ```
 
 The simple text pack is separate from Olivia as a theme. It replaces only Dingul's visual enter-position `.` key with `hihihi`; the real bottom-right Enter command must keep the default Enter icon. Shift, backspace, space, language, settings, options, and reserved remain modifier glyph icons. `hihihi` is rendered as a vector path in Android and previews, not as a font string, so keep script-like replacements in the renderer or a future imported vector renderer.
 
 The `git-commands` display pack is used by Oblivion-style themes. It replaces modifier keys with short Git/workflow labels such as `exec`, `fetch`, `pull`, `rebase`, `reset`, `commit`, `diff`, and `log`.
+
+Point display packs (`geo-points`, `soft-symbols`, `terminal-points`, `punctuation-points`, and `full-decorative`) are predefined placement packs over semantic glyph ids such as `ring`, `diamond`, `plus`, `chevron_up`, `slash_dot`, `orbit`, `gear_dot`, `space_dots`, and `terminal`. Keyboard display packs (`keyboard-symbols` and `keyboard-navigation`) use Material Symbols-aligned names such as `keyboard_return`, `keyboard_tab`, `keyboard_command`, `keyboard_option`, and `keyboard_space`. GMK/KBDfans-style packs (`gmk-style-points`, `gmk-style-novelties`, `gmk-style-macros`, `gmk-style-celestial`, `gmk-style-nature`, and `gmk-style-spacebars`) should capture recurring kit grammar such as accent bars, novelty minis, macro marks, celestial/nature motifs, and spacebar ticks without copying one set's exact logo or character artwork. Imported-source style packs (`font-symbols`, `image-mask-marks`, `tall-mod-glyphs`, and `mixed-source-novelties`) are source-aware display packs: font glyphs render from stable symbol codepoints, and image-mask glyphs render from bundled monochrome PNG alpha masks that are tinted at runtime. Strong modifier slots such as Enter, Backspace, Shift, and Space should prefer semantic glyphs that imply newline, deletion, layer/upshift, or spacing; pure novelty glyphs belong on 1x1, reserved, language/options, or punctuation slots unless their silhouette is strong enough to carry the key by itself. Keep these as data-backed pack mappings first; exact `keyDisplayOverrides.keys` remain the escape hatch and must still win over pack defaults. Built-in novelty glyphs should render as monochrome geometry and inherit the app-provided key text color unless a pack is explicitly declared intrinsic-color.
 
 ## Visual Effects
 

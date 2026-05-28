@@ -1,16 +1,22 @@
 package com.superl3.s3keyboard;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,8 +24,10 @@ import android.view.ViewConfiguration;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public final class HangulKeyboardView extends View {
     private static final int TOOL_TYPE_PALM = 5;
@@ -31,6 +39,17 @@ public final class HangulKeyboardView extends View {
     private static final int MAX_RELEASED_PREVIEW_BUBBLES = 4;
     private static final long LONG_PRESS_PULSE_MS = 280;
     private static final long MODE_TRANSITION_MS = 260;
+    private static final String TYPING_PROBE_TAG = "DingulTypingProbe";
+    private static final float DINGUL_AXIS_DOMINANCE_RATIO = 1.15f;
+    private static final GestureAction[] TYPING_PROBE_ACTIONS = {
+            GestureAction.TAP,
+            GestureAction.UP,
+            GestureAction.DOWN,
+            GestureAction.LEFT,
+            GestureAction.RIGHT
+    };
+    private static final int MAX_RECENT_TEXT_TOUCH_SAMPLES = 8;
+    private static final long DELETE_CORRECTION_WINDOW_MS = 6000L;
 
     private final List<KeySlot> keySlots = new ArrayList<>();
     private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -39,12 +58,14 @@ public final class HangulKeyboardView extends View {
     private final Paint hintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint modifierIconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Map<String, Bitmap> imageGlyphCache = new HashMap<>();
     private final Paint depthPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint overlayTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final KeyboardIconRegistry iconRegistry;
     private final List<TouchState> activeTouches = new ArrayList<>();
     private final List<PendingTouchOutput> pendingTouchOutputs = new ArrayList<>();
+    private final List<TouchSample> recentTextTouchSamples = new ArrayList<>();
     private final List<PreviewBubbleAnimation> releasedPreviewBubbles = new ArrayList<>();
     private final KeyboardFeedback feedback = new KeyboardFeedback(this);
     private final RepeatController repeatController = new RepeatController(this, new RepeatController.Callback() {
@@ -53,11 +74,65 @@ public final class HangulKeyboardView extends View {
             emitValue(value);
         }
     });
+    private final DingulSlideIntentResolver.Policy dingulSlideIntentPolicy =
+            new DingulSlideIntentResolver.Policy() {
+                @Override
+                public boolean isDingulTypingKey(GestureKey key) {
+                    return HangulKeyboardView.this.isDingulTypingKey(key);
+                }
+
+                @Override
+                public GestureAction actionFor(GestureKey key, float dx, float dy) {
+                    return new GestureState().release(
+                            dx,
+                            dy,
+                            baseGestureThresholdPx(key),
+                            gestureThresholdPxFor(key, GestureAction.UP),
+                            gestureThresholdPxFor(key, GestureAction.DOWN),
+                            gestureThresholdPxFor(key, GestureAction.LEFT),
+                            gestureThresholdPxFor(key, GestureAction.RIGHT),
+                            axisDominanceRatioFor(key));
+                }
+
+                @Override
+                public float thresholdPx(GestureKey key, GestureAction action) {
+                    return gestureThresholdPxFor(key, action);
+                }
+
+                @Override
+                public GestureAction shadowActionFor(GestureKey key, float dx, float dy) {
+                    int threshold = shadowGestureThresholdPxFor(key);
+                    return new GestureState().release(
+                            dx,
+                            dy,
+                            threshold,
+                            threshold,
+                            threshold,
+                            threshold,
+                            threshold,
+                            axisDominanceRatioFor(key));
+                }
+
+                @Override
+                public float shadowThresholdPx(GestureKey key, GestureAction action) {
+                    return shadowGestureThresholdPxFor(key);
+                }
+
+                @Override
+                public boolean hasOutput(GestureKey key, GestureAction action) {
+                    String value = key == null ? null : key.valueFor(action);
+                    return value != null && !value.isEmpty() && !KeyboardCommands.CMD_NOOP.equals(value);
+                }
+            };
 
     private KeyboardSettings settings = KeyboardSettings.defaults();
+    private KeyboardSurface keyboardSurface = KeyboardSurface.NORMAL;
     private List<KeyboardRow> rows = Collections.emptyList();
     private TouchBiasStore touchBiasStore;
     private TouchBiasStore.Bias touchBias = TouchBiasStore.Bias.none();
+    private TouchBiasStore.DingulTouchProfile dingulTouchProfile = TouchBiasStore.DingulTouchProfile.empty();
+    private TypingEventJournal.CorrectionStats typingCorrectionStats =
+            TypingEventJournal.correctionStats("");
     private OnKeyGestureListener listener;
     private OnPreviewKeySelectionListener previewKeySelectionListener;
     private boolean englishShiftActive;
@@ -76,6 +151,7 @@ public final class HangulKeyboardView extends View {
     private TouchSample lastTextTouchSample;
     private boolean differentiatedHapticEnabled = true;
     private boolean touchBiasAutoCorrectionEnabled = true;
+    private boolean redactTypingEventText;
     private boolean palmRejectionEnabled;
     private long previewGestureGeneration;
 
@@ -88,6 +164,8 @@ public final class HangulKeyboardView extends View {
         iconRegistry = new KeyboardIconRegistry(context);
         touchBiasStore = new TouchBiasStore(context);
         touchBias = touchBiasStore.load();
+        dingulTouchProfile = touchBiasStore.loadDingulTouchProfile();
+        typingCorrectionStats = touchBiasStore.loadTypingCorrectionStats();
         differentiatedHapticEnabled = KeyboardPreferences.loadDifferentiatedHapticEnabled(context);
         touchBiasAutoCorrectionEnabled = KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(context);
         palmRejectionEnabled = KeyboardPreferences.loadPalmRejectionEnabled(context);
@@ -123,7 +201,9 @@ public final class HangulKeyboardView extends View {
                 KeyboardPreferences.loadShowHangulVowelSlideHints(getContext());
         showSpacebarSlideHints = KeyboardPreferences.loadShowSpacebarSlideHints(getContext());
         touchBias = touchBiasStore.load();
-        rows = KeyboardLayoutFactory.build(this.settings);
+        dingulTouchProfile = touchBiasStore.loadDingulTouchProfile();
+        typingCorrectionStats = touchBiasStore.loadTypingCorrectionStats();
+        rows = KeyboardLayoutFactory.build(this.settings, keyboardSurface);
         applyTypeface();
         if (getWidth() > 0 && getHeight() > 0) {
             layoutKeys(getWidth(), getHeight());
@@ -132,6 +212,25 @@ public final class HangulKeyboardView extends View {
         updatePreviewPopup();
         invalidate();
         settingsInitialized = true;
+    }
+
+    void setKeyboardSurface(KeyboardSurface surface) {
+        KeyboardSurface safeSurface = surface == null ? KeyboardSurface.NORMAL : surface;
+        if (keyboardSurface == safeSurface) {
+            return;
+        }
+        keyboardSurface = safeSurface;
+        rows = KeyboardLayoutFactory.build(settings, keyboardSurface);
+        if (getWidth() > 0 && getHeight() > 0) {
+            layoutKeys(getWidth(), getHeight());
+        }
+        requestLayout();
+        updatePreviewPopup();
+        invalidate();
+    }
+
+    void setRedactTypingEventText(boolean redactTypingEventText) {
+        this.redactTypingEventText = redactTypingEventText;
     }
 
     void setEnglishShiftState(boolean active, boolean locked) {
@@ -156,8 +255,19 @@ public final class HangulKeyboardView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        int desiredHeight = dp(settings.measuredHeightDp());
+        int desiredHeight = dp(measuredHeightDp());
         setMeasuredDimension(width, resolveSize(desiredHeight, heightMeasureSpec));
+    }
+
+    private int measuredHeightDp() {
+        if (!settings.remoteModeEnabled
+                && (keyboardSurface == KeyboardSurface.NUMPAD
+                || keyboardSurface == KeyboardSurface.PHONEPAD
+                || keyboardSurface == KeyboardSurface.DATEPAD
+                || keyboardSurface == KeyboardSurface.PINPAD)) {
+            return settings.hangulKeyboardHeightDp;
+        }
+        return settings.measuredHeightDp();
     }
 
     @Override
@@ -411,7 +521,8 @@ public final class HangulKeyboardView extends View {
                 gestureThresholdPxFor(state.keySlot.key, GestureAction.UP),
                 gestureThresholdPxFor(state.keySlot.key, GestureAction.DOWN),
                 gestureThresholdPxFor(state.keySlot.key, GestureAction.LEFT),
-                gestureThresholdPxFor(state.keySlot.key, GestureAction.RIGHT));
+                gestureThresholdPxFor(state.keySlot.key, GestureAction.RIGHT),
+                axisDominanceRatioFor(state.keySlot.key));
         if (state.gestureState.isLocked() && !wasLocked) {
             state.lockAnimationStartMs = SystemClock.uptimeMillis();
             cancelLongPressTimer(state);
@@ -452,14 +563,21 @@ public final class HangulKeyboardView extends View {
                     gestureThresholdPxFor(state.keySlot.key, GestureAction.UP),
                     gestureThresholdPxFor(state.keySlot.key, GestureAction.DOWN),
                     gestureThresholdPxFor(state.keySlot.key, GestureAction.LEFT),
-                    gestureThresholdPxFor(state.keySlot.key, GestureAction.RIGHT));
-            state.activeAction = action;
-            if (action == GestureAction.TAP) {
-                feedbackForKey(state.keySlot.key, action);
+                    gestureThresholdPxFor(state.keySlot.key, GestureAction.RIGHT),
+                    axisDominanceRatioFor(state.keySlot.key));
+            ResolvedTouchOutput output = resolveReleaseOutput(
+                    state,
+                    event.getX(pointerIndex),
+                    event.getY(pointerIndex),
+                    action);
+            state.activeAction = output.action;
+            if (output.action == GestureAction.TAP) {
+                feedbackForKey(output.keySlot.key, output.action);
             }
             queueTouchOutput(
                     state,
-                    state.keySlot.key.valueFor(action),
+                    output,
+                    output.keySlot.key.valueFor(output.action),
                     event.getX(pointerIndex),
                     event.getY(pointerIndex));
         }
@@ -492,14 +610,118 @@ public final class HangulKeyboardView extends View {
         postDelayed(state.longPressRunnable, delayMs);
     }
 
-    private void queueTouchOutput(TouchState state, String value, float x, float y) {
+    private ResolvedTouchOutput resolveReleaseOutput(
+            TouchState state,
+            float upX,
+            float upY,
+            GestureAction fallbackAction) {
+        if (fallbackAction != GestureAction.TAP) {
+            return new ResolvedTouchOutput(
+                    state.keySlot,
+                    fallbackAction,
+                    fallbackAction,
+                    null,
+                    null,
+                    0f,
+                    false);
+        }
+        DingulSlideIntentResolver.Result<KeySlot> result = DingulSlideIntentResolver.resolve(
+                keySlots,
+                state.keySlot,
+                state.downX,
+                state.downY,
+                state.downX + dp(touchBias.xDp),
+                state.downY + dp(settings.touchYOffsetDp) + dp(touchBias.yDp),
+                upX,
+                upY,
+                dp(settings.hitSlopDp),
+                dingulSlideIntentPolicy);
+        if (result != null) {
+            return new ResolvedTouchOutput(
+                        result.target,
+                        result.action,
+                        fallbackAction,
+                        result.target,
+                        result.action,
+                        result.score,
+                        true);
+        }
+        DingulSlideIntentResolver.Result<KeySlot> shadow = DingulSlideIntentResolver.resolveShadow(
+                keySlots,
+                state.keySlot,
+                state.downX,
+                state.downY,
+                state.downX + dp(touchBias.xDp),
+                state.downY + dp(settings.touchYOffsetDp) + dp(touchBias.yDp),
+                upX,
+                upY,
+                dp(settings.hitSlopDp),
+                dingulSlideIntentPolicy);
+        if (shadow != null && shouldApplyActiveSlideCorrection(state.keySlot, shadow)) {
+            return new ResolvedTouchOutput(
+                    shadow.target,
+                    shadow.action,
+                    fallbackAction,
+                    shadow.target,
+                    shadow.action,
+                    shadow.score,
+                    true);
+        }
+        return shadow == null
+                ? new ResolvedTouchOutput(
+                        state.keySlot,
+                        fallbackAction,
+                        fallbackAction,
+                        null,
+                        null,
+                        0f,
+                        false)
+                : new ResolvedTouchOutput(
+                        state.keySlot,
+                        fallbackAction,
+                        fallbackAction,
+                        shadow.target,
+                        shadow.action,
+                        shadow.score,
+                        false);
+    }
+
+    private boolean shouldApplyActiveSlideCorrection(
+            KeySlot origin,
+            DingulSlideIntentResolver.Result<KeySlot> shadow) {
+        if (!touchBiasAutoCorrectionEnabled || redactTypingEventText
+                || origin == null || shadow == null || shadow.target == null) {
+            return false;
+        }
+        return typingCorrectionStats.shouldApplyActiveSlide(
+                codePoints(origin.key.label),
+                codePoints(shadow.target.key.label),
+                shadow.action,
+                shadow.score,
+                shadow.target == origin);
+    }
+
+    private void queueTouchOutput(
+            TouchState state,
+            ResolvedTouchOutput output,
+            String value,
+            float x,
+            float y) {
         pendingTouchOutputs.add(new PendingTouchOutput(
                 state.sequence,
-                state.keySlot,
-                state.activeAction,
+                output.keySlot,
+                output.action,
                 value,
+                state.downX,
+                state.downY,
                 x,
-                y));
+                y,
+                state.downTimeMs,
+                output.fallbackAction,
+                output.shadowKeySlot,
+                output.shadowAction,
+                output.shadowScore,
+                output.shadowApplied));
         flushPendingTouchOutputs();
     }
 
@@ -512,7 +734,8 @@ public final class HangulKeyboardView extends View {
                 return;
             }
             pendingTouchOutputs.remove(nextIndex);
-            rememberTextTouch(next.keySlot, valueOrNull(next.value), next.action, next.x, next.y);
+            rememberTextTouch(next);
+            logTypingProbeEmit(next);
             emitValue(next.value);
         }
     }
@@ -582,41 +805,145 @@ public final class HangulKeyboardView extends View {
         return feedback;
     }
 
-    private void rememberTextTouch(KeySlot keySlot, String value, GestureAction action, float x, float y) {
-        if (keySlot == null || value == null || KeyboardCommands.isCommand(value)) {
+    private void rememberTextTouch(PendingTouchOutput output) {
+        KeySlot keySlot = output == null ? null : output.keySlot;
+        String value = output == null ? null : valueOrNull(output.value);
+        if (keySlot == null || value == null) {
             return;
         }
-        float offsetXDp = (x - keySlot.bounds.centerX()) / getResources().getDisplayMetrics().density;
-        float offsetYDp = (y - keySlot.bounds.centerY()) / getResources().getDisplayMetrics().density;
-        lastTextTouchSample = new TouchSample(value, offsetXDp, offsetYDp, action, System.currentTimeMillis());
+        boolean textValue = !KeyboardCommands.isCommand(value);
+        boolean dingulTypingKey = isDingulTypingKey(keySlot.key);
+        boolean dingulCommandValue = isDingulVowelCommand(value);
+        if (!textValue && !(dingulTypingKey && dingulCommandValue)) {
+            return;
+        }
+        float density = getResources().getDisplayMetrics().density;
+        float offsetXDp = (output.x - keySlot.bounds.centerX()) / density;
+        float offsetYDp = (output.y - keySlot.bounds.centerY()) / density;
+        String keyCodePoints = dingulTypingKey ? codePoints(keySlot.key.label) : "";
+        TouchSample sample = new TouchSample(
+                value,
+                keyCodePoints,
+                offsetXDp,
+                offsetYDp,
+                output.action,
+                System.currentTimeMillis());
+        lastTextTouchSample = sample;
+        rememberRecentTextTouchSample(sample);
         if (touchBiasAutoCorrectionEnabled) {
-            touchBiasStore.recordTextInput(value, action);
-            touchBias = touchBiasStore.load();
+            recordTypingJournalInput(output, keyCodePoints, value, density);
+            if (textValue) {
+                touchBiasStore.recordTextInput(redactTypingEventText ? "" : value, output.action);
+                touchBias = touchBiasStore.load();
+            }
+            if (dingulTypingKey && !keyCodePoints.isEmpty()) {
+                touchBiasStore.recordDingulTextInput(keyCodePoints, output.action);
+                dingulTouchProfile = touchBiasStore.loadDingulTouchProfile();
+            }
         }
     }
 
+    private void recordTypingJournalInput(
+            PendingTouchOutput output,
+            String keyCodePoints,
+            String value,
+            float density) {
+        if (output == null) {
+            return;
+        }
+        String eventId = "t-" + System.currentTimeMillis() + "-" + output.sequence;
+        String journalKeyCodePoints = redactTypingEventText ? "" : keyCodePoints;
+        String journalValueCodePoints = redactTypingEventText ? "" : codePoints(value);
+        String shadowKeyCodePoints = "";
+        if (!redactTypingEventText && output.shadowKeySlot != null) {
+            shadowKeyCodePoints = codePoints(output.shadowKeySlot.key.label);
+        }
+        touchBiasStore.recordTypingJournalInput(new TypingEventJournal.Input(
+                eventId,
+                System.currentTimeMillis(),
+                settings.keyboardMode,
+                journalKeyCodePoints,
+                journalValueCodePoints,
+                output.action,
+                output.fallbackAction,
+                output.downX / density,
+                output.downY / density,
+                output.x / density,
+                output.y / density,
+                Math.max(0L, SystemClock.uptimeMillis() - output.downTimeMs),
+                Math.round(gestureThresholdPxFor(output.keySlot.key, output.action) / density),
+                settings.hitSlopDp,
+                settings.keyGapDp,
+                settings.touchYOffsetDp,
+                touchBias.xDp,
+                touchBias.yDp,
+                shadowKeyCodePoints,
+                output.shadowAction,
+                output.shadowScore,
+                output.shadowApplied));
+        typingCorrectionStats = touchBiasStore.loadTypingCorrectionStats();
+    }
+
     private void recordImmediateDeleteIfNeeded(String value) {
-        if (!KeyboardCommands.CMD_DELETE.equals(value) || lastTextTouchSample == null) {
+        if (!KeyboardCommands.CMD_DELETE.equals(value) || recentTextTouchSamples.isEmpty()) {
             if (!KeyboardCommands.isCommand(value)) {
                 return;
             }
             if (!KeyboardCommands.CMD_DELETE.equals(value)) {
                 lastTextTouchSample = null;
+                recentTextTouchSamples.clear();
+            } else if (touchBiasAutoCorrectionEnabled) {
+                touchBiasStore.recordTypingJournalDelete(System.currentTimeMillis());
+                typingCorrectionStats = touchBiasStore.loadTypingCorrectionStats();
             }
             return;
         }
 
-        if (System.currentTimeMillis() - lastTextTouchSample.timeMs <= 1500) {
+        TouchSample deletedSample = popRecentTextTouchSample();
+        lastTextTouchSample = recentTextTouchSamples.isEmpty()
+                ? null
+                : recentTextTouchSamples.get(recentTextTouchSamples.size() - 1);
+        if (touchBiasAutoCorrectionEnabled) {
+            touchBiasStore.recordTypingJournalDelete(System.currentTimeMillis());
+            typingCorrectionStats = touchBiasStore.loadTypingCorrectionStats();
+        }
+        if (deletedSample != null && System.currentTimeMillis() - deletedSample.timeMs <= DELETE_CORRECTION_WINDOW_MS) {
             if (touchBiasAutoCorrectionEnabled) {
-                touchBiasStore.recordImmediateDelete(
-                        lastTextTouchSample.offsetXDp,
-                        lastTextTouchSample.offsetYDp,
-                        lastTextTouchSample.action,
-                        lastTextTouchSample.value);
-                touchBias = touchBiasStore.load();
+                if (!KeyboardCommands.isCommand(deletedSample.value)) {
+                    touchBiasStore.recordImmediateDelete(
+                            deletedSample.offsetXDp,
+                            deletedSample.offsetYDp,
+                            deletedSample.action,
+                            redactTypingEventText ? "" : deletedSample.value);
+                    touchBias = touchBiasStore.load();
+                }
+                if (!deletedSample.keyCodePoints.isEmpty()) {
+                    touchBiasStore.recordDingulCorrection(
+                            deletedSample.keyCodePoints,
+                            deletedSample.action,
+                            deletedSample.offsetXDp,
+                            deletedSample.offsetYDp);
+                    dingulTouchProfile = touchBiasStore.loadDingulTouchProfile();
+                }
             }
         }
-        lastTextTouchSample = null;
+    }
+
+    private void rememberRecentTextTouchSample(TouchSample sample) {
+        if (sample == null) {
+            return;
+        }
+        recentTextTouchSamples.add(sample);
+        while (recentTextTouchSamples.size() > MAX_RECENT_TEXT_TOUCH_SAMPLES) {
+            recentTextTouchSamples.remove(0);
+        }
+    }
+
+    private TouchSample popRecentTextTouchSample() {
+        if (recentTextTouchSamples.isEmpty()) {
+            return null;
+        }
+        return recentTextTouchSamples.remove(recentTextTouchSamples.size() - 1);
     }
 
     private String valueOrNull(String value) {
@@ -629,6 +956,8 @@ public final class HangulKeyboardView extends View {
         }
         activeTouches.clear();
         pendingTouchOutputs.clear();
+        recentTextTouchSamples.clear();
+        lastTextTouchSample = null;
         releasedPreviewBubbles.clear();
         previewGestureGeneration++;
         previewPointerId = -1;
@@ -765,8 +1094,146 @@ public final class HangulKeyboardView extends View {
                     new RectF(slot.left, slot.top, slot.right, slot.bottom),
                     slot.primaryBottomControl,
                     slot.compactSpecialColumn,
-                    visualGap));
+                    visualGap,
+                    slot.bottomSpaceDirection));
         }
+        scheduleTypingProbePlanLog();
+    }
+
+    private void scheduleTypingProbePlanLog() {
+        if (!shouldLogTypingProbe()) {
+            return;
+        }
+        post(new Runnable() {
+            @Override
+            public void run() {
+                logTypingProbePlan();
+            }
+        });
+    }
+
+    private void logTypingProbePlan() {
+        if (!shouldLogTypingProbe() || keySlots.isEmpty()) {
+            return;
+        }
+        int[] location = new int[2];
+        getLocationOnScreen(location);
+        int sequence = 0;
+        for (KeySlot slot : keySlots) {
+            if (!isTypingProbeKey(slot.key)) {
+                continue;
+            }
+            for (GestureAction action : TYPING_PROBE_ACTIONS) {
+                String value = slot.key.valueFor(action);
+                if (value == null || KeyboardCommands.CMD_NOOP.equals(value)) {
+                    continue;
+                }
+                TypingProbeTouch touch = typingProbeTouch(slot, action);
+                Log.i(TYPING_PROBE_TAG, String.format(
+                        Locale.US,
+                        "PLAN\tseq=%d\tkeyCp=%s\taction=%s\tvalueCp=%s\tdown=%d,%d\tup=%d,%d\trange=%d,%d,%d,%d",
+                        sequence++,
+                        codePoints(slot.key.label),
+                        action.name(),
+                        codePoints(value),
+                        Math.round(location[0] + touch.downX),
+                        Math.round(location[1] + touch.downY),
+                        Math.round(location[0] + touch.upX),
+                        Math.round(location[1] + touch.upY),
+                        Math.round(location[0] + touch.range.left),
+                        Math.round(location[1] + touch.range.top),
+                        Math.round(location[0] + touch.range.right),
+                        Math.round(location[1] + touch.range.bottom)));
+            }
+        }
+    }
+
+    private void logTypingProbeEmit(PendingTouchOutput output) {
+        if (!shouldLogTypingProbe() || output == null || output.keySlot == null) {
+            return;
+        }
+        int[] location = new int[2];
+        getLocationOnScreen(location);
+        Log.i(TYPING_PROBE_TAG, String.format(
+                Locale.US,
+                "EMIT\tkeyCp=%s\taction=%s\tvalueCp=%s\tup=%d,%d",
+                codePoints(output.keySlot.key.label),
+                output.action.name(),
+                codePoints(output.value),
+                Math.round(location[0] + output.x),
+                Math.round(location[1] + output.y)));
+    }
+
+    private boolean shouldLogTypingProbe() {
+        return isDebuggableBuild()
+                && settings.keyboardMode == KeyboardMode.HANGUL;
+    }
+
+    private boolean isDebuggableBuild() {
+        return getContext() != null
+                && (getContext().getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+    }
+
+    private boolean isTypingProbeKey(GestureKey key) {
+        if (key == null) {
+            return false;
+        }
+        String keyCodePoints = codePoints(key.label);
+        return "3131".equals(keyCodePoints)
+                || "3145".equals(keyCodePoints)
+                || "3163+2E".equals(keyCodePoints)
+                || "3161+3150".equals(keyCodePoints);
+    }
+
+    private TypingProbeTouch typingProbeTouch(KeySlot slot, GestureAction action) {
+        RectF hitBounds = slot.hitBounds();
+        float biasX = dp(touchBias.xDp);
+        float biasY = dp(settings.touchYOffsetDp) + dp(touchBias.yDp);
+        RectF rawRange = new RectF(
+                hitBounds.left - biasX,
+                hitBounds.top - biasY,
+                hitBounds.right - biasX,
+                hitBounds.bottom - biasY);
+        float downX = rawRange.centerX();
+        float downY = rawRange.centerY();
+        float upX = downX;
+        float upY = downY;
+        if (action != GestureAction.TAP) {
+            float distance = Math.max(dp(18), gestureThresholdPxFor(slot.key, action) * 1.35f);
+            switch (action) {
+                case UP:
+                    upY -= distance;
+                    break;
+                case DOWN:
+                    upY += distance;
+                    break;
+                case LEFT:
+                    upX -= distance;
+                    break;
+                case RIGHT:
+                    upX += distance;
+                    break;
+                default:
+                    break;
+            }
+        }
+        return new TypingProbeTouch(downX, downY, upX, upY, rawRange);
+    }
+
+    private String codePoints(String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < value.length(); ) {
+            int codePoint = value.codePointAt(i);
+            if (builder.length() > 0) {
+                builder.append('+');
+            }
+            builder.append(Integer.toHexString(codePoint).toUpperCase(Locale.US));
+            i += Character.charCount(codePoint);
+        }
+        return builder.toString();
     }
 
     private void updateSystemGestureExclusion(int width, int height) {
@@ -930,10 +1397,7 @@ public final class HangulKeyboardView extends View {
             return;
         }
         float radius = dotRadiusFor(surfaceBounds);
-        float centerY = englishLetterKey
-                ? surfaceBounds.top + surfaceBounds.height() * 0.36f
-                : surfaceBounds.centerY();
-        canvas.drawCircle(surfaceBounds.centerX(), centerY, radius, textPaint);
+        canvas.drawCircle(surfaceBounds.centerX(), surfaceBounds.centerY(), radius, textPaint);
     }
 
     private boolean isDingulPunctuationDotGlyph(GestureKey key) {
@@ -946,7 +1410,7 @@ public final class HangulKeyboardView extends View {
     private void drawTwoDotLegend(Canvas canvas, RectF bounds, int color) {
         textPaint.setColor(color);
         float radius = dotRadiusFor(bounds);
-        float gap = Math.max(radius * 1.65f, renderDp(3.0f));
+        float gap = DecorativeGlyphCatalog.twoDotCenterGap(radius, renderDp(5.4f));
         float cx = bounds.centerX();
         float cy = bounds.centerY();
         canvas.drawCircle(cx - gap / 2f, cy, radius, textPaint);
@@ -971,10 +1435,955 @@ public final class HangulKeyboardView extends View {
             drawEscDisplayOverride(canvas, key, surfaceBounds);
             return;
         }
+        int color = KeyboardKeyVisualClassifier.textColorFor(settings, key);
+        if (drawBuiltInPointGlyph(canvas, override.value, surfaceBounds, color)) {
+            return;
+        }
+        if (drawBuiltInKeyboardGlyph(canvas, override.value, surfaceBounds, color)) {
+            return;
+        }
+        if (drawBuiltInGmkStyleGlyph(canvas, override.value, surfaceBounds, color)) {
+            return;
+        }
+        if (drawBuiltInFontGlyph(canvas, override.value, surfaceBounds, color)) {
+            return;
+        }
+        if (drawBuiltInImageMaskGlyph(canvas, override.value, surfaceBounds, color)) {
+            return;
+        }
         textPaint.setColor(KeyboardKeyVisualClassifier.textColorFor(settings, key));
         textPaint.setTextSize(textSizeFor(override.value, surfaceBounds, false));
         float centerY = surfaceBounds.centerY() - textCenterOffset(textPaint);
         canvas.drawText(override.value, surfaceBounds.centerX(), centerY, textPaint);
+    }
+
+    private boolean drawBuiltInPointGlyph(Canvas canvas, String glyphId, RectF bounds, int color) {
+        if (!DecorativeGlyphCatalog.isBuiltInPointGlyph(glyphId)) {
+            return false;
+        }
+        float radius = dotRadiusFor(bounds);
+        float stroke = Math.max(renderDp(1.4f), dotsLineWeightFor(bounds) * 0.78f);
+        float cx = bounds.centerX();
+        float cy = bounds.centerY();
+        modifierIconPaint.reset();
+        modifierIconPaint.setAntiAlias(true);
+        modifierIconPaint.setColor(color);
+        modifierIconPaint.setStrokeWidth(stroke);
+        modifierIconPaint.setStrokeCap(Paint.Cap.ROUND);
+        modifierIconPaint.setStrokeJoin(Paint.Join.ROUND);
+        modifierIconPaint.setStyle(Paint.Style.STROKE);
+        if (DecorativeGlyphCatalog.GLYPH_RING.equals(glyphId)) {
+            canvas.drawCircle(cx, cy, radius * 1.45f, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_DIAMOND.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            Path path = new Path();
+            float size = radius * 2.45f;
+            path.moveTo(cx, cy - size);
+            path.lineTo(cx + size, cy);
+            path.lineTo(cx, cy + size);
+            path.lineTo(cx - size, cy);
+            path.close();
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_SQUARE.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            float size = radius * 2.15f;
+            canvas.drawRoundRect(
+                    cx - size,
+                    cy - size,
+                    cx + size,
+                    cy + size,
+                    radius * 0.42f,
+                    radius * 0.42f,
+                    modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_PLUS.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 2f, cy, cx + radius * 2f, cy);
+            drawPointLine(canvas, cx, cy - radius * 2f, cx, cy + radius * 2f);
+        } else if (DecorativeGlyphCatalog.GLYPH_CROSS.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 1.45f, cy - radius * 1.45f,
+                    cx + radius * 1.45f, cy + radius * 1.45f);
+            drawPointLine(canvas, cx + radius * 1.45f, cy - radius * 1.45f,
+                    cx - radius * 1.45f, cy + radius * 1.45f);
+        } else if (DecorativeGlyphCatalog.GLYPH_STAR.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 2.1f, cy, cx + radius * 2.1f, cy);
+            drawPointLine(canvas, cx, cy - radius * 2.1f, cx, cy + radius * 2.1f);
+            drawPointLine(canvas, cx - radius * 1.5f, cy - radius * 1.5f,
+                    cx + radius * 1.5f, cy + radius * 1.5f);
+            drawPointLine(canvas, cx + radius * 1.5f, cy - radius * 1.5f,
+                    cx - radius * 1.5f, cy + radius * 1.5f);
+        } else if (DecorativeGlyphCatalog.GLYPH_SPARK.equals(glyphId)) {
+            drawPointLine(canvas, cx, cy - radius * 2.5f, cx, cy + radius * 2.5f);
+            drawPointLine(canvas, cx - radius * 1.7f, cy, cx + radius * 1.7f, cy);
+        } else if (DecorativeGlyphCatalog.GLYPH_CHEVRON_UP.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 2.1f, cy + radius * 1.15f);
+            path.lineTo(cx, cy - radius * 1.35f);
+            path.lineTo(cx + radius * 2.1f, cy + radius * 1.15f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_CHEVRON_LEFT.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx + radius * 1.35f, cy - radius * 2.1f);
+            path.lineTo(cx - radius * 1.15f, cy);
+            path.lineTo(cx + radius * 1.35f, cy + radius * 2.1f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_CHEVRON_RIGHT.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 1.35f, cy - radius * 2.1f);
+            path.lineTo(cx + radius * 1.15f, cy);
+            path.lineTo(cx - radius * 1.35f, cy + radius * 2.1f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_SLASH_DOT.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 1.8f, cy + radius * 1.8f,
+                    cx + radius * 1.8f, cy - radius * 1.8f);
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx + radius * 2.35f, cy + radius * 1.85f, radius * 0.72f, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_ORBIT.equals(glyphId)) {
+            RectF oval = new RectF(
+                    cx - radius * 2.55f,
+                    cy - radius * 1.35f,
+                    cx + radius * 2.55f,
+                    cy + radius * 1.35f);
+            canvas.drawOval(oval, modifierIconPaint);
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx + radius * 1.65f, cy - radius * 0.75f, radius * 0.75f, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GEAR_DOT.equals(glyphId)) {
+            canvas.drawCircle(cx, cy, radius * 1.35f, modifierIconPaint);
+            drawPointLine(canvas, cx - radius * 2.3f, cy, cx - radius * 1.75f, cy);
+            drawPointLine(canvas, cx + radius * 1.75f, cy, cx + radius * 2.3f, cy);
+            drawPointLine(canvas, cx, cy - radius * 2.3f, cx, cy - radius * 1.75f);
+            drawPointLine(canvas, cx, cy + radius * 1.75f, cx, cy + radius * 2.3f);
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx, cy, radius * 0.55f, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_BOOKMARK_DOT.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 1.65f, cy - radius * 2.2f);
+            path.lineTo(cx + radius * 1.65f, cy - radius * 2.2f);
+            path.lineTo(cx + radius * 1.65f, cy + radius * 2.15f);
+            path.lineTo(cx, cy + radius * 1.25f);
+            path.lineTo(cx - radius * 1.65f, cy + radius * 2.15f);
+            path.close();
+            canvas.drawPath(path, modifierIconPaint);
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx, cy - radius * 0.3f, radius * 0.48f, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_SPACE_DOTS.equals(glyphId)) {
+            drawMonochromeSpaceDots(canvas, bounds, color);
+        } else if (DecorativeGlyphCatalog.GLYPH_TWO_DOTS.equals(glyphId)) {
+            drawTwoDotLegend(canvas, bounds, color);
+        } else if (DecorativeGlyphCatalog.GLYPH_GRID_4.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            float gap = radius * 1.45f;
+            float small = radius * 0.78f;
+            canvas.drawCircle(cx - gap, cy - gap, small, modifierIconPaint);
+            canvas.drawCircle(cx + gap, cy - gap, small, modifierIconPaint);
+            canvas.drawCircle(cx - gap, cy + gap, small, modifierIconPaint);
+            canvas.drawCircle(cx + gap, cy + gap, small, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_TERMINAL.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 2.3f, cy - radius * 1.25f);
+            path.lineTo(cx - radius * 0.65f, cy);
+            path.lineTo(cx - radius * 2.3f, cy + radius * 1.25f);
+            canvas.drawPath(path, modifierIconPaint);
+            drawPointLine(canvas, cx - radius * 0.1f, cy + radius * 1.45f,
+                    cx + radius * 2.2f, cy + radius * 1.45f);
+        } else if (DecorativeGlyphCatalog.GLYPH_CURSOR.equals(glyphId)) {
+            drawPointLine(canvas, cx, cy - radius * 2.35f, cx, cy + radius * 2.35f);
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx + radius * 1.45f, cy + radius * 1.75f, radius * 0.58f, modifierIconPaint);
+        }
+        return true;
+    }
+
+    private void drawPointLine(Canvas canvas, float startX, float startY, float stopX, float stopY) {
+        modifierIconPaint.setStyle(Paint.Style.STROKE);
+        canvas.drawLine(startX, startY, stopX, stopY, modifierIconPaint);
+    }
+
+    private void drawMonochromeSpaceDots(Canvas canvas, RectF bounds, int color) {
+        modifierIconPaint.setStyle(Paint.Style.FILL);
+        modifierIconPaint.setColor(color);
+        float radius = dotRadiusFor(bounds);
+        float gap = DecorativeGlyphCatalog.spaceDotGap(radius, renderDp(3.2f));
+        float totalWidth = radius * 8f + gap * 3f;
+        float start = bounds.centerX() - totalWidth / 2f + radius;
+        float cy = bounds.centerY();
+        for (int i = 0; i < 4; i++) {
+            canvas.drawCircle(start + i * (radius * 2f + gap), cy, radius, modifierIconPaint);
+        }
+    }
+
+    private boolean drawBuiltInKeyboardGlyph(Canvas canvas, String glyphId, RectF bounds, int color) {
+        if (!DecorativeGlyphCatalog.isBuiltInKeyboardGlyph(glyphId)) {
+            return false;
+        }
+        float radius = dotRadiusFor(bounds);
+        float stroke = Math.max(renderDp(1.45f), dotsLineWeightFor(bounds) * 0.72f);
+        float cx = bounds.centerX();
+        float cy = bounds.centerY();
+        modifierIconPaint.reset();
+        modifierIconPaint.setAntiAlias(true);
+        modifierIconPaint.setColor(color);
+        modifierIconPaint.setStrokeWidth(stroke);
+        modifierIconPaint.setStrokeCap(Paint.Cap.ROUND);
+        modifierIconPaint.setStrokeJoin(Paint.Join.ROUND);
+        modifierIconPaint.setStyle(Paint.Style.STROKE);
+        if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_RETURN.equals(glyphId)) {
+            drawPointLine(canvas, cx + radius * 2.4f, cy - radius * 2.2f,
+                    cx + radius * 2.4f, cy + radius * 0.7f);
+            drawPointLine(canvas, cx + radius * 2.4f, cy + radius * 0.7f,
+                    cx - radius * 1.8f, cy + radius * 0.7f);
+            Path path = new Path();
+            path.moveTo(cx - radius * 1.8f, cy + radius * 0.7f);
+            path.lineTo(cx - radius * 0.45f, cy - radius * 0.6f);
+            path.moveTo(cx - radius * 1.8f, cy + radius * 0.7f);
+            path.lineTo(cx - radius * 0.45f, cy + radius * 2.0f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_TAB.equals(glyphId)) {
+            drawPointLine(canvas, cx + radius * 2.4f, cy - radius * 2.2f,
+                    cx + radius * 2.4f, cy + radius * 2.2f);
+            drawPointLine(canvas, cx - radius * 2.4f, cy, cx + radius * 1.3f, cy);
+            drawPointLine(canvas, cx + radius * 1.3f, cy,
+                    cx + radius * 0.15f, cy - radius * 1.15f);
+            drawPointLine(canvas, cx + radius * 1.3f, cy,
+                    cx + radius * 0.15f, cy + radius * 1.15f);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_CAPSLOCK.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 2.2f, cy + radius * 0.25f);
+            path.lineTo(cx, cy - radius * 2.0f);
+            path.lineTo(cx + radius * 2.2f, cy + radius * 0.25f);
+            canvas.drawPath(path, modifierIconPaint);
+            drawPointLine(canvas, cx - radius * 2.4f, cy + radius * 2.0f,
+                    cx + radius * 2.4f, cy + radius * 2.0f);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_COMMAND.equals(glyphId)) {
+            drawCommandGlyph(canvas, cx, cy, radius);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_OPTION.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 2.6f, cy - radius * 1.65f,
+                    cx - radius * 1.05f, cy - radius * 1.65f);
+            drawPointLine(canvas, cx - radius * 0.95f, cy - radius * 1.65f,
+                    cx + radius * 1.25f, cy + radius * 1.65f);
+            drawPointLine(canvas, cx + radius * 1.25f, cy + radius * 1.65f,
+                    cx + radius * 2.6f, cy + radius * 1.65f);
+            drawPointLine(canvas, cx + radius * 0.9f, cy - radius * 1.65f,
+                    cx + radius * 2.6f, cy - radius * 1.65f);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_CONTROL.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 2.35f, cy + radius * 0.75f);
+            path.lineTo(cx, cy - radius * 1.75f);
+            path.lineTo(cx + radius * 2.35f, cy + radius * 0.75f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_HIDE.equals(glyphId)) {
+            drawKeyboardFrame(canvas, bounds, radius, false);
+            Path path = new Path();
+            path.moveTo(cx - radius * 1.4f, cy + radius * 2.55f);
+            path.lineTo(cx, cy + radius * 3.65f);
+            path.lineTo(cx + radius * 1.4f, cy + radius * 2.55f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_FULL.equals(glyphId)) {
+            drawKeyboardFrame(canvas, bounds, radius, true);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_KEYS.equals(glyphId)) {
+            drawKeyboardKeys(canvas, cx, cy, radius);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_LANGUAGE.equals(glyphId)) {
+            canvas.drawCircle(cx, cy, radius * 2.6f, modifierIconPaint);
+            drawPointLine(canvas, cx - radius * 2.6f, cy, cx + radius * 2.6f, cy);
+            drawPointLine(canvas, cx, cy - radius * 2.6f, cx, cy + radius * 2.6f);
+            RectF oval = new RectF(cx - radius * 1.25f, cy - radius * 2.6f,
+                    cx + radius * 1.25f, cy + radius * 2.6f);
+            canvas.drawOval(oval, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_ARROW_UP.equals(glyphId)) {
+            drawKeyboardArrow(canvas, cx, cy, radius, GestureAction.UP, false);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_ARROW_DOWN.equals(glyphId)) {
+            drawKeyboardArrow(canvas, cx, cy, radius, GestureAction.DOWN, false);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_ARROW_LEFT.equals(glyphId)) {
+            drawKeyboardArrow(canvas, cx, cy, radius, GestureAction.LEFT, false);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_ARROW_RIGHT.equals(glyphId)) {
+            drawKeyboardArrow(canvas, cx, cy, radius, GestureAction.RIGHT, false);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_DOUBLE_LEFT.equals(glyphId)) {
+            drawKeyboardArrow(canvas, cx - radius * 0.9f, cy, radius, GestureAction.LEFT, true);
+            drawKeyboardArrow(canvas, cx + radius * 1.25f, cy, radius, GestureAction.LEFT, true);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_DOUBLE_RIGHT.equals(glyphId)) {
+            drawKeyboardArrow(canvas, cx - radius * 1.25f, cy, radius, GestureAction.RIGHT, true);
+            drawKeyboardArrow(canvas, cx + radius * 0.9f, cy, radius, GestureAction.RIGHT, true);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_BACKSPACE.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 2.8f, cy);
+            path.lineTo(cx - radius * 1.25f, cy - radius * 1.6f);
+            path.lineTo(cx + radius * 2.45f, cy - radius * 1.6f);
+            path.lineTo(cx + radius * 2.45f, cy + radius * 1.6f);
+            path.lineTo(cx - radius * 1.25f, cy + radius * 1.6f);
+            path.close();
+            canvas.drawPath(path, modifierIconPaint);
+            drawPointLine(canvas, cx - radius * 0.4f, cy - radius * 0.75f,
+                    cx + radius * 0.95f, cy + radius * 0.75f);
+            drawPointLine(canvas, cx + radius * 0.95f, cy - radius * 0.75f,
+                    cx - radius * 0.4f, cy + radius * 0.75f);
+        } else if (DecorativeGlyphCatalog.GLYPH_KEYBOARD_SPACE.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 3.1f, cy - radius * 0.8f,
+                    cx - radius * 3.1f, cy + radius * 0.95f);
+            drawPointLine(canvas, cx - radius * 3.1f, cy + radius * 0.95f,
+                    cx + radius * 3.1f, cy + radius * 0.95f);
+            drawPointLine(canvas, cx + radius * 3.1f, cy + radius * 0.95f,
+                    cx + radius * 3.1f, cy - radius * 0.8f);
+        }
+        return true;
+    }
+
+    private void drawCommandGlyph(Canvas canvas, float cx, float cy, float radius) {
+        float loop = radius * 1.35f;
+        float offset = radius * 1.45f;
+        canvas.drawRoundRect(cx - offset - loop, cy - offset - loop,
+                cx - offset + loop, cy - offset + loop, loop, loop, modifierIconPaint);
+        canvas.drawRoundRect(cx + offset - loop, cy - offset - loop,
+                cx + offset + loop, cy - offset + loop, loop, loop, modifierIconPaint);
+        canvas.drawRoundRect(cx - offset - loop, cy + offset - loop,
+                cx - offset + loop, cy + offset + loop, loop, loop, modifierIconPaint);
+        canvas.drawRoundRect(cx + offset - loop, cy + offset - loop,
+                cx + offset + loop, cy + offset + loop, loop, loop, modifierIconPaint);
+        drawPointLine(canvas, cx - offset, cy - offset, cx + offset, cy - offset);
+        drawPointLine(canvas, cx - offset, cy + offset, cx + offset, cy + offset);
+        drawPointLine(canvas, cx - offset, cy - offset, cx - offset, cy + offset);
+        drawPointLine(canvas, cx + offset, cy - offset, cx + offset, cy + offset);
+    }
+
+    private void drawKeyboardFrame(Canvas canvas, RectF bounds, float radius, boolean includeKeys) {
+        RectF frame = new RectF(
+                bounds.centerX() - radius * 4.4f,
+                bounds.centerY() - radius * 2.75f,
+                bounds.centerX() + radius * 4.4f,
+                bounds.centerY() + radius * 2.35f);
+        canvas.drawRoundRect(frame, radius * 0.65f, radius * 0.65f, modifierIconPaint);
+        if (includeKeys) {
+            drawKeyboardKeys(canvas, bounds.centerX(), bounds.centerY() + radius * 0.1f, radius);
+        }
+    }
+
+    private void drawKeyboardKeys(Canvas canvas, float cx, float cy, float radius) {
+        modifierIconPaint.setStyle(Paint.Style.FILL);
+        float d = Math.max(radius * 0.7f, renderDp(1.2f));
+        for (int row = -1; row <= 1; row++) {
+            int count = row == 1 ? 3 : 5;
+            float start = cx - (count - 1) * radius * 1.05f;
+            float y = cy + row * radius * 1.35f;
+            for (int i = 0; i < count; i++) {
+                canvas.drawCircle(start + i * radius * 2.1f, y, d, modifierIconPaint);
+            }
+        }
+        modifierIconPaint.setStyle(Paint.Style.STROKE);
+    }
+
+    private void drawKeyboardArrow(
+            Canvas canvas,
+            float cx,
+            float cy,
+            float radius,
+            GestureAction direction,
+            boolean compact) {
+        float span = compact ? radius * 1.65f : radius * 2.55f;
+        Path path = new Path();
+        if (direction == GestureAction.LEFT) {
+            path.moveTo(cx + span * 0.55f, cy - span);
+            path.lineTo(cx - span * 0.55f, cy);
+            path.lineTo(cx + span * 0.55f, cy + span);
+        } else if (direction == GestureAction.RIGHT) {
+            path.moveTo(cx - span * 0.55f, cy - span);
+            path.lineTo(cx + span * 0.55f, cy);
+            path.lineTo(cx - span * 0.55f, cy + span);
+        } else if (direction == GestureAction.UP) {
+            path.moveTo(cx - span, cy + span * 0.55f);
+            path.lineTo(cx, cy - span * 0.55f);
+            path.lineTo(cx + span, cy + span * 0.55f);
+        } else if (direction == GestureAction.DOWN) {
+            path.moveTo(cx - span, cy - span * 0.55f);
+            path.lineTo(cx, cy + span * 0.55f);
+            path.lineTo(cx + span, cy - span * 0.55f);
+        }
+        canvas.drawPath(path, modifierIconPaint);
+    }
+
+    private boolean drawBuiltInGmkStyleGlyph(Canvas canvas, String glyphId, RectF bounds, int color) {
+        if (!DecorativeGlyphCatalog.isBuiltInGmkStyleGlyph(glyphId)) {
+            return false;
+        }
+        float radius = dotRadiusFor(bounds);
+        float stroke = Math.max(renderDp(1.35f), dotsLineWeightFor(bounds) * 0.68f);
+        float cx = bounds.centerX();
+        float cy = bounds.centerY();
+        modifierIconPaint.reset();
+        modifierIconPaint.setAntiAlias(true);
+        modifierIconPaint.setColor(color);
+        modifierIconPaint.setStrokeWidth(stroke);
+        modifierIconPaint.setStrokeCap(Paint.Cap.ROUND);
+        modifierIconPaint.setStrokeJoin(Paint.Join.ROUND);
+        modifierIconPaint.setStyle(Paint.Style.STROKE);
+        if (DecorativeGlyphCatalog.GLYPH_GMK_ACCENT_BAR.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 3.2f, cy, cx + radius * 3.2f, cy);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_ACCENT_CORNER.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 2.4f, cy - radius * 1.65f);
+            path.lineTo(cx + radius * 1.9f, cy - radius * 1.65f);
+            path.lineTo(cx + radius * 1.9f, cy + radius * 2.2f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_ACCENT_STRIPE.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 2.8f, cy - radius * 1.3f,
+                    cx + radius * 2.8f, cy - radius * 1.3f);
+            drawPointLine(canvas, cx - radius * 2.8f, cy + radius * 1.3f,
+                    cx + radius * 2.8f, cy + radius * 1.3f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_TRIPLE_DOT.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx - radius * 2.0f, cy, radius * 0.72f, modifierIconPaint);
+            canvas.drawCircle(cx, cy, radius * 0.72f, modifierIconPaint);
+            canvas.drawCircle(cx + radius * 2.0f, cy, radius * 0.72f, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_TWIN_TICKS.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 1.3f, cy - radius * 1.8f,
+                    cx - radius * 2.2f, cy + radius * 1.8f);
+            drawPointLine(canvas, cx + radius * 2.2f, cy - radius * 1.8f,
+                    cx + radius * 1.3f, cy + radius * 1.8f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_SPACE_DASH.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 3.8f, cy + radius * 0.7f,
+                    cx + radius * 3.8f, cy + radius * 0.7f);
+            drawPointLine(canvas, cx - radius * 3.8f, cy - radius * 0.7f,
+                    cx - radius * 2.6f, cy - radius * 0.7f);
+            drawPointLine(canvas, cx + radius * 2.6f, cy - radius * 0.7f,
+                    cx + radius * 3.8f, cy - radius * 0.7f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_MACRO_STACK.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 2.5f, cy - radius * 1.7f,
+                    cx + radius * 2.5f, cy - radius * 1.7f);
+            drawPointLine(canvas, cx - radius * 1.7f, cy,
+                    cx + radius * 1.7f, cy);
+            drawPointLine(canvas, cx - radius * 2.5f, cy + radius * 1.7f,
+                    cx + radius * 2.5f, cy + radius * 1.7f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_MACRO_BRACKETS.equals(glyphId)) {
+            drawBracketPair(canvas, cx, cy, radius);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_TARGET.equals(glyphId)) {
+            canvas.drawCircle(cx, cy, radius * 2.25f, modifierIconPaint);
+            canvas.drawCircle(cx, cy, radius * 0.9f, modifierIconPaint);
+            drawPointLine(canvas, cx - radius * 3.0f, cy, cx - radius * 2.25f, cy);
+            drawPointLine(canvas, cx + radius * 2.25f, cy, cx + radius * 3.0f, cy);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_PULSE.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 3.2f, cy);
+            path.lineTo(cx - radius * 1.6f, cy);
+            path.lineTo(cx - radius * 0.8f, cy - radius * 1.7f);
+            path.lineTo(cx + radius * 0.25f, cy + radius * 1.8f);
+            path.lineTo(cx + radius * 1.1f, cy);
+            path.lineTo(cx + radius * 3.2f, cy);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_WAVE.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 3.0f, cy + radius * 0.4f);
+            path.cubicTo(cx - radius * 1.9f, cy - radius * 1.6f,
+                    cx - radius * 0.9f, cy + radius * 2.0f,
+                    cx, cy + radius * 0.2f);
+            path.cubicTo(cx + radius * 0.9f, cy - radius * 1.6f,
+                    cx + radius * 1.9f, cy + radius * 2.0f,
+                    cx + radius * 3.0f, cy);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_MOON.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            Path path = new Path();
+            path.moveTo(cx + radius * 1.0f, cy - radius * 2.25f);
+            path.cubicTo(cx - radius * 1.8f, cy - radius * 2.0f,
+                    cx - radius * 2.9f, cy + radius * 0.8f,
+                    cx - radius * 0.5f, cy + radius * 2.5f);
+            path.cubicTo(cx + radius * 0.65f, cy + radius * 3.3f,
+                    cx + radius * 2.1f, cy + radius * 2.45f,
+                    cx + radius * 2.55f, cy + radius * 1.25f);
+            path.cubicTo(cx + radius * 0.75f, cy + radius * 1.9f,
+                    cx - radius * 0.35f, cy + radius * 0.55f,
+                    cx, cy - radius * 0.65f);
+            path.cubicTo(cx + radius * 0.25f, cy - radius * 1.55f,
+                    cx + radius * 0.85f, cy - radius * 2.1f,
+                    cx + radius * 1.0f, cy - radius * 2.25f);
+            path.close();
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_SUN.equals(glyphId)) {
+            canvas.drawCircle(cx, cy, radius * 1.3f, modifierIconPaint);
+            for (int i = 0; i < 8; i++) {
+                double angle = Math.PI * 2d * i / 8d;
+                float inner = radius * 2.05f;
+                float outer = radius * 3.0f;
+                drawPointLine(canvas,
+                        cx + (float) Math.cos(angle) * inner,
+                        cy + (float) Math.sin(angle) * inner,
+                        cx + (float) Math.cos(angle) * outer,
+                        cy + (float) Math.sin(angle) * outer);
+            }
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_LEAF.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 1.9f, cy + radius * 1.8f);
+            path.cubicTo(cx - radius * 1.7f, cy - radius * 1.8f,
+                    cx + radius * 1.9f, cy - radius * 2.1f,
+                    cx + radius * 2.1f, cy + radius * 1.4f);
+            path.cubicTo(cx + radius * 0.2f, cy + radius * 2.0f,
+                    cx - radius * 1.0f, cy + radius * 2.1f,
+                    cx - radius * 1.9f, cy + radius * 1.8f);
+            canvas.drawPath(path, modifierIconPaint);
+            drawPointLine(canvas, cx - radius * 1.4f, cy + radius * 1.4f,
+                    cx + radius * 1.2f, cy - radius * 1.1f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_FLOWER.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx, cy - radius * 1.45f, radius * 0.95f, modifierIconPaint);
+            canvas.drawCircle(cx + radius * 1.35f, cy, radius * 0.95f, modifierIconPaint);
+            canvas.drawCircle(cx, cy + radius * 1.45f, radius * 0.95f, modifierIconPaint);
+            canvas.drawCircle(cx - radius * 1.35f, cy, radius * 0.95f, modifierIconPaint);
+            canvas.drawCircle(cx, cy, radius * 0.55f, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_MOUNTAIN.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 3.0f, cy + radius * 2.0f);
+            path.lineTo(cx - radius * 0.8f, cy - radius * 1.6f);
+            path.lineTo(cx + radius * 0.4f, cy + radius * 0.3f);
+            path.lineTo(cx + radius * 1.3f, cy - radius * 0.9f);
+            path.lineTo(cx + radius * 3.0f, cy + radius * 2.0f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_DROPLET.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx, cy - radius * 2.8f);
+            path.cubicTo(cx + radius * 2.2f, cy - radius * 0.8f,
+                    cx + radius * 2.0f, cy + radius * 2.2f,
+                    cx, cy + radius * 2.4f);
+            path.cubicTo(cx - radius * 2.0f, cy + radius * 2.2f,
+                    cx - radius * 2.2f, cy - radius * 0.8f,
+                    cx, cy - radius * 2.8f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_ORBIT_STAR.equals(glyphId)) {
+            RectF oval = new RectF(cx - radius * 2.8f, cy - radius * 1.3f,
+                    cx + radius * 2.8f, cy + radius * 1.3f);
+            canvas.drawOval(oval, modifierIconPaint);
+            drawPointLine(canvas, cx + radius * 1.75f, cy - radius * 1.6f,
+                    cx + radius * 1.75f, cy + radius * 1.6f);
+            drawPointLine(canvas, cx + radius * 0.55f, cy,
+                    cx + radius * 2.95f, cy);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_DIAMOND_CLUSTER.equals(glyphId)) {
+            drawSmallDiamond(canvas, cx, cy - radius * 1.7f, radius * 0.85f);
+            drawSmallDiamond(canvas, cx - radius * 1.55f, cy + radius * 0.9f, radius * 0.85f);
+            drawSmallDiamond(canvas, cx + radius * 1.55f, cy + radius * 0.9f, radius * 0.85f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_PIXEL_STEPS.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            float size = radius * 1.25f;
+            for (int i = 0; i < 4; i++) {
+                canvas.drawRect(
+                        cx - radius * 2.4f + i * size,
+                        cy + radius * 1.6f - i * size,
+                        cx - radius * 2.4f + (i + 1) * size,
+                        cy + radius * 1.6f - (i - 1) * size,
+                        modifierIconPaint);
+            }
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_CONSTELLATION.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx - radius * 2.1f, cy - radius * 1.0f, radius * 0.48f, modifierIconPaint);
+            canvas.drawCircle(cx - radius * 0.35f, cy + radius * 0.15f, radius * 0.56f, modifierIconPaint);
+            canvas.drawCircle(cx + radius * 1.7f, cy - radius * 1.35f, radius * 0.48f, modifierIconPaint);
+            canvas.drawCircle(cx + radius * 2.2f, cy + radius * 1.45f, radius * 0.48f, modifierIconPaint);
+            drawPointLine(canvas, cx - radius * 2.1f, cy - radius * 1.0f,
+                    cx - radius * 0.35f, cy + radius * 0.15f);
+            drawPointLine(canvas, cx - radius * 0.35f, cy + radius * 0.15f,
+                    cx + radius * 1.7f, cy - radius * 1.35f);
+            drawPointLine(canvas, cx + radius * 1.7f, cy - radius * 1.35f,
+                    cx + radius * 2.2f, cy + radius * 1.45f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_PLANET_RING.equals(glyphId)) {
+            canvas.drawCircle(cx, cy, radius * 1.55f, modifierIconPaint);
+            RectF oval = new RectF(cx - radius * 3.0f, cy - radius * 1.05f,
+                    cx + radius * 3.0f, cy + radius * 1.05f);
+            canvas.drawOval(oval, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_COMET_TAIL.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx + radius * 1.85f, cy - radius * 1.2f, radius * 0.85f, modifierIconPaint);
+            drawPointLine(canvas, cx + radius * 0.8f, cy - radius * 0.45f,
+                    cx - radius * 2.8f, cy + radius * 1.7f);
+            drawPointLine(canvas, cx + radius * 0.55f, cy - radius * 1.25f,
+                    cx - radius * 2.45f, cy - radius * 0.35f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_CRESCENT_STAR.equals(glyphId)) {
+            drawBuiltInGmkStyleGlyph(canvas, DecorativeGlyphCatalog.GLYPH_GMK_MOON, bounds, color);
+            modifierIconPaint.setColor(color);
+            drawPointLine(canvas, cx + radius * 2.0f, cy - radius * 2.2f,
+                    cx + radius * 2.0f, cy - radius * 0.8f);
+            drawPointLine(canvas, cx + radius * 1.3f, cy - radius * 1.5f,
+                    cx + radius * 2.7f, cy - radius * 1.5f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_SPARKLE_PAIR.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 1.5f, cy - radius * 2.2f,
+                    cx - radius * 1.5f, cy - radius * 0.4f);
+            drawPointLine(canvas, cx - radius * 2.4f, cy - radius * 1.3f,
+                    cx - radius * 0.6f, cy - radius * 1.3f);
+            drawPointLine(canvas, cx + radius * 1.55f, cy + radius * 0.15f,
+                    cx + radius * 1.55f, cy + radius * 2.35f);
+            drawPointLine(canvas, cx + radius * 0.45f, cy + radius * 1.25f,
+                    cx + radius * 2.65f, cy + radius * 1.25f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_PLUS_CLUSTER.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 2.0f, cy - radius * 0.7f,
+                    cx - radius * 0.6f, cy - radius * 0.7f);
+            drawPointLine(canvas, cx - radius * 1.3f, cy - radius * 1.4f,
+                    cx - radius * 1.3f, cy);
+            drawPointLine(canvas, cx + radius * 0.7f, cy + radius * 1.0f,
+                    cx + radius * 2.3f, cy + radius * 1.0f);
+            drawPointLine(canvas, cx + radius * 1.5f, cy + radius * 0.2f,
+                    cx + radius * 1.5f, cy + radius * 1.8f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_DOT_MATRIX.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 3; col++) {
+                    canvas.drawCircle(cx + (col - 1) * radius * 1.45f,
+                            cy + (row - 1) * radius * 1.45f,
+                            radius * 0.42f,
+                            modifierIconPaint);
+                }
+            }
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_CORNER_DOTS.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx - radius * 2.4f, cy - radius * 1.8f, radius * 0.55f, modifierIconPaint);
+            canvas.drawCircle(cx - radius * 1.0f, cy - radius * 1.8f, radius * 0.55f, modifierIconPaint);
+            canvas.drawCircle(cx - radius * 2.4f, cy - radius * 0.4f, radius * 0.55f, modifierIconPaint);
+            canvas.drawCircle(cx + radius * 2.4f, cy + radius * 1.8f, radius * 0.55f, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_SIDE_STRIPES.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 2.9f, cy - radius * 2.0f,
+                    cx - radius * 2.9f, cy + radius * 2.0f);
+            drawPointLine(canvas, cx + radius * 2.9f, cy - radius * 2.0f,
+                    cx + radius * 2.9f, cy + radius * 2.0f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_CENTER_CROSS.equals(glyphId)) {
+            canvas.drawCircle(cx, cy, radius * 2.5f, modifierIconPaint);
+            drawPointLine(canvas, cx - radius * 1.5f, cy, cx + radius * 1.5f, cy);
+            drawPointLine(canvas, cx, cy - radius * 1.5f, cx, cy + radius * 1.5f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_ARCADE_DIAMOND.equals(glyphId)) {
+            drawSmallDiamond(canvas, cx, cy, radius * 1.8f);
+            drawPointLine(canvas, cx - radius * 2.6f, cy, cx - radius * 1.7f, cy);
+            drawPointLine(canvas, cx + radius * 1.7f, cy, cx + radius * 2.6f, cy);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_ISO_ENTER_MARK.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx + radius * 2.0f, cy - radius * 2.1f);
+            path.lineTo(cx + radius * 2.0f, cy + radius * 0.8f);
+            path.lineTo(cx - radius * 2.0f, cy + radius * 0.8f);
+            path.lineTo(cx - radius * 0.8f, cy - radius * 0.4f);
+            path.moveTo(cx - radius * 2.0f, cy + radius * 0.8f);
+            path.lineTo(cx - radius * 0.8f, cy + radius * 2.0f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_SPLIT_BAR.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 3.4f, cy + radius * 0.75f,
+                    cx - radius * 0.45f, cy + radius * 0.75f);
+            drawPointLine(canvas, cx + radius * 0.45f, cy + radius * 0.75f,
+                    cx + radius * 3.4f, cy + radius * 0.75f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_LONG_BAR_TICKS.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 3.4f, cy, cx + radius * 3.4f, cy);
+            drawPointLine(canvas, cx - radius * 1.7f, cy - radius * 0.9f,
+                    cx - radius * 1.7f, cy + radius * 0.9f);
+            drawPointLine(canvas, cx + radius * 1.7f, cy - radius * 0.9f,
+                    cx + radius * 1.7f, cy + radius * 0.9f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_STEPPED_BAR.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 3.0f, cy + radius * 1.4f,
+                    cx - radius * 0.8f, cy + radius * 1.4f);
+            drawPointLine(canvas, cx - radius * 0.8f, cy + radius * 1.4f,
+                    cx - radius * 0.8f, cy - radius * 0.2f);
+            drawPointLine(canvas, cx - radius * 0.8f, cy - radius * 0.2f,
+                    cx + radius * 2.7f, cy - radius * 0.2f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_RISING_BLOCKS.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            for (int i = 0; i < 4; i++) {
+                float h = radius * (0.9f + i * 0.55f);
+                float x = cx - radius * 2.4f + i * radius * 1.5f;
+                canvas.drawRect(x, cy + radius * 1.8f - h, x + radius * 0.8f,
+                        cy + radius * 1.8f, modifierIconPaint);
+            }
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_EQUALIZER.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 2.2f, cy + radius * 1.8f,
+                    cx - radius * 2.2f, cy - radius * 0.8f);
+            drawPointLine(canvas, cx, cy + radius * 1.8f,
+                    cx, cy - radius * 1.8f);
+            drawPointLine(canvas, cx + radius * 2.2f, cy + radius * 1.8f,
+                    cx + radius * 2.2f, cy - radius * 0.2f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_WAVE_DOUBLE.equals(glyphId)) {
+            drawBuiltInGmkStyleGlyph(canvas, DecorativeGlyphCatalog.GLYPH_GMK_WAVE, bounds, color);
+            RectF shifted = new RectF(bounds);
+            shifted.offset(0f, radius * 1.25f);
+            drawBuiltInGmkStyleGlyph(canvas, DecorativeGlyphCatalog.GLYPH_GMK_WAVE, shifted, color);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_FLOWER_ALT.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.STROKE);
+            canvas.drawCircle(cx - radius * 1.0f, cy - radius * 0.8f, radius * 1.05f, modifierIconPaint);
+            canvas.drawCircle(cx + radius * 1.0f, cy - radius * 0.8f, radius * 1.05f, modifierIconPaint);
+            canvas.drawCircle(cx, cy + radius * 1.0f, radius * 1.05f, modifierIconPaint);
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(cx, cy, radius * 0.55f, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_LEAF_PAIR.equals(glyphId)) {
+            RectF left = new RectF(bounds);
+            left.offset(-radius * 1.25f, 0f);
+            drawBuiltInGmkStyleGlyph(canvas, DecorativeGlyphCatalog.GLYPH_GMK_LEAF, left, color);
+            RectF right = new RectF(bounds);
+            right.offset(radius * 1.25f, 0f);
+            drawBuiltInGmkStyleGlyph(canvas, DecorativeGlyphCatalog.GLYPH_GMK_LEAF, right, color);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_SPROUT.equals(glyphId)) {
+            drawPointLine(canvas, cx, cy + radius * 2.2f, cx, cy - radius * 0.7f);
+            Path left = new Path();
+            left.moveTo(cx, cy - radius * 0.4f);
+            left.cubicTo(cx - radius * 2.2f, cy - radius * 1.6f,
+                    cx - radius * 2.4f, cy + radius * 0.6f,
+                    cx, cy + radius * 0.25f);
+            canvas.drawPath(left, modifierIconPaint);
+            Path right = new Path();
+            right.moveTo(cx, cy - radius * 0.8f);
+            right.cubicTo(cx + radius * 2.2f, cy - radius * 2.0f,
+                    cx + radius * 2.4f, cy + radius * 0.2f,
+                    cx, cy - radius * 0.05f);
+            canvas.drawPath(right, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_PETALS.equals(glyphId)) {
+            modifierIconPaint.setStyle(Paint.Style.FILL);
+            for (int i = 0; i < 5; i++) {
+                double angle = Math.PI * 2d * i / 5d - Math.PI / 2d;
+                canvas.drawOval(new RectF(
+                        cx + (float) Math.cos(angle) * radius * 1.35f - radius * 0.65f,
+                        cy + (float) Math.sin(angle) * radius * 1.35f - radius * 1.0f,
+                        cx + (float) Math.cos(angle) * radius * 1.35f + radius * 0.65f,
+                        cy + (float) Math.sin(angle) * radius * 1.35f + radius * 1.0f),
+                        modifierIconPaint);
+            }
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_RAIN.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 1.7f, cy - radius * 1.9f,
+                    cx - radius * 2.4f, cy - radius * 0.6f);
+            drawPointLine(canvas, cx, cy - radius * 0.9f,
+                    cx - radius * 0.7f, cy + radius * 0.4f);
+            drawPointLine(canvas, cx + radius * 1.7f, cy + radius * 0.1f,
+                    cx + radius * 1.0f, cy + radius * 1.4f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_SNOW.equals(glyphId)) {
+            drawPointLine(canvas, cx - radius * 2.3f, cy, cx + radius * 2.3f, cy);
+            drawPointLine(canvas, cx - radius * 1.15f, cy - radius * 2.0f,
+                    cx + radius * 1.15f, cy + radius * 2.0f);
+            drawPointLine(canvas, cx + radius * 1.15f, cy - radius * 2.0f,
+                    cx - radius * 1.15f, cy + radius * 2.0f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_CLOUD.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 2.7f, cy + radius * 1.0f);
+            path.cubicTo(cx - radius * 2.7f, cy - radius * 0.2f,
+                    cx - radius * 1.4f, cy - radius * 0.3f,
+                    cx - radius * 1.1f, cy - radius * 0.8f);
+            path.cubicTo(cx - radius * 0.6f, cy - radius * 2.0f,
+                    cx + radius * 1.0f, cy - radius * 1.8f,
+                    cx + radius * 1.2f, cy - radius * 0.6f);
+            path.cubicTo(cx + radius * 2.8f, cy - radius * 0.8f,
+                    cx + radius * 3.0f, cy + radius * 1.0f,
+                    cx + radius * 1.6f, cy + radius * 1.0f);
+            path.close();
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_FLAME.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx, cy - radius * 2.8f);
+            path.cubicTo(cx + radius * 2.1f, cy - radius * 0.9f,
+                    cx + radius * 1.8f, cy + radius * 2.4f,
+                    cx, cy + radius * 2.5f);
+            path.cubicTo(cx - radius * 1.7f, cy + radius * 1.9f,
+                    cx - radius * 2.2f, cy - radius * 0.5f,
+                    cx, cy - radius * 2.8f);
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_BOLT.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx + radius * 0.6f, cy - radius * 3.0f);
+            path.lineTo(cx - radius * 1.4f, cy + radius * 0.4f);
+            path.lineTo(cx + radius * 0.2f, cy + radius * 0.4f);
+            path.lineTo(cx - radius * 0.6f, cy + radius * 3.0f);
+            path.lineTo(cx + radius * 1.8f, cy - radius * 0.7f);
+            path.lineTo(cx + radius * 0.3f, cy - radius * 0.7f);
+            path.close();
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_CRYSTAL.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx, cy - radius * 2.7f);
+            path.lineTo(cx + radius * 2.1f, cy - radius * 0.5f);
+            path.lineTo(cx + radius * 1.2f, cy + radius * 2.5f);
+            path.lineTo(cx - radius * 1.2f, cy + radius * 2.5f);
+            path.lineTo(cx - radius * 2.1f, cy - radius * 0.5f);
+            path.close();
+            canvas.drawPath(path, modifierIconPaint);
+            drawPointLine(canvas, cx, cy - radius * 2.7f, cx, cy + radius * 2.5f);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_COMPASS.equals(glyphId)) {
+            canvas.drawCircle(cx, cy, radius * 2.6f, modifierIconPaint);
+            Path path = new Path();
+            path.moveTo(cx, cy - radius * 2.0f);
+            path.lineTo(cx + radius * 0.75f, cy + radius * 0.75f);
+            path.lineTo(cx, cy + radius * 0.25f);
+            path.lineTo(cx - radius * 0.75f, cy + radius * 0.75f);
+            path.close();
+            canvas.drawPath(path, modifierIconPaint);
+        } else if (DecorativeGlyphCatalog.GLYPH_GMK_LAB_FLASK.equals(glyphId)) {
+            Path path = new Path();
+            path.moveTo(cx - radius * 0.8f, cy - radius * 2.4f);
+            path.lineTo(cx + radius * 0.8f, cy - radius * 2.4f);
+            path.lineTo(cx + radius * 0.4f, cy - radius * 0.4f);
+            path.lineTo(cx + radius * 2.0f, cy + radius * 2.3f);
+            path.lineTo(cx - radius * 2.0f, cy + radius * 2.3f);
+            path.lineTo(cx - radius * 0.4f, cy - radius * 0.4f);
+            path.close();
+            canvas.drawPath(path, modifierIconPaint);
+        }
+        return true;
+    }
+
+    private boolean drawBuiltInFontGlyph(Canvas canvas, String glyphId, RectF bounds, int color) {
+        if (!DecorativeGlyphCatalog.isBuiltInFontGlyph(glyphId)) {
+            return false;
+        }
+        String text = DecorativeGlyphCatalog.fontGlyphText(glyphId);
+        if (text.isEmpty()) {
+            return false;
+        }
+        modifierIconPaint.reset();
+        modifierIconPaint.setAntiAlias(true);
+        modifierIconPaint.setStyle(Paint.Style.FILL);
+        modifierIconPaint.setTextAlign(Paint.Align.CENTER);
+        modifierIconPaint.setColor(color);
+        modifierIconPaint.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        modifierIconPaint.setFakeBoldText(true);
+        float maxWidth = bounds.width() * 0.76f;
+        float maxHeight = bounds.height() * 0.66f;
+        float textSize = Math.min(maxHeight, bounds.height() * 0.72f);
+        modifierIconPaint.setTextSize(textSize);
+        Rect textBounds = new Rect();
+        modifierIconPaint.getTextBounds(text, 0, text.length(), textBounds);
+        if (textBounds.width() > 0 && textBounds.width() > maxWidth) {
+            textSize *= maxWidth / textBounds.width();
+            modifierIconPaint.setTextSize(textSize);
+        }
+        float centerY = bounds.centerY() - textCenterOffset(modifierIconPaint);
+        canvas.drawText(text, bounds.centerX(), centerY, modifierIconPaint);
+        return true;
+    }
+
+    private boolean drawBuiltInImageMaskGlyph(Canvas canvas, String glyphId, RectF bounds, int color) {
+        if (!DecorativeGlyphCatalog.isBuiltInImageMaskGlyph(glyphId)) {
+            return false;
+        }
+        Bitmap bitmap = imageGlyphBitmap(glyphId);
+        if (bitmap == null) {
+            return false;
+        }
+        float targetHeight = bounds.height() * 0.68f;
+        float targetWidth = Math.min(bounds.width() * 0.72f,
+                targetHeight * DecorativeGlyphCatalog.glyphAspectRatio(glyphId));
+        RectF target = new RectF(
+                bounds.centerX() - targetWidth / 2f,
+                bounds.centerY() - targetHeight / 2f,
+                bounds.centerX() + targetWidth / 2f,
+                bounds.centerY() + targetHeight / 2f);
+        modifierIconPaint.reset();
+        modifierIconPaint.setAntiAlias(true);
+        modifierIconPaint.setFilterBitmap(true);
+        modifierIconPaint.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, null, target, modifierIconPaint);
+        modifierIconPaint.setColorFilter(null);
+        return true;
+    }
+
+    private Bitmap imageGlyphBitmap(String glyphId) {
+        Bitmap cached = imageGlyphCache.get(glyphId);
+        if (cached != null) {
+            return cached;
+        }
+        int resId = imageGlyphResourceId(glyphId);
+        if (resId == 0) {
+            return null;
+        }
+        Bitmap decoded = BitmapFactory.decodeResource(getResources(), resId);
+        if (decoded != null) {
+            imageGlyphCache.put(glyphId, decoded);
+        }
+        return decoded;
+    }
+
+    private int imageGlyphResourceId(String glyphId) {
+        if (DecorativeGlyphCatalog.GLYPH_IMG_TALL_CAPSULE.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_tall_capsule;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_VERTICAL_RIBBON.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_vertical_ribbon;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_SPLIT_PILL.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_split_pill;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_KEYHOLE.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_keyhole;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_BADGE_CUT.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_badge_cut;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_SIDE_NOTCH.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_side_notch;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_STACKED_TILES.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_stacked_tiles;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_FOLDED_CORNER.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_folded_corner;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_FLAG_TAB.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_flag_tab;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_TALL_BRACKET.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_tall_bracket;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_HORIZON_BARS.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_horizon_bars;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_LADDER.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_ladder;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_DUAL_POSTS.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_dual_posts;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_PIN_DROP.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_pin_drop;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_TICKET.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_ticket;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_LEAF_SLAB.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_leaf_slab;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_BLOB_STAR.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_blob_star;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_ARC_GATE.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_arc_gate;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_CORNER_FRAME.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_corner_frame;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_CAPSULE_DOTS.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_capsule_dots;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_WAVE_TILE.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_wave_tile;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_DIAMOND_STACK.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_diamond_stack;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_TALL_ORBIT.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_tall_orbit;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_PUNCH_CARD.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_punch_card;
+        }
+        if (DecorativeGlyphCatalog.GLYPH_IMG_SOFT_CROSS.equals(glyphId)) {
+            return R.drawable.glyph_mask_img_soft_cross;
+        }
+        return 0;
+    }
+
+    private void drawBracketPair(Canvas canvas, float cx, float cy, float radius) {
+        Path left = new Path();
+        left.moveTo(cx - radius * 1.1f, cy - radius * 2.2f);
+        left.lineTo(cx - radius * 2.5f, cy - radius * 2.2f);
+        left.lineTo(cx - radius * 2.5f, cy + radius * 2.2f);
+        left.lineTo(cx - radius * 1.1f, cy + radius * 2.2f);
+        canvas.drawPath(left, modifierIconPaint);
+        Path right = new Path();
+        right.moveTo(cx + radius * 1.1f, cy - radius * 2.2f);
+        right.lineTo(cx + radius * 2.5f, cy - radius * 2.2f);
+        right.lineTo(cx + radius * 2.5f, cy + radius * 2.2f);
+        right.lineTo(cx + radius * 1.1f, cy + radius * 2.2f);
+        canvas.drawPath(right, modifierIconPaint);
+    }
+
+    private void drawSmallDiamond(Canvas canvas, float cx, float cy, float size) {
+        modifierIconPaint.setStyle(Paint.Style.FILL);
+        Path path = new Path();
+        path.moveTo(cx, cy - size);
+        path.lineTo(cx + size, cy);
+        path.lineTo(cx, cy + size);
+        path.lineTo(cx - size, cy);
+        path.close();
+        canvas.drawPath(path, modifierIconPaint);
+        modifierIconPaint.setStyle(Paint.Style.STROKE);
     }
 
     private void drawEscDisplayOverride(Canvas canvas, GestureKey key, RectF surfaceBounds) {
@@ -1058,32 +2467,18 @@ public final class HangulKeyboardView extends View {
         modifierIconPaint.setStrokeCap(Paint.Cap.ROUND);
         modifierIconPaint.setStrokeJoin(Paint.Join.ROUND);
         modifierIconPaint.setColor(color);
-        modifierIconPaint.setStrokeWidth(Math.max(bounds.height() * 0.045f, renderDp(1.7f)));
+        modifierIconPaint.setStrokeWidth(Math.max(bounds.height() * 0.06f, renderDp(1.5f)));
 
-        Path path = new Path();
-        path.moveTo(3f, 19f);
-        path.cubicTo(7f, 5f, 11f, 5f, 9f, 18f);
-        path.cubicTo(12f, 13f, 16f, 12f, 18f, 17f);
-        path.cubicTo(20f, 22f, 15f, 24f, 13f, 19f);
-        path.cubicTo(18f, 20f, 22f, 20f, 26f, 17f);
-        path.cubicTo(29f, 14f, 32f, 14f, 31f, 18f);
-        path.cubicTo(31f, 22f, 25f, 22f, 26f, 17f);
-        path.cubicTo(31f, 20f, 36f, 20f, 40f, 17f);
-        path.cubicTo(44f, 5f, 49f, 5f, 46f, 18f);
-        path.cubicTo(49f, 13f, 54f, 12f, 56f, 17f);
-        path.cubicTo(58f, 22f, 52f, 24f, 51f, 19f);
-        path.cubicTo(56f, 20f, 60f, 20f, 64f, 17f);
-        path.cubicTo(67f, 14f, 70f, 14f, 69f, 18f);
-        path.cubicTo(69f, 22f, 63f, 22f, 64f, 17f);
-        path.cubicTo(69f, 20f, 74f, 20f, 78f, 17f);
-        path.cubicTo(81f, 14f, 84f, 14f, 83f, 18f);
-        path.cubicTo(83f, 22f, 77f, 22f, 78f, 17f);
-        path.cubicTo(83f, 20f, 87f, 20f, 91f, 17f);
+        Path path = DecorativeGlyphCatalog.createHihihiPath();
 
         canvas.save();
-        float scale = Math.min(bounds.width() * 0.66f / 94f, bounds.height() * 0.34f / 28f);
-        float left = bounds.centerX() - 94f * scale / 2f;
-        float top = bounds.centerY() - 28f * scale / 2f;
+        float scale = Math.min(
+                bounds.width() * DecorativeGlyphCatalog.HIHIHI_MAX_WIDTH_RATIO
+                        / DecorativeGlyphCatalog.HIHIHI_VIEWBOX_WIDTH,
+                bounds.height() * DecorativeGlyphCatalog.HIHIHI_MAX_HEIGHT_RATIO
+                        / DecorativeGlyphCatalog.HIHIHI_VIEWBOX_HEIGHT);
+        float left = bounds.centerX() - DecorativeGlyphCatalog.HIHIHI_VIEWBOX_WIDTH * scale / 2f;
+        float top = bounds.centerY() - DecorativeGlyphCatalog.HIHIHI_VIEWBOX_HEIGHT * scale / 2f;
         canvas.translate(left, top);
         canvas.scale(scale, scale);
         canvas.drawPath(path, modifierIconPaint);
@@ -1253,7 +2648,7 @@ public final class HangulKeyboardView extends View {
                 0,
                 bounds.bottom,
                 colors,
-                new float[] { 0f, 0.42f, 1f },
+                keyFaceGradientStops(),
                 Shader.TileMode.CLAMP));
         drawKeyShape(canvas, bounds, keyPaint);
         keyPaint.setShader(null);
@@ -1328,10 +2723,24 @@ public final class HangulKeyboardView extends View {
         float topAmount = (luminance < 42 ? 0.08f : 0.06f) + 0.24f * strength;
         float bottomAmount = (luminance < 42 ? 0.04f : 0.05f) + 0.18f * strength;
         return new int[] {
-                blendColor(0xFFFFFFFF, background, topAmount),
+                blendColor(settings.visualEffects.keyFaceGradientStartColor, background, topAmount),
                 background,
-                blendColor(0xFF000000, background, bottomAmount)
+                blendColor(settings.visualEffects.keyFaceGradientEndColor, background, bottomAmount)
         };
+    }
+
+    private float[] keyFaceGradientStops() {
+        String curve = settings.visualEffects.keyFaceGradientCurve;
+        if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_LINEAR.equals(curve)) {
+            return new float[] { 0f, 0.5f, 1f };
+        }
+        if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_TOP_GLOW.equals(curve)) {
+            return new float[] { 0f, 0.30f, 1f };
+        }
+        if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE.equals(curve)) {
+            return new float[] { 0f, 0.62f, 1f };
+        }
+        return new float[] { 0f, 0.42f, 1f };
     }
 
     private int perceivedLuminance(int color) {
@@ -1944,12 +3353,11 @@ public final class HangulKeyboardView extends View {
     }
 
     private float dotRadiusFor(RectF bounds) {
-        return dotsLineWeightFor(bounds) * 0.69f;
+        return DecorativeGlyphCatalog.dotRadiusForKeyHeight(bounds.height(), renderDp(2.1f));
     }
 
     private float dotsLineWeightFor(RectF bounds) {
-        float weight = Math.min(bounds.height() * 0.16f, bounds.width() * 0.12f);
-        return Math.max(renderDp(3.0f), weight);
+        return DecorativeGlyphCatalog.lineWeightForDotRadius(dotRadiusFor(bounds));
     }
 
     private void drawDotRow(
@@ -1992,7 +3400,7 @@ public final class HangulKeyboardView extends View {
     private void drawVividSpacebarDots(Canvas canvas, RectF bounds) {
         int[] colors = { 0xFFEF476F, 0xFFFFD166, 0xFF06D6A0, 0xFF4CC9F0 };
         float radius = dotRadiusFor(bounds);
-        float gap = Math.max(radius * 1.35f, renderDp(3.2f));
+        float gap = DecorativeGlyphCatalog.spaceDotGap(radius, renderDp(3.2f));
         float totalWidth = radius * 2f * colors.length + gap * (colors.length - 1);
         float x = bounds.centerX() - totalWidth / 2f + radius;
         iconPaint.setStyle(Paint.Style.FILL);
@@ -2542,7 +3950,33 @@ public final class HangulKeyboardView extends View {
     }
 
     private int gestureThresholdPxFor(GestureKey key, GestureAction action) {
-        return dp(GestureThresholdPolicy.thresholdDp(settings, touchBias, key, action));
+        int thresholdDp = GestureThresholdPolicy.thresholdDp(settings, touchBias, key, action);
+        if (touchBiasAutoCorrectionEnabled && isDingulTypingKey(key)) {
+            thresholdDp += dingulTouchProfile.penaltyDp(codePoints(key.label), action);
+            if (!redactTypingEventText) {
+                thresholdDp += typingCorrectionStats.thresholdAdjustmentDp(codePoints(key.label), action);
+            }
+        }
+        return dp(Math.max(8, thresholdDp));
+    }
+
+    private int shadowGestureThresholdPxFor(GestureKey key) {
+        int baseDp = GestureThresholdPolicy.baseThresholdDp(settings, key);
+        return dp(Math.max(8, Math.round(baseDp * 0.72f)));
+    }
+
+    private float axisDominanceRatioFor(GestureKey key) {
+        return isDingulTypingKey(key) ? DINGUL_AXIS_DOMINANCE_RATIO : 0f;
+    }
+
+    private boolean isDingulTypingKey(GestureKey key) {
+        if (settings.keyboardMode != KeyboardMode.HANGUL || key == null) {
+            return false;
+        }
+        if (KeyboardCommands.isCommand(key.tap) && !isDingulVowelCommand(key.tap)) {
+            return false;
+        }
+        return isHangulConsonantHintKey(key) || isHangulVowelHintKey(key);
     }
 
     public interface OnKeyGestureListener {
@@ -2713,51 +4147,134 @@ public final class HangulKeyboardView extends View {
         final KeySlot keySlot;
         final GestureAction action;
         final String value;
+        final float downX;
+        final float downY;
         final float x;
         final float y;
+        final long downTimeMs;
+        final GestureAction fallbackAction;
+        final KeySlot shadowKeySlot;
+        final GestureAction shadowAction;
+        final float shadowScore;
+        final boolean shadowApplied;
 
         PendingTouchOutput(
                 long sequence,
                 KeySlot keySlot,
                 GestureAction action,
                 String value,
+                float downX,
+                float downY,
                 float x,
-                float y) {
+                float y,
+                long downTimeMs,
+                GestureAction fallbackAction,
+                KeySlot shadowKeySlot,
+                GestureAction shadowAction,
+                float shadowScore,
+                boolean shadowApplied) {
             this.sequence = sequence;
             this.keySlot = keySlot;
             this.action = action == null ? GestureAction.TAP : action;
             this.value = value;
+            this.downX = downX;
+            this.downY = downY;
             this.x = x;
             this.y = y;
+            this.downTimeMs = Math.max(0L, downTimeMs);
+            this.fallbackAction = fallbackAction == null ? GestureAction.TAP : fallbackAction;
+            this.shadowKeySlot = shadowKeySlot;
+            this.shadowAction = shadowAction;
+            this.shadowScore = shadowScore;
+            this.shadowApplied = shadowApplied;
         }
     }
 
-    private static final class KeySlot implements TouchResolver.Target {
+    private static final class ResolvedTouchOutput {
+        final KeySlot keySlot;
+        final GestureAction action;
+        final GestureAction fallbackAction;
+        final KeySlot shadowKeySlot;
+        final GestureAction shadowAction;
+        final float shadowScore;
+        final boolean shadowApplied;
+
+        ResolvedTouchOutput(
+                KeySlot keySlot,
+                GestureAction action,
+                GestureAction fallbackAction,
+                KeySlot shadowKeySlot,
+                GestureAction shadowAction,
+                float shadowScore,
+                boolean shadowApplied) {
+            this.keySlot = keySlot;
+            this.action = action == null ? GestureAction.TAP : action;
+            this.fallbackAction = fallbackAction == null ? GestureAction.TAP : fallbackAction;
+            this.shadowKeySlot = shadowKeySlot;
+            this.shadowAction = shadowAction;
+            this.shadowScore = shadowScore;
+            this.shadowApplied = shadowApplied;
+        }
+    }
+
+    private static final class TypingProbeTouch {
+        final float downX;
+        final float downY;
+        final float upX;
+        final float upY;
+        final RectF range;
+
+        TypingProbeTouch(float downX, float downY, float upX, float upY, RectF range) {
+            this.downX = downX;
+            this.downY = downY;
+            this.upX = upX;
+            this.upY = upY;
+            this.range = range;
+        }
+    }
+
+    private static final class KeySlot implements TouchResolver.Target, DingulSlideIntentResolver.Target {
         final GestureKey key;
         final RectF bounds;
         final boolean primaryBottomControl;
         final boolean compactSpecialColumn;
         final float visualGap;
+        final int bottomSpaceDirection;
 
         KeySlot(
                 GestureKey key,
                 RectF bounds,
                 boolean primaryBottomControl,
                 boolean compactSpecialColumn,
-                float visualGap) {
+                float visualGap,
+                int bottomSpaceDirection) {
             this.key = key;
             this.bounds = bounds;
             this.primaryBottomControl = primaryBottomControl;
             this.compactSpecialColumn = compactSpecialColumn;
             this.visualGap = Math.max(0f, visualGap);
+            this.bottomSpaceDirection = bottomSpaceDirection;
+        }
+
+        @Override
+        public GestureKey key() {
+            return key;
         }
 
         RectF visualBounds() {
             float insetY = Math.min(visualGap / 2f, bounds.height() * 0.18f);
+            float insetX = Math.min(visualGap, bounds.width() * 0.32f);
+            float left = bounds.left;
+            float right = bounds.right;
+            if (bottomSpaceDirection < 0) {
+                left += insetX;
+            } else if (bottomSpaceDirection > 0) {
+                right -= insetX;
+            }
             return new RectF(
-                    bounds.left,
+                    left,
                     bounds.top + insetY,
-                    bounds.right,
+                    right,
                     bounds.bottom - insetY);
         }
 
@@ -2785,12 +4302,42 @@ public final class HangulKeyboardView extends View {
         }
 
         @Override
+        public boolean coreContains(float x, float y, float inset) {
+            float insetX = Math.min(Math.max(0f, inset), bounds.width() * 0.32f);
+            float insetY = Math.min(Math.max(0f, inset), bounds.height() * 0.32f);
+            return x >= bounds.left + insetX
+                    && x <= bounds.right - insetX
+                    && y >= bounds.top + insetY
+                    && y <= bounds.bottom - insetY;
+        }
+
+        @Override
         public float distanceSquaredTo(float x, float y) {
             float nearestX = Math.max(bounds.left, Math.min(bounds.right, x));
             float nearestY = Math.max(bounds.top, Math.min(bounds.bottom, y));
             float dx = x - nearestX;
             float dy = y - nearestY;
             return dx * dx + dy * dy;
+        }
+
+        @Override
+        public float width() {
+            return bounds.width();
+        }
+
+        @Override
+        public float height() {
+            return bounds.height();
+        }
+
+        @Override
+        public float centerX() {
+            return bounds.centerX();
+        }
+
+        @Override
+        public float centerY() {
+            return bounds.centerY();
         }
 
         @Override
@@ -2801,13 +4348,21 @@ public final class HangulKeyboardView extends View {
 
     private static final class TouchSample {
         final String value;
+        final String keyCodePoints;
         final float offsetXDp;
         final float offsetYDp;
         final GestureAction action;
         final long timeMs;
 
-        TouchSample(String value, float offsetXDp, float offsetYDp, GestureAction action, long timeMs) {
+        TouchSample(
+                String value,
+                String keyCodePoints,
+                float offsetXDp,
+                float offsetYDp,
+                GestureAction action,
+                long timeMs) {
             this.value = value == null ? "" : value;
+            this.keyCodePoints = keyCodePoints == null ? "" : keyCodePoints;
             this.offsetXDp = offsetXDp;
             this.offsetYDp = offsetYDp;
             this.action = action == null ? GestureAction.TAP : action;

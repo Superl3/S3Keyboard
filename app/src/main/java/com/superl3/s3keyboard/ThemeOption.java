@@ -86,7 +86,7 @@ final class ThemeOption {
 
     static KeyboardSettings resetToDefaultAppearance(KeyboardSettings settings) {
         KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
-        return base.withAppearanceFrom(KeyboardSettings.defaults());
+        return base.withFullAppearanceFrom(KeyboardSettings.defaults());
     }
 
     String stableId() {
@@ -94,6 +94,18 @@ final class ThemeOption {
             return preset.id;
         }
         return userThemeId == null ? "" : userThemeId;
+    }
+
+    static int indexOfStableId(ThemeOption[] options, String stableId) {
+        if (options == null || options.length == 0 || stableId == null || stableId.isEmpty()) {
+            return 0;
+        }
+        for (int i = 0; i < options.length; i++) {
+            if (options[i] != null && stableId.equals(options[i].stableId())) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     boolean isDeletableUserTheme() {

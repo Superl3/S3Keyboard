@@ -176,16 +176,62 @@ function Get-KeyFaceGradientStrength {
     return [Math]::Max(0, [Math]::Min(100, (Get-ThemeInt $effect.strengthPercent 22)))
 }
 
+function Get-KeyFaceGradientStartColor {
+    param([object] $Theme)
+    $effect = Get-KeyFaceGradientEffect -Theme $Theme
+    if ($null -eq $effect) {
+        return [System.Drawing.Color]::White
+    }
+    return Convert-ThemeColor $effect.startColor "#FFFFFF"
+}
+
+function Get-KeyFaceGradientEndColor {
+    param([object] $Theme)
+    $effect = Get-KeyFaceGradientEffect -Theme $Theme
+    if ($null -eq $effect) {
+        return [System.Drawing.Color]::Black
+    }
+    return Convert-ThemeColor $effect.endColor "#000000"
+}
+
+function Get-KeyFaceGradientCurve {
+    param([object] $Theme)
+    $effect = Get-KeyFaceGradientEffect -Theme $Theme
+    if ($null -eq $effect -or [string]::IsNullOrWhiteSpace([string]$effect.curve)) {
+        return "soft"
+    }
+    $curve = [string]$effect.curve
+    if ($curve -eq "linear" -or $curve -eq "soft" -or $curve -eq "top_glow" -or $curve -eq "bottom_shade") {
+        return $curve
+    }
+    return "soft"
+}
+
+function Get-KeyFaceGradientPositions {
+    param([object] $Theme)
+    switch (Get-KeyFaceGradientCurve -Theme $Theme) {
+        "linear" { return [single[]](0.0, 0.50, 1.0) }
+        "top_glow" { return [single[]](0.0, 0.30, 1.0) }
+        "bottom_shade" { return [single[]](0.0, 0.62, 1.0) }
+        default { return [single[]](0.0, 0.42, 1.0) }
+    }
+}
+
 function Get-KeyFaceGradientColors {
-    param([System.Drawing.Color] $Background, [int] $StrengthPercent)
+    param(
+        [System.Drawing.Color] $Background,
+        [int] $StrengthPercent,
+        [System.Drawing.Color] $StartColor,
+        [System.Drawing.Color] $EndColor
+    )
     $luminance = ($Background.R * 299 + $Background.G * 587 + $Background.B * 114) / 1000.0
     $strength = [Math]::Max(0.0, [Math]::Min(1.0, $StrengthPercent / 100.0))
     $topAmount = $(if ($luminance -lt 42) { 0.08 } else { 0.06 }) + 0.24 * $strength
     $bottomAmount = $(if ($luminance -lt 42) { 0.04 } else { 0.05 }) + 0.18 * $strength
     return @(
-        (Blend-ThemeColor -Foreground ([System.Drawing.Color]::White) -Background $Background -ForegroundAmount $topAmount),
+        (Blend-ThemeColor -Foreground $StartColor -Background $Background -ForegroundAmount $topAmount),
         $Background,
-        (Blend-ThemeColor -Foreground ([System.Drawing.Color]::Black) -Background $Background -ForegroundAmount $bottomAmount)
+        (Blend-ThemeColor -Foreground $EndColor -Background $Background -ForegroundAmount $bottomAmount)
     )
 }
 
@@ -206,7 +252,11 @@ function New-KeyFaceBrush {
         return [System.Drawing.SolidBrush]::new($Fill)
     }
 
-    $colors = Get-KeyFaceGradientColors -Background $Fill -StrengthPercent $strength
+    $colors = Get-KeyFaceGradientColors `
+            -Background $Fill `
+            -StrengthPercent $strength `
+            -StartColor (Get-KeyFaceGradientStartColor -Theme $Theme) `
+            -EndColor (Get-KeyFaceGradientEndColor -Theme $Theme)
     $rect = [System.Drawing.RectangleF]::new($X, $Y, [Math]::Max(1, $W), [Math]::Max(1, $H))
     $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
             $rect,
@@ -214,7 +264,7 @@ function New-KeyFaceBrush {
             $colors[2],
             [System.Drawing.Drawing2D.LinearGradientMode]::Vertical)
     $blend = [System.Drawing.Drawing2D.ColorBlend]::new(3)
-    $blend.Positions = [single[]](0.0, 0.42, 1.0)
+    $blend.Positions = Get-KeyFaceGradientPositions -Theme $Theme
     $blend.Colors = [System.Drawing.Color[]]($colors[0], $colors[1], $colors[2])
     $brush.InterpolationColors = $blend
     return $brush
@@ -618,6 +668,275 @@ function Test-GitCommandPack {
     return $PackId -eq "git-commands"
 }
 
+function Test-PointDisplayPack {
+    param([string] $PackId)
+    return $PackId -eq "geo-points" `
+            -or $PackId -eq "soft-symbols" `
+            -or $PackId -eq "terminal-points" `
+            -or $PackId -eq "punctuation-points" `
+            -or $PackId -eq "full-decorative" `
+            -or $PackId -eq "keyboard-symbols" `
+            -or $PackId -eq "keyboard-navigation" `
+            -or $PackId -eq "gmk-style-points" `
+            -or $PackId -eq "gmk-style-novelties" `
+            -or $PackId -eq "gmk-style-macros" `
+            -or $PackId -eq "gmk-style-celestial" `
+            -or $PackId -eq "gmk-style-nature" `
+            -or $PackId -eq "gmk-style-spacebars" `
+            -or $PackId -eq "font-symbols" `
+            -or $PackId -eq "image-mask-marks" `
+            -or $PackId -eq "tall-mod-glyphs" `
+            -or $PackId -eq "mixed-source-novelties"
+}
+
+function Get-PointDisplayPackGlyph {
+    param([string] $PackId, [string] $Name, [bool] $IsLabel)
+    $normalized = if ([string]::IsNullOrWhiteSpace($PackId)) { "none" } else { $PackId }
+    if ($IsLabel -and $normalized -eq "full-decorative" -and (Test-AlphaPreviewLabel -Label $Name)) {
+        return "dot"
+    }
+    switch ($normalized) {
+        "geo-points" {
+            switch ($Name) {
+                "enter" { return "spark" }
+                "backspace" { return "chevron_left" }
+                "shift" { return "chevron_up" }
+                "space" { return "space_dots" }
+                "language" { return "orbit" }
+                "options" { return "grid_4" }
+                "settings" { return "gear_dot" }
+                "reserved" { return "bookmark_dot" }
+                "." { return "two_dots" }
+                "/" { return "slash_dot" }
+                "?" { return "ring" }
+            }
+        }
+        "soft-symbols" {
+            switch ($Name) {
+                "enter" { return "ring" }
+                "backspace" { return "cross" }
+                "shift" { return "plus" }
+                "space" { return "space_dots" }
+                "language" { return "ring" }
+                "options" { return "grid_4" }
+                "settings" { return "square" }
+                "reserved" { return "diamond" }
+                "." { return "two_dots" }
+                "/" { return "slash_dot" }
+                "?" { return "diamond" }
+            }
+        }
+        "terminal-points" {
+            switch ($Name) {
+                "enter" { return "terminal" }
+                "backspace" { return "cross" }
+                "shift" { return "chevron_up" }
+                "space" { return "cursor" }
+                "language" { return "orbit" }
+                "options" { return "terminal" }
+                "settings" { return "grid_4" }
+                "reserved" { return "square" }
+                "." { return "two_dots" }
+                "/" { return "slash_dot" }
+                "?" { return "cursor" }
+            }
+        }
+        "punctuation-points" {
+            switch ($Name) {
+                "enter" { return "spark" }
+                "backspace" { return "chevron_left" }
+                "." { return "two_dots" }
+                "/" { return "slash_dot" }
+                "?" { return "ring" }
+            }
+        }
+        "full-decorative" {
+            return Get-PointDisplayPackGlyph -PackId "geo-points" -Name $Name -IsLabel $IsLabel
+        }
+        "keyboard-symbols" {
+            switch ($Name) {
+                "enter" { return "keyboard_return" }
+                "backspace" { return "keyboard_backspace" }
+                "shift" { return "keyboard_capslock" }
+                "space" { return "keyboard_space" }
+                "language" { return "keyboard_language" }
+                "options" { return "keyboard_option" }
+                "settings" { return "keyboard_command" }
+                "reserved" { return "keyboard_control" }
+                "." { return "two_dots" }
+                "/" { return "slash_dot" }
+                "?" { return "keyboard_keys" }
+            }
+        }
+        "keyboard-navigation" {
+            switch ($Name) {
+                "enter" { return "keyboard_return" }
+                "backspace" { return "keyboard_arrow_left" }
+                "shift" { return "keyboard_arrow_up" }
+                "space" { return "keyboard_space" }
+                "language" { return "keyboard_language" }
+                "options" { return "keyboard_double_left" }
+                "settings" { return "keyboard_double_right" }
+                "reserved" { return "keyboard_control" }
+                "." { return "keyboard_arrow_down" }
+                "/" { return "keyboard_arrow_up" }
+                "?" { return "keyboard_tab" }
+            }
+        }
+        "gmk-style-points" {
+            switch ($Name) {
+                "enter" { return "gmk_accent_bar" }
+                "backspace" { return "gmk_accent_corner" }
+                "shift" { return "gmk_accent_stripe" }
+                "space" { return "gmk_space_dash" }
+                "language" { return "gmk_orbit_star" }
+                "options" { return "gmk_macro_stack" }
+                "settings" { return "gmk_target" }
+                "reserved" { return "gmk_diamond_cluster" }
+                "." { return "gmk_triple_dot" }
+                "/" { return "gmk_twin_ticks" }
+                "?" { return "gmk_target" }
+            }
+        }
+        "gmk-style-novelties" {
+            switch ($Name) {
+                "enter" { return "gmk_sun" }
+                "backspace" { return "gmk_moon" }
+                "shift" { return "gmk_mountain" }
+                "space" { return "gmk_space_dash" }
+                "language" { return "gmk_leaf" }
+                "options" { return "gmk_flower" }
+                "settings" { return "gmk_orbit_star" }
+                "reserved" { return "gmk_droplet" }
+                "." { return "gmk_triple_dot" }
+                "/" { return "gmk_wave" }
+                "?" { return "gmk_flower" }
+            }
+        }
+        "gmk-style-macros" {
+            switch ($Name) {
+                "enter" { return "gmk_macro_brackets" }
+                "backspace" { return "gmk_pulse" }
+                "shift" { return "gmk_macro_stack" }
+                "space" { return "gmk_space_dash" }
+                "language" { return "gmk_orbit_star" }
+                "options" { return "gmk_macro_stack" }
+                "settings" { return "gmk_target" }
+                "reserved" { return "gmk_pixel_steps" }
+                "." { return "gmk_triple_dot" }
+                "/" { return "gmk_accent_stripe" }
+                "?" { return "gmk_macro_brackets" }
+            }
+        }
+        "gmk-style-celestial" {
+            switch ($Name) {
+                "enter" { return "gmk_planet_ring" }
+                "backspace" { return "gmk_crescent_star" }
+                "shift" { return "gmk_constellation" }
+                "space" { return "gmk_space_dash" }
+                "language" { return "gmk_orbit_star" }
+                "options" { return "gmk_sparkle_pair" }
+                "settings" { return "gmk_compass" }
+                "reserved" { return "gmk_snow" }
+                "." { return "gmk_triple_dot" }
+                "/" { return "gmk_comet_tail" }
+                "?" { return "gmk_planet_ring" }
+            }
+        }
+        "gmk-style-nature" {
+            switch ($Name) {
+                "enter" { return "gmk_flower_alt" }
+                "backspace" { return "gmk_cloud" }
+                "shift" { return "gmk_sprout" }
+                "space" { return "gmk_wave_double" }
+                "language" { return "gmk_leaf" }
+                "options" { return "gmk_petals" }
+                "settings" { return "gmk_rain" }
+                "reserved" { return "gmk_flame" }
+                "." { return "gmk_droplet" }
+                "/" { return "gmk_wave_double" }
+                "?" { return "gmk_sprout" }
+            }
+        }
+        "gmk-style-spacebars" {
+            switch ($Name) {
+                "enter" { return "gmk_iso_enter_mark" }
+                "backspace" { return "gmk_side_stripes" }
+                "shift" { return "gmk_stepped_bar" }
+                "space" { return "gmk_split_bar" }
+                "language" { return "gmk_corner_dots" }
+                "options" { return "gmk_equalizer" }
+                "settings" { return "gmk_rising_blocks" }
+                "reserved" { return "gmk_arcade_diamond" }
+                "." { return "gmk_dot_matrix" }
+                "/" { return "gmk_center_cross" }
+                "?" { return "gmk_lab_flask" }
+            }
+        }
+        "font-symbols" {
+            switch ($Name) {
+                "enter" { return "font_return_arrow" }
+                "backspace" { return "font_delete_left" }
+                "shift" { return "font_shift_arrow" }
+                "space" { return "font_keyboard" }
+                "language" { return "font_command" }
+                "options" { return "font_option" }
+                "settings" { return "font_control" }
+                "reserved" { return "font_escape" }
+                "." { return "font_star_outline" }
+                "/" { return "font_triangle_up" }
+                "?" { return "font_power" }
+            }
+        }
+        "image-mask-marks" {
+            switch ($Name) {
+                "enter" { return "img_arc_gate" }
+                "backspace" { return "img_side_notch" }
+                "shift" { return "img_flag_tab" }
+                "space" { return "img_horizon_bars" }
+                "language" { return "img_tall_orbit" }
+                "options" { return "img_punch_card" }
+                "settings" { return "img_ladder" }
+                "reserved" { return "img_ticket" }
+                "." { return "img_capsule_dots" }
+                "/" { return "img_wave_tile" }
+                "?" { return "img_blob_star" }
+            }
+        }
+        "tall-mod-glyphs" {
+            switch ($Name) {
+                "enter" { return "img_arc_gate" }
+                "backspace" { return "img_tall_bracket" }
+                "shift" { return "img_vertical_ribbon" }
+                "space" { return "img_horizon_bars" }
+                "language" { return "img_dual_posts" }
+                "options" { return "img_stacked_tiles" }
+                "settings" { return "img_corner_frame" }
+                "reserved" { return "img_tall_capsule" }
+                "." { return "img_diamond_stack" }
+                "/" { return "img_soft_cross" }
+                "?" { return "img_pin_drop" }
+            }
+        }
+        "mixed-source-novelties" {
+            switch ($Name) {
+                "enter" { return "font_return_arrow" }
+                "backspace" { return "font_delete_left" }
+                "shift" { return "font_shift_arrow" }
+                "space" { return "img_horizon_bars" }
+                "language" { return "img_tall_orbit" }
+                "options" { return "img_punch_card" }
+                "settings" { return "font_home" }
+                "reserved" { return "img_blob_star" }
+                "." { return "font_star_solid" }
+                "/" { return "img_leaf_slab" }
+                "?" { return "font_eject" }
+            }
+        }
+    }
+    return ""
+}
+
 function Get-ModifierPackId {
     param([object] $Theme)
     if ($null -ne $Theme.icons -and -not [string]::IsNullOrWhiteSpace([string]$Theme.icons.modifierPackId)) {
@@ -666,8 +985,14 @@ function Draw-KeyDisplayPackPreview {
         [float] $H
     )
     $packId = Get-KeyDisplayPackId -Theme $Theme
-    if (-not (Test-SimpleTextPack -PackId $packId) -and -not (Test-GitCommandPack -PackId $packId)) {
+    if (-not (Test-SimpleTextPack -PackId $packId) `
+            -and -not (Test-GitCommandPack -PackId $packId) `
+            -and -not (Test-PointDisplayPack -PackId $packId)) {
         return $false
+    }
+    if (Test-PointDisplayPack -PackId $packId) {
+        $glyph = Get-PointDisplayPackGlyph -PackId $packId -Name $Icon -IsLabel $false
+        return Draw-PointGlyphPreview -Graphics $Graphics -Glyph $glyph -Color $Color -X $X -Y $Y -W $W -H $H
     }
     if (Test-GitCommandPack -PackId $packId) {
         $text = switch ($Icon) {
@@ -717,8 +1042,14 @@ function Draw-LabelDisplayPackPreview {
         [float] $H
     )
     $packId = Get-KeyDisplayPackId -Theme $Theme
-    if (-not (Test-SimpleTextPack -PackId $packId) -and -not (Test-GitCommandPack -PackId $packId)) {
+    if (-not (Test-SimpleTextPack -PackId $packId) `
+            -and -not (Test-GitCommandPack -PackId $packId) `
+            -and -not (Test-PointDisplayPack -PackId $packId)) {
         return $false
+    }
+    if (Test-PointDisplayPack -PackId $packId) {
+        $glyph = Get-PointDisplayPackGlyph -PackId $packId -Name $Label -IsLabel $true
+        return Draw-PointGlyphPreview -Graphics $Graphics -Glyph $glyph -Color $Color -X $X -Y $Y -W $W -H $H
     }
     if (Test-GitCommandPack -PackId $packId) {
         $text = switch ($Label) {
@@ -763,20 +1094,31 @@ function Draw-HihihiPreviewGlyph {
         $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
         $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
         $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
-        $left = $X + $W * 0.20
-        $right = $X + $W * 0.80
-        $top = $Y + $H * 0.34
-        $mid = $Y + $H * 0.50
-        $bottom = $Y + $H * 0.66
-        $step = ($right - $left) / 5.0
-        for ($i = 0; $i -lt 3; $i++) {
-            $hx = $left + $i * $step * 2
-            $Graphics.DrawLine($pen, $hx, $bottom, $hx + $step * 0.15, $top)
-            $Graphics.DrawLine($pen, $hx + $step * 0.55, $bottom, $hx + $step * 0.70, $top)
-            $Graphics.DrawLine($pen, $hx + $step * 0.08, $mid, $hx + $step * 0.62, $mid)
-            $ix = $hx + $step
-            $Graphics.DrawBezier($pen, $ix, $bottom, $ix - $step * 0.15, $top, $ix + $step * 0.45, $top, $ix + $step * 0.25, $mid)
+        $scale = [Math]::Min($W * 0.74 / 120.0, $H * 0.54 / 32.0)
+        $left = $X + $W / 2.0 - 120.0 * $scale / 2.0
+        $top = $Y + $H / 2.0 - 32.0 * $scale / 2.0
+        $p = {
+            param([float] $Value)
+            return $left + $Value * $scale
         }
+        $q = {
+            param([float] $Value)
+            return $top + $Value * $scale
+        }
+        $Graphics.DrawBezier($pen, (& $p 8), (& $q 22), (& $p 10), (& $q 10), (& $p 17), (& $q 10), (& $p 17), (& $q 22))
+        $Graphics.DrawLine($pen, (& $p 8), (& $q 16), (& $p 18), (& $q 16))
+        $Graphics.DrawBezier($pen, (& $p 25), (& $q 12), (& $p 30), (& $q 9), (& $p 33), (& $q 11), (& $p 31), (& $q 16))
+        $Graphics.DrawBezier($pen, (& $p 31), (& $q 16), (& $p 29), (& $q 21), (& $p 24), (& $q 20), (& $p 26), (& $q 14))
+        $Graphics.DrawBezier($pen, (& $p 41), (& $q 22), (& $p 43), (& $q 10), (& $p 50), (& $q 10), (& $p 50), (& $q 22))
+        $Graphics.DrawLine($pen, (& $p 41), (& $q 16), (& $p 51), (& $q 16))
+        $Graphics.DrawBezier($pen, (& $p 58), (& $q 12), (& $p 63), (& $q 9), (& $p 66), (& $q 11), (& $p 64), (& $q 16))
+        $Graphics.DrawBezier($pen, (& $p 64), (& $q 16), (& $p 62), (& $q 21), (& $p 57), (& $q 20), (& $p 59), (& $q 14))
+        $Graphics.DrawBezier($pen, (& $p 75), (& $q 22), (& $p 77), (& $q 10), (& $p 84), (& $q 10), (& $p 84), (& $q 22))
+        $Graphics.DrawLine($pen, (& $p 75), (& $q 16), (& $p 85), (& $q 16))
+        $Graphics.DrawBezier($pen, (& $p 92), (& $q 12), (& $p 97), (& $q 9), (& $p 100), (& $q 11), (& $p 98), (& $q 16))
+        $Graphics.DrawBezier($pen, (& $p 98), (& $q 16), (& $p 96), (& $q 21), (& $p 91), (& $q 20), (& $p 93), (& $q 14))
+        $Graphics.DrawBezier($pen, (& $p 109), (& $q 12), (& $p 114), (& $q 9), (& $p 117), (& $q 11), (& $p 115), (& $q 16))
+        $Graphics.DrawBezier($pen, (& $p 115), (& $q 16), (& $p 113), (& $q 21), (& $p 108), (& $q 20), (& $p 110), (& $q 14))
     } finally {
         $pen.Dispose()
     }
@@ -813,22 +1155,22 @@ function Draw-PackPreviewIcon {
                     [System.Drawing.Color]::FromArgb(255, 6, 214, 160),
                     [System.Drawing.Color]::FromArgb(255, 76, 201, 240)
                 )
-                $diameter = $weight * 1.38
-                $gap = [Math]::Max($diameter * 0.80, 3.2)
+                $diameter = Get-GlyphDotDiameter -H $H
+                $gap = Get-SpaceDotGap -Diameter $diameter
                 $total = $diameter * $colors.Count + $gap * ($colors.Count - 1)
                 $dotX = $X + $W / 2 - $total / 2 + $diameter / 2
                 foreach ($dotColor in $colors) {
                     $dotBrush = [System.Drawing.SolidBrush]::new($dotColor)
                     try {
-                        $Graphics.FillEllipse($dotBrush, $dotX - $diameter / 2, $y - $diameter / 2, $diameter, $diameter)
+                        Draw-DotGlyph -Graphics $Graphics -Brush $dotBrush -Cx $dotX -Cy $y -Diameter $diameter
                     } finally {
                         $dotBrush.Dispose()
                     }
                     $dotX += $diameter + $gap
                 }
             } elseif ($Icon -eq "language" -or $Icon -eq "reserved") {
-                $diameter = $weight * 1.38
-                $Graphics.FillEllipse($brush, $X + $W / 2 - $diameter / 2, $y - $diameter / 2, $diameter, $diameter)
+                $diameter = Get-GlyphDotDiameter -H $H
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($X + $W / 2) -Cy $y -Diameter $diameter
             } else {
                 $side = if ($Icon -eq "options" -or $Icon -eq "settings" -or $Icon -eq "enter") { 0.39 } elseif ($Icon -eq "backspace" -or $Icon -eq "shift") { 0.30 } else { 0.34 }
                 $left = $X + $W * $side
@@ -846,7 +1188,738 @@ function Draw-PackPreviewIcon {
 
 function Get-DotsLineWeight {
     param([float] $W, [float] $H)
-    return [Math]::Max(3.0, [Math]::Min($H * 0.16, $W * 0.12))
+    return (Get-GlyphDotDiameter -H $H) / 1.38
+}
+
+function Get-GlyphDotDiameter {
+    param([float] $H)
+    return [Math]::Max(4.2, $H * 0.16)
+}
+
+function Get-SpaceDotGap {
+    param([float] $Diameter)
+    return [Math]::Max(($Diameter / 2.0) * 1.35, 3.2)
+}
+
+function Get-TwoDotCenterGap {
+    param([float] $Diameter)
+    return [Math]::Max(($Diameter / 2.0) * 2.75, 5.4)
+}
+
+function Draw-DotGlyph {
+    param(
+        [System.Drawing.Graphics] $Graphics,
+        [System.Drawing.Brush] $Brush,
+        [float] $Cx,
+        [float] $Cy,
+        [float] $Diameter
+    )
+    $Graphics.FillEllipse($Brush, $Cx - $Diameter / 2.0, $Cy - $Diameter / 2.0, $Diameter, $Diameter)
+}
+
+function Draw-TwoDotGlyph {
+    param(
+        [System.Drawing.Graphics] $Graphics,
+        [System.Drawing.Brush] $Brush,
+        [float] $Cx,
+        [float] $Cy,
+        [float] $Diameter
+    )
+    $gap = Get-TwoDotCenterGap -Diameter $Diameter
+    Draw-DotGlyph -Graphics $Graphics -Brush $Brush -Cx ($Cx - $gap / 2.0) -Cy $Cy -Diameter $Diameter
+    Draw-DotGlyph -Graphics $Graphics -Brush $Brush -Cx ($Cx + $gap / 2.0) -Cy $Cy -Diameter $Diameter
+}
+
+function Draw-PointGlyphPreview {
+    param(
+        [System.Drawing.Graphics] $Graphics,
+        [string] $Glyph,
+        [System.Drawing.Color] $Color,
+        [float] $X,
+        [float] $Y,
+        [float] $W,
+        [float] $H
+    )
+    if ([string]::IsNullOrWhiteSpace($Glyph)) {
+        return $false
+    }
+    $cx = $X + $W / 2.0
+    $cy = $Y + $H / 2.0
+    $diameter = Get-GlyphDotDiameter -H $H
+    $r = $diameter / 2.0
+    $brush = [System.Drawing.SolidBrush]::new($Color)
+    $pen = [System.Drawing.Pen]::new($Color, [Math]::Max(1.4, $r / 0.69 * 0.78))
+    try {
+        $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+        if ($Glyph.StartsWith("font_")) {
+            $fontText = switch ($Glyph) {
+                "font_return_arrow" { [string][char]0x21B5 }
+                "font_tab_arrow" { [string][char]0x21E5 }
+                "font_back_tab" { [string][char]0x21E4 }
+                "font_shift_arrow" { [string][char]0x21E7 }
+                "font_delete_left" { [string][char]0x232B }
+                "font_delete_right" { [string][char]0x2326 }
+                "font_command" { [string][char]0x2318 }
+                "font_option" { [string][char]0x2325 }
+                "font_control" { [string][char]0x2303 }
+                "font_escape" { [string][char]0x238B }
+                "font_home" { [string][char]0x21F1 }
+                "font_end" { [string][char]0x21F2 }
+                "font_page_up" { [string][char]0x21DE }
+                "font_page_down" { [string][char]0x21DF }
+                "font_power" { [string][char]0x23FB }
+                "font_eject" { [string][char]0x23CF }
+                "font_play_pause" { [string][char]0x23EF }
+                "font_record" { [string][char]0x23FA }
+                "font_rewind" { [string][char]0x23EA }
+                "font_fast_forward" { [string][char]0x23E9 }
+                "font_triangle_up" { [string][char]0x25B2 }
+                "font_triangle_down" { [string][char]0x25BC }
+                "font_star_outline" { [string][char]0x2606 }
+                "font_star_solid" { [string][char]0x2605 }
+                "font_keyboard" { [string][char]0x2328 }
+                default { "" }
+            }
+            if (-not [string]::IsNullOrWhiteSpace($fontText)) {
+                $font = [System.Drawing.Font]::new("Segoe UI Symbol", [Math]::Min($W, $H) * 0.38, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+                $format = [System.Drawing.StringFormat]::new()
+                try {
+                    $format.Alignment = [System.Drawing.StringAlignment]::Center
+                    $format.LineAlignment = [System.Drawing.StringAlignment]::Center
+                    $Graphics.DrawString($fontText, $font, $brush, [System.Drawing.RectangleF]::new($X, $Y, $W, $H), $format)
+                } finally {
+                    $format.Dispose()
+                    $font.Dispose()
+                }
+                return $true
+            }
+        }
+        if ($Glyph.StartsWith("img_")) {
+            $maskPath = Join-Path (Split-Path -Parent $PSScriptRoot) ("app\src\main\res\drawable-nodpi\glyph_mask_" + $Glyph + ".png")
+            if (Test-Path $maskPath) {
+                $src = [System.Drawing.Bitmap]::new($maskPath)
+                $tinted = [System.Drawing.Bitmap]::new($src.Width, $src.Height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+                try {
+                    for ($px = 0; $px -lt $src.Width; $px++) {
+                        for ($py = 0; $py -lt $src.Height; $py++) {
+                            $a = $src.GetPixel($px, $py).A
+                            if ($a -gt 0) {
+                                $tinted.SetPixel($px, $py, [System.Drawing.Color]::FromArgb($a, $Color.R, $Color.G, $Color.B))
+                            }
+                        }
+                    }
+                    $targetH = $H * 0.68
+                    $targetW = [Math]::Min($W * 0.72, $targetH * 0.75)
+                    $Graphics.DrawImage($tinted, [System.Drawing.RectangleF]::new($cx - $targetW / 2.0, $cy - $targetH / 2.0, $targetW, $targetH))
+                } finally {
+                    $tinted.Dispose()
+                    $src.Dispose()
+                }
+                return $true
+            }
+        }
+        switch ($Glyph) {
+            "dot" {
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx $cx -Cy $cy -Diameter $diameter
+                return $true
+            }
+            "ring" {
+                $rr = $r * 1.45
+                $Graphics.DrawEllipse($pen, $cx - $rr, $cy - $rr, $rr * 2.0, $rr * 2.0)
+                return $true
+            }
+            "diamond" {
+                $s = $r * 2.45
+                $points = @(
+                    [System.Drawing.PointF]::new($cx, $cy - $s),
+                    [System.Drawing.PointF]::new($cx + $s, $cy),
+                    [System.Drawing.PointF]::new($cx, $cy + $s),
+                    [System.Drawing.PointF]::new($cx - $s, $cy)
+                )
+                $Graphics.FillPolygon($brush, $points)
+                return $true
+            }
+            "square" {
+                $s = $r * 2.15
+                $Graphics.FillRectangle($brush, $cx - $s, $cy - $s, $s * 2.0, $s * 2.0)
+                return $true
+            }
+            "plus" {
+                $Graphics.DrawLine($pen, $cx - $r * 2.0, $cy, $cx + $r * 2.0, $cy)
+                $Graphics.DrawLine($pen, $cx, $cy - $r * 2.0, $cx, $cy + $r * 2.0)
+                return $true
+            }
+            "cross" {
+                $Graphics.DrawLine($pen, $cx - $r * 1.45, $cy - $r * 1.45, $cx + $r * 1.45, $cy + $r * 1.45)
+                $Graphics.DrawLine($pen, $cx + $r * 1.45, $cy - $r * 1.45, $cx - $r * 1.45, $cy + $r * 1.45)
+                return $true
+            }
+            "star" {
+                $Graphics.DrawLine($pen, $cx - $r * 2.1, $cy, $cx + $r * 2.1, $cy)
+                $Graphics.DrawLine($pen, $cx, $cy - $r * 2.1, $cx, $cy + $r * 2.1)
+                $Graphics.DrawLine($pen, $cx - $r * 1.5, $cy - $r * 1.5, $cx + $r * 1.5, $cy + $r * 1.5)
+                $Graphics.DrawLine($pen, $cx + $r * 1.5, $cy - $r * 1.5, $cx - $r * 1.5, $cy + $r * 1.5)
+                return $true
+            }
+            "spark" {
+                $Graphics.DrawLine($pen, $cx, $cy - $r * 2.5, $cx, $cy + $r * 2.5)
+                $Graphics.DrawLine($pen, $cx - $r * 1.7, $cy, $cx + $r * 1.7, $cy)
+                return $true
+            }
+            "chevron_up" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx - $r * 2.1, $cy + $r * 1.15),
+                    [System.Drawing.PointF]::new($cx, $cy - $r * 1.35),
+                    [System.Drawing.PointF]::new($cx + $r * 2.1, $cy + $r * 1.15)
+                ))
+                return $true
+            }
+            "chevron_left" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx + $r * 1.35, $cy - $r * 2.1),
+                    [System.Drawing.PointF]::new($cx - $r * 1.15, $cy),
+                    [System.Drawing.PointF]::new($cx + $r * 1.35, $cy + $r * 2.1)
+                ))
+                return $true
+            }
+            "chevron_right" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx - $r * 1.35, $cy - $r * 2.1),
+                    [System.Drawing.PointF]::new($cx + $r * 1.15, $cy),
+                    [System.Drawing.PointF]::new($cx - $r * 1.35, $cy + $r * 2.1)
+                ))
+                return $true
+            }
+            "slash_dot" {
+                $Graphics.DrawLine($pen, $cx - $r * 1.8, $cy + $r * 1.8, $cx + $r * 1.8, $cy - $r * 1.8)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $r * 2.35) -Cy ($cy + $r * 1.85) -Diameter ($diameter * 0.72)
+                return $true
+            }
+            "orbit" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 2.55, $cy - $r * 1.35, $r * 5.1, $r * 2.7)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $r * 1.65) -Cy ($cy - $r * 0.75) -Diameter ($diameter * 0.75)
+                return $true
+            }
+            "gear_dot" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 1.35, $cy - $r * 1.35, $r * 2.7, $r * 2.7)
+                $Graphics.DrawLine($pen, $cx - $r * 2.3, $cy, $cx - $r * 1.75, $cy)
+                $Graphics.DrawLine($pen, $cx + $r * 1.75, $cy, $cx + $r * 2.3, $cy)
+                $Graphics.DrawLine($pen, $cx, $cy - $r * 2.3, $cx, $cy - $r * 1.75)
+                $Graphics.DrawLine($pen, $cx, $cy + $r * 1.75, $cx, $cy + $r * 2.3)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx $cx -Cy $cy -Diameter ($diameter * 0.55)
+                return $true
+            }
+            "bookmark_dot" {
+                $points = @(
+                    [System.Drawing.PointF]::new($cx - $r * 1.65, $cy - $r * 2.2),
+                    [System.Drawing.PointF]::new($cx + $r * 1.65, $cy - $r * 2.2),
+                    [System.Drawing.PointF]::new($cx + $r * 1.65, $cy + $r * 2.15),
+                    [System.Drawing.PointF]::new($cx, $cy + $r * 1.25),
+                    [System.Drawing.PointF]::new($cx - $r * 1.65, $cy + $r * 2.15)
+                )
+                $Graphics.DrawPolygon($pen, $points)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx $cx -Cy ($cy - $r * 0.3) -Diameter ($diameter * 0.48)
+                return $true
+            }
+            "space_dots" {
+                $gap = [Math]::Max($r * 1.35, 3.2)
+                $total = $r * 8.0 + $gap * 3.0
+                $start = $cx - $total / 2.0 + $r
+                for ($i = 0; $i -lt 4; $i++) {
+                    Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($start + $i * ($r * 2.0 + $gap)) -Cy $cy -Diameter $diameter
+                }
+                return $true
+            }
+            "two_dots" {
+                Draw-TwoDotGlyph -Graphics $Graphics -Brush $brush -Cx $cx -Cy $cy -Diameter $diameter
+                return $true
+            }
+            "grid_4" {
+                $gap = $r * 1.45
+                $d = $diameter * 0.78
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx - $gap) -Cy ($cy - $gap) -Diameter $d
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $gap) -Cy ($cy - $gap) -Diameter $d
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx - $gap) -Cy ($cy + $gap) -Diameter $d
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $gap) -Cy ($cy + $gap) -Diameter $d
+                return $true
+            }
+            "terminal" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx - $r * 2.3, $cy - $r * 1.25),
+                    [System.Drawing.PointF]::new($cx - $r * 0.65, $cy),
+                    [System.Drawing.PointF]::new($cx - $r * 2.3, $cy + $r * 1.25)
+                ))
+                $Graphics.DrawLine($pen, $cx - $r * 0.1, $cy + $r * 1.45, $cx + $r * 2.2, $cy + $r * 1.45)
+                return $true
+            }
+            "cursor" {
+                $Graphics.DrawLine($pen, $cx, $cy - $r * 2.35, $cx, $cy + $r * 2.35)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $r * 1.45) -Cy ($cy + $r * 1.75) -Diameter ($diameter * 0.58)
+                return $true
+            }
+            "keyboard_return" {
+                $Graphics.DrawLine($pen, $cx + $r * 2.4, $cy - $r * 2.2, $cx + $r * 2.4, $cy + $r * 0.7)
+                $Graphics.DrawLine($pen, $cx + $r * 2.4, $cy + $r * 0.7, $cx - $r * 1.8, $cy + $r * 0.7)
+                $Graphics.DrawLine($pen, $cx - $r * 1.8, $cy + $r * 0.7, $cx - $r * 0.45, $cy - $r * 0.6)
+                $Graphics.DrawLine($pen, $cx - $r * 1.8, $cy + $r * 0.7, $cx - $r * 0.45, $cy + $r * 2.0)
+                return $true
+            }
+            "keyboard_tab" {
+                $Graphics.DrawLine($pen, $cx + $r * 2.4, $cy - $r * 2.2, $cx + $r * 2.4, $cy + $r * 2.2)
+                $Graphics.DrawLine($pen, $cx - $r * 2.4, $cy, $cx + $r * 1.3, $cy)
+                $Graphics.DrawLine($pen, $cx + $r * 1.3, $cy, $cx + $r * 0.15, $cy - $r * 1.15)
+                $Graphics.DrawLine($pen, $cx + $r * 1.3, $cy, $cx + $r * 0.15, $cy + $r * 1.15)
+                return $true
+            }
+            "keyboard_capslock" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx - $r * 2.2, $cy + $r * 0.25),
+                    [System.Drawing.PointF]::new($cx, $cy - $r * 2.0),
+                    [System.Drawing.PointF]::new($cx + $r * 2.2, $cy + $r * 0.25)
+                ))
+                $Graphics.DrawLine($pen, $cx - $r * 2.4, $cy + $r * 2.0, $cx + $r * 2.4, $cy + $r * 2.0)
+                return $true
+            }
+            "keyboard_command" {
+                $s = $r * 1.25
+                $o = $r * 1.45
+                foreach ($dx in @(-1, 1)) {
+                    foreach ($dy in @(-1, 1)) {
+                        $Graphics.DrawEllipse($pen, $cx + $dx * $o - $s, $cy + $dy * $o - $s, $s * 2, $s * 2)
+                    }
+                }
+                $Graphics.DrawRectangle($pen, $cx - $o, $cy - $o, $o * 2, $o * 2)
+                return $true
+            }
+            "keyboard_option" {
+                $Graphics.DrawLine($pen, $cx - $r * 2.6, $cy - $r * 1.65, $cx - $r * 1.05, $cy - $r * 1.65)
+                $Graphics.DrawLine($pen, $cx - $r * 0.95, $cy - $r * 1.65, $cx + $r * 1.25, $cy + $r * 1.65)
+                $Graphics.DrawLine($pen, $cx + $r * 1.25, $cy + $r * 1.65, $cx + $r * 2.6, $cy + $r * 1.65)
+                $Graphics.DrawLine($pen, $cx + $r * 0.9, $cy - $r * 1.65, $cx + $r * 2.6, $cy - $r * 1.65)
+                return $true
+            }
+            "keyboard_control" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx - $r * 2.35, $cy + $r * 0.75),
+                    [System.Drawing.PointF]::new($cx, $cy - $r * 1.75),
+                    [System.Drawing.PointF]::new($cx + $r * 2.35, $cy + $r * 0.75)
+                ))
+                return $true
+            }
+            "keyboard_hide" {
+                $Graphics.DrawRectangle($pen, $cx - $r * 4.0, $cy - $r * 2.7, $r * 8.0, $r * 4.8)
+                $Graphics.DrawLine($pen, $cx - $r * 1.4, $cy + $r * 2.55, $cx, $cy + $r * 3.65)
+                $Graphics.DrawLine($pen, $cx, $cy + $r * 3.65, $cx + $r * 1.4, $cy + $r * 2.55)
+                return $true
+            }
+            "keyboard_full" {
+                $Graphics.DrawRectangle($pen, $cx - $r * 4.4, $cy - $r * 2.75, $r * 8.8, $r * 5.1)
+                for ($row = -1; $row -le 1; $row++) {
+                    $count = if ($row -eq 1) { 3 } else { 5 }
+                    $start = $cx - ($count - 1) * $r * 1.05
+                    $yy = $cy + $row * $r * 1.35
+                    for ($i = 0; $i -lt $count; $i++) {
+                        Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($start + $i * $r * 2.1) -Cy $yy -Diameter ($diameter * 0.55)
+                    }
+                }
+                return $true
+            }
+            "keyboard_keys" {
+                for ($row = -1; $row -le 1; $row++) {
+                    $count = if ($row -eq 1) { 3 } else { 5 }
+                    $start = $cx - ($count - 1) * $r * 1.05
+                    $yy = $cy + $row * $r * 1.35
+                    for ($i = 0; $i -lt $count; $i++) {
+                        Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($start + $i * $r * 2.1) -Cy $yy -Diameter ($diameter * 0.55)
+                    }
+                }
+                return $true
+            }
+            "keyboard_language" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 2.6, $cy - $r * 2.6, $r * 5.2, $r * 5.2)
+                $Graphics.DrawLine($pen, $cx - $r * 2.6, $cy, $cx + $r * 2.6, $cy)
+                $Graphics.DrawLine($pen, $cx, $cy - $r * 2.6, $cx, $cy + $r * 2.6)
+                $Graphics.DrawEllipse($pen, $cx - $r * 1.25, $cy - $r * 2.6, $r * 2.5, $r * 5.2)
+                return $true
+            }
+            "keyboard_arrow_up" { return Draw-PointGlyphPreview -Graphics $Graphics -Glyph "chevron_up" -Color $Color -X $X -Y $Y -W $W -H $H }
+            "keyboard_arrow_down" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx - $r * 2.1, $cy - $r * 1.15),
+                    [System.Drawing.PointF]::new($cx, $cy + $r * 1.35),
+                    [System.Drawing.PointF]::new($cx + $r * 2.1, $cy - $r * 1.15)
+                ))
+                return $true
+            }
+            "keyboard_arrow_left" { return Draw-PointGlyphPreview -Graphics $Graphics -Glyph "chevron_left" -Color $Color -X $X -Y $Y -W $W -H $H }
+            "keyboard_arrow_right" { return Draw-PointGlyphPreview -Graphics $Graphics -Glyph "chevron_right" -Color $Color -X $X -Y $Y -W $W -H $H }
+            "keyboard_double_left" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx - $r * 0.2, $cy - $r * 2.1),
+                    [System.Drawing.PointF]::new($cx - $r * 2.0, $cy),
+                    [System.Drawing.PointF]::new($cx - $r * 0.2, $cy + $r * 2.1)
+                ))
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx + $r * 2.0, $cy - $r * 2.1),
+                    [System.Drawing.PointF]::new($cx + $r * 0.2, $cy),
+                    [System.Drawing.PointF]::new($cx + $r * 2.0, $cy + $r * 2.1)
+                ))
+                return $true
+            }
+            "keyboard_double_right" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx - $r * 2.0, $cy - $r * 2.1),
+                    [System.Drawing.PointF]::new($cx - $r * 0.2, $cy),
+                    [System.Drawing.PointF]::new($cx - $r * 2.0, $cy + $r * 2.1)
+                ))
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx + $r * 0.2, $cy - $r * 2.1),
+                    [System.Drawing.PointF]::new($cx + $r * 2.0, $cy),
+                    [System.Drawing.PointF]::new($cx + $r * 0.2, $cy + $r * 2.1)
+                ))
+                return $true
+            }
+            "keyboard_backspace" {
+                $points = @(
+                    [System.Drawing.PointF]::new($cx - $r * 2.8, $cy),
+                    [System.Drawing.PointF]::new($cx - $r * 1.25, $cy - $r * 1.6),
+                    [System.Drawing.PointF]::new($cx + $r * 2.45, $cy - $r * 1.6),
+                    [System.Drawing.PointF]::new($cx + $r * 2.45, $cy + $r * 1.6),
+                    [System.Drawing.PointF]::new($cx - $r * 1.25, $cy + $r * 1.6)
+                )
+                $Graphics.DrawPolygon($pen, $points)
+                $Graphics.DrawLine($pen, $cx - $r * 0.4, $cy - $r * 0.75, $cx + $r * 0.95, $cy + $r * 0.75)
+                $Graphics.DrawLine($pen, $cx + $r * 0.95, $cy - $r * 0.75, $cx - $r * 0.4, $cy + $r * 0.75)
+                return $true
+            }
+            "keyboard_space" {
+                $Graphics.DrawLine($pen, $cx - $r * 3.1, $cy - $r * 0.8, $cx - $r * 3.1, $cy + $r * 0.95)
+                $Graphics.DrawLine($pen, $cx - $r * 3.1, $cy + $r * 0.95, $cx + $r * 3.1, $cy + $r * 0.95)
+                $Graphics.DrawLine($pen, $cx + $r * 3.1, $cy + $r * 0.95, $cx + $r * 3.1, $cy - $r * 0.8)
+                return $true
+            }
+            "gmk_accent_bar" {
+                $Graphics.DrawLine($pen, $cx - $r * 3.2, $cy, $cx + $r * 3.2, $cy)
+                return $true
+            }
+            "gmk_accent_corner" {
+                $Graphics.DrawLines($pen, @(
+                    [System.Drawing.PointF]::new($cx - $r * 2.4, $cy - $r * 1.65),
+                    [System.Drawing.PointF]::new($cx + $r * 1.9, $cy - $r * 1.65),
+                    [System.Drawing.PointF]::new($cx + $r * 1.9, $cy + $r * 2.2)
+                ))
+                return $true
+            }
+            "gmk_accent_stripe" {
+                $Graphics.DrawLine($pen, $cx - $r * 2.8, $cy - $r * 1.3, $cx + $r * 2.8, $cy - $r * 1.3)
+                $Graphics.DrawLine($pen, $cx - $r * 2.8, $cy + $r * 1.3, $cx + $r * 2.8, $cy + $r * 1.3)
+                return $true
+            }
+            "gmk_triple_dot" {
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx - $r * 2.0) -Cy $cy -Diameter ($diameter * 0.72)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx $cx -Cy $cy -Diameter ($diameter * 0.72)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $r * 2.0) -Cy $cy -Diameter ($diameter * 0.72)
+                return $true
+            }
+            "gmk_twin_ticks" {
+                $Graphics.DrawLine($pen, $cx - $r * 1.3, $cy - $r * 1.8, $cx - $r * 2.2, $cy + $r * 1.8)
+                $Graphics.DrawLine($pen, $cx + $r * 2.2, $cy - $r * 1.8, $cx + $r * 1.3, $cy + $r * 1.8)
+                return $true
+            }
+            "gmk_space_dash" {
+                $Graphics.DrawLine($pen, $cx - $r * 3.8, $cy + $r * 0.7, $cx + $r * 3.8, $cy + $r * 0.7)
+                $Graphics.DrawLine($pen, $cx - $r * 3.8, $cy - $r * 0.7, $cx - $r * 2.6, $cy - $r * 0.7)
+                $Graphics.DrawLine($pen, $cx + $r * 2.6, $cy - $r * 0.7, $cx + $r * 3.8, $cy - $r * 0.7)
+                return $true
+            }
+            "gmk_macro_stack" {
+                $Graphics.DrawLine($pen, $cx - $r * 2.5, $cy - $r * 1.7, $cx + $r * 2.5, $cy - $r * 1.7)
+                $Graphics.DrawLine($pen, $cx - $r * 1.7, $cy, $cx + $r * 1.7, $cy)
+                $Graphics.DrawLine($pen, $cx - $r * 2.5, $cy + $r * 1.7, $cx + $r * 2.5, $cy + $r * 1.7)
+                return $true
+            }
+            "gmk_macro_brackets" {
+                $Graphics.DrawLines($pen, @([System.Drawing.PointF]::new($cx - $r * 1.1, $cy - $r * 2.2), [System.Drawing.PointF]::new($cx - $r * 2.5, $cy - $r * 2.2), [System.Drawing.PointF]::new($cx - $r * 2.5, $cy + $r * 2.2), [System.Drawing.PointF]::new($cx - $r * 1.1, $cy + $r * 2.2)))
+                $Graphics.DrawLines($pen, @([System.Drawing.PointF]::new($cx + $r * 1.1, $cy - $r * 2.2), [System.Drawing.PointF]::new($cx + $r * 2.5, $cy - $r * 2.2), [System.Drawing.PointF]::new($cx + $r * 2.5, $cy + $r * 2.2), [System.Drawing.PointF]::new($cx + $r * 1.1, $cy + $r * 2.2)))
+                return $true
+            }
+            "gmk_target" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 2.25, $cy - $r * 2.25, $r * 4.5, $r * 4.5)
+                $Graphics.DrawEllipse($pen, $cx - $r * 0.9, $cy - $r * 0.9, $r * 1.8, $r * 1.8)
+                $Graphics.DrawLine($pen, $cx - $r * 3.0, $cy, $cx - $r * 2.25, $cy)
+                $Graphics.DrawLine($pen, $cx + $r * 2.25, $cy, $cx + $r * 3.0, $cy)
+                return $true
+            }
+            "gmk_pulse" {
+                $Graphics.DrawLines($pen, @([System.Drawing.PointF]::new($cx - $r * 3.2, $cy), [System.Drawing.PointF]::new($cx - $r * 1.6, $cy), [System.Drawing.PointF]::new($cx - $r * 0.8, $cy - $r * 1.7), [System.Drawing.PointF]::new($cx + $r * 0.25, $cy + $r * 1.8), [System.Drawing.PointF]::new($cx + $r * 1.1, $cy), [System.Drawing.PointF]::new($cx + $r * 3.2, $cy)))
+                return $true
+            }
+            "gmk_wave" {
+                $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
+                $path.AddBezier($cx - $r * 3.0, $cy + $r * 0.4, $cx - $r * 1.9, $cy - $r * 1.6, $cx - $r * 0.9, $cy + $r * 2.0, $cx, $cy + $r * 0.2)
+                $path.AddBezier($cx, $cy + $r * 0.2, $cx + $r * 0.9, $cy - $r * 1.6, $cx + $r * 1.9, $cy + $r * 2.0, $cx + $r * 3.0, $cy)
+                $Graphics.DrawPath($pen, $path)
+                $path.Dispose()
+                return $true
+            }
+            "gmk_moon" {
+                $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
+                $path.AddBezier($cx + $r * 1.0, $cy - $r * 2.25, $cx - $r * 1.8, $cy - $r * 2.0, $cx - $r * 2.9, $cy + $r * 0.8, $cx - $r * 0.5, $cy + $r * 2.5)
+                $path.AddBezier($cx - $r * 0.5, $cy + $r * 2.5, $cx + $r * 0.65, $cy + $r * 3.3, $cx + $r * 2.1, $cy + $r * 2.45, $cx + $r * 2.55, $cy + $r * 1.25)
+                $path.AddBezier($cx + $r * 2.55, $cy + $r * 1.25, $cx + $r * 0.75, $cy + $r * 1.9, $cx - $r * 0.35, $cy + $r * 0.55, $cx, $cy - $r * 0.65)
+                $path.AddBezier($cx, $cy - $r * 0.65, $cx + $r * 0.25, $cy - $r * 1.55, $cx + $r * 0.85, $cy - $r * 2.1, $cx + $r * 1.0, $cy - $r * 2.25)
+                $Graphics.FillPath($brush, $path)
+                $path.Dispose()
+                return $true
+            }
+            "gmk_sun" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 1.3, $cy - $r * 1.3, $r * 2.6, $r * 2.6)
+                for ($i = 0; $i -lt 8; $i++) {
+                    $a = [Math]::PI * 2.0 * $i / 8.0
+                    $Graphics.DrawLine($pen, $cx + [Math]::Cos($a) * $r * 2.05, $cy + [Math]::Sin($a) * $r * 2.05, $cx + [Math]::Cos($a) * $r * 3.0, $cy + [Math]::Sin($a) * $r * 3.0)
+                }
+                return $true
+            }
+            "gmk_leaf" {
+                $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
+                $path.AddBezier($cx - $r * 1.9, $cy + $r * 1.8, $cx - $r * 1.7, $cy - $r * 1.8, $cx + $r * 1.9, $cy - $r * 2.1, $cx + $r * 2.1, $cy + $r * 1.4)
+                $path.AddBezier($cx + $r * 2.1, $cy + $r * 1.4, $cx + $r * 0.2, $cy + $r * 2.0, $cx - $r * 1.0, $cy + $r * 2.1, $cx - $r * 1.9, $cy + $r * 1.8)
+                $Graphics.DrawPath($pen, $path)
+                $path.Dispose()
+                $Graphics.DrawLine($pen, $cx - $r * 1.4, $cy + $r * 1.4, $cx + $r * 1.2, $cy - $r * 1.1)
+                return $true
+            }
+            "gmk_flower" {
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx $cx -Cy ($cy - $r * 1.45) -Diameter ($diameter * 0.95)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $r * 1.35) -Cy $cy -Diameter ($diameter * 0.95)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx $cx -Cy ($cy + $r * 1.45) -Diameter ($diameter * 0.95)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx - $r * 1.35) -Cy $cy -Diameter ($diameter * 0.95)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx $cx -Cy $cy -Diameter ($diameter * 0.55)
+                return $true
+            }
+            "gmk_mountain" {
+                $Graphics.DrawLines($pen, @([System.Drawing.PointF]::new($cx - $r * 3.0, $cy + $r * 2.0), [System.Drawing.PointF]::new($cx - $r * 0.8, $cy - $r * 1.6), [System.Drawing.PointF]::new($cx + $r * 0.4, $cy + $r * 0.3), [System.Drawing.PointF]::new($cx + $r * 1.3, $cy - $r * 0.9), [System.Drawing.PointF]::new($cx + $r * 3.0, $cy + $r * 2.0)))
+                return $true
+            }
+            "gmk_droplet" {
+                $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
+                $path.AddBezier($cx, $cy - $r * 2.8, $cx + $r * 2.2, $cy - $r * 0.8, $cx + $r * 2.0, $cy + $r * 2.2, $cx, $cy + $r * 2.4)
+                $path.AddBezier($cx, $cy + $r * 2.4, $cx - $r * 2.0, $cy + $r * 2.2, $cx - $r * 2.2, $cy - $r * 0.8, $cx, $cy - $r * 2.8)
+                $Graphics.DrawPath($pen, $path)
+                $path.Dispose()
+                return $true
+            }
+            "gmk_orbit_star" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 2.8, $cy - $r * 1.3, $r * 5.6, $r * 2.6)
+                $Graphics.DrawLine($pen, $cx + $r * 1.75, $cy - $r * 1.6, $cx + $r * 1.75, $cy + $r * 1.6)
+                $Graphics.DrawLine($pen, $cx + $r * 0.55, $cy, $cx + $r * 2.95, $cy)
+                return $true
+            }
+            "gmk_diamond_cluster" {
+                Draw-PointGlyphPreview -Graphics $Graphics -Glyph "diamond" -Color $Color -X ($X) -Y ($Y - $r * 1.7) -W $W -H $H | Out-Null
+                Draw-PointGlyphPreview -Graphics $Graphics -Glyph "diamond" -Color $Color -X ($X - $r * 1.55) -Y ($Y + $r * 0.9) -W $W -H $H | Out-Null
+                Draw-PointGlyphPreview -Graphics $Graphics -Glyph "diamond" -Color $Color -X ($X + $r * 1.55) -Y ($Y + $r * 0.9) -W $W -H $H | Out-Null
+                return $true
+            }
+            "gmk_pixel_steps" {
+                $size = $r * 1.25
+                for ($i = 0; $i -lt 4; $i++) {
+                    $Graphics.FillRectangle($brush, $cx - $r * 2.4 + $i * $size, $cy + $r * 1.6 - $i * $size, $size, $size * 2.0)
+                }
+                return $true
+            }
+            "gmk_constellation" {
+                $Graphics.DrawLines($pen, @([System.Drawing.PointF]::new($cx - $r * 2.1, $cy - $r), [System.Drawing.PointF]::new($cx - $r * 0.35, $cy + $r * 0.15), [System.Drawing.PointF]::new($cx + $r * 1.7, $cy - $r * 1.35), [System.Drawing.PointF]::new($cx + $r * 2.2, $cy + $r * 1.45)))
+                foreach ($pt in @(@(-2.1, -1.0), @(-0.35, 0.15), @(1.7, -1.35), @(2.2, 1.45))) {
+                    Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $r * $pt[0]) -Cy ($cy + $r * $pt[1]) -Diameter ($diameter * 0.45)
+                }
+                return $true
+            }
+            "gmk_planet_ring" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 1.55, $cy - $r * 1.55, $r * 3.1, $r * 3.1)
+                $Graphics.DrawEllipse($pen, $cx - $r * 3.0, $cy - $r * 1.05, $r * 6.0, $r * 2.1)
+                return $true
+            }
+            "gmk_comet_tail" {
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $r * 1.85) -Cy ($cy - $r * 1.2) -Diameter ($diameter * 0.85)
+                $Graphics.DrawLine($pen, $cx + $r * 0.8, $cy - $r * 0.45, $cx - $r * 2.8, $cy + $r * 1.7)
+                $Graphics.DrawLine($pen, $cx + $r * 0.55, $cy - $r * 1.25, $cx - $r * 2.45, $cy - $r * 0.35)
+                return $true
+            }
+            "gmk_crescent_star" {
+                Draw-PointGlyphPreview -Graphics $Graphics -Glyph "gmk_moon" -Color $Color -X $X -Y $Y -W $W -H $H | Out-Null
+                $Graphics.DrawLine($pen, $cx + $r * 2.0, $cy - $r * 2.2, $cx + $r * 2.0, $cy - $r * 0.8)
+                $Graphics.DrawLine($pen, $cx + $r * 1.3, $cy - $r * 1.5, $cx + $r * 2.7, $cy - $r * 1.5)
+                return $true
+            }
+            "gmk_sparkle_pair" {
+                $Graphics.DrawLine($pen, $cx - $r * 1.5, $cy - $r * 2.2, $cx - $r * 1.5, $cy - $r * 0.4)
+                $Graphics.DrawLine($pen, $cx - $r * 2.4, $cy - $r * 1.3, $cx - $r * 0.6, $cy - $r * 1.3)
+                $Graphics.DrawLine($pen, $cx + $r * 1.55, $cy + $r * 0.15, $cx + $r * 1.55, $cy + $r * 2.35)
+                $Graphics.DrawLine($pen, $cx + $r * 0.45, $cy + $r * 1.25, $cx + $r * 2.65, $cy + $r * 1.25)
+                return $true
+            }
+            "gmk_plus_cluster" {
+                $Graphics.DrawLine($pen, $cx - $r * 2.0, $cy - $r * 0.7, $cx - $r * 0.6, $cy - $r * 0.7)
+                $Graphics.DrawLine($pen, $cx - $r * 1.3, $cy - $r * 1.4, $cx - $r * 1.3, $cy)
+                $Graphics.DrawLine($pen, $cx + $r * 0.7, $cy + $r * 1.0, $cx + $r * 2.3, $cy + $r * 1.0)
+                $Graphics.DrawLine($pen, $cx + $r * 1.5, $cy + $r * 0.2, $cx + $r * 1.5, $cy + $r * 1.8)
+                return $true
+            }
+            "gmk_dot_matrix" {
+                for ($row = -1; $row -le 1; $row++) {
+                    for ($col = -1; $col -le 1; $col++) {
+                        Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $col * $r * 1.45) -Cy ($cy + $row * $r * 1.45) -Diameter ($diameter * 0.42)
+                    }
+                }
+                return $true
+            }
+            "gmk_corner_dots" {
+                foreach ($pt in @(@(-2.4, -1.8), @(-1.0, -1.8), @(-2.4, -0.4), @(2.4, 1.8))) {
+                    Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + $r * $pt[0]) -Cy ($cy + $r * $pt[1]) -Diameter ($diameter * 0.55)
+                }
+                return $true
+            }
+            "gmk_side_stripes" {
+                $Graphics.DrawLine($pen, $cx - $r * 2.9, $cy - $r * 2.0, $cx - $r * 2.9, $cy + $r * 2.0)
+                $Graphics.DrawLine($pen, $cx + $r * 2.9, $cy - $r * 2.0, $cx + $r * 2.9, $cy + $r * 2.0)
+                return $true
+            }
+            "gmk_center_cross" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 2.5, $cy - $r * 2.5, $r * 5.0, $r * 5.0)
+                $Graphics.DrawLine($pen, $cx - $r * 1.5, $cy, $cx + $r * 1.5, $cy)
+                $Graphics.DrawLine($pen, $cx, $cy - $r * 1.5, $cx, $cy + $r * 1.5)
+                return $true
+            }
+            "gmk_arcade_diamond" {
+                Draw-PointGlyphPreview -Graphics $Graphics -Glyph "diamond" -Color $Color -X $X -Y $Y -W $W -H $H | Out-Null
+                $Graphics.DrawLine($pen, $cx - $r * 2.6, $cy, $cx - $r * 1.7, $cy)
+                $Graphics.DrawLine($pen, $cx + $r * 1.7, $cy, $cx + $r * 2.6, $cy)
+                return $true
+            }
+            "gmk_iso_enter_mark" {
+                $Graphics.DrawLines($pen, @([System.Drawing.PointF]::new($cx + $r * 2.0, $cy - $r * 2.1), [System.Drawing.PointF]::new($cx + $r * 2.0, $cy + $r * 0.8), [System.Drawing.PointF]::new($cx - $r * 2.0, $cy + $r * 0.8), [System.Drawing.PointF]::new($cx - $r * 0.8, $cy - $r * 0.4)))
+                $Graphics.DrawLine($pen, $cx - $r * 2.0, $cy + $r * 0.8, $cx - $r * 0.8, $cy + $r * 2.0)
+                return $true
+            }
+            "gmk_split_bar" {
+                $Graphics.DrawLine($pen, $cx - $r * 3.4, $cy + $r * 0.75, $cx - $r * 0.45, $cy + $r * 0.75)
+                $Graphics.DrawLine($pen, $cx + $r * 0.45, $cy + $r * 0.75, $cx + $r * 3.4, $cy + $r * 0.75)
+                return $true
+            }
+            "gmk_long_bar_ticks" {
+                $Graphics.DrawLine($pen, $cx - $r * 3.4, $cy, $cx + $r * 3.4, $cy)
+                $Graphics.DrawLine($pen, $cx - $r * 1.7, $cy - $r * 0.9, $cx - $r * 1.7, $cy + $r * 0.9)
+                $Graphics.DrawLine($pen, $cx + $r * 1.7, $cy - $r * 0.9, $cx + $r * 1.7, $cy + $r * 0.9)
+                return $true
+            }
+            "gmk_stepped_bar" {
+                $Graphics.DrawLines($pen, @([System.Drawing.PointF]::new($cx - $r * 3.0, $cy + $r * 1.4), [System.Drawing.PointF]::new($cx - $r * 0.8, $cy + $r * 1.4), [System.Drawing.PointF]::new($cx - $r * 0.8, $cy - $r * 0.2), [System.Drawing.PointF]::new($cx + $r * 2.7, $cy - $r * 0.2)))
+                return $true
+            }
+            "gmk_rising_blocks" {
+                for ($i = 0; $i -lt 4; $i++) {
+                    $h = $r * (0.9 + $i * 0.55)
+                    $x = $cx - $r * 2.4 + $i * $r * 1.5
+                    $Graphics.FillRectangle($brush, $x, $cy + $r * 1.8 - $h, $r * 0.8, $h)
+                }
+                return $true
+            }
+            "gmk_equalizer" {
+                $Graphics.DrawLine($pen, $cx - $r * 2.2, $cy + $r * 1.8, $cx - $r * 2.2, $cy - $r * 0.8)
+                $Graphics.DrawLine($pen, $cx, $cy + $r * 1.8, $cx, $cy - $r * 1.8)
+                $Graphics.DrawLine($pen, $cx + $r * 2.2, $cy + $r * 1.8, $cx + $r * 2.2, $cy - $r * 0.2)
+                return $true
+            }
+            "gmk_wave_double" {
+                Draw-PointGlyphPreview -Graphics $Graphics -Glyph "gmk_wave" -Color $Color -X $X -Y ($Y - $r * 0.65) -W $W -H $H | Out-Null
+                Draw-PointGlyphPreview -Graphics $Graphics -Glyph "gmk_wave" -Color $Color -X $X -Y ($Y + $r * 0.65) -W $W -H $H | Out-Null
+                return $true
+            }
+            "gmk_flower_alt" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 2.05, $cy - $r * 1.85, $r * 2.1, $r * 2.1)
+                $Graphics.DrawEllipse($pen, $cx - $r * 0.05, $cy - $r * 1.85, $r * 2.1, $r * 2.1)
+                $Graphics.DrawEllipse($pen, $cx - $r * 1.05, $cy - $r * 0.05, $r * 2.1, $r * 2.1)
+                Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx $cx -Cy $cy -Diameter ($diameter * 0.55)
+                return $true
+            }
+            "gmk_leaf_pair" {
+                Draw-PointGlyphPreview -Graphics $Graphics -Glyph "gmk_leaf" -Color $Color -X ($X - $r * 1.25) -Y $Y -W $W -H $H | Out-Null
+                Draw-PointGlyphPreview -Graphics $Graphics -Glyph "gmk_leaf" -Color $Color -X ($X + $r * 1.25) -Y $Y -W $W -H $H | Out-Null
+                return $true
+            }
+            "gmk_sprout" {
+                $Graphics.DrawLine($pen, $cx, $cy + $r * 2.2, $cx, $cy - $r * 0.7)
+                $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
+                $path.AddBezier($cx, $cy - $r * 0.4, $cx - $r * 2.2, $cy - $r * 1.6, $cx - $r * 2.4, $cy + $r * 0.6, $cx, $cy + $r * 0.25)
+                $path.AddBezier($cx, $cy - $r * 0.8, $cx + $r * 2.2, $cy - $r * 2.0, $cx + $r * 2.4, $cy + $r * 0.2, $cx, $cy - $r * 0.05)
+                $Graphics.DrawPath($pen, $path)
+                $path.Dispose()
+                return $true
+            }
+            "gmk_petals" {
+                for ($i = 0; $i -lt 5; $i++) {
+                    $a = [Math]::PI * 2.0 * $i / 5.0 - [Math]::PI / 2.0
+                    Draw-DotGlyph -Graphics $Graphics -Brush $brush -Cx ($cx + [Math]::Cos($a) * $r * 1.35) -Cy ($cy + [Math]::Sin($a) * $r * 1.35) -Diameter ($diameter * 0.72)
+                }
+                return $true
+            }
+            "gmk_rain" {
+                $Graphics.DrawLine($pen, $cx - $r * 1.7, $cy - $r * 1.9, $cx - $r * 2.4, $cy - $r * 0.6)
+                $Graphics.DrawLine($pen, $cx, $cy - $r * 0.9, $cx - $r * 0.7, $cy + $r * 0.4)
+                $Graphics.DrawLine($pen, $cx + $r * 1.7, $cy + $r * 0.1, $cx + $r * 1.0, $cy + $r * 1.4)
+                return $true
+            }
+            "gmk_snow" {
+                $Graphics.DrawLine($pen, $cx - $r * 2.3, $cy, $cx + $r * 2.3, $cy)
+                $Graphics.DrawLine($pen, $cx - $r * 1.15, $cy - $r * 2.0, $cx + $r * 1.15, $cy + $r * 2.0)
+                $Graphics.DrawLine($pen, $cx + $r * 1.15, $cy - $r * 2.0, $cx - $r * 1.15, $cy + $r * 2.0)
+                return $true
+            }
+            "gmk_cloud" {
+                $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
+                $path.AddBezier($cx - $r * 2.7, $cy + $r, $cx - $r * 2.7, $cy - $r * 0.2, $cx - $r * 1.4, $cy - $r * 0.3, $cx - $r * 1.1, $cy - $r * 0.8)
+                $path.AddBezier($cx - $r * 1.1, $cy - $r * 0.8, $cx - $r * 0.6, $cy - $r * 2.0, $cx + $r, $cy - $r * 1.8, $cx + $r * 1.2, $cy - $r * 0.6)
+                $path.AddBezier($cx + $r * 1.2, $cy - $r * 0.6, $cx + $r * 2.8, $cy - $r * 0.8, $cx + $r * 3.0, $cy + $r, $cx + $r * 1.6, $cy + $r)
+                $Graphics.DrawPath($pen, $path)
+                $path.Dispose()
+                return $true
+            }
+            "gmk_flame" {
+                $points = @([System.Drawing.PointF]::new($cx, $cy - $r * 2.8), [System.Drawing.PointF]::new($cx + $r * 1.9, $cy + $r * 2.4), [System.Drawing.PointF]::new($cx, $cy + $r * 2.5), [System.Drawing.PointF]::new($cx - $r * 1.8, $cy + $r * 1.9))
+                $Graphics.FillPolygon($brush, $points)
+                return $true
+            }
+            "gmk_bolt" {
+                $points = @([System.Drawing.PointF]::new($cx + $r * 0.6, $cy - $r * 3.0), [System.Drawing.PointF]::new($cx - $r * 1.4, $cy + $r * 0.4), [System.Drawing.PointF]::new($cx + $r * 0.2, $cy + $r * 0.4), [System.Drawing.PointF]::new($cx - $r * 0.6, $cy + $r * 3.0), [System.Drawing.PointF]::new($cx + $r * 1.8, $cy - $r * 0.7), [System.Drawing.PointF]::new($cx + $r * 0.3, $cy - $r * 0.7))
+                $Graphics.FillPolygon($brush, $points)
+                return $true
+            }
+            "gmk_crystal" {
+                $points = @([System.Drawing.PointF]::new($cx, $cy - $r * 2.7), [System.Drawing.PointF]::new($cx + $r * 2.1, $cy - $r * 0.5), [System.Drawing.PointF]::new($cx + $r * 1.2, $cy + $r * 2.5), [System.Drawing.PointF]::new($cx - $r * 1.2, $cy + $r * 2.5), [System.Drawing.PointF]::new($cx - $r * 2.1, $cy - $r * 0.5))
+                $Graphics.DrawPolygon($pen, $points)
+                $Graphics.DrawLine($pen, $cx, $cy - $r * 2.7, $cx, $cy + $r * 2.5)
+                return $true
+            }
+            "gmk_compass" {
+                $Graphics.DrawEllipse($pen, $cx - $r * 2.6, $cy - $r * 2.6, $r * 5.2, $r * 5.2)
+                $points = @([System.Drawing.PointF]::new($cx, $cy - $r * 2.0), [System.Drawing.PointF]::new($cx + $r * 0.75, $cy + $r * 0.75), [System.Drawing.PointF]::new($cx, $cy + $r * 0.25), [System.Drawing.PointF]::new($cx - $r * 0.75, $cy + $r * 0.75))
+                $Graphics.FillPolygon($brush, $points)
+                return $true
+            }
+            "gmk_lab_flask" {
+                $points = @([System.Drawing.PointF]::new($cx - $r * 0.8, $cy - $r * 2.4), [System.Drawing.PointF]::new($cx + $r * 0.8, $cy - $r * 2.4), [System.Drawing.PointF]::new($cx + $r * 0.4, $cy - $r * 0.4), [System.Drawing.PointF]::new($cx + $r * 2.0, $cy + $r * 2.3), [System.Drawing.PointF]::new($cx - $r * 2.0, $cy + $r * 2.3), [System.Drawing.PointF]::new($cx - $r * 0.4, $cy - $r * 0.4))
+                $Graphics.DrawPolygon($pen, $points)
+                return $true
+            }
+        }
+    } finally {
+        $brush.Dispose()
+        $pen.Dispose()
+    }
+    return $false
 }
 
 function Draw-PreviewIcon {
@@ -1022,20 +2095,18 @@ function Draw-Key {
         }
         $icon = Get-PreviewIconName $Label
         if (Test-DotLegendLabel -Theme $Theme -Label $Label) {
-            $diameter = (Get-DotsLineWeight -W $W -H $H) * 1.38
+            $diameter = Get-GlyphDotDiameter -H $H
             if ($Label -eq "." -or $Label -eq "/") {
-                $gap = [Math]::Max($diameter * 0.82, 3.0)
                 $cx = $X + $W / 2.0
                 $cy = $Y + $H / 2.0
-                $Graphics.FillEllipse($textBrush, $cx - $gap / 2.0 - $diameter / 2.0, $cy - $diameter / 2.0, $diameter, $diameter)
-                $Graphics.FillEllipse($textBrush, $cx + $gap / 2.0 - $diameter / 2.0, $cy - $diameter / 2.0, $diameter, $diameter)
+                Draw-TwoDotGlyph -Graphics $Graphics -Brush $textBrush -Cx $cx -Cy $cy -Diameter $diameter
             } else {
-                $Graphics.FillEllipse(
-                        $textBrush,
-                        $X + ($W - $diameter) / 2.0,
-                        $Y + ($H - $diameter) / 2.0,
-                        $diameter,
-                        $diameter)
+                Draw-DotGlyph `
+                        -Graphics $Graphics `
+                        -Brush $textBrush `
+                        -Cx ($X + $W / 2.0) `
+                        -Cy ($Y + $H / 2.0) `
+                        -Diameter $diameter
             }
         } elseif (-not [string]::IsNullOrWhiteSpace($icon) -and (Draw-KeyDisplayPackPreview -Graphics $Graphics -Theme $Theme -Icon $icon -Color $textColor -X $X -Y $Y -W $W -H $H)) {
             # rendered by key display pack
@@ -1110,6 +2181,15 @@ function Draw-QwertySample {
                 $rowUnits += [int]$key[1]
             }
             $xOffset = $startX + ((20 - $rowUnits) * $unit / 2)
+            $isBottomRow = $rowIndex -eq ($rows.Count - 1)
+            $spaceIndex = -1
+            for ($i = 0; $i -lt $row.Count; $i++) {
+                if ([string]$row[$i][0] -eq "space") {
+                    $spaceIndex = $i
+                    break
+                }
+            }
+            $keyIndex = 0
             foreach ($key in $row) {
                 $label = [string]$key[0]
                 $role = [string]$key[2]
@@ -1117,10 +2197,25 @@ function Draw-QwertySample {
                     $role = Get-NumberRowRole -Theme $Theme -Label $label
                 }
                 $role = Resolve-PreviewRole -Theme $Theme -Layout "qwerty" -Label $label -BaseRole $role
+                $keyX = $xOffset + $gap / 2
+                $keyW = [int]$key[1] * $unit - $gap
+                if ($isBottomRow) {
+                    $keyX = $xOffset
+                    $keyW = [int]$key[1] * $unit
+                    if ($spaceIndex -ge 0 -and $keyIndex -ne $spaceIndex) {
+                        if ($keyIndex -lt $spaceIndex) {
+                            $keyW -= $gap
+                        } else {
+                            $keyX += $gap
+                            $keyW -= $gap
+                        }
+                    }
+                }
                 Draw-Key -Graphics $Graphics -Theme $Theme -Label $label -Role $role `
-                    -X ($xOffset + $gap / 2) -Y ($rowY + $gap / 2) `
-                    -W ([int]$key[1] * $unit - $gap) -H ($rowH - $gap) -Radius $radius -Font $font
+                    -X $keyX -Y ($rowY + $gap / 2) `
+                    -W $keyW -H ($rowH - $gap) -Radius $radius -Font $font
                 $xOffset += [int]$key[1] * $unit
+                $keyIndex++
             }
             $rowY += $rowH
             $rowIndex++
@@ -1181,6 +2276,14 @@ function Draw-DingulSample {
                 $activeUnit = $bottomUnit
             }
             $xOffset = $startX
+            $isBottomRow = $rowIndex -eq ($rows.Count - 1)
+            $spaceIndex = -1
+            for ($i = 0; $i -lt $row.Count; $i++) {
+                if ([string]$row[$i][0] -eq "space") {
+                    $spaceIndex = $i
+                    break
+                }
+            }
             $keyIndex = 0
             foreach ($key in $row) {
                 $label = [string]$key[0]
@@ -1189,9 +2292,23 @@ function Draw-DingulSample {
                     $role = Get-NumberRowRole -Theme $Theme -Label $label
                 }
                 $role = Resolve-PreviewRole -Theme $Theme -Layout "dingul" -Label $label -BaseRole $role
+                $keyX = $xOffset + $gap / 2
+                $keyW = [int]$key[1] * $activeUnit - $gap
+                if ($isBottomRow) {
+                    $keyX = $xOffset
+                    $keyW = [int]$key[1] * $activeUnit
+                    if ($spaceIndex -ge 0 -and $keyIndex -ne $spaceIndex) {
+                        if ($keyIndex -lt $spaceIndex) {
+                            $keyW -= $gap
+                        } else {
+                            $keyX += $gap
+                            $keyW -= $gap
+                        }
+                    }
+                }
                 Draw-Key -Graphics $Graphics -Theme $Theme -Label $label -Role $role `
-                    -X ($xOffset + $gap / 2) -Y ($rowY + $gap / 2) `
-                    -W ([int]$key[1] * $activeUnit - $gap) -H ($rowH - $gap) -Radius $radius -Font $font
+                    -X $keyX -Y ($rowY + $gap / 2) `
+                    -W $keyW -H ($rowH - $gap) -Radius $radius -Font $font
                 $xOffset += [int]$key[1] * $activeUnit
                 if ($rowIndex -gt 0 -and $rowIndex -lt ($rows.Count - 1) -and $keyIndex -eq 2) {
                     $xOffset += $mainSpecialGap

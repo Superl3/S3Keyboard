@@ -19,7 +19,8 @@ param(
     [string] $ThemeVariant = "default",
     [string] $ThemePresetId = "",
     [switch] $ShowNumberRow,
-    [switch] $CaptureShiftActive
+    [switch] $CaptureShiftActive,
+    [switch] $ResetAppData
 )
 
 $ErrorActionPreference = "Stop"
@@ -117,11 +118,11 @@ function Ensure-DemoKeyboardVisible {
     )
 
     for ($attempt = 0; $attempt -lt 3; $attempt++) {
-        & $Adb @AdbTarget shell input tap 540 300 | Out-Null
+        & $Adb @AdbTarget shell input tap 540 565 | Out-Null
         Start-Sleep -Milliseconds 500
         & $Adb @AdbTarget shell ime set $Ime | Out-Null
         Start-Sleep -Milliseconds 500
-        & $Adb @AdbTarget shell input tap 540 300 | Out-Null
+        & $Adb @AdbTarget shell input tap 540 565 | Out-Null
         Start-Sleep -Milliseconds 700
         if (Test-ImeVisible -Adb $Adb -AdbTarget $AdbTarget) {
             return
@@ -448,7 +449,10 @@ $EnglishKeyboardCropHeightPx = [int][Math]::Round($EnglishKeyboardCropDp * $Devi
 Write-Host "Installing APK"
 & $Adb @AdbTarget shell am force-stop $Package | Out-Null
 & $Adb @AdbTarget install -r $Apk | Out-Host
-& $Adb @AdbTarget shell pm clear $Package | Out-Host
+if ($ResetAppData) {
+    Write-Host "Resetting app data"
+    & $Adb @AdbTarget shell pm clear $Package | Out-Host
+}
 & $Adb @AdbTarget shell am force-stop $Package | Out-Null
 
 Write-Host "Enabling and selecting IME"
@@ -497,7 +501,7 @@ Start-Sleep -Seconds 2
 
 # The Activity also requests focus via demo_show_keyboard; keep a tap fallback
 # for emulator images that ignore the first soft-input request.
-& $Adb @AdbTarget shell input tap 540 300 | Out-Null
+& $Adb @AdbTarget shell input tap 540 565 | Out-Null
 Start-Sleep -Seconds 2
 Ensure-DemoKeyboardVisible -Adb $Adb -AdbTarget $AdbTarget -Ime $Ime
 

@@ -47,7 +47,12 @@ public final class KeyboardLayoutCalculatorTest {
         assertEquals(settings.hangulMainSpecialGapDp + settings.keyGapDp,
                 specialKey.left - thirdMainKey.right,
                 0.001f);
-        assertEquals(settings.keyGapDp, bottomSecond.left - bottomFirst.right, 0.001f);
+        assertEquals(0f, bottomSecond.left - bottomFirst.right, 0.001f);
+        assertEquals(1, bottomFirst.bottomSpaceDirection);
+        assertEquals(1, bottomSecond.bottomSpaceDirection);
+        assertEquals(0, slots.get(18).bottomSpaceDirection);
+        assertEquals(-1, slots.get(19).bottomSpaceDirection);
+        assertEquals(-1, bottomLast.bottomSpaceDirection);
         assertEquals(200f, bottomFirst.top, 0.001f);
         assertEquals(246f, bottomLast.bottom, 0.001f);
     }

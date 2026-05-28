@@ -126,6 +126,8 @@ final class KeyboardSettings {
     final int keyBorderWidthDp;
     final int keyRoundnessDp;
     final int keyGapDp;
+    final int hangulKeyGapDp;
+    final int englishKeyGapDp;
     final boolean keyDepthEnabled;
     final int keyDepthDp;
     final boolean customDepthColorEnabled;
@@ -623,6 +625,146 @@ final class KeyboardSettings {
             boolean remoteModeEnabled,
             RemoteKeyPreset remoteKeyPreset,
             RemoteImeShortcut remoteImeShortcut) {
+        this(
+                keyboardMode,
+                handednessMode,
+                leftMarginDp,
+                rightMarginDp,
+                hangulKeyboardHeightDp,
+                englishKeyboardHeightDp,
+                showHangulNumberRow,
+                showEnglishNumberRow,
+                forceNumberRow,
+                hapticFeedbackEnabled,
+                hitSlopDp,
+                gestureThresholdDp,
+                touchYOffsetDp,
+                repeatStartDelayMs,
+                repeatIntervalMs,
+                englishDoubleSpacePeriodEnabled,
+                enterKeyLabel,
+                keyIdleColor,
+                keyPressedColor,
+                keyboardBackgroundColor,
+                accentColor,
+                secondaryColor,
+                functionKeyColor,
+                accentKeyColor,
+                borderColor,
+                keyBorderWidthDp,
+                keyRoundnessDp,
+                keyGapDp,
+                keyGapDp,
+                keyGapDp,
+                keyDepthEnabled,
+                keyDepthDp,
+                customDepthColorEnabled,
+                depthColor,
+                fontFamily,
+                primaryTextSizePercent,
+                secondaryTextSizePercent,
+                primaryTextBold,
+                primaryTextItalic,
+                secondaryTextBold,
+                secondaryTextItalic,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                showBeginnerTooltipPreview,
+                hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
+                keyColorOverrides,
+                hangulLeftPaddingDp,
+                hangulRightPaddingDp,
+                englishLeftPaddingDp,
+                englishRightPaddingDp,
+                hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
+                keyboardBottomPaddingDp,
+                bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
+                legendStylePreset,
+                pointKeycapStyleEnabled,
+                modifierIconThemePackId,
+                modifierIconOverridePackId,
+                keyDisplayThemePackId,
+                keyDisplayOverridePackId,
+                keyDisplayOverrides,
+                visualEffects,
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
+    }
+
+    private KeyboardSettings(
+            KeyboardMode keyboardMode,
+            HandednessMode handednessMode,
+            int leftMarginDp,
+            int rightMarginDp,
+            int hangulKeyboardHeightDp,
+            int englishKeyboardHeightDp,
+            boolean showHangulNumberRow,
+            boolean showEnglishNumberRow,
+            boolean forceNumberRow,
+            boolean hapticFeedbackEnabled,
+            int hitSlopDp,
+            int gestureThresholdDp,
+            int touchYOffsetDp,
+            int repeatStartDelayMs,
+            int repeatIntervalMs,
+            boolean englishDoubleSpacePeriodEnabled,
+            String enterKeyLabel,
+            int keyIdleColor,
+            int keyPressedColor,
+            int keyboardBackgroundColor,
+            int accentColor,
+            int secondaryColor,
+            int functionKeyColor,
+            int accentKeyColor,
+            int borderColor,
+            int keyBorderWidthDp,
+            int keyRoundnessDp,
+            int keyGapDp,
+            int hangulKeyGapDp,
+            int englishKeyGapDp,
+            boolean keyDepthEnabled,
+            int keyDepthDp,
+            boolean customDepthColorEnabled,
+            int depthColor,
+            String fontFamily,
+            int primaryTextSizePercent,
+            int secondaryTextSizePercent,
+            boolean primaryTextBold,
+            boolean primaryTextItalic,
+            boolean secondaryTextBold,
+            boolean secondaryTextItalic,
+            boolean showHangulSlideHints,
+            boolean showEnglishSlideHints,
+            boolean showBeginnerTooltipPreview,
+            int hangulSpecialColumnPercent,
+            AdditionalNumberRowColorMode additionalNumberRowColorMode,
+            Map<String, Integer> keyColorOverrides,
+            int hangulLeftPaddingDp,
+            int hangulRightPaddingDp,
+            int englishLeftPaddingDp,
+            int englishRightPaddingDp,
+            int hangulMainSpecialGapDp,
+            int keyboardTopPaddingDp,
+            int keyboardBottomPaddingDp,
+            int bottomRowTopPaddingDp,
+            int numberRowBottomGapDp,
+            LegendStylePreset legendStylePreset,
+            boolean pointKeycapStyleEnabled,
+            String modifierIconThemePackId,
+            String modifierIconOverridePackId,
+            String keyDisplayThemePackId,
+            String keyDisplayOverridePackId,
+            Map<String, KeyDisplayOverride> keyDisplayOverrides,
+            KeyboardVisualEffects visualEffects,
+            boolean followThemeTypography,
+            boolean remoteModeEnabled,
+            RemoteKeyPreset remoteKeyPreset,
+            RemoteImeShortcut remoteImeShortcut) {
         this.keyboardMode = keyboardMode == null ? KeyboardMode.HANGUL : keyboardMode;
         this.handednessMode = handednessMode == null ? HandednessMode.BALANCED : handednessMode;
         this.leftMarginDp = clamp(leftMarginDp, 0, MAX_MARGIN_DP);
@@ -672,7 +814,9 @@ final class KeyboardSettings {
         this.borderColor = opaque(borderColor);
         this.keyBorderWidthDp = clamp(keyBorderWidthDp, 0, MAX_KEY_BORDER_WIDTH_DP);
         this.keyRoundnessDp = clamp(keyRoundnessDp, 0, MAX_KEY_ROUNDNESS_DP);
-        this.keyGapDp = clamp(keyGapDp, 0, MAX_KEY_GAP_DP);
+        this.hangulKeyGapDp = clamp(hangulKeyGapDp, 0, MAX_KEY_GAP_DP);
+        this.englishKeyGapDp = clamp(englishKeyGapDp, 0, MAX_KEY_GAP_DP);
+        this.keyGapDp = activeKeyGapDp(this.keyboardMode, this.hangulKeyGapDp, this.englishKeyGapDp);
         this.keyDepthEnabled = keyDepthEnabled;
         this.keyDepthDp = clamp(keyDepthDp, 0, MAX_KEY_DEPTH_DP);
         this.customDepthColorEnabled = customDepthColorEnabled;
@@ -808,14 +952,17 @@ final class KeyboardSettings {
             int keyBorderWidthDp,
             int keyGapDp,
             int hangulSpecialColumnPercent) {
-        int nextHangulKeyboardHeightDp = keyboardMode == KeyboardMode.HANGUL
+        KeyboardMode nextMode = keyboardMode == null ? KeyboardMode.HANGUL : keyboardMode;
+        int nextHangulKeyboardHeightDp = nextMode == KeyboardMode.HANGUL
                 ? keyboardHeightDp
                 : hangulKeyboardHeightDp;
-        int nextEnglishKeyboardHeightDp = keyboardMode == KeyboardMode.ENGLISH
+        int nextEnglishKeyboardHeightDp = nextMode == KeyboardMode.ENGLISH
                 ? keyboardHeightDp
                 : englishKeyboardHeightDp;
+        int nextHangulKeyGapDp = nextMode == KeyboardMode.HANGUL ? keyGapDp : hangulKeyGapDp;
+        int nextEnglishKeyGapDp = nextMode == KeyboardMode.ENGLISH ? keyGapDp : englishKeyGapDp;
         return new KeyboardSettings(
-                keyboardMode,
+                nextMode,
                 handednessMode,
                 leftMarginDp,
                 rightMarginDp,
@@ -843,6 +990,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                nextHangulKeyGapDp,
+                nextEnglishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -908,7 +1057,7 @@ final class KeyboardSettings {
                 secondaryColor,
                 keyRoundnessDp,
                 keyBorderWidthDp,
-                keyGapDp,
+                activeKeyGapForMode(mode),
                 hangulSpecialColumnPercent);
     }
 
@@ -945,6 +1094,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -1111,6 +1262,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -1181,6 +1334,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -1263,6 +1418,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -1478,6 +1635,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -1842,6 +2001,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -1941,12 +2102,25 @@ final class KeyboardSettings {
     }
 
     KeyboardSettings withKeyGap(int keyGapDp) {
-        return copy(
+        return withKeyGaps(keyGapDp, keyGapDp);
+    }
+
+    KeyboardSettings withHangulKeyGap(int keyGapDp) {
+        return withKeyGaps(keyGapDp, englishKeyGapDp);
+    }
+
+    KeyboardSettings withEnglishKeyGap(int keyGapDp) {
+        return withKeyGaps(hangulKeyGapDp, keyGapDp);
+    }
+
+    KeyboardSettings withKeyGaps(int hangulKeyGapDp, int englishKeyGapDp) {
+        return new KeyboardSettings(
                 keyboardMode,
                 handednessMode,
                 leftMarginDp,
                 rightMarginDp,
-                keyboardHeightDp,
+                hangulKeyboardHeightDp,
+                englishKeyboardHeightDp,
                 showHangulNumberRow,
                 showEnglishNumberRow,
                 forceNumberRow,
@@ -1963,10 +2137,52 @@ final class KeyboardSettings {
                 keyboardBackgroundColor,
                 accentColor,
                 secondaryColor,
-                keyRoundnessDp,
+                functionKeyColor,
+                accentKeyColor,
+                borderColor,
                 keyBorderWidthDp,
-                keyGapDp,
-                hangulSpecialColumnPercent);
+                keyRoundnessDp,
+                activeKeyGapDp(keyboardMode, hangulKeyGapDp, englishKeyGapDp),
+                hangulKeyGapDp,
+                englishKeyGapDp,
+                keyDepthEnabled,
+                keyDepthDp,
+                customDepthColorEnabled,
+                depthColor,
+                fontFamily,
+                primaryTextSizePercent,
+                secondaryTextSizePercent,
+                primaryTextBold,
+                primaryTextItalic,
+                secondaryTextBold,
+                secondaryTextItalic,
+                showHangulSlideHints,
+                showEnglishSlideHints,
+                showBeginnerTooltipPreview,
+                hangulSpecialColumnPercent,
+                additionalNumberRowColorMode,
+                keyColorOverrides,
+                hangulLeftPaddingDp,
+                hangulRightPaddingDp,
+                englishLeftPaddingDp,
+                englishRightPaddingDp,
+                hangulMainSpecialGapDp,
+                keyboardTopPaddingDp,
+                keyboardBottomPaddingDp,
+                bottomRowTopPaddingDp,
+                numberRowBottomGapDp,
+                legendStylePreset,
+                pointKeycapStyleEnabled,
+                modifierIconThemePackId,
+                modifierIconOverridePackId,
+                keyDisplayThemePackId,
+                keyDisplayOverridePackId,
+                keyDisplayOverrides,
+                visualEffects,
+                followThemeTypography,
+                remoteModeEnabled,
+                remoteKeyPreset,
+                remoteImeShortcut);
     }
 
     KeyboardSettings withKeyDepth(boolean keyDepthEnabled, int keyDepthDp) {
@@ -1999,6 +2215,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2101,6 +2319,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2174,6 +2394,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2244,6 +2466,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2314,6 +2538,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2384,6 +2610,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2454,6 +2682,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2532,6 +2762,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2610,6 +2842,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2680,6 +2914,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2750,6 +2986,8 @@ final class KeyboardSettings {
                 keyBorderWidthDp,
                 keyRoundnessDp,
                 keyGapDp,
+                hangulKeyGapDp,
+                englishKeyGapDp,
                 keyDepthEnabled,
                 keyDepthDp,
                 customDepthColorEnabled,
@@ -2791,6 +3029,14 @@ final class KeyboardSettings {
     }
 
     KeyboardSettings withAppearanceFrom(KeyboardSettings appearance) {
+        return withAppearanceFrom(appearance, true);
+    }
+
+    KeyboardSettings withFullAppearanceFrom(KeyboardSettings appearance) {
+        return withAppearanceFrom(appearance, false);
+    }
+
+    private KeyboardSettings withAppearanceFrom(KeyboardSettings appearance, boolean preserveUserOverridePacks) {
         KeyboardSettings theme = appearance == null ? defaults() : appearance;
         KeyboardSettings typography = followThemeTypography ? theme : this;
         return new KeyboardSettings(
@@ -2822,6 +3068,8 @@ final class KeyboardSettings {
                 theme.keyBorderWidthDp,
                 theme.keyRoundnessDp,
                 theme.keyGapDp,
+                theme.hangulKeyGapDp,
+                theme.englishKeyGapDp,
                 theme.keyDepthEnabled,
                 theme.keyDepthDp,
                 theme.customDepthColorEnabled,
@@ -2851,9 +3099,9 @@ final class KeyboardSettings {
                 theme.legendStylePreset,
                 theme.pointKeycapStyleEnabled,
                 theme.modifierIconThemePackId,
-                theme.modifierIconOverridePackId,
+                preserveUserOverridePacks ? modifierIconOverridePackId : theme.modifierIconOverridePackId,
                 theme.keyDisplayThemePackId,
-                theme.keyDisplayOverridePackId,
+                preserveUserOverridePacks ? keyDisplayOverridePackId : theme.keyDisplayOverridePackId,
                 theme.keyDisplayOverrides,
                 theme.visualEffects,
                 followThemeTypography,
@@ -2912,6 +3160,17 @@ final class KeyboardSettings {
         return normalizedMode == KeyboardMode.ENGLISH
                 ? englishKeyboardHeightDp
                 : hangulKeyboardHeightDp;
+    }
+
+    private int activeKeyGapForMode(KeyboardMode mode) {
+        return activeKeyGapDp(mode, hangulKeyGapDp, englishKeyGapDp);
+    }
+
+    private static int activeKeyGapDp(
+            KeyboardMode mode,
+            int hangulKeyGapDp,
+            int englishKeyGapDp) {
+        return mode == KeyboardMode.ENGLISH ? englishKeyGapDp : hangulKeyGapDp;
     }
 
     static int specialPercentForMainRegionRatio(int mainRegionRatio) {

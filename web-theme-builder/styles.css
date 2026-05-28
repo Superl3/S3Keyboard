@@ -413,15 +413,16 @@ textarea {
 }
 
 .main-dot {
-  width: 10px;
-  height: 10px;
+  --dot-source-size: 10px;
+  width: var(--dot-source-size);
+  height: var(--dot-source-size);
   border-radius: 999px;
   display: block;
 }
 
 .main-dot.two-dot-legend {
-  width: 24px;
-  height: 10px;
+  width: var(--two-dot-width, calc(var(--dot-source-size, 10px) * 2.75));
+  height: var(--dot-source-size, 10px);
   background: transparent !important;
   color: inherit;
   position: relative;
@@ -432,8 +433,8 @@ textarea {
   content: "";
   position: absolute;
   top: 50%;
-  width: 10px;
-  height: 10px;
+  width: var(--dot-source-size, 10px);
+  height: var(--dot-source-size, 10px);
   border-radius: 50%;
   background: currentColor;
   transform: translateY(-50%);
@@ -486,21 +487,23 @@ textarea {
 }
 
 .mod-pack-line.five-dot-line {
+  --dot-source-size: 10px;
   width: 50%;
   background: transparent !important;
-  height: 14px;
+  height: calc(var(--dot-source-size) * 1.4);
   background-image:
-    radial-gradient(circle at 8% 50%, #EF476F 0 5px, transparent 5.4px),
-    radial-gradient(circle at 36% 50%, #FFD166 0 5px, transparent 5.4px),
-    radial-gradient(circle at 64% 50%, #06D6A0 0 5px, transparent 5.4px),
-    radial-gradient(circle at 92% 50%, #4CC9F0 0 5px, transparent 5.4px) !important;
+    radial-gradient(circle at 8% 50%, #EF476F 0 calc(var(--dot-source-size) / 2), transparent calc(var(--dot-source-size) * .54)),
+    radial-gradient(circle at 36% 50%, #FFD166 0 calc(var(--dot-source-size) / 2), transparent calc(var(--dot-source-size) * .54)),
+    radial-gradient(circle at 64% 50%, #06D6A0 0 calc(var(--dot-source-size) / 2), transparent calc(var(--dot-source-size) * .54)),
+    radial-gradient(circle at 92% 50%, #4CC9F0 0 calc(var(--dot-source-size) / 2), transparent calc(var(--dot-source-size) * .54)) !important;
   background-repeat: no-repeat;
   color: inherit;
 }
 
 .mod-pack-line.single-dot-line {
-  width: 10px;
-  height: 10px;
+  --dot-source-size: 10px;
+  width: var(--dot-source-size);
+  height: var(--dot-source-size);
   border-radius: 50%;
 }
 

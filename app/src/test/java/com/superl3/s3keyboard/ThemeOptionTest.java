@@ -82,9 +82,9 @@ public final class ThemeOptionTest {
         assertEquals(0xFFFBFBFD, (int) next.keyColorOverrides.get("background:alpha"));
         assertFalse(next.keyColorOverrides.containsKey("tap:1"));
         assertEquals(ModifierIconCatalog.PACK_LINE_MONO, next.modifierIconThemePackId);
-        assertEquals(ModifierIconCatalog.PACK_THEME_DEFAULT, next.modifierIconOverridePackId);
+        assertEquals(ModifierIconCatalog.PACK_DOTS_LINES, next.modifierIconOverridePackId);
         assertEquals(KeyDisplayOverridePackCatalog.PACK_NONE, next.keyDisplayThemePackId);
-        assertEquals(KeyDisplayOverridePackCatalog.PACK_THEME_DEFAULT, next.keyDisplayOverridePackId);
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT, next.keyDisplayOverridePackId);
         assertFalse(next.visualEffects.blurEnabled);
         assertEquals(KeyboardSettings.FONT_D2CODING, next.fontFamily);
         assertEquals(116, next.primaryTextSizePercent);
@@ -116,7 +116,10 @@ public final class ThemeOptionTest {
     @Test
     public void resetToDefaultRestoresDefaultAppearanceOnly() {
         KeyboardSettings themed = option("gmk-metropolis")
-                .applyTo(KeyboardSettings.defaults().withHeights(333, 222));
+                .applyTo(KeyboardSettings.defaults()
+                        .withHeights(333, 222)
+                        .withModifierIconOverridePack(ModifierIconCatalog.PACK_DOTS_LINES)
+                        .withKeyDisplayOverridePack(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT));
 
         KeyboardSettings reset = ThemeOption.resetToDefaultAppearance(themed);
 
@@ -125,9 +128,24 @@ public final class ThemeOptionTest {
         assertEquals(KeyboardSettings.DEFAULT_KEY_IDLE_COLOR, reset.keyIdleColor);
         assertEquals(KeyboardSettings.DEFAULT_KEYBOARD_BACKGROUND_COLOR, reset.keyboardBackgroundColor);
         assertEquals(ModifierIconCatalog.PACK_LINE_MONO, reset.modifierIconThemePackId);
+        assertEquals(ModifierIconCatalog.PACK_THEME_DEFAULT, reset.modifierIconOverridePackId);
         assertEquals(KeyDisplayOverridePackCatalog.PACK_NONE, reset.keyDisplayThemePackId);
+        assertEquals(KeyDisplayOverridePackCatalog.PACK_THEME_DEFAULT, reset.keyDisplayOverridePackId);
         assertFalse(reset.visualEffects.blurEnabled);
         assertFalse(reset.visualEffects.metallicEnabled);
+    }
+
+    @Test
+    public void indexOfStableIdFindsPersistedSelection() {
+        UserThemeStore.UserTheme[] customThemes = {
+                new UserThemeStore.UserTheme("custom-1", "My Theme", "{}")
+        };
+        ThemeOption[] options = ThemeOption.buildOptions(customThemes, true);
+
+        assertEquals(0, ThemeOption.indexOfStableId(options, ""));
+        assertEquals(1, ThemeOption.indexOfStableId(options, KeyboardThemePreset.PRESETS[0].id));
+        assertEquals(options.length - 1, ThemeOption.indexOfStableId(options, "custom-1"));
+        assertEquals(0, ThemeOption.indexOfStableId(options, "missing"));
     }
 
     private ThemeOption option(String id) {

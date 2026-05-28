@@ -19,10 +19,10 @@
     ]
   },
   "colors": {
-    "alphaKey": "#FFFDF8",
-    "modifierKey": "#ECE7DE",
-    "accentKey": "#ECE7DE",
-    "keyPressed": "#E8E2D8",
+    "alphaKey": "#F4EFE4",
+    "modifierKey": "#E4DDD1",
+    "accentKey": "#E4DDD1",
+    "keyPressed": "#DED6C8",
     "keyboardBackground": "#FFFFFF",
     "border": "#BBB4AA",
     "depth": "#D2CCC2",
@@ -113,18 +113,27 @@
     "options": "#C02666",
     "reserved": "#7C3CB3"
   },
+  "effects": {
+    "keyFaceGradient": {
+      "enabled": true,
+      "strengthPercent": 8,
+      "startColor": "#FFF8EA",
+      "endColor": "#D6CCBD",
+      "curve": "soft"
+    }
+  },
   "dingulColors": {
     "alpha": {
       "foreground": "#271811",
-      "background": "#FFFDF8"
+      "background": "#F4EFE4"
     },
     "mod": {
       "foreground": "#6C5542",
-      "background": "#ECE7DE"
+      "background": "#E4DDD1"
     },
     "modInv": {
       "foreground": "#6C5542",
-      "background": "#ECE7DE"
+      "background": "#E4DDD1"
     }
   }
 }

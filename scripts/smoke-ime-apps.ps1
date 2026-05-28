@@ -50,13 +50,37 @@ function Test-PackageInstalled {
     return $result.StartsWith("package:")
 }
 
-function Save-State {
-    param([string] $Name)
-    $safeName = $Name -replace "[^A-Za-z0-9_-]", "-"
+function Get-ImeDump {
     $state = & $Adb @AdbTarget shell dumpsys input_method
     if ($LASTEXITCODE -ne 0) {
         throw "adb failed: shell dumpsys input_method"
     }
+    return ($state | Out-String)
+}
+
+function Test-ImeVisible {
+    $state = Get-ImeDump
+    return $state.Contains("mInputShown=true") -and $state.Contains($Ime)
+}
+
+function Focus-LocalPracticeField {
+    for ($attempt = 0; $attempt -lt 12; $attempt++) {
+        Invoke-AdbTarget shell input tap 540 565
+        Start-Sleep -Milliseconds 500
+        Invoke-AdbTarget shell ime set $Ime
+        Start-Sleep -Milliseconds 700
+        if (Test-ImeVisible) {
+            return
+        }
+    }
+    Get-ImeDump | Set-Content -LiteralPath (Join-Path $CaptureDir "local-practice-not-ready-input_method.txt") -Encoding UTF8
+    throw "Local practice field did not show $Ime"
+}
+
+function Save-State {
+    param([string] $Name)
+    $safeName = $Name -replace "[^A-Za-z0-9_-]", "-"
+    $state = Get-ImeDump
     $state | Set-Content -LiteralPath (Join-Path $CaptureDir "$safeName-input_method.txt") -Encoding UTF8
     & $Adb @AdbTarget shell screencap -p "/sdcard/$safeName.png" | Out-Null
     if ($LASTEXITCODE -ne 0) {
@@ -67,7 +91,7 @@ function Save-State {
 
 Write-Host "Smoke: local settings/practice field"
 Invoke-AdbTarget shell am start -n "$Package/.MainActivity" --ez demo_settings true --ez demo_show_keyboard true
-Start-Sleep -Seconds 2
+Focus-LocalPracticeField
 Save-State "local-practice"
 
 $Targets = @(

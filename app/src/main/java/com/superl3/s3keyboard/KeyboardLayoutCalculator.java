@@ -62,7 +62,8 @@ final class KeyboardLayoutCalculator {
                     ? Math.min(dp(settings.hangulMainSpecialGapDp, safeDensity), Math.max(0f, availableWidth - 1f))
                     : 0f;
             float rowAvailableWidth = Math.max(1f, availableWidth - rowSpecialGap);
-            float rowGap = rowGap(row, rowAvailableWidth, keyGap);
+            float rowGap = bottomRow ? 0f : rowGap(row, rowAvailableWidth, keyGap);
+            int bottomSpaceIndex = bottomRow ? spaceIndex(row) : -1;
             float top = topPadding + topForRow(
                     rowIndex,
                     rows.size(),
@@ -82,6 +83,10 @@ final class KeyboardLayoutCalculator {
             for (int keyIndex = 0; keyIndex < row.keys.size(); keyIndex++) {
                 GestureKey key = row.keys.get(keyIndex);
                 float right = left + KeyboardRowMetrics.keyWidth(key, unitWidth, rowGap);
+                int bottomSpaceDirection = 0;
+                if (bottomSpaceIndex >= 0 && keyIndex != bottomSpaceIndex) {
+                    bottomSpaceDirection = keyIndex < bottomSpaceIndex ? 1 : -1;
+                }
                 boolean primaryBottomControl = bottomRow
                         && (KeyboardCommands.CMD_SPACE.equals(key.tap)
                         || KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)
@@ -93,7 +98,8 @@ final class KeyboardLayoutCalculator {
                         right,
                         top + rowHeight,
                         primaryBottomControl,
-                        hangulCharacterRow && keyIndex == row.keys.size() - 1));
+                        hangulCharacterRow && keyIndex == row.keys.size() - 1,
+                        bottomSpaceDirection));
                 left = right + rowGap;
                 if (hangulCharacterRow && keyIndex == 2) {
                     left += rowSpecialGap;
@@ -107,6 +113,7 @@ final class KeyboardLayoutCalculator {
         return settings.showNumberRow
                 && rows.size() > 2
                 && !rows.get(0).keys.isEmpty()
+                && rows.get(0).keys.size() == 10
                 && "1".equals(rows.get(0).keys.get(0).tap);
     }
 
@@ -171,6 +178,15 @@ final class KeyboardLayoutCalculator {
         return Math.min(requestedGap, Math.max(0f, maxGap - 0.1f));
     }
 
+    private static int spaceIndex(KeyboardRow row) {
+        for (int i = 0; i < row.keys.size(); i++) {
+            if (KeyboardCommands.CMD_SPACE.equals(row.keys.get(i).tap)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     static final class Slot {
         final GestureKey key;
         final float left;
@@ -179,6 +195,7 @@ final class KeyboardLayoutCalculator {
         final float bottom;
         final boolean primaryBottomControl;
         final boolean compactSpecialColumn;
+        final int bottomSpaceDirection;
 
         Slot(
                 GestureKey key,
@@ -187,7 +204,8 @@ final class KeyboardLayoutCalculator {
                 float right,
                 float bottom,
                 boolean primaryBottomControl,
-                boolean compactSpecialColumn) {
+                boolean compactSpecialColumn,
+                int bottomSpaceDirection) {
             this.key = key;
             this.left = left;
             this.top = top;
@@ -195,6 +213,7 @@ final class KeyboardLayoutCalculator {
             this.bottom = bottom;
             this.primaryBottomControl = primaryBottomControl;
             this.compactSpecialColumn = compactSpecialColumn;
+            this.bottomSpaceDirection = bottomSpaceDirection;
         }
     }
 }

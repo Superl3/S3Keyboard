@@ -29,6 +29,7 @@ const keyDisplayIds = new Set(keyDisplayPackIds(true));
 const displayOverrideTypes = new Set(themeContract.displayOverrideTypes);
 const supportedRootKeys = new Set(themeContract.supportedRootKeys);
 const accentPolicyTargets = new Set(themeContract.accentPolicyTargets);
+const keyFaceGradientCurves = new Set((themeContract.keyFaceGradientCurves || []).map(curve => curve.id));
 
 const args = process.argv.slice(2);
 const options = parseArgs(args);
@@ -470,17 +471,38 @@ function validateEffects(effects, at, errors) {
   }
   validateEffectToggle(effects.blur, at("effects.blur"), errors, ["enabled", "radiusDp"]);
   validateEffectToggle(effects.metal, at("effects.metal"), errors, ["enabled", "strengthPercent"]);
-  validateEffectToggle(
-    effects.keyFaceGradient,
-    at("effects.keyFaceGradient"),
-    errors,
-    ["enabled", "strengthPercent"]);
+  validateKeyFaceGradient(effects.keyFaceGradient, at("effects.keyFaceGradient"), errors);
   validatePanelGradient(effects.panelGradient, at("effects.panelGradient"), errors);
   if (effects.previewBubble !== undefined) {
     const style = effects.previewBubble?.style;
     if (style !== "rounded" && style !== "angular") {
       errors.push(`${at("effects.previewBubble.style")}: expected rounded or angular`);
     }
+  }
+}
+
+function validateKeyFaceGradient(object, label, errors) {
+  if (object === undefined) {
+    return;
+  }
+  if (!object || typeof object !== "object" || Array.isArray(object)) {
+    errors.push(`${label}: expected object`);
+    return;
+  }
+  if (object.enabled !== undefined && typeof object.enabled !== "boolean") {
+    errors.push(`${label}.enabled: expected boolean`);
+  }
+  if (object.strengthPercent !== undefined && !isIntegerInRange(object.strengthPercent, 0, 100)) {
+    errors.push(`${label}.strengthPercent: expected integer 0..100`);
+  }
+  if (object.startColor !== undefined && !isColor(object.startColor)) {
+    errors.push(`${label}.startColor: expected #RRGGBB color`);
+  }
+  if (object.endColor !== undefined && !isColor(object.endColor)) {
+    errors.push(`${label}.endColor: expected #RRGGBB color`);
+  }
+  if (object.curve !== undefined && !keyFaceGradientCurves.has(object.curve)) {
+    errors.push(`${label}.curve: expected one of ${[...keyFaceGradientCurves].join(", ")}`);
   }
 }
 
@@ -1105,7 +1127,7 @@ function effectSummary(effects) {
     result.push(`metal${effects.metal.strengthPercent ?? ""}`);
   }
   if (effects?.keyFaceGradient?.enabled) {
-    result.push(`keyGradient${effects.keyFaceGradient.strengthPercent ?? ""}`);
+    result.push(`keyGradient${effects.keyFaceGradient.strengthPercent ?? ""}:${effects.keyFaceGradient.curve ?? "soft"}`);
   }
   if (effects?.panelGradient?.enabled) {
     result.push("panelGradient");

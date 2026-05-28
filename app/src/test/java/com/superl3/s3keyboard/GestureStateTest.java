@@ -47,4 +47,28 @@ public final class GestureStateTest {
 
         assertEquals(GestureAction.DOWN, state.update(7, 22, 28));
     }
+
+    @Test
+    public void axisDominanceKeepsDiagonalMotionAsTap() {
+        GestureState state = new GestureState();
+
+        assertEquals(
+                GestureAction.TAP,
+                state.update(46, 43, 28, 28, 28, 28, 28, 1.15f));
+        assertEquals(
+                GestureAction.TAP,
+                state.release(46, 43, 28, 28, 28, 28, 28, 1.15f));
+    }
+
+    @Test
+    public void axisDominanceStillAllowsIntentionalSlide() {
+        GestureState state = new GestureState();
+
+        assertEquals(
+                GestureAction.RIGHT,
+                state.update(46, 12, 28, 28, 28, 28, 28, 1.15f));
+        assertEquals(
+                GestureAction.RIGHT,
+                state.release(0, 60, 28, 28, 28, 28, 28, 1.15f));
+    }
 }

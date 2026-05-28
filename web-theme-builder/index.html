@@ -41,8 +41,18 @@
           <p class="hint">When fixed depth is off, the depth face is auto-dimmed from each key background.</p>
           <label class="check"><input id="keyFaceGradientEnabled" type="checkbox"> Subtle key face gradient</label>
           <label>Key face gradient strength <input id="keyFaceGradientStrengthPercent" type="range" min="0" max="100"></label>
+          <label>Key face gradient highlight <input id="keyFaceGradientStartColor" type="color"></label>
+          <label>Key face gradient shade <input id="keyFaceGradientEndColor" type="color"></label>
+          <label>Key face gradient curve
+            <select id="keyFaceGradientCurve">
+              <option value="soft">Soft</option>
+              <option value="linear">Linear</option>
+              <option value="top_glow">Top glow</option>
+              <option value="bottom_shade">Bottom shade</option>
+            </select>
+          </label>
           <output id="keyFaceGradientOut"></output>
-          <p class="hint">This adds a background-derived top highlight and lower shade while depth is enabled.</p>
+          <p class="hint">This blends selected highlight/shade colors over each key face while depth is enabled.</p>
           <label class="check"><input id="panelGradientEnabled" type="checkbox"> Keyboard background gradient</label>
           <label>Panel gradient start <input id="panelGradientStartColor" type="color"></label>
           <label>Panel gradient end <input id="panelGradientEndColor" type="color"></label>

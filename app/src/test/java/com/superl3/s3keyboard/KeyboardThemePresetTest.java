@@ -86,17 +86,17 @@ public final class KeyboardThemePresetTest {
         assertEquals(0xFFBBB4AA, light.borderColor);
         assertEquals(0xFFD2CCC2, light.depthColor);
         assertEquals(0xFFFFFFFF, light.keyboardBackgroundColor);
-        assertEquals(0xFFECE7DE, light.functionKeyColor);
-        assertEquals(0xFFECE7DE, light.functionKeyColor);
+        assertEquals(0xFFE4DDD1, light.functionKeyColor);
+        assertEquals(0xFFE4DDD1, light.functionKeyColor);
         assertEquals(0xFF1A1C20, dark.functionKeyColor);
         assertEquals(0xFF1A1C20, dark.accentKeyColor);
-        assertEquals(0xFFECE7DE, light.accentKeyColor);
+        assertEquals(0xFFE4DDD1, light.accentKeyColor);
         assertEquals(0xFFB8A9BF, (int) dark.keyColorOverrides.get("modinv"));
         assertEquals(0xFF1A1C20, (int) dark.keyColorOverrides.get("background:modinv"));
         assertEquals(0xFFB8A9BF, (int) dark.keyColorOverrides.get("."));
         assertEquals(0xFFB8A9BF, (int) dark.keyColorOverrides.get("/"));
         assertEquals(0xFF6C5542, (int) light.keyColorOverrides.get("modinv"));
-        assertEquals(0xFFECE7DE, (int) light.keyColorOverrides.get("background:modinv"));
+        assertEquals(0xFFE4DDD1, (int) light.keyColorOverrides.get("background:modinv"));
         assertEquals(KeyboardSettings.FONT_NOTO_SANS_KR, dark.fontFamily);
         assertEquals(KeyboardSettings.FONT_NOTO_SANS_KR, light.fontFamily);
         assertEquals(false, dark.keyColorOverrides.containsKey(".."));
@@ -406,6 +406,15 @@ public final class KeyboardThemePresetTest {
         assertEquals(id,
                 builtIn.visualEffects.keyFaceGradientStrengthPercent,
                 external.visualEffects.keyFaceGradientStrengthPercent);
+        assertEquals(id,
+                builtIn.visualEffects.keyFaceGradientStartColor,
+                external.visualEffects.keyFaceGradientStartColor);
+        assertEquals(id,
+                builtIn.visualEffects.keyFaceGradientEndColor,
+                external.visualEffects.keyFaceGradientEndColor);
+        assertEquals(id,
+                builtIn.visualEffects.keyFaceGradientCurve,
+                external.visualEffects.keyFaceGradientCurve);
         assertEquals(id,
                 builtIn.keyColorOverrides.get("shiftIndicator"),
                 external.keyColorOverrides.get("shiftIndicator"));

@@ -31,6 +31,8 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.util.Objects;
+
 public final class MainActivity extends Activity {
     private static final String EXTRA_HANGUL_MAIN_REGION_RATIO = "hangul_main_region_ratio";
     private static final String EXTRA_HANGUL_SPECIAL_COLUMN_PERCENT = "hangul_special_column_percent";
@@ -131,11 +133,15 @@ public final class MainActivity extends Activity {
     private TextView keyboardTopPaddingValue;
     private TextView keyboardBottomPaddingValue;
     private TextView numberRowBottomGapValue;
+    private TextView hangulKeyGapValue;
+    private TextView englishKeyGapValue;
     private EditText leftMarginInput;
     private EditText rightMarginInput;
     private EditText keyboardTopPaddingInput;
     private EditText keyboardBottomPaddingInput;
     private EditText numberRowBottomGapInput;
+    private EditText hangulKeyGapInput;
+    private EditText englishKeyGapInput;
     private TextView roundnessValue;
     private TextView keyBorderWidthValue;
     private TextView keyGapValue;
@@ -163,6 +169,7 @@ public final class MainActivity extends Activity {
         settings = KeyboardPreferences.load(this);
         KeyboardPreferences.saveFloatingModeEnabled(this, false);
         applyIntentOverrides(getIntent());
+        restoreSelectedThemePresetIndex();
         syncing = true;
         setContentView(createContentView());
         syncControls();
@@ -174,6 +181,7 @@ public final class MainActivity extends Activity {
         settings = KeyboardPreferences.load(this);
         KeyboardPreferences.saveFloatingModeEnabled(this, false);
         applyIntentOverrides(getIntent());
+        restoreSelectedThemePresetIndex();
         syncControls();
     }
 
@@ -519,13 +527,35 @@ public final class MainActivity extends Activity {
                     saveAndSync();
                 });
 
+        hangulKeyGapValue = label("");
+        root.addView(hangulKeyGapValue, matchWrapWithTop(12));
+        hangulKeyGapInput = addNumericStepper(root,
+                settings.hangulKeyGapDp,
+                KeyboardSettings.MAX_KEY_GAP_DP,
+                value -> {
+                    markCurrentThemeCustom();
+                    settings = settings.withHangulKeyGap(value);
+                    saveAndSync();
+                });
+
+        englishKeyGapValue = label("");
+        root.addView(englishKeyGapValue, matchWrapWithTop(8));
+        englishKeyGapInput = addNumericStepper(root,
+                settings.englishKeyGapDp,
+                KeyboardSettings.MAX_KEY_GAP_DP,
+                value -> {
+                    markCurrentThemeCustom();
+                    settings = settings.withEnglishKeyGap(value);
+                    saveAndSync();
+                });
+
         hangulHeightValue = label("");
         hangulHeightSeekBar = seekBar(KeyboardSettings.MAX_HEIGHT_DP - KeyboardSettings.MIN_HEIGHT_DP);
         hangulHeightSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser && !syncing) {
-                    selectedThemePresetIndex = 0;
+                    markCurrentThemeCustom();
                     settings = settings.withHangulHeight(KeyboardSettings.MIN_HEIGHT_DP + progress);
                     saveAndSync();
                 }
@@ -540,7 +570,7 @@ public final class MainActivity extends Activity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser && !syncing) {
-                    selectedThemePresetIndex = 0;
+                    markCurrentThemeCustom();
                     settings = settings.withEnglishHeight(KeyboardSettings.MIN_HEIGHT_DP + progress);
                     saveAndSync();
                 }
@@ -594,9 +624,8 @@ public final class MainActivity extends Activity {
     }
 
     private void resetThemeAppearanceToDefault() {
-        selectedThemePresetIndex = 0;
+        markCurrentThemeCustom();
         settings = ThemeOption.resetToDefaultAppearance(settings);
-        KeyboardPreferences.saveSelectedThemeId(this, "");
         saveAndSync();
     }
 
@@ -638,7 +667,7 @@ public final class MainActivity extends Activity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser && !syncing) {
-                    selectedThemePresetIndex = 0;
+                    markCurrentThemeCustom();
                     settings = settings.withTypography(
                             settings.fontFamily,
                             KeyboardSettings.MIN_TEXT_SIZE_PERCENT + progress,
@@ -661,7 +690,7 @@ public final class MainActivity extends Activity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser && !syncing) {
-                    selectedThemePresetIndex = 0;
+                    markCurrentThemeCustom();
                     settings = settings.withTypography(
                             settings.fontFamily,
                             settings.primaryTextSizePercent,
@@ -682,7 +711,7 @@ public final class MainActivity extends Activity {
         primaryTextBoldCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
+                markCurrentThemeCustom();
                 settings = settings.withTypography(
                         settings.fontFamily,
                         settings.primaryTextSizePercent,
@@ -701,7 +730,7 @@ public final class MainActivity extends Activity {
         primaryTextItalicCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
+                markCurrentThemeCustom();
                 settings = settings.withTypography(
                         settings.fontFamily,
                         settings.primaryTextSizePercent,
@@ -720,7 +749,7 @@ public final class MainActivity extends Activity {
         secondaryTextBoldCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
+                markCurrentThemeCustom();
                 settings = settings.withTypography(
                         settings.fontFamily,
                         settings.primaryTextSizePercent,
@@ -739,7 +768,7 @@ public final class MainActivity extends Activity {
         secondaryTextItalicCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
+                markCurrentThemeCustom();
                 settings = settings.withTypography(
                         settings.fontFamily,
                         settings.primaryTextSizePercent,
@@ -758,7 +787,7 @@ public final class MainActivity extends Activity {
         pointKeycapStyleCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
+                markCurrentThemeCustom();
                 settings = settings.withPointKeycapStyle(isChecked);
                 saveAndSync();
             }
@@ -792,7 +821,7 @@ public final class MainActivity extends Activity {
         englishSlideHintsCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
+                markCurrentThemeCustom();
                 settings = settings.withHintVisibility(
                         settings.showHangulSlideHints,
                         isChecked,
@@ -818,7 +847,7 @@ public final class MainActivity extends Activity {
         beginnerTooltipPreviewCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
+                markCurrentThemeCustom();
                 settings = settings.withHintVisibility(
                         settings.showHangulSlideHints,
                         settings.showEnglishSlideHints,
@@ -845,7 +874,7 @@ public final class MainActivity extends Activity {
             if (option.userThemeId.equals(KeyboardPreferences.loadSelectedThemeId(this))) {
                 KeyboardPreferences.saveSelectedThemeId(this, "");
             }
-            selectedThemePresetIndex = 0;
+            markCurrentThemeCustom();
             refreshThemePresetAdapter();
             syncControls();
         });
@@ -877,15 +906,13 @@ public final class MainActivity extends Activity {
         customDepthColorCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
+                markCurrentThemeCustom();
                 settings = settings.withDepthColor(isChecked, settings.depthColor);
                 saveAndSync();
             }
         });
         depthColorSpinner = colorSpinner(color -> {
-            selectedThemePresetIndex = 0;
             settings = settings.withDepthColor(true, color);
-            saveAndSync();
         });
         roundnessValue = label("");
         roundnessSeekBar = seekBar(KeyboardSettings.MAX_KEY_ROUNDNESS_DP);
@@ -898,7 +925,7 @@ public final class MainActivity extends Activity {
         keyDepthCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
             protected void onUserChanged(boolean isChecked) {
-                selectedThemePresetIndex = 0;
+                markCurrentThemeCustom();
                 settings = settings.withKeyDepth(isChecked, settings.keyDepthDp);
                 saveAndSync();
             }
@@ -1270,7 +1297,7 @@ public final class MainActivity extends Activity {
             reloadThemeOptions();
         }
         if (selectedThemePresetIndex < 0 || selectedThemePresetIndex >= themeOptions.length) {
-            selectedThemePresetIndex = 0;
+            markCurrentThemeCustom();
         }
         if (themePresetSpinner != null) {
             themePresetSpinner.setSelection(selectedThemePresetIndex);
@@ -1298,6 +1325,8 @@ public final class MainActivity extends Activity {
         setNumericText(keyboardTopPaddingInput, settings.keyboardTopPaddingDp);
         setNumericText(keyboardBottomPaddingInput, settings.keyboardBottomPaddingDp);
         setNumericText(numberRowBottomGapInput, settings.numberRowBottomGapDp);
+        setNumericText(hangulKeyGapInput, settings.hangulKeyGapDp);
+        setNumericText(englishKeyGapInput, settings.englishKeyGapDp);
         roundnessSeekBar.setProgress(settings.keyRoundnessDp);
         keyBorderWidthSeekBar.setProgress(settings.keyBorderWidthDp);
         keyGapSeekBar.setProgress(settings.keyGapDp);
@@ -1389,6 +1418,8 @@ public final class MainActivity extends Activity {
         keyboardTopPaddingValue.setText("\uD0A4\uBCF4\uB4DC \uC0C1\uB2E8 \uD328\uB529: " + settings.keyboardTopPaddingDp + "dp");
         keyboardBottomPaddingValue.setText("\uD0A4\uBCF4\uB4DC \uD558\uB2E8 \uD328\uB529: " + settings.keyboardBottomPaddingDp + "dp");
         numberRowBottomGapValue.setText("\uC22B\uC790\uC904-\uC790\uD310 \uAC04\uACA9: " + settings.numberRowBottomGapDp + "dp");
+        hangulKeyGapValue.setText("\uB529\uAD74 \uD0A4 \uAC04\uACA9: " + settings.hangulKeyGapDp + "dp");
+        englishKeyGapValue.setText("\uCFFC\uD2F0 \uD0A4 \uAC04\uACA9: " + settings.englishKeyGapDp + "dp");
         roundnessValue.setText("\uBC84\uD2BC roundness: " + settings.keyRoundnessDp + "dp");
         keyBorderWidthValue.setText("\uD14C\uB450\uB9AC \uAD75\uAE30: " + settings.keyBorderWidthDp + "dp");
         keyGapValue.setText("\uBC84\uD2BC \uAC04 \uC2DC\uAC01 \uAC04\uACA9: " + settings.keyGapDp + "dp");
@@ -1406,6 +1437,14 @@ public final class MainActivity extends Activity {
                 + settings.repeatStartDelayMs + "ms");
         repeatIntervalValue.setText("\uBC18\uBCF5 \uAC04\uACA9: " + settings.repeatIntervalMs + "ms");
         handednessSpinner.post(() -> syncing = false);
+    }
+
+    private boolean shouldHandleSpinnerSelection(Spinner spinner) {
+        if (Boolean.FALSE.equals(spinner.getTag())) {
+            spinner.setTag(Boolean.TRUE);
+            return false;
+        }
+        return !syncing;
     }
 
     private void addSectionTitle(LinearLayout root, String text) {
@@ -1543,7 +1582,9 @@ public final class MainActivity extends Activity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (!syncing) {
+                    markCurrentThemeCustom();
                     listener.onColorChanged(ColorOption.BASIC_OPTIONS[position].color);
+                    saveAndSync();
                 }
             }
 
@@ -1564,7 +1605,7 @@ public final class MainActivity extends Activity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (!syncing) {
-                    selectedThemePresetIndex = 0;
+                    markCurrentThemeCustom();
                     settings = settings.withAdditionalNumberRowColorMode(
                             AdditionalNumberRowColorMode.values()[position]);
                     saveAndSync();
@@ -1580,13 +1621,14 @@ public final class MainActivity extends Activity {
 
     private Spinner themePresetSpinner() {
         Spinner spinner = new Spinner(this);
+        spinner.setTag(Boolean.FALSE);
         reloadThemeOptions();
         themePresetSpinner = spinner;
         refreshThemePresetAdapter();
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (syncing) {
+                if (!shouldHandleSpinnerSelection(spinner)) {
                     return;
                 }
                 applyThemeOption(position);
@@ -1618,16 +1660,36 @@ public final class MainActivity extends Activity {
         themeOptions = ThemeOption.buildOptions(UserThemeStore.load(this), ExternalThemeStore.load(this), true);
     }
 
+    private void restoreSelectedThemePresetIndex() {
+        reloadThemeOptions();
+        selectedThemePresetIndex = ThemeOption.indexOfStableId(
+                themeOptions,
+                KeyboardPreferences.loadSelectedThemeId(this));
+    }
+
+    private void markCurrentThemeCustom() {
+        selectedThemePresetIndex = 0;
+        KeyboardPreferences.saveSelectedThemeId(this, "");
+    }
+
     private void applyThemeOption(int position) {
         if (position <= 0 || position >= themeOptions.length) {
-            selectedThemePresetIndex = 0;
-            KeyboardPreferences.saveSelectedThemeId(this, "");
+            if (selectedThemePresetIndex == 0
+                    && KeyboardPreferences.loadSelectedThemeId(this).isEmpty()) {
+                return;
+            }
+            markCurrentThemeCustom();
             syncControls();
+            return;
+        }
+        String themeId = themeOptions[position].stableId();
+        if (position == selectedThemePresetIndex
+                && Objects.equals(KeyboardPreferences.loadSelectedThemeId(this), themeId)) {
             return;
         }
         selectedThemePresetIndex = position;
         settings = themeOptions[position].applyTo(settings);
-        KeyboardPreferences.saveSelectedThemeId(this, themeOptions[position].stableId());
+        KeyboardPreferences.saveSelectedThemeId(this, themeId);
         saveAndSync();
     }
 
@@ -1720,12 +1782,7 @@ public final class MainActivity extends Activity {
 
     private int indexOfUserTheme(String userThemeId) {
         reloadThemeOptions();
-        for (int i = 0; i < themeOptions.length; i++) {
-            if (userThemeId != null && userThemeId.equals(themeOptions[i].stableId())) {
-                return i;
-            }
-        }
-        return 0;
+        return ThemeOption.indexOfStableId(themeOptions, userThemeId);
     }
 
     private ThemeOption selectedThemeOption() {
@@ -1745,7 +1802,7 @@ public final class MainActivity extends Activity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (!syncing) {
-                    selectedThemePresetIndex = 0;
+                    markCurrentThemeCustom();
                     settings = settings.withFontFamily(FontOption.BASIC_OPTIONS[position].value);
                     saveAndSync();
                 }

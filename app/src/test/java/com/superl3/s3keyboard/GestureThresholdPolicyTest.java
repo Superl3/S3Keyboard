@@ -33,6 +33,44 @@ public final class GestureThresholdPolicyTest {
     }
 
     @Test
+    public void consonantGestureKeysUseShorterDirectionalThreshold() {
+        KeyboardSettings settings = KeyboardSettings.defaults();
+        GestureKey key = consonantKey();
+
+        assertEquals(18, GestureThresholdPolicy.baseThresholdDp(settings, key));
+        assertEquals(
+                18,
+                GestureThresholdPolicy.thresholdDp(
+                        settings,
+                        TouchBiasStore.Bias.none(),
+                        key,
+                        GestureAction.RIGHT));
+    }
+
+    @Test
+    public void shorterDingulThresholdTurnsShortFlickIntoSlide() {
+        KeyboardSettings settings = KeyboardSettings.defaults();
+        GestureKey key = consonantKey();
+        int threshold = GestureThresholdPolicy.thresholdDp(
+                settings,
+                TouchBiasStore.Bias.none(),
+                key,
+                GestureAction.RIGHT);
+
+        assertEquals(
+                GestureAction.RIGHT,
+                new GestureState().release(
+                        13,
+                        2,
+                        threshold,
+                        threshold,
+                        threshold,
+                        threshold,
+                        threshold,
+                        1.15f));
+    }
+
+    @Test
     public void centerVowelKeyRespectsMinimumThreshold() {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withGestureThreshold(KeyboardSettings.MIN_GESTURE_THRESHOLD_DP);
@@ -50,6 +88,17 @@ public final class GestureThresholdPolicyTest {
                 "\u315C",
                 "\u3153",
                 "\u314F",
+                null);
+    }
+
+    private GestureKey consonantKey() {
+        return new GestureKey(
+                "\u3131",
+                "\u3131",
+                "\u3132",
+                "#",
+                "\u314B",
+                "\u314B",
                 null);
     }
 
@@ -87,9 +136,9 @@ public final class GestureThresholdPolicyTest {
     }
 
     private void assertShortVowelThreshold(KeyboardSettings settings, GestureKey key) {
-        assertEquals(14, GestureThresholdPolicy.baseThresholdDp(settings, key));
+        assertEquals(16, GestureThresholdPolicy.baseThresholdDp(settings, key));
         assertEquals(
-                14,
+                16,
                 GestureThresholdPolicy.thresholdDp(
                         settings,
                         TouchBiasStore.Bias.none(),

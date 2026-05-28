@@ -330,10 +330,33 @@ export const themeContract = {
   legacyModifierIconPackIds: {
     "metropolis-points": "metropolis-graph"
   },
+  keyFaceGradientCurves: [
+    { id: "linear", label: "Linear" },
+    { id: "soft", label: "Soft" },
+    { id: "top_glow", label: "Top glow" },
+    { id: "bottom_shade", label: "Bottom shade" }
+  ],
   keyDisplayPacks: [
     { id: "", label: "None" },
     { id: "simple-text", label: "Simple Text" },
-    { id: "git-commands", label: "Git Commands" }
+    { id: "git-commands", label: "Git Commands" },
+    { id: "geo-points", label: "Geo Points" },
+    { id: "soft-symbols", label: "Soft Symbols" },
+    { id: "terminal-points", label: "Terminal Points" },
+    { id: "punctuation-points", label: "Punctuation Points" },
+    { id: "full-decorative", label: "Full Decorative" },
+    { id: "keyboard-symbols", label: "Keyboard Symbols" },
+    { id: "keyboard-navigation", label: "Keyboard Navigation" },
+    { id: "gmk-style-points", label: "GMK Style Points" },
+    { id: "gmk-style-novelties", label: "GMK Style Novelties" },
+    { id: "gmk-style-macros", label: "GMK Style Macros" },
+    { id: "gmk-style-celestial", label: "GMK Style Celestial" },
+    { id: "gmk-style-nature", label: "GMK Style Nature" },
+    { id: "gmk-style-spacebars", label: "GMK Style Spacebars" },
+    { id: "font-symbols", label: "Font Symbols" },
+    { id: "image-mask-marks", label: "Image Mask Marks" },
+    { id: "tall-mod-glyphs", label: "Tall Mod Glyphs" },
+    { id: "mixed-source-novelties", label: "Mixed Source Novelties" }
   ],
   legacyKeyDisplayPackIds: {
     "olivia-script-text": "simple-text"

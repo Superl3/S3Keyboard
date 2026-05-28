@@ -236,6 +236,9 @@ public final class KeyboardThemeJsonTest {
                         true,
                         true,
                         38,
+                        0xFF778899,
+                        0xFF010203,
+                        KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_TOP_GLOW,
                         true,
                         0xFF112233,
                         0xFF445566))
@@ -255,6 +258,11 @@ public final class KeyboardThemeJsonTest {
         assertEquals(24, imported.visualEffects.metallicStrengthPercent);
         assertEquals(true, imported.visualEffects.keyFaceGradientEnabled);
         assertEquals(38, imported.visualEffects.keyFaceGradientStrengthPercent);
+        assertEquals(0xFF778899, imported.visualEffects.keyFaceGradientStartColor);
+        assertEquals(0xFF010203, imported.visualEffects.keyFaceGradientEndColor);
+        assertEquals(
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_TOP_GLOW,
+                imported.visualEffects.keyFaceGradientCurve);
         assertEquals(true, imported.visualEffects.panelGradientEnabled);
         assertEquals(0xFF112233, imported.visualEffects.panelGradientStartColor);
         assertEquals(0xFF445566, imported.visualEffects.panelGradientEndColor);

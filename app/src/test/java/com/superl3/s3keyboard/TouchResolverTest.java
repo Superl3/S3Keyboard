@@ -65,6 +65,40 @@ public final class TouchResolverTest {
     }
 
     @Test
+    public void rawCoreHitWinsOverYOffsetIntoNeighborRow() {
+        FakeTarget top = new FakeTarget("top", 0, 0, 100, 50, false);
+        FakeTarget bottom = new FakeTarget("bottom", 0, 60, 100, 110, false);
+
+        FakeTarget resolved = TouchResolver.resolve(
+                Arrays.asList(top, bottom),
+                50,
+                25,
+                8,
+                45,
+                0,
+                0);
+
+        assertEquals("top", resolved.name);
+    }
+
+    @Test
+    public void rawEdgeTouchesStillUseYOffsetCorrection() {
+        FakeTarget top = new FakeTarget("top", 0, 0, 100, 50, false);
+        FakeTarget bottom = new FakeTarget("bottom", 0, 60, 100, 110, false);
+
+        FakeTarget resolved = TouchResolver.resolve(
+                Arrays.asList(top, bottom),
+                50,
+                48,
+                8,
+                20,
+                0,
+                0);
+
+        assertEquals("bottom", resolved.name);
+    }
+
+    @Test
     public void dingulSpaceTopEdgeResolvesToSpaceInsteadOfDotKeyAbove() {
         KeyboardSettings settings = KeyboardSettings.defaults().withHangulNumberRow(false);
         List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
@@ -140,6 +174,16 @@ public final class TouchResolverTest {
         }
 
         @Override
+        public boolean coreContains(float x, float y, float inset) {
+            float insetX = Math.min(Math.max(0f, inset), (right - left) * 0.32f);
+            float insetY = Math.min(Math.max(0f, inset), (bottom - top) * 0.32f);
+            return x >= left + insetX
+                    && x <= right - insetX
+                    && y >= top + insetY
+                    && y <= bottom - insetY;
+        }
+
+        @Override
         public float distanceSquaredTo(float x, float y) {
             float nearestX = Math.max(left, Math.min(right, x));
             float nearestY = Math.max(top, Math.min(bottom, y));
@@ -189,6 +233,16 @@ public final class TouchResolverTest {
         public boolean expandedContains(float x, float y, float slop) {
             return x >= slot.left - slop && x <= slot.right + slop
                     && y >= slot.top - slop && y <= slot.bottom + slop;
+        }
+
+        @Override
+        public boolean coreContains(float x, float y, float inset) {
+            float insetX = Math.min(Math.max(0f, inset), (slot.right - slot.left) * 0.32f);
+            float insetY = Math.min(Math.max(0f, inset), (slot.bottom - slot.top) * 0.32f);
+            return x >= slot.left + insetX
+                    && x <= slot.right - insetX
+                    && y >= slot.top + insetY
+                    && y <= slot.bottom - insetY;
         }
 
         @Override

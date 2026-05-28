@@ -11,11 +11,15 @@ final class TouchBiasStore {
     private static final String PREF_NAME = "keyboard_preferences";
     static final String TOUCH_BIAS_STATS = "touch_bias_stats";
     static final String TYPING_PATTERN_LOG = "typing_pattern_log";
+    static final String TYPING_EVENT_JOURNAL = "typing_event_journal_v1";
+    static final String DINGUL_TOUCH_PROFILE = "dingul_touch_profile_v1";
     static final float MAX_BIAS_DP = 6f;
-    static final int MAX_GESTURE_THRESHOLD_ADJUSTMENT_DP = 10;
+    static final int MAX_GESTURE_THRESHOLD_ADJUSTMENT_DP = 6;
+    static final int MAX_GLOBAL_GESTURE_THRESHOLD_ADJUSTMENT_DP = 4;
+    static final int MAX_DINGUL_GESTURE_PENALTY_DP = 8;
     static final int MAX_TYPING_PATTERN_EVENTS = 240;
     private static final float LEARNING_RATE = 0.05f;
-    private static final float GESTURE_LEARNING_RATE = 0.35f;
+    private static final float GESTURE_LEARNING_RATE = 0.25f;
 
     private final SharedPreferences preferences;
 
@@ -25,6 +29,14 @@ final class TouchBiasStore {
 
     Bias load() {
         return Bias.decode(preferences.getString(TOUCH_BIAS_STATS, ""));
+    }
+
+    DingulTouchProfile loadDingulTouchProfile() {
+        return DingulTouchProfile.decode(preferences.getString(DINGUL_TOUCH_PROFILE, ""));
+    }
+
+    TypingEventJournal.CorrectionStats loadTypingCorrectionStats() {
+        return TypingEventJournal.correctionStats(preferences.getString(TYPING_EVENT_JOURNAL, ""));
     }
 
     void recordImmediateDelete(float touchOffsetXDp, float touchOffsetYDp, GestureAction action) {
@@ -67,7 +79,55 @@ final class TouchBiasStore {
                                 text,
                                 action,
                                 0f,
-                                0f))
+                        0f))
+                .apply();
+    }
+
+    void recordDingulTextInput(String keyCodePoints, GestureAction action) {
+        DingulTouchProfile next = loadDingulTouchProfile().recordInput(keyCodePoints, action);
+        preferences.edit()
+                .putString(DINGUL_TOUCH_PROFILE, next.encode())
+                .apply();
+    }
+
+    void recordDingulCorrection(
+            String keyCodePoints,
+            GestureAction action,
+            float offsetXDp,
+            float offsetYDp) {
+        DingulTouchProfile next = loadDingulTouchProfile()
+                .recordCorrection(keyCodePoints, action, offsetXDp, offsetYDp);
+        preferences.edit()
+                .putString(DINGUL_TOUCH_PROFILE, next.encode())
+                .apply();
+    }
+
+    int dingulPenaltyDp(String keyCodePoints, GestureAction action) {
+        return loadDingulTouchProfile().penaltyDp(keyCodePoints, action);
+    }
+
+    void recordTypingJournalInput(TypingEventJournal.Input input) {
+        if (input == null) {
+            return;
+        }
+        preferences.edit()
+                .putString(
+                        TYPING_EVENT_JOURNAL,
+                        TypingEventJournal.appendInput(
+                                preferences.getString(TYPING_EVENT_JOURNAL, ""),
+                                input,
+                                MAX_TYPING_PATTERN_EVENTS))
+                .apply();
+    }
+
+    void recordTypingJournalDelete(long timeMs) {
+        preferences.edit()
+                .putString(
+                        TYPING_EVENT_JOURNAL,
+                        TypingEventJournal.appendDelete(
+                                preferences.getString(TYPING_EVENT_JOURNAL, ""),
+                                timeMs,
+                                MAX_TYPING_PATTERN_EVENTS))
                 .apply();
     }
 
@@ -76,6 +136,8 @@ final class TouchBiasStore {
                 .edit()
                 .remove(TOUCH_BIAS_STATS)
                 .remove(TYPING_PATTERN_LOG)
+                .remove(TYPING_EVENT_JOURNAL)
+                .remove(DINGUL_TOUCH_PROFILE)
                 .apply();
     }
 
@@ -106,6 +168,192 @@ final class TouchBiasStore {
             return events.toString();
         } catch (JSONException exception) {
             return appendTypingEvent("", type, text, action, offsetXDp, offsetYDp);
+        }
+    }
+
+    static final class DingulTouchProfile {
+        private static final int VERSION = 1;
+        private static final int MAX_PROFILE_SAMPLES = 200;
+        private static final float OFFSET_EMA_ALPHA = 0.25f;
+        private static final String ENTRIES = "entries";
+        private static final String INPUT_COUNT = "inputCount";
+        private static final String CORRECTION_COUNT = "correctionCount";
+        private static final String OFFSET_X_DP = "offsetXDp";
+        private static final String OFFSET_Y_DP = "offsetYDp";
+
+        private final JSONObject root;
+        private final JSONObject entries;
+
+        private DingulTouchProfile(JSONObject root) {
+            this.root = root == null ? new JSONObject() : root;
+            JSONObject loadedEntries = this.root.optJSONObject(ENTRIES);
+            this.entries = loadedEntries == null ? new JSONObject() : loadedEntries;
+            try {
+                this.root.put("version", VERSION);
+                this.root.put(ENTRIES, this.entries);
+            } catch (JSONException exception) {
+                // Keep the in-memory profile usable even if the version marker fails.
+            }
+        }
+
+        static DingulTouchProfile empty() {
+            return new DingulTouchProfile(new JSONObject());
+        }
+
+        static DingulTouchProfile decode(String encoded) {
+            if (encoded == null || encoded.isEmpty()) {
+                return empty();
+            }
+            try {
+                return new DingulTouchProfile(new JSONObject(encoded));
+            } catch (JSONException exception) {
+                return empty();
+            }
+        }
+
+        DingulTouchProfile recordInput(String keyCodePoints, GestureAction action) {
+            String id = entryId(keyCodePoints, action);
+            if (id.isEmpty()) {
+                return this;
+            }
+            JSONObject entry = entryFor(id);
+            decayIfNeeded(entry);
+            putInt(entry, INPUT_COUNT, entry.optInt(INPUT_COUNT, 0) + 1);
+            putEntry(id, entry);
+            return this;
+        }
+
+        DingulTouchProfile recordCorrection(
+                String keyCodePoints,
+                GestureAction action,
+                float offsetXDp,
+                float offsetYDp) {
+            String id = entryId(keyCodePoints, action);
+            if (id.isEmpty()) {
+                return this;
+            }
+            JSONObject entry = entryFor(id);
+            decayIfNeeded(entry);
+            if (entry.optInt(INPUT_COUNT, 0) <= 0) {
+                putInt(entry, INPUT_COUNT, 1);
+            }
+            putInt(entry, CORRECTION_COUNT, entry.optInt(CORRECTION_COUNT, 0) + 1);
+            putFloat(entry, OFFSET_X_DP, ema(entry, OFFSET_X_DP, offsetXDp));
+            putFloat(entry, OFFSET_Y_DP, ema(entry, OFFSET_Y_DP, offsetYDp));
+            putEntry(id, entry);
+            return this;
+        }
+
+        int penaltyDp(String keyCodePoints, GestureAction action) {
+            if (!isDirectional(action)) {
+                return 0;
+            }
+            String id = entryId(keyCodePoints, action);
+            if (id.isEmpty()) {
+                return 0;
+            }
+            JSONObject entry = entries.optJSONObject(id);
+            if (entry == null) {
+                return 0;
+            }
+            int inputCount = Math.max(1, entry.optInt(INPUT_COUNT, 0));
+            int correctionCount = entry.optInt(CORRECTION_COUNT, 0);
+            if (correctionCount < 2) {
+                return 0;
+            }
+            int ratePermille = Math.min(1000, Math.round((correctionCount * 1000f) / inputCount));
+            if (correctionCount >= 8 && ratePermille >= 650) {
+                return MAX_DINGUL_GESTURE_PENALTY_DP;
+            }
+            if (correctionCount >= 5 && ratePermille >= 500) {
+                return 6;
+            }
+            if (correctionCount >= 3 && ratePermille >= 350) {
+                return 4;
+            }
+            if (ratePermille >= 200) {
+                return 2;
+            }
+            return 0;
+        }
+
+        int inputCount(String keyCodePoints, GestureAction action) {
+            JSONObject entry = entries.optJSONObject(entryId(keyCodePoints, action));
+            return entry == null ? 0 : entry.optInt(INPUT_COUNT, 0);
+        }
+
+        int correctionCount(String keyCodePoints, GestureAction action) {
+            JSONObject entry = entries.optJSONObject(entryId(keyCodePoints, action));
+            return entry == null ? 0 : entry.optInt(CORRECTION_COUNT, 0);
+        }
+
+        String encode() {
+            return root.toString();
+        }
+
+        private JSONObject entryFor(String id) {
+            JSONObject entry = entries.optJSONObject(id);
+            return entry == null ? new JSONObject() : entry;
+        }
+
+        private void putEntry(String id, JSONObject entry) {
+            try {
+                entries.put(id, entry);
+            } catch (JSONException exception) {
+                // Ignore a malformed id; callers will fall back to no penalty.
+            }
+        }
+
+        private static String entryId(String keyCodePoints, GestureAction action) {
+            if (keyCodePoints == null || keyCodePoints.isEmpty()) {
+                return "";
+            }
+            return keyCodePoints + "|" + safeAction(action).name();
+        }
+
+        private static GestureAction safeAction(GestureAction action) {
+            return action == null ? GestureAction.TAP : action;
+        }
+
+        private static boolean isDirectional(GestureAction action) {
+            return action == GestureAction.UP
+                    || action == GestureAction.DOWN
+                    || action == GestureAction.LEFT
+                    || action == GestureAction.RIGHT;
+        }
+
+        private static void decayIfNeeded(JSONObject entry) {
+            int inputCount = entry.optInt(INPUT_COUNT, 0);
+            int correctionCount = entry.optInt(CORRECTION_COUNT, 0);
+            if (Math.max(inputCount, correctionCount) < MAX_PROFILE_SAMPLES) {
+                return;
+            }
+            putInt(entry, INPUT_COUNT, Math.max(1, inputCount / 2));
+            putInt(entry, CORRECTION_COUNT, correctionCount / 2);
+        }
+
+        private static float ema(JSONObject entry, String key, float value) {
+            if (!entry.has(key)) {
+                return value;
+            }
+            float previous = (float) entry.optDouble(key, value);
+            return previous + (value - previous) * OFFSET_EMA_ALPHA;
+        }
+
+        private static void putInt(JSONObject object, String key, int value) {
+            try {
+                object.put(key, value);
+            } catch (JSONException exception) {
+                // Ignore malformed in-memory state.
+            }
+        }
+
+        private static void putFloat(JSONObject object, String key, float value) {
+            try {
+                object.put(key, value);
+            } catch (JSONException exception) {
+                // Ignore malformed in-memory state.
+            }
         }
     }
 
@@ -176,7 +424,7 @@ final class TouchBiasStore {
             this.samples = Math.max(0, samples);
             this.gestureThresholdAdjustmentDp = Math.max(
                     0,
-                    Math.min(MAX_GESTURE_THRESHOLD_ADJUSTMENT_DP, gestureThresholdAdjustmentDp));
+                    Math.min(MAX_GLOBAL_GESTURE_THRESHOLD_ADJUSTMENT_DP, gestureThresholdAdjustmentDp));
             this.gestureSamples = Math.max(0, gestureSamples);
             this.gestureUpAdjDp = clampAdj(gestureUpAdjDp);
             this.gestureDownAdjDp = clampAdj(gestureDownAdjDp);
@@ -197,7 +445,7 @@ final class TouchBiasStore {
             int nextGestureSamples = gestureSamples + (deletedSlide ? 1 : 0);
             int nextGestureThresholdAdjustmentDp = deletedSlide
                     ? Math.min(
-                            MAX_GESTURE_THRESHOLD_ADJUSTMENT_DP,
+                            MAX_GLOBAL_GESTURE_THRESHOLD_ADJUSTMENT_DP,
                             Math.round(nextGestureSamples * GESTURE_LEARNING_RATE))
                     : gestureThresholdAdjustmentDp;
             int nextUp = gestureUpAdjDp + (action == GestureAction.UP ? 1 : 0);
@@ -219,16 +467,43 @@ final class TouchBiasStore {
         }
 
         Bias recordTextInput(GestureAction action) {
+            boolean acceptedSlide = action != null
+                    && action != GestureAction.TAP
+                    && action != GestureAction.LONG_PRESS;
+            int nextGlobal = acceptedSlide ? Math.max(0, gestureThresholdAdjustmentDp - 1)
+                    : gestureThresholdAdjustmentDp;
+            int nextUp = gestureUpAdjDp;
+            int nextDown = gestureDownAdjDp;
+            int nextLeft = gestureLeftAdjDp;
+            int nextRight = gestureRightAdjDp;
+            if (acceptedSlide) {
+                switch (action) {
+                    case UP:
+                        nextUp = Math.max(0, nextUp - 1);
+                        break;
+                    case DOWN:
+                        nextDown = Math.max(0, nextDown - 1);
+                        break;
+                    case LEFT:
+                        nextLeft = Math.max(0, nextLeft - 1);
+                        break;
+                    case RIGHT:
+                        nextRight = Math.max(0, nextRight - 1);
+                        break;
+                    default:
+                        break;
+                }
+            }
             return new Bias(
                     xDp,
                     yDp,
                     samples,
-                    gestureThresholdAdjustmentDp,
+                    nextGlobal,
                     gestureSamples,
-                    gestureUpAdjDp,
-                    gestureDownAdjDp,
-                    gestureLeftAdjDp,
-                    gestureRightAdjDp,
+                    nextUp,
+                    nextDown,
+                    nextLeft,
+                    nextRight,
                     textSamples + 1,
                     correctionSamples);
         }

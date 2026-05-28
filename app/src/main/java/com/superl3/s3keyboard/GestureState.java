@@ -21,6 +21,26 @@ final class GestureState {
             float downThreshold,
             float leftThreshold,
             float rightThreshold) {
+        return update(
+                dx,
+                dy,
+                baseThreshold,
+                upThreshold,
+                downThreshold,
+                leftThreshold,
+                rightThreshold,
+                0f);
+    }
+
+    GestureAction update(
+            float dx,
+            float dy,
+            float baseThreshold,
+            float upThreshold,
+            float downThreshold,
+            float leftThreshold,
+            float rightThreshold,
+            float axisDominanceRatio) {
         if (lockedAction != GestureAction.TAP) {
             return lockedAction;
         }
@@ -32,7 +52,8 @@ final class GestureState {
                 upThreshold,
                 downThreshold,
                 leftThreshold,
-                rightThreshold);
+                rightThreshold,
+                axisDominanceRatio);
         if (action != GestureAction.TAP) {
             lockedAction = action;
         }
@@ -51,6 +72,26 @@ final class GestureState {
             float downThreshold,
             float leftThreshold,
             float rightThreshold) {
+        return release(
+                dx,
+                dy,
+                baseThreshold,
+                upThreshold,
+                downThreshold,
+                leftThreshold,
+                rightThreshold,
+                0f);
+    }
+
+    GestureAction release(
+            float dx,
+            float dy,
+            float baseThreshold,
+            float upThreshold,
+            float downThreshold,
+            float leftThreshold,
+            float rightThreshold,
+            float axisDominanceRatio) {
         if (lockedAction != GestureAction.TAP) {
             return lockedAction;
         }
@@ -61,7 +102,8 @@ final class GestureState {
                 upThreshold,
                 downThreshold,
                 leftThreshold,
-                rightThreshold);
+                rightThreshold,
+                axisDominanceRatio);
     }
 
     boolean isLocked() {
@@ -73,7 +115,7 @@ final class GestureState {
     }
 
     private GestureAction actionFor(float dx, float dy, float threshold) {
-        return actionFor(dx, dy, threshold, threshold, threshold, threshold, threshold);
+        return actionFor(dx, dy, threshold, threshold, threshold, threshold, threshold, 0f);
     }
 
     private GestureAction actionFor(
@@ -83,11 +125,15 @@ final class GestureState {
             float upThreshold,
             float downThreshold,
             float leftThreshold,
-            float rightThreshold) {
+            float rightThreshold,
+            float axisDominanceRatio) {
         GestureAction candidate;
         float absDx = Math.abs(dx);
         float absDy = Math.abs(dy);
-        if (absDx >= absDy * HORIZONTAL_AXIS_RATIO) {
+        float strictRatio = Math.max(0f, axisDominanceRatio);
+        boolean horizontalDominates = strictRatio <= 0f || absDx >= absDy * strictRatio;
+        boolean verticalDominates = strictRatio <= 0f || absDy >= absDx * strictRatio;
+        if (horizontalDominates && absDx >= absDy * HORIZONTAL_AXIS_RATIO) {
             candidate = dx < 0 ? GestureAction.LEFT : GestureAction.RIGHT;
             float factor = candidate == GestureAction.RIGHT ? RIGHT_LOCK_FACTOR : LEFT_LOCK_FACTOR;
             float threshold = thresholdFor(
@@ -101,7 +147,7 @@ final class GestureState {
                 return candidate;
             }
         }
-        if (absDy >= absDx * VERTICAL_AXIS_RATIO) {
+        if (verticalDominates && absDy >= absDx * VERTICAL_AXIS_RATIO) {
             candidate = dy < 0 ? GestureAction.UP : GestureAction.DOWN;
             float threshold = thresholdFor(
                     candidate,

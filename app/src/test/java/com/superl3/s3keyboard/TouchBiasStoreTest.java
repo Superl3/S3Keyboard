@@ -43,20 +43,35 @@ public final class TouchBiasStoreTest {
     }
 
     @Test
-    public void slideDeletesRaiseGestureThresholdConservatively() {
+    public void slideDeletesRaiseGestureThresholdWithSmallGlobalCap() {
         TouchBiasStore.Bias bias = TouchBiasStore.Bias.none();
         for (int i = 0; i < 100; i++) {
             bias = bias.recordImmediateDelete(0f, 0f, GestureAction.LEFT);
         }
 
-        assertEquals(TouchBiasStore.MAX_GESTURE_THRESHOLD_ADJUSTMENT_DP, bias.gestureThresholdAdjustmentDp);
+        assertEquals(TouchBiasStore.MAX_GLOBAL_GESTURE_THRESHOLD_ADJUSTMENT_DP, bias.gestureThresholdAdjustmentDp);
         assertEquals(100, bias.gestureSamples);
         assertEquals(
                 TouchBiasStore.MAX_GESTURE_THRESHOLD_ADJUSTMENT_DP,
                 bias.gestureThresholdAdjustmentForDirection(GestureAction.LEFT));
         assertEquals(
-                TouchBiasStore.MAX_GESTURE_THRESHOLD_ADJUSTMENT_DP,
+                TouchBiasStore.MAX_GLOBAL_GESTURE_THRESHOLD_ADJUSTMENT_DP,
                 bias.gestureThresholdAdjustmentForDirection(GestureAction.RIGHT));
+    }
+
+    @Test
+    public void acceptedSlidesDecayStuckGestureThresholdPenalty() {
+        TouchBiasStore.Bias bias = TouchBiasStore.Bias.none();
+        for (int i = 0; i < 100; i++) {
+            bias = bias.recordImmediateDelete(0f, 0f, GestureAction.RIGHT);
+        }
+
+        bias = bias.recordTextInput(GestureAction.RIGHT)
+                .recordTextInput(GestureAction.RIGHT);
+
+        assertEquals(2, bias.gestureThresholdAdjustmentDp);
+        assertEquals(4, bias.gestureThresholdAdjustmentForDirection(GestureAction.RIGHT));
+        assertEquals(2, bias.gestureThresholdAdjustmentForDirection(GestureAction.LEFT));
     }
 
     @Test
@@ -100,5 +115,50 @@ public final class TouchBiasStoreTest {
 
         org.junit.Assert.assertTrue(log.contains("\"text\":\"ㄱ\""));
         org.junit.Assert.assertTrue(log.contains("\"type\":\"correction\""));
+    }
+
+    @Test
+    public void dingulProfileAddsPenaltyOnlyAfterRepeatedDirectionalCorrections() {
+        TouchBiasStore.DingulTouchProfile profile = TouchBiasStore.DingulTouchProfile.empty();
+        for (int i = 0; i < 10; i++) {
+            profile.recordInput("3131", GestureAction.LEFT);
+        }
+        profile.recordCorrection("3131", GestureAction.LEFT, 4f, -2f);
+
+        assertEquals(10, profile.inputCount("3131", GestureAction.LEFT));
+        assertEquals(1, profile.correctionCount("3131", GestureAction.LEFT));
+        assertEquals(0, profile.penaltyDp("3131", GestureAction.LEFT));
+
+        for (int i = 0; i < 3; i++) {
+            profile.recordCorrection("3131", GestureAction.LEFT, 4f, -2f);
+        }
+        profile.recordCorrection("3131", GestureAction.LEFT, 4f, -2f);
+        assertEquals(6, profile.penaltyDp("3131", GestureAction.LEFT));
+    }
+
+    @Test
+    public void dingulProfileKeepsTapCorrectionsOutOfSlidePenalty() {
+        TouchBiasStore.DingulTouchProfile profile = TouchBiasStore.DingulTouchProfile.empty();
+        for (int i = 0; i < 6; i++) {
+            profile.recordInput("3145", GestureAction.TAP);
+            profile.recordCorrection("3145", GestureAction.TAP, 0f, 0f);
+        }
+
+        assertEquals(0, profile.penaltyDp("3145", GestureAction.TAP));
+        assertEquals(0, profile.penaltyDp("3145", GestureAction.UP));
+    }
+
+    @Test
+    public void dingulProfileRoundTripsWithoutRawText() {
+        TouchBiasStore.DingulTouchProfile profile = TouchBiasStore.DingulTouchProfile.empty()
+                .recordInput("3163+2E", GestureAction.RIGHT)
+                .recordCorrection("3163+2E", GestureAction.RIGHT, 1f, 2f);
+        String encoded = profile.encode();
+        TouchBiasStore.DingulTouchProfile decoded =
+                TouchBiasStore.DingulTouchProfile.decode(encoded);
+
+        assertEquals(1, decoded.inputCount("3163+2E", GestureAction.RIGHT));
+        assertEquals(1, decoded.correctionCount("3163+2E", GestureAction.RIGHT));
+        org.junit.Assert.assertFalse(encoded.contains("ㄱ"));
     }
 }
