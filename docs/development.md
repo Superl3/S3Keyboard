@@ -74,13 +74,30 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   shortcuts, or any Accessibility-based bypass idea.
 - Remote mode is a runtime overlay: it force-enables the number row while remote
   is on, restores the saved number-row state when remote is off, disables theme
-  display/icon overrides, and uses plain text command keys. Function keys are on
-  number-row down slides; QWERTY alpha long press remains empty.
+  display/icon overrides, and uses a PC QWERTY surface with plain text command
+  keys. Function keys are on number-row down slides; QWERTY alpha long press
+  remains empty. Remote ASCII taps and shortcuts are sent as explicit KeyEvent
+  down/up sequences, including modifier down/up events for chords.
+- `KeyboardMode` is the language/composition mode only. `KeyboardLayoutProfiles`
+  stores the physical surface per language, defaulting to Hangul Dingul and
+  English QWERTY while allowing Hangul QWERTY and English Dingul from settings.
+- Fields that reject composing spans, including `TYPE_NULL` raw-key targets, use
+  a commit-only Hangul fallback. The app keeps the internal automata state,
+  deletes the previous visible fallback composition, and commits the updated
+  complete syllable so sequences like `ㄱㅏㄴ` do not remain split when composing
+  text is unavailable.
 - `HangulKeyboardView` keeps the preview strip inside the measured keyboard
   height, so preview space does not create a transparent area over the app UI.
 - `TouchBiasStore` learns from local input patterns. It stores aggregate touch
   center and gesture-threshold statistics, and also keeps a capped local raw key
-  event log for future typo analysis. Resetting input correction clears both.
+  event log for future typo analysis. Runtime learning state is cached in memory
+  and flushed to preferences on a short debounce or IME session finish, so normal
+  key input does not wait on preference reads/writes. Resetting input correction
+  clears both.
+- `scripts\analyze-device-learning.ps1` summarizes pulled
+  `keyboard_preferences.xml` captures, including gesture-intent labels, delete
+  bursts, pattern counts, touch bias, and Dingul profile size. It handles UTF-16
+  captures produced by redirected ADB output.
 
 ## Theme Architecture
 

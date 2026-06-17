@@ -125,6 +125,7 @@ The smoke script opens the local practice field and captures input-method state 
 - Korean Hangul automata for consonant-vowel-final composition
 - Automatic correction for cases such as vowel-start syllables and final consonants followed by a vowel
 - Internal Hangul/English mode toggle
+- Selectable Hangul Dingul/QWERTY and English QWERTY/Dingul layouts
 - English QWERTY layout with tap lowercase, up-slide uppercase, and long-press symbols
 - Per-language top number row, default off for Hangul and on for English
 - Clean-room generated vector icon pipeline for command keys and settings action buttons

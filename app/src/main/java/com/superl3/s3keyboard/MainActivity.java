@@ -63,9 +63,12 @@ public final class MainActivity extends Activity {
     private static final String EXTRA_THEME_PRESET_ID = "theme_preset_id";
 
     private KeyboardSettings settings;
+    private KeyboardLayoutProfiles layoutProfiles;
     private boolean syncing;
     private boolean demoShowKeyboard;
     private Spinner handednessSpinner;
+    private Spinner hangulLayoutProfileSpinner;
+    private Spinner englishLayoutProfileSpinner;
     private SeekBar leftMarginSeekBar;
     private SeekBar rightMarginSeekBar;
     private SeekBar hangulHeightSeekBar;
@@ -167,6 +170,7 @@ public final class MainActivity extends Activity {
         }
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         settings = KeyboardPreferences.load(this);
+        layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
         KeyboardPreferences.saveFloatingModeEnabled(this, false);
         applyIntentOverrides(getIntent());
         restoreSelectedThemePresetIndex();
@@ -179,6 +183,7 @@ public final class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         settings = KeyboardPreferences.load(this);
+        layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
         KeyboardPreferences.saveFloatingModeEnabled(this, false);
         applyIntentOverrides(getIntent());
         restoreSelectedThemePresetIndex();
@@ -457,6 +462,22 @@ public final class MainActivity extends Activity {
         });
         root.addView(label("\uD55C\uC190 \uBAA8\uB4DC"), matchWrapWithTop(12));
         root.addView(handednessSpinner, matchWrap());
+
+        hangulLayoutProfileSpinner = layoutProfileSpinner(profile -> {
+            layoutProfiles = layoutProfiles.withHangulLayout(profile);
+            KeyboardPreferences.saveHangulLayoutProfile(this, profile);
+            syncControls();
+        });
+        root.addView(label("\uD55C\uAE00 \uC785\uB825 \uBC30\uC5F4"), matchWrapWithTop(16));
+        root.addView(hangulLayoutProfileSpinner, matchWrap());
+
+        englishLayoutProfileSpinner = layoutProfileSpinner(profile -> {
+            layoutProfiles = layoutProfiles.withEnglishLayout(profile);
+            KeyboardPreferences.saveEnglishLayoutProfile(this, profile);
+            syncControls();
+        });
+        root.addView(label("\uC601\uBB38 \uC785\uB825 \uBC30\uC5F4"), matchWrapWithTop(8));
+        root.addView(englishLayoutProfileSpinner, matchWrap());
 
         leftMarginValue = label("");
         root.addView(leftMarginValue, matchWrapWithTop(12));
@@ -1304,6 +1325,12 @@ public final class MainActivity extends Activity {
         }
         rebuildThemePresetCards();
         handednessSpinner.setSelection(settings.handednessMode.ordinal());
+        if (hangulLayoutProfileSpinner != null) {
+            hangulLayoutProfileSpinner.setSelection(layoutProfiles.hangulLayout.ordinal());
+        }
+        if (englishLayoutProfileSpinner != null) {
+            englishLayoutProfileSpinner.setSelection(layoutProfiles.englishLayout.ordinal());
+        }
         if (leftMarginSeekBar != null) {
             leftMarginSeekBar.setProgress(settings.leftMarginDp);
         }
@@ -1409,17 +1436,17 @@ public final class MainActivity extends Activity {
         deleteThemeButton.setEnabled(selectedThemeOption() != null && selectedThemeOption().isDeletableUserTheme());
         leftMarginValue.setText("\uC88C\uC6B0 \uD328\uB529: " + settings.leftMarginDp + "dp");
         rightMarginValue.setText("\uC88C\uC6B0 \uD328\uB529: " + settings.rightMarginDp + "dp");
-        hangulHeightValue.setText("\uB529\uAD74 \uB192\uC774: " + settings.hangulKeyboardHeightDp + "dp"
+        hangulHeightValue.setText("\uD55C\uAE00 \uB192\uC774: " + settings.hangulKeyboardHeightDp + "dp"
                 + (settings.keyboardMode == KeyboardMode.HANGUL && settings.showNumberRow ? " + num row" : ""));
-        englishHeightValue.setText("\uCFFC\uD2F0 \uB192\uC774: " + settings.englishKeyboardHeightDp + "dp"
+        englishHeightValue.setText("\uC601\uBB38 \uB192\uC774: " + settings.englishKeyboardHeightDp + "dp"
                 + (settings.keyboardMode == KeyboardMode.ENGLISH && settings.showNumberRow ? " + num row" : ""));
         hangulSpecialColumnValue.setText("\uB529\uAD74 \uC6B0\uCE21 \uD2B9\uC218\uC5F4 \uBE44\uC728: "
                 + settings.hangulSpecialColumnPercent + "%");
         keyboardTopPaddingValue.setText("\uD0A4\uBCF4\uB4DC \uC0C1\uB2E8 \uD328\uB529: " + settings.keyboardTopPaddingDp + "dp");
         keyboardBottomPaddingValue.setText("\uD0A4\uBCF4\uB4DC \uD558\uB2E8 \uD328\uB529: " + settings.keyboardBottomPaddingDp + "dp");
         numberRowBottomGapValue.setText("\uC22B\uC790\uC904-\uC790\uD310 \uAC04\uACA9: " + settings.numberRowBottomGapDp + "dp");
-        hangulKeyGapValue.setText("\uB529\uAD74 \uD0A4 \uAC04\uACA9: " + settings.hangulKeyGapDp + "dp");
-        englishKeyGapValue.setText("\uCFFC\uD2F0 \uD0A4 \uAC04\uACA9: " + settings.englishKeyGapDp + "dp");
+        hangulKeyGapValue.setText("\uD55C\uAE00 \uD0A4 \uAC04\uACA9: " + settings.hangulKeyGapDp + "dp");
+        englishKeyGapValue.setText("\uC601\uBB38 \uD0A4 \uAC04\uACA9: " + settings.englishKeyGapDp + "dp");
         roundnessValue.setText("\uBC84\uD2BC roundness: " + settings.keyRoundnessDp + "dp");
         keyBorderWidthValue.setText("\uD14C\uB450\uB9AC \uAD75\uAE30: " + settings.keyBorderWidthDp + "dp");
         keyGapValue.setText("\uBC84\uD2BC \uAC04 \uC2DC\uAC01 \uAC04\uACA9: " + settings.keyGapDp + "dp");
@@ -1570,6 +1597,27 @@ public final class MainActivity extends Activity {
         if (!text.contentEquals(input.getText())) {
             input.setText(text);
         }
+    }
+
+    private Spinner layoutProfileSpinner(final LayoutProfileChangeListener listener) {
+        Spinner spinner = new Spinner(this);
+        ArrayAdapter<KeyboardLayoutProfile> adapter = new SettingsArrayAdapter<>(
+                this,
+                KeyboardLayoutProfile.values());
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!syncing) {
+                    listener.onProfileChanged(KeyboardLayoutProfile.values()[position]);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        return spinner;
     }
 
     private Spinner colorSpinner(final ColorChangeListener listener) {
@@ -2015,6 +2063,10 @@ public final class MainActivity extends Activity {
 
     private interface ColorChangeListener {
         void onColorChanged(int color);
+    }
+
+    private interface LayoutProfileChangeListener {
+        void onProfileChanged(KeyboardLayoutProfile profile);
     }
 
     private interface IntSettingListener {

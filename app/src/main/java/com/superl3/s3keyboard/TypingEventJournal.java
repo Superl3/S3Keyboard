@@ -28,38 +28,27 @@ final class TypingEventJournal {
     private static final String SHADOW_ACTION = "shadowAction";
     private static final String SHADOW_KEY_CP = "shadowKeyCp";
     private static final String SHADOW_APPLIED = "shadowApplied";
+    private static final String SOURCE = "source";
+    private static final String CONFIDENCE = "confidence";
+    private static final String DELETE_DEPTH = "deleteDepth";
+    private static final String DELETE_BURST_SIZE = "deleteBurstSize";
     private static final int ACCEPTED_INPUT_HORIZON = 3;
     private static final float SAME_KEY_ACTIVE_SCORE_FLOOR = 0.80f;
-    private static final float REASSIGNED_ACTIVE_SCORE_FLOOR = 0.96f;
+    private static final float REASSIGNED_ACTIVE_SCORE_FLOOR = 0.94f;
 
     private TypingEventJournal() {
     }
 
     static String appendInput(String encodedJournal, Input input, int maxEvents) {
-        if (input == null || input.id.isEmpty()) {
-            return encodedJournal == null ? "" : encodedJournal;
-        }
-        JSONArray events = decode(encodedJournal);
-        events.put(input.toJson());
-        appendReplacementLabel(events, input);
-        appendAcceptedLabels(events);
-        trim(events, maxEvents);
-        return events.toString();
+        RuntimeJournal journal = RuntimeJournal.decode(encodedJournal);
+        journal.appendInput(input, maxEvents);
+        return journal.encode();
     }
 
     static String appendDelete(String encodedJournal, long timeMs, int maxEvents) {
-        JSONArray events = decode(encodedJournal);
-        JSONObject event = new JSONObject();
-        put(event, TYPE, TYPE_DELETE);
-        put(event, ID, "d-" + Math.max(0L, timeMs) + "-" + events.length());
-        put(event, TIME_MS, Math.max(0L, timeMs));
-        String targetEventId = lastLiveInputId(events);
-        if (!targetEventId.isEmpty()) {
-            put(event, TARGET_EVENT_ID, targetEventId);
-        }
-        events.put(event);
-        trim(events, maxEvents);
-        return events.toString();
+        RuntimeJournal journal = RuntimeJournal.decode(encodedJournal);
+        journal.appendDelete(timeMs, maxEvents);
+        return journal.encode();
     }
 
     static Label latestLabelFor(String encodedJournal, String targetEventId) {
@@ -92,7 +81,10 @@ final class TypingEventJournal {
     }
 
     static CorrectionStats correctionStats(String encodedJournal) {
-        JSONArray events = decode(encodedJournal);
+        return correctionStats(decode(encodedJournal));
+    }
+
+    private static CorrectionStats correctionStats(JSONArray events) {
         Map<String, JSONObject> inputs = new HashMap<>();
         for (int i = 0; i < events.length(); i++) {
             JSONObject event = events.optJSONObject(i);
@@ -132,24 +124,126 @@ final class TypingEventJournal {
         }
     }
 
-    private static void appendReplacementLabel(JSONArray events, Input replacement) {
-        JSONObject original = deepestPendingDeletedInput(events);
-        if (original == null) {
-            return;
+    static final class RuntimeJournal {
+        private final JSONArray events;
+        private final Map<String, JSONObject> inputs = new HashMap<>();
+        private CorrectionStats stats = new CorrectionStats();
+
+        private RuntimeJournal(JSONArray events) {
+            this.events = events == null ? new JSONArray() : events;
+            rebuildIndexAndStats();
         }
-        String originalId = original.optString(ID);
-        if (originalId.isEmpty()) {
-            return;
+
+        static RuntimeJournal decode(String encodedJournal) {
+            return new RuntimeJournal(TypingEventJournal.decode(encodedJournal));
         }
-        appendLabel(
-                events,
-                originalId,
-                replacement.id,
-                classifyReplacement(original, replacement),
-                "rollback_replacement");
+
+        boolean appendInput(Input input, int maxEvents) {
+            if (input == null || input.id.isEmpty()) {
+                return false;
+            }
+            JSONObject inputEvent = input.toJson();
+            events.put(inputEvent);
+            inputs.put(input.id, inputEvent);
+
+            List<JSONObject> labels = new ArrayList<>();
+            JSONObject replacementLabel = appendReplacementLabel(events, input);
+            if (replacementLabel != null) {
+                labels.add(replacementLabel);
+            }
+            labels.addAll(appendAcceptedLabels(events));
+            for (JSONObject labelEvent : labels) {
+                recordLabelEvent(labelEvent);
+            }
+
+            if (trim(events, maxEvents)) {
+                rebuildIndexAndStats();
+            }
+            return true;
+        }
+
+        boolean appendDelete(long timeMs, int maxEvents) {
+            JSONObject event = new JSONObject();
+            put(event, TYPE, TYPE_DELETE);
+            put(event, ID, "d-" + Math.max(0L, timeMs) + "-" + events.length());
+            put(event, TIME_MS, Math.max(0L, timeMs));
+            String targetEventId = lastLiveInputId(events);
+            if (!targetEventId.isEmpty()) {
+                put(event, TARGET_EVENT_ID, targetEventId);
+            }
+            events.put(event);
+            if (trim(events, maxEvents)) {
+                rebuildIndexAndStats();
+            }
+            return true;
+        }
+
+        CorrectionStats correctionStats() {
+            return stats;
+        }
+
+        String encode() {
+            return events.toString();
+        }
+
+        private void rebuildIndexAndStats() {
+            inputs.clear();
+            for (int i = 0; i < events.length(); i++) {
+                JSONObject event = events.optJSONObject(i);
+                if (event != null && TYPE_INPUT.equals(event.optString(TYPE))) {
+                    String id = event.optString(ID);
+                    if (!id.isEmpty()) {
+                        inputs.put(id, event);
+                    }
+                }
+            }
+            stats = new CorrectionStats();
+            for (int i = 0; i < events.length(); i++) {
+                JSONObject event = events.optJSONObject(i);
+                if (event != null && TYPE_LABEL.equals(event.optString(TYPE))) {
+                    recordLabelEvent(event);
+                }
+            }
+        }
+
+        private void recordLabelEvent(JSONObject labelEvent) {
+            if (labelEvent == null) {
+                return;
+            }
+            Label label = Label.fromId(labelEvent.optString(LABEL));
+            if (label == null) {
+                return;
+            }
+            JSONObject target = inputs.get(labelEvent.optString(TARGET_EVENT_ID));
+            JSONObject replacement = inputs.get(labelEvent.optString(REPLACEMENT_EVENT_ID));
+            stats.record(label, target, replacement);
+        }
     }
 
-    private static JSONObject deepestPendingDeletedInput(JSONArray events) {
+    private static JSONObject appendReplacementLabel(JSONArray events, Input replacement) {
+        PendingDeletedInput pending = deepestPendingDeletedInput(events);
+        if (pending == null || pending.input == null) {
+            return null;
+        }
+        JSONObject original = pending.input;
+        String originalId = original.optString(ID);
+        if (originalId.isEmpty()) {
+            return null;
+        }
+        Label label = classifyReplacement(original, replacement);
+        JSONObject event = labelEvent(
+                originalId,
+                replacement.id,
+                label,
+                "rollback_replacement",
+                confidenceFor(label, pending),
+                pending.deleteDepth,
+                pending.deleteBurstSize);
+        events.put(event);
+        return event;
+    }
+
+    private static PendingDeletedInput deepestPendingDeletedInput(JSONArray events) {
         List<String> pendingTargets = new ArrayList<>();
         Set<String> consumedTargets = replacementLabelTargetIds(events);
         for (int i = 0; i < events.length(); i++) {
@@ -162,16 +256,17 @@ final class TypingEventJournal {
                 pendingTargets.add(target);
             }
         }
+        int deleteBurstSize = trailingDeleteBurstSize(events);
         for (int i = pendingTargets.size() - 1; i >= 0; i--) {
             JSONObject input = inputById(events, pendingTargets.get(i));
             if (input != null) {
-                return input;
+                return new PendingDeletedInput(input, i + 1, deleteBurstSize);
             }
         }
         return null;
     }
 
-    private static void appendAcceptedLabels(JSONArray events) {
+    private static List<JSONObject> appendAcceptedLabels(JSONArray events) {
         Set<String> labelledTargets = allLabelTargetIds(events);
         Set<String> deletedTargets = deleteTargetIds(events);
         List<JSONObject> labelsToAppend = new ArrayList<>();
@@ -190,12 +285,13 @@ final class TypingEventJournal {
             Label label = hasUnappliedShadow(event)
                     ? Label.SHADOW_FALSE_ALARM
                     : acceptedLabel(actionFrom(event.optString(ACTION)));
-            labelsToAppend.add(labelEvent(id, "", label, "continued_typing"));
+            labelsToAppend.add(labelEvent(id, "", label, "continued_typing", confidenceForAccepted(label), 0, 0));
             labelledTargets.add(id);
         }
         for (JSONObject label : labelsToAppend) {
             events.put(label);
         }
+        return labelsToAppend;
     }
 
     private static Label classifyReplacement(JSONObject original, Input replacement) {
@@ -311,34 +407,81 @@ final class TypingEventJournal {
         return ids;
     }
 
-    private static void appendLabel(
-            JSONArray events,
-            String targetEventId,
-            String replacementEventId,
-            Label label,
-            String source) {
-        events.put(labelEvent(targetEventId, replacementEventId, label, source));
-    }
-
     private static JSONObject labelEvent(
             String targetEventId,
             String replacementEventId,
             Label label,
-            String source) {
+            String source,
+            int confidence,
+            int deleteDepth,
+            int deleteBurstSize) {
         JSONObject event = new JSONObject();
         put(event, TYPE, TYPE_LABEL);
         put(event, TARGET_EVENT_ID, safe(targetEventId));
         put(event, REPLACEMENT_EVENT_ID, safe(replacementEventId));
         put(event, LABEL, label == null ? Label.UNKNOWN_CORRECTION.id : label.id);
-        put(event, "source", safe(source));
+        put(event, SOURCE, safe(source));
+        put(event, CONFIDENCE, clamp(confidence, 0, 100));
+        if (deleteDepth > 0) {
+            put(event, DELETE_DEPTH, deleteDepth);
+        }
+        if (deleteBurstSize > 0) {
+            put(event, DELETE_BURST_SIZE, deleteBurstSize);
+        }
         return event;
     }
 
-    private static void trim(JSONArray events, int maxEvents) {
+    private static int trailingDeleteBurstSize(JSONArray events) {
+        int burstSize = 0;
+        for (int i = events.length() - 2; i >= 0; i--) {
+            JSONObject event = events.optJSONObject(i);
+            if (event == null || !TYPE_DELETE.equals(event.optString(TYPE))) {
+                break;
+            }
+            burstSize++;
+        }
+        return burstSize;
+    }
+
+    private static int confidenceFor(Label label, PendingDeletedInput pending) {
+        int confidence;
+        switch (label == null ? Label.UNKNOWN_CORRECTION : label) {
+            case MISSED_SLIDE:
+            case FALSE_SLIDE:
+            case WRONG_DIRECTION:
+                confidence = 82;
+                break;
+            case WRONG_ORIGIN_KEY:
+                confidence = 74;
+                break;
+            case UNKNOWN_CORRECTION:
+                confidence = 48;
+                break;
+            default:
+                confidence = 68;
+                break;
+        }
+        if (pending != null && pending.deleteDepth >= 2) {
+            confidence += 8;
+        }
+        if (pending != null && pending.deleteBurstSize >= 3) {
+            confidence += 5;
+        }
+        return clamp(confidence, 0, 96);
+    }
+
+    private static int confidenceForAccepted(Label label) {
+        return label == Label.SHADOW_FALSE_ALARM ? 64 : 78;
+    }
+
+    private static boolean trim(JSONArray events, int maxEvents) {
         int limit = Math.max(1, maxEvents);
+        boolean trimmed = false;
         while (events.length() > limit) {
             events.remove(0);
+            trimmed = true;
         }
+        return trimmed;
     }
 
     private static GestureAction actionFrom(String action) {
@@ -365,6 +508,10 @@ final class TypingEventJournal {
 
     private static String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static void put(JSONObject object, String key, Object value) {
@@ -417,19 +564,20 @@ final class TypingEventJournal {
                 return false;
             }
             CandidateStats stats = candidate(originKeyCodePoints, candidateKeyCodePoints, action);
-            if (stats.missedSlideCount < 2) {
+            int netIntent = stats.netSlideIntentCount();
+            if (netIntent < 2) {
                 return false;
             }
             int negative = stats.shadowFalseAlarmCount + stats.falseSlideCount;
-            if (negative > 0 && negative * 2 >= stats.missedSlideCount) {
-                return false;
-            }
             float floor = sameKey ? SAME_KEY_ACTIVE_SCORE_FLOOR : REASSIGNED_ACTIVE_SCORE_FLOOR;
-            if (stats.missedSlideCount >= 4 && negative <= 1) {
+            if (netIntent >= 4 && negative <= 1) {
                 floor -= 0.10f;
             }
             if (stats.acceptedSlideCount >= 3 && negative == 0) {
                 floor -= 0.05f;
+            }
+            if (!sameKey && stats.wrongOriginCount > 0) {
+                floor += 0.03f;
             }
             return score >= floor;
         }
@@ -443,11 +591,12 @@ final class TypingEventJournal {
             if (stats.falseSlideCount >= 2 && stats.falseSlideCount >= stats.missedSlideCount) {
                 return Math.min(MAX_THRESHOLD_PENALTY_DP, stats.falseSlideCount);
             }
-            if (stats.missedSlideCount < 2 || negative * 2 >= stats.missedSlideCount) {
+            int netIntent = stats.netSlideIntentCount();
+            if (netIntent < 2) {
                 return 0;
             }
-            int discount = stats.missedSlideCount >= 4 ? 3 : 2;
-            if (stats.missedSlideCount >= 7 && negative == 0) {
+            int discount = netIntent >= 4 ? 3 : 2;
+            if (netIntent >= 7 && negative == 0) {
                 discount = MAX_THRESHOLD_DISCOUNT_DP;
             }
             return -discount;
@@ -552,6 +701,22 @@ final class TypingEventJournal {
         int wrongOriginCount;
         int shadowFalseAlarmCount;
         int acceptedSlideCount;
+
+        int netSlideIntentCount() {
+            return missedSlideCount - falseSlideCount - shadowFalseAlarmCount;
+        }
+    }
+
+    private static final class PendingDeletedInput {
+        final JSONObject input;
+        final int deleteDepth;
+        final int deleteBurstSize;
+
+        PendingDeletedInput(JSONObject input, int deleteDepth, int deleteBurstSize) {
+            this.input = input;
+            this.deleteDepth = Math.max(0, deleteDepth);
+            this.deleteBurstSize = Math.max(0, deleteBurstSize);
+        }
     }
 
     static final class Input {

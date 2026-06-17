@@ -35,9 +35,11 @@ public final class S3KeyboardService extends InputMethodService
     private static final int PREVIEW_POPUP_TOP_RESERVE_DP = 112;
 
     private final HangulAutomata automata = new HangulAutomata();
+    private final HangulCommitOnlyEditor commitOnlyEditor = new HangulCommitOnlyEditor();
     private final DoubleSpacePeriodState doubleSpacePeriodState = new DoubleSpacePeriodState();
     private final EnglishShiftState englishShiftState = new EnglishShiftState();
     private KeyboardSettings settings = KeyboardSettings.defaults();
+    private KeyboardLayoutProfiles layoutProfiles = KeyboardLayoutProfiles.defaults();
     private ResolvedImeAction enterAction = ImeActionLabelResolver.defaultAction();
     private EditorInputPolicy editorPolicy = EditorInputPolicy.DEFAULT;
     private HangulKeyboardView inputView;
@@ -66,6 +68,7 @@ public final class S3KeyboardService extends InputMethodService
     public View onCreateInputView() {
         dismissPreviewPopup();
         settings = KeyboardPreferences.load(this).withEnterKeyLabel(enterAction.label);
+        layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
 
         floatingModeController = new FloatingModeController(this);
         floatingModeController.setEnabled(false);
@@ -292,6 +295,7 @@ public final class S3KeyboardService extends InputMethodService
         updateToolbarVisibility();
         updateClipboardListener();
         automata.reset();
+        commitOnlyEditor.reset();
         doubleSpacePeriodState.reset();
         englishShiftState.reset();
         pendingRemoteMetaState = 0;
@@ -312,7 +316,11 @@ public final class S3KeyboardService extends InputMethodService
         if (inputConnection != null) {
             commitCurrent(inputConnection);
         }
+        if (inputView != null) {
+            inputView.flushLearningState();
+        }
         automata.reset();
+        commitOnlyEditor.reset();
         englishShiftState.reset();
         pendingRemoteMetaState = 0;
         lockedRemoteMetaState = 0;
@@ -343,6 +351,7 @@ public final class S3KeyboardService extends InputMethodService
                 commitCurrent(inputConnection);
             } else {
                 automata.reset();
+                commitOnlyEditor.reset();
             }
             doubleSpacePeriodState.reset();
         }
@@ -434,15 +443,8 @@ public final class S3KeyboardService extends InputMethodService
 
     private void inputDingulContextualVowel(InputConnection inputConnection, boolean centerVowelKey) {
         doubleSpacePeriodState.reset();
-        char fallback = centerVowelKey ? 'ㅣ' : 'ㅡ';
-        if (editorPolicy.rawKeyInput) {
-            automata.reset();
-            sendRawText(String.valueOf(fallback), inputConnection);
-            return;
-        }
-        if (!editorPolicy.allowComposingText) {
-            automata.reset();
-            inputConnection.commitText(String.valueOf(fallback), 1);
+        if (usesCommitOnlyHangul()) {
+            inputDingulContextualVowelCommitOnly(inputConnection, centerVowelKey);
             return;
         }
 
@@ -462,6 +464,23 @@ public final class S3KeyboardService extends InputMethodService
             return;
         }
         inputText(inputConnection, String.valueOf(nextVowel));
+    }
+
+    private void inputDingulContextualVowelCommitOnly(
+            InputConnection inputConnection,
+            boolean centerVowelKey) {
+        char currentVowel = automata.currentVowelWithoutFinal();
+        char replacementVowel = centerVowelKey
+                ? dingulCenterReplacementVowel(currentVowel)
+                : dingulWideReplacementVowel(currentVowel);
+        if (replacementVowel != '\0' && automata.replaceCurrentVowelWithoutFinal(replacementVowel)) {
+            commitOnlyEditor.refreshDisplayedComposing(automata, commitOnlySink(inputConnection));
+            return;
+        }
+        char nextVowel = centerVowelKey
+                ? dingulCenterTapValue(currentVowel)
+                : dingulWideTapValue(currentVowel);
+        inputHangulCommitOnly(inputConnection, String.valueOf(nextVowel));
     }
 
     private boolean combineWithPreviousOpenSyllableForDingulVowel(
@@ -577,22 +596,27 @@ public final class S3KeyboardService extends InputMethodService
 
     private void inputText(InputConnection inputConnection, String text) {
         doubleSpacePeriodState.reset();
-        if (settings.remoteModeEnabled && (pendingRemoteMetaState | lockedRemoteMetaState) != 0) {
-            String remoteText = settings.keyboardMode == KeyboardMode.ENGLISH
-                    ? englishShiftState.applyToInput(text)
-                    : text;
-            int remoteKeyCode = remotePrintableKeyCode(remoteText);
-            if (remoteKeyCode != 0) {
+        if (settings.remoteModeEnabled) {
+            String remoteText = englishShiftState.applyToInput(text);
+            RemoteKeyStroke stroke = RemoteKeyStroke.forText(remoteText);
+            if (stroke != null) {
                 commitCurrent(inputConnection);
-                sendRemoteKey(inputConnection, remoteKeyCode, remoteShiftMetaForText(remoteText));
+                sendRemoteKey(inputConnection, stroke.keyCode, stroke.metaState);
+                updateShiftStateView();
                 return;
             }
         }
         if (editorPolicy.rawKeyInput) {
-            automata.reset();
             String rawText = settings.keyboardMode == KeyboardMode.ENGLISH
                     ? englishShiftState.applyToInput(text)
-                    : text;
+                    : applyHangulQwertyShift(text);
+            if (settings.keyboardMode == KeyboardMode.HANGUL && containsHangulAutomataText(rawText)) {
+                inputHangulCommitOnly(inputConnection, rawText);
+                updateShiftStateView();
+                return;
+            }
+            automata.reset();
+            commitOnlyEditor.reset();
             sendRawText(rawText, inputConnection);
             updateShiftStateView();
             return;
@@ -604,13 +628,13 @@ public final class S3KeyboardService extends InputMethodService
         }
 
         if (!editorPolicy.allowComposingText) {
-            automata.reset();
-            inputConnection.commitText(text, 1);
+            inputHangulCommitOnly(inputConnection, applyHangulQwertyShift(text));
             return;
         }
 
-        for (int i = 0; i < text.length(); i++) {
-            char ch = text.charAt(i);
+        String hangulText = applyHangulQwertyShift(text);
+        for (int i = 0; i < hangulText.length(); i++) {
+            char ch = hangulText.charAt(i);
             if (automata.isEmpty()
                     && HangulAutomata.isVowel(ch)
                     && combineWithPreviousStandaloneConsonant(inputConnection, ch)) {
@@ -627,6 +651,93 @@ public final class S3KeyboardService extends InputMethodService
             }
             updateComposing(inputConnection);
         }
+    }
+
+    private void inputHangulCommitOnly(InputConnection inputConnection, String text) {
+        commitOnlyEditor.input(automata, text, commitOnlySink(inputConnection));
+    }
+
+    private boolean usesCommitOnlyHangul() {
+        return settings.keyboardMode == KeyboardMode.HANGUL
+                && (editorPolicy.rawKeyInput || !editorPolicy.allowComposingText);
+    }
+
+    private static boolean containsHangulAutomataText(String text) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (HangulAutomata.isInitialConsonant(ch) || HangulAutomata.isVowel(ch)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private HangulCommitOnlyEditor.Sink commitOnlySink(InputConnection inputConnection) {
+        return new HangulCommitOnlyEditor.Sink() {
+            @Override
+            public void deleteBeforeCursorCodePoints(int count) {
+                if (count <= 0) {
+                    return;
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+                        && inputConnection.deleteSurroundingTextInCodePoints(count, 0)) {
+                    return;
+                }
+                inputConnection.deleteSurroundingText(count, 0);
+            }
+
+            @Override
+            public void commitText(String text) {
+                if (text != null && !text.isEmpty()) {
+                    inputConnection.commitText(text, 1);
+                }
+            }
+        };
+    }
+
+    private String applyHangulQwertyShift(String text) {
+        if (!activeHangulQwerty() || text == null || text.length() != 1) {
+            return text;
+        }
+        if (!englishShiftState.isActive()) {
+            return text;
+        }
+        String shifted = shiftedHangulQwertyJamo(text.charAt(0));
+        englishShiftState.consumeOnce();
+        return shifted == null ? text : shifted;
+    }
+
+    private String shiftedHangulQwertyJamo(char ch) {
+        switch (ch) {
+            case '\u3142':
+                return "\u3143";
+            case '\u3148':
+                return "\u3149";
+            case '\u3137':
+                return "\u3138";
+            case '\u3131':
+                return "\u3132";
+            case '\u3145':
+                return "\u3146";
+            case '\u3150':
+                return "\u3152";
+            case '\u3154':
+                return "\u3156";
+            default:
+                return null;
+        }
+    }
+
+    private boolean shiftSupportedByActiveLayout() {
+        return settings.remoteModeEnabled || settings.keyboardMode == KeyboardMode.ENGLISH || activeHangulQwerty();
+    }
+
+    private boolean activeHangulQwerty() {
+        return settings.keyboardMode == KeyboardMode.HANGUL
+                && layoutProfiles.activeIsQwerty(settings.keyboardMode);
     }
 
     private boolean combineWithPreviousStandaloneConsonant(InputConnection inputConnection, char vowel) {
@@ -683,6 +794,7 @@ public final class S3KeyboardService extends InputMethodService
         enterAction = ImeActionLabelResolver.resolve(info);
         editorPolicy = EditorInputPolicy.from(info);
         KeyboardSettings storedSettings = KeyboardPreferences.load(this);
+        layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
         KeyboardMode runtimeMode = editorPolicy.initialKeyboardMode(storedSettings.keyboardMode);
         settings = storedSettings
                 .withKeyboardMode(runtimeMode)
@@ -692,7 +804,12 @@ public final class S3KeyboardService extends InputMethodService
 
     private void commitSpace(InputConnection inputConnection) {
         commitCurrent(inputConnection);
-        if (settings.remoteModeEnabled || editorPolicy.rawKeyInput) {
+        if (settings.remoteModeEnabled) {
+            doubleSpacePeriodState.reset();
+            sendRemoteKey(inputConnection, KeyEvent.KEYCODE_SPACE, 0);
+            return;
+        }
+        if (editorPolicy.rawKeyInput) {
             doubleSpacePeriodState.reset();
             sendKeyChar(' ');
             return;
@@ -711,7 +828,11 @@ public final class S3KeyboardService extends InputMethodService
 
     private void performEnter(InputConnection inputConnection) {
         commitCurrent(inputConnection);
-        if (settings.remoteModeEnabled || editorPolicy.rawKeyInput) {
+        if (settings.remoteModeEnabled) {
+            sendRemoteKey(inputConnection, KeyEvent.KEYCODE_ENTER, 0);
+            return;
+        }
+        if (editorPolicy.rawKeyInput) {
             sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER);
             return;
         }
@@ -742,7 +863,7 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void handleShiftOnce() {
-        if (settings.keyboardMode != KeyboardMode.ENGLISH) {
+        if (!shiftSupportedByActiveLayout()) {
             return;
         }
         doubleSpacePeriodState.reset();
@@ -751,7 +872,7 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void handleShiftLock() {
-        if (settings.keyboardMode != KeyboardMode.ENGLISH) {
+        if (!shiftSupportedByActiveLayout()) {
             return;
         }
         doubleSpacePeriodState.reset();
@@ -762,14 +883,21 @@ public final class S3KeyboardService extends InputMethodService
     private void updateShiftStateView() {
         if (inputView != null) {
             inputView.setEnglishShiftState(
-                    settings.keyboardMode == KeyboardMode.ENGLISH && englishShiftState.isActive(),
-                    settings.keyboardMode == KeyboardMode.ENGLISH && englishShiftState.isLocked());
+                    shiftSupportedByActiveLayout() && englishShiftState.isActive(),
+                    shiftSupportedByActiveLayout() && englishShiftState.isLocked());
             inputView.setRemoteMetaState(pendingRemoteMetaState, lockedRemoteMetaState);
         }
     }
 
     private void delete(InputConnection inputConnection) {
-        if (settings.remoteModeEnabled || editorPolicy.rawKeyInput) {
+        if (commitOnlyEditor.backspace(automata, commitOnlySink(inputConnection))) {
+            return;
+        }
+        if (settings.remoteModeEnabled) {
+            sendRemoteKey(inputConnection, KeyEvent.KEYCODE_DEL, 0);
+            return;
+        }
+        if (editorPolicy.rawKeyInput) {
             sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);
             return;
         }
@@ -806,6 +934,7 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void updateComposing(InputConnection inputConnection) {
+        commitOnlyEditor.reset();
         String composing = automata.getComposingText();
         if (composing.isEmpty()) {
             inputConnection.finishComposingText();
@@ -843,6 +972,11 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void commitCurrent(InputConnection inputConnection) {
+        if (commitOnlyEditor.hasDisplayedComposing()) {
+            commitOnlyEditor.finish(automata, commitOnlySink(inputConnection));
+            inputConnection.finishComposingText();
+            return;
+        }
         String composing = automata.flush();
         if (composing.isEmpty()) {
             inputConnection.finishComposingText();
@@ -964,10 +1098,10 @@ public final class S3KeyboardService extends InputMethodService
                 return;
             case ALT_SHIFT:
             default:
-                inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ALT_LEFT));
-                inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT));
-                inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT));
-                inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ALT_LEFT));
+                sendRemoteKey(
+                        inputConnection,
+                        KeyEvent.KEYCODE_SHIFT_LEFT,
+                        KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
         }
     }
 
@@ -975,51 +1109,13 @@ public final class S3KeyboardService extends InputMethodService
         int combinedMetaState = metaState | pendingRemoteMetaState | lockedRemoteMetaState;
         pendingRemoteMetaState = 0;
         updateShiftStateView();
-        inputConnection.sendKeyEvent(new KeyEvent(
-                0,
-                0,
-                KeyEvent.ACTION_DOWN,
-                keyCode,
-                0,
-                combinedMetaState));
-        inputConnection.sendKeyEvent(new KeyEvent(
-                0,
-                0,
-                KeyEvent.ACTION_UP,
-                keyCode,
-                0,
-                combinedMetaState));
+        for (RemoteKeyEventSequence.EventSpec event : RemoteKeyEventSequence.build(keyCode, combinedMetaState)) {
+            inputConnection.sendKeyEvent(event.toKeyEvent());
+        }
     }
 
     private int remoteKeyCodeFor(String command) {
         return RemoteKeyEventMap.keyCodeFor(command);
-    }
-
-    private int remotePrintableKeyCode(String text) {
-        if (text == null || text.length() != 1) {
-            return 0;
-        }
-        char ch = Character.toLowerCase(text.charAt(0));
-        if (ch >= 'a' && ch <= 'z') {
-            return KeyEvent.KEYCODE_A + (ch - 'a');
-        }
-        if (ch >= '1' && ch <= '9') {
-            return KeyEvent.KEYCODE_1 + (ch - '1');
-        }
-        if (ch == '0') {
-            return KeyEvent.KEYCODE_0;
-        }
-        return 0;
-    }
-
-    private int remoteShiftMetaForText(String text) {
-        if (text == null || text.length() != 1) {
-            return 0;
-        }
-        char ch = text.charAt(0);
-        return ch >= 'A' && ch <= 'Z'
-                ? KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON
-                : 0;
     }
 
     private void showInputPicker() {
@@ -1239,10 +1335,10 @@ public final class S3KeyboardService extends InputMethodService
         commitCurrent(inputConnection);
         pendingRemoteMetaState = 0;
         lockedRemoteMetaState = 0;
-        inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ALT_LEFT));
-        inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT));
-        inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT));
-        inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ALT_LEFT));
+        sendRemoteKey(
+                inputConnection,
+                KeyEvent.KEYCODE_SHIFT_LEFT,
+                KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
     }
 
     private void dismissQuickSettings() {
@@ -1295,8 +1391,15 @@ public final class S3KeyboardService extends InputMethodService
         if (editorPolicy.replacesMainRows()) {
             return "Field layout: " + editorPolicy.surface.name().toLowerCase(Locale.ROOT);
         }
-        String layout = settings.keyboardMode == KeyboardMode.ENGLISH ? "쿼티" : "딩굴";
+        String layout = activeLayoutProfile().displayName;
         return layout + " number row: " + (activeNumberRowVisible() ? "on" : "off");
+    }
+
+    private KeyboardLayoutProfile activeLayoutProfile() {
+        if (settings.remoteModeEnabled) {
+            return KeyboardLayoutProfile.QWERTY;
+        }
+        return layoutProfiles.activeFor(settings.keyboardMode);
     }
 
     private String remoteModeToggleLabel() {
@@ -1379,6 +1482,7 @@ public final class S3KeyboardService extends InputMethodService
         }
         if (inputView != null) {
             inputView.setKeyboardSurface(editorPolicy.surface);
+            inputView.setLayoutProfiles(layoutProfiles);
             inputView.setSettings(settings);
             updateShiftStateView();
         }
@@ -1546,6 +1650,9 @@ public final class S3KeyboardService extends InputMethodService
         dismissPreviewPopup();
         dismissQuickSettings();
         removeClipboardListener();
+        if (inputView != null) {
+            inputView.flushLearningState();
+        }
         super.onDestroy();
     }
 }

@@ -126,6 +126,7 @@ public final class HangulKeyboardView extends View {
             };
 
     private KeyboardSettings settings = KeyboardSettings.defaults();
+    private KeyboardLayoutProfiles layoutProfiles = KeyboardLayoutProfiles.defaults();
     private KeyboardSurface keyboardSurface = KeyboardSurface.NORMAL;
     private List<KeyboardRow> rows = Collections.emptyList();
     private TouchBiasStore touchBiasStore;
@@ -188,6 +189,7 @@ public final class HangulKeyboardView extends View {
     void setSettings(KeyboardSettings settings) {
         KeyboardSettings previousSettings = this.settings;
         this.settings = settings == null ? KeyboardSettings.defaults() : settings;
+        boolean rebuildRows = layoutModelChanged(previousSettings, this.settings);
         motionEffectLevel = KeyboardPreferences.loadMotionEffectLevel(getContext());
         maybeStartModeTransition(previousSettings, this.settings);
         feedback.setEnabled(this.settings.hapticFeedbackEnabled);
@@ -200,10 +202,13 @@ public final class HangulKeyboardView extends View {
         showHangulVowelSlideHints =
                 KeyboardPreferences.loadShowHangulVowelSlideHints(getContext());
         showSpacebarSlideHints = KeyboardPreferences.loadShowSpacebarSlideHints(getContext());
+        touchBiasStore.reloadFromPreferencesIfClean();
         touchBias = touchBiasStore.load();
         dingulTouchProfile = touchBiasStore.loadDingulTouchProfile();
         typingCorrectionStats = touchBiasStore.loadTypingCorrectionStats();
-        rows = KeyboardLayoutFactory.build(this.settings, keyboardSurface);
+        if (rebuildRows) {
+            rows = KeyboardLayoutFactory.build(this.settings, keyboardSurface, layoutProfiles);
+        }
         applyTypeface();
         if (getWidth() > 0 && getHeight() > 0) {
             layoutKeys(getWidth(), getHeight());
@@ -214,13 +219,46 @@ public final class HangulKeyboardView extends View {
         settingsInitialized = true;
     }
 
+    private static boolean layoutModelChanged(KeyboardSettings previous, KeyboardSettings next) {
+        if (previous == null || next == null) {
+            return true;
+        }
+        return previous.keyboardMode != next.keyboardMode
+                || previous.showNumberRow != next.showNumberRow
+                || previous.remoteModeEnabled != next.remoteModeEnabled
+                || previous.remoteKeyPreset != next.remoteKeyPreset
+                || previous.handednessMode != next.handednessMode
+                || previous.hangulSpecialColumnPercent != next.hangulSpecialColumnPercent
+                || !safeEquals(previous.enterKeyLabel, next.enterKeyLabel);
+    }
+
+    private static boolean safeEquals(String a, String b) {
+        return a == null ? b == null : a.equals(b);
+    }
+
     void setKeyboardSurface(KeyboardSurface surface) {
         KeyboardSurface safeSurface = surface == null ? KeyboardSurface.NORMAL : surface;
         if (keyboardSurface == safeSurface) {
             return;
         }
         keyboardSurface = safeSurface;
-        rows = KeyboardLayoutFactory.build(settings, keyboardSurface);
+        rows = KeyboardLayoutFactory.build(settings, keyboardSurface, layoutProfiles);
+        if (getWidth() > 0 && getHeight() > 0) {
+            layoutKeys(getWidth(), getHeight());
+        }
+        requestLayout();
+        updatePreviewPopup();
+        invalidate();
+    }
+
+    void setLayoutProfiles(KeyboardLayoutProfiles profiles) {
+        KeyboardLayoutProfiles safeProfiles = profiles == null ? KeyboardLayoutProfiles.defaults() : profiles;
+        if (layoutProfiles.hangulLayout == safeProfiles.hangulLayout
+                && layoutProfiles.englishLayout == safeProfiles.englishLayout) {
+            return;
+        }
+        layoutProfiles = safeProfiles;
+        rows = KeyboardLayoutFactory.build(settings, keyboardSurface, layoutProfiles);
         if (getWidth() > 0 && getHeight() > 0) {
             layoutKeys(getWidth(), getHeight());
         }
@@ -281,7 +319,12 @@ public final class HangulKeyboardView extends View {
     protected void onDetachedFromWindow() {
         clearTouchState();
         repeatController.stop();
+        touchBiasStore.flushNow();
         super.onDetachedFromWindow();
+    }
+
+    void flushLearningState() {
+        touchBiasStore.flushNow();
     }
 
     @Override
@@ -833,12 +876,12 @@ public final class HangulKeyboardView extends View {
         if (touchBiasAutoCorrectionEnabled) {
             recordTypingJournalInput(output, keyCodePoints, value, density);
             if (textValue) {
-                touchBiasStore.recordTextInput(redactTypingEventText ? "" : value, output.action);
-                touchBias = touchBiasStore.load();
+                touchBias = touchBiasStore.recordTextInput(
+                        redactTypingEventText ? "" : value,
+                        output.action);
             }
             if (dingulTypingKey && !keyCodePoints.isEmpty()) {
-                touchBiasStore.recordDingulTextInput(keyCodePoints, output.action);
-                dingulTouchProfile = touchBiasStore.loadDingulTouchProfile();
+                dingulTouchProfile = touchBiasStore.recordDingulTextInput(keyCodePoints, output.action);
             }
         }
     }
@@ -858,7 +901,7 @@ public final class HangulKeyboardView extends View {
         if (!redactTypingEventText && output.shadowKeySlot != null) {
             shadowKeyCodePoints = codePoints(output.shadowKeySlot.key.label);
         }
-        touchBiasStore.recordTypingJournalInput(new TypingEventJournal.Input(
+        typingCorrectionStats = touchBiasStore.recordTypingJournalInput(new TypingEventJournal.Input(
                 eventId,
                 System.currentTimeMillis(),
                 settings.keyboardMode,
@@ -881,7 +924,6 @@ public final class HangulKeyboardView extends View {
                 output.shadowAction,
                 output.shadowScore,
                 output.shadowApplied));
-        typingCorrectionStats = touchBiasStore.loadTypingCorrectionStats();
     }
 
     private void recordImmediateDeleteIfNeeded(String value) {
@@ -893,8 +935,7 @@ public final class HangulKeyboardView extends View {
                 lastTextTouchSample = null;
                 recentTextTouchSamples.clear();
             } else if (touchBiasAutoCorrectionEnabled) {
-                touchBiasStore.recordTypingJournalDelete(System.currentTimeMillis());
-                typingCorrectionStats = touchBiasStore.loadTypingCorrectionStats();
+                typingCorrectionStats = touchBiasStore.recordTypingJournalDelete(System.currentTimeMillis());
             }
             return;
         }
@@ -904,26 +945,23 @@ public final class HangulKeyboardView extends View {
                 ? null
                 : recentTextTouchSamples.get(recentTextTouchSamples.size() - 1);
         if (touchBiasAutoCorrectionEnabled) {
-            touchBiasStore.recordTypingJournalDelete(System.currentTimeMillis());
-            typingCorrectionStats = touchBiasStore.loadTypingCorrectionStats();
+            typingCorrectionStats = touchBiasStore.recordTypingJournalDelete(System.currentTimeMillis());
         }
         if (deletedSample != null && System.currentTimeMillis() - deletedSample.timeMs <= DELETE_CORRECTION_WINDOW_MS) {
             if (touchBiasAutoCorrectionEnabled) {
                 if (!KeyboardCommands.isCommand(deletedSample.value)) {
-                    touchBiasStore.recordImmediateDelete(
+                    touchBias = touchBiasStore.recordImmediateDelete(
                             deletedSample.offsetXDp,
                             deletedSample.offsetYDp,
                             deletedSample.action,
                             redactTypingEventText ? "" : deletedSample.value);
-                    touchBias = touchBiasStore.load();
                 }
                 if (!deletedSample.keyCodePoints.isEmpty()) {
-                    touchBiasStore.recordDingulCorrection(
+                    dingulTouchProfile = touchBiasStore.recordDingulCorrection(
                             deletedSample.keyCodePoints,
                             deletedSample.action,
                             deletedSample.offsetXDp,
                             deletedSample.offsetYDp);
-                    dingulTouchProfile = touchBiasStore.loadDingulTouchProfile();
                 }
             }
         }
@@ -1166,7 +1204,7 @@ public final class HangulKeyboardView extends View {
 
     private boolean shouldLogTypingProbe() {
         return isDebuggableBuild()
-                && settings.keyboardMode == KeyboardMode.HANGUL;
+                && activeLayoutIsDingul();
     }
 
     private boolean isDebuggableBuild() {
@@ -1401,7 +1439,7 @@ public final class HangulKeyboardView extends View {
     }
 
     private boolean isDingulPunctuationDotGlyph(GestureKey key) {
-        return settings.keyboardMode == KeyboardMode.HANGUL
+        return activeHangulDingul()
                 && key != null
                 && (".".equals(key.label) || "/".equals(key.label)
                 || ".".equals(key.tap) || "/".equals(key.tap));
@@ -2546,7 +2584,7 @@ public final class HangulKeyboardView extends View {
     }
 
     private boolean isFullSizeDingulSpecialLabel(GestureKey key) {
-        if (settings.keyboardMode != KeyboardMode.HANGUL || key == null || key.label == null) {
+        if (!activeHangulDingul() || key == null || key.label == null) {
             return false;
         }
         return "?".equals(key.label) || ".".equals(key.label) || "/".equals(key.label);
@@ -3970,13 +4008,33 @@ public final class HangulKeyboardView extends View {
     }
 
     private boolean isDingulTypingKey(GestureKey key) {
-        if (settings.keyboardMode != KeyboardMode.HANGUL || key == null) {
+        if (!activeLayoutIsDingul() || key == null) {
             return false;
         }
         if (KeyboardCommands.isCommand(key.tap) && !isDingulVowelCommand(key.tap)) {
             return false;
         }
+        if (settings.keyboardMode == KeyboardMode.ENGLISH) {
+            return key.icon == KeyIcon.NONE && !KeyboardCommands.isCommand(key.tap);
+        }
         return isHangulConsonantHintKey(key) || isHangulVowelHintKey(key);
+    }
+
+    private boolean activeLayoutIsDingul() {
+        if (keyboardSurface == KeyboardSurface.NUMPAD
+                || keyboardSurface == KeyboardSurface.PHONEPAD
+                || keyboardSurface == KeyboardSurface.DATEPAD
+                || keyboardSurface == KeyboardSurface.PINPAD) {
+            return false;
+        }
+        if (settings.remoteModeEnabled) {
+            return false;
+        }
+        return layoutProfiles.activeIsDingul(settings.keyboardMode);
+    }
+
+    private boolean activeHangulDingul() {
+        return settings.keyboardMode == KeyboardMode.HANGUL && activeLayoutIsDingul();
     }
 
     public interface OnKeyGestureListener {

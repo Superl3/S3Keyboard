@@ -2,6 +2,8 @@ package com.superl3.s3keyboard;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Looper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -18,117 +20,225 @@ final class TouchBiasStore {
     static final int MAX_GLOBAL_GESTURE_THRESHOLD_ADJUSTMENT_DP = 4;
     static final int MAX_DINGUL_GESTURE_PENALTY_DP = 8;
     static final int MAX_TYPING_PATTERN_EVENTS = 240;
+    private static final long FLUSH_DELAY_MS = 800L;
     private static final float LEARNING_RATE = 0.05f;
     private static final float GESTURE_LEARNING_RATE = 0.25f;
 
     private final SharedPreferences preferences;
+    private final Handler flushHandler;
+    private final Runnable flushRunnable = this::flushNow;
+    private Bias cachedBias;
+    private DingulTouchProfile cachedDingulTouchProfile;
+    private JSONArray typingPatternLog;
+    private TypingEventJournal.RuntimeJournal typingEventJournal;
+    private boolean touchBiasDirty;
+    private boolean dingulTouchProfileDirty;
+    private boolean typingPatternLogDirty;
+    private boolean typingEventJournalDirty;
 
     TouchBiasStore(Context context) {
         preferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        Looper looper = Looper.myLooper();
+        if (looper == null) {
+            looper = Looper.getMainLooper();
+        }
+        flushHandler = looper == null ? null : new Handler(looper);
+        loadFromPreferences();
     }
 
-    Bias load() {
-        return Bias.decode(preferences.getString(TOUCH_BIAS_STATS, ""));
+    synchronized Bias load() {
+        return cachedBias;
     }
 
-    DingulTouchProfile loadDingulTouchProfile() {
-        return DingulTouchProfile.decode(preferences.getString(DINGUL_TOUCH_PROFILE, ""));
+    synchronized DingulTouchProfile loadDingulTouchProfile() {
+        return cachedDingulTouchProfile;
     }
 
-    TypingEventJournal.CorrectionStats loadTypingCorrectionStats() {
-        return TypingEventJournal.correctionStats(preferences.getString(TYPING_EVENT_JOURNAL, ""));
+    synchronized TypingEventJournal.CorrectionStats loadTypingCorrectionStats() {
+        return typingEventJournal.correctionStats();
     }
 
-    void recordImmediateDelete(float touchOffsetXDp, float touchOffsetYDp, GestureAction action) {
-        recordImmediateDelete(touchOffsetXDp, touchOffsetYDp, action, "");
+    synchronized void reloadFromPreferencesIfClean() {
+        if (touchBiasDirty
+                || dingulTouchProfileDirty
+                || typingPatternLogDirty
+                || typingEventJournalDirty) {
+            return;
+        }
+        loadFromPreferences();
     }
 
-    void recordImmediateDelete(
+    Bias recordImmediateDelete(float touchOffsetXDp, float touchOffsetYDp, GestureAction action) {
+        return recordImmediateDelete(touchOffsetXDp, touchOffsetYDp, action, "");
+    }
+
+    Bias recordImmediateDelete(
             float touchOffsetXDp,
             float touchOffsetYDp,
             GestureAction action,
             String correctedText) {
-        Bias next = load().recordImmediateDelete(touchOffsetXDp, touchOffsetYDp, action);
-        preferences.edit()
-                .putString(TOUCH_BIAS_STATS, next.encode())
-                .putString(
-                        TYPING_PATTERN_LOG,
-                        appendTypingEvent(
-                                preferences.getString(TYPING_PATTERN_LOG, ""),
-                                "correction",
-                                correctedText,
-                                action,
-                                touchOffsetXDp,
-                                touchOffsetYDp))
-                .apply();
+        Bias next;
+        synchronized (this) {
+            cachedBias = cachedBias.recordImmediateDelete(touchOffsetXDp, touchOffsetYDp, action);
+            appendTypingEvent(
+                    typingPatternLog,
+                    "correction",
+                    correctedText,
+                    action,
+                    touchOffsetXDp,
+                    touchOffsetYDp);
+            touchBiasDirty = true;
+            typingPatternLogDirty = true;
+            next = cachedBias;
+        }
+        scheduleFlush();
+        return next;
     }
 
-    void recordTextInput(GestureAction action) {
-        recordTextInput("", action);
+    Bias recordTextInput(GestureAction action) {
+        return recordTextInput("", action);
     }
 
-    void recordTextInput(String text, GestureAction action) {
-        Bias next = load().recordTextInput(action);
-        preferences.edit()
-                .putString(TOUCH_BIAS_STATS, next.encode())
-                .putString(
-                        TYPING_PATTERN_LOG,
-                        appendTypingEvent(
-                                preferences.getString(TYPING_PATTERN_LOG, ""),
-                                "input",
-                                text,
-                                action,
-                                0f,
-                        0f))
-                .apply();
+    Bias recordTextInput(String text, GestureAction action) {
+        Bias next;
+        synchronized (this) {
+            cachedBias = cachedBias.recordTextInput(action);
+            appendTypingEvent(typingPatternLog, "input", text, action, 0f, 0f);
+            touchBiasDirty = true;
+            typingPatternLogDirty = true;
+            next = cachedBias;
+        }
+        scheduleFlush();
+        return next;
     }
 
-    void recordDingulTextInput(String keyCodePoints, GestureAction action) {
-        DingulTouchProfile next = loadDingulTouchProfile().recordInput(keyCodePoints, action);
-        preferences.edit()
-                .putString(DINGUL_TOUCH_PROFILE, next.encode())
-                .apply();
+    DingulTouchProfile recordDingulTextInput(String keyCodePoints, GestureAction action) {
+        DingulTouchProfile next;
+        synchronized (this) {
+            cachedDingulTouchProfile = cachedDingulTouchProfile.recordInput(keyCodePoints, action);
+            dingulTouchProfileDirty = true;
+            next = cachedDingulTouchProfile;
+        }
+        scheduleFlush();
+        return next;
     }
 
-    void recordDingulCorrection(
+    DingulTouchProfile recordDingulCorrection(
             String keyCodePoints,
             GestureAction action,
             float offsetXDp,
             float offsetYDp) {
-        DingulTouchProfile next = loadDingulTouchProfile()
-                .recordCorrection(keyCodePoints, action, offsetXDp, offsetYDp);
-        preferences.edit()
-                .putString(DINGUL_TOUCH_PROFILE, next.encode())
-                .apply();
+        DingulTouchProfile next;
+        synchronized (this) {
+            cachedDingulTouchProfile = cachedDingulTouchProfile
+                    .recordCorrection(keyCodePoints, action, offsetXDp, offsetYDp);
+            dingulTouchProfileDirty = true;
+            next = cachedDingulTouchProfile;
+        }
+        scheduleFlush();
+        return next;
     }
 
-    int dingulPenaltyDp(String keyCodePoints, GestureAction action) {
-        return loadDingulTouchProfile().penaltyDp(keyCodePoints, action);
+    synchronized int dingulPenaltyDp(String keyCodePoints, GestureAction action) {
+        return cachedDingulTouchProfile.penaltyDp(keyCodePoints, action);
     }
 
-    void recordTypingJournalInput(TypingEventJournal.Input input) {
+    TypingEventJournal.CorrectionStats recordTypingJournalInput(TypingEventJournal.Input input) {
         if (input == null) {
+            return loadTypingCorrectionStats();
+        }
+        TypingEventJournal.CorrectionStats stats;
+        boolean changed;
+        synchronized (this) {
+            changed = typingEventJournal.appendInput(input, MAX_TYPING_PATTERN_EVENTS);
+            typingEventJournalDirty = typingEventJournalDirty || changed;
+            stats = typingEventJournal.correctionStats();
+        }
+        if (changed) {
+            scheduleFlush();
+        }
+        return stats;
+    }
+
+    TypingEventJournal.CorrectionStats recordTypingJournalDelete(long timeMs) {
+        TypingEventJournal.CorrectionStats stats;
+        synchronized (this) {
+            typingEventJournal.appendDelete(timeMs, MAX_TYPING_PATTERN_EVENTS);
+            typingEventJournalDirty = true;
+            stats = typingEventJournal.correctionStats();
+        }
+        scheduleFlush();
+        return stats;
+    }
+
+    void flushNow() {
+        if (flushHandler != null) {
+            flushHandler.removeCallbacks(flushRunnable);
+        }
+        String encodedBias = null;
+        String encodedDingulProfile = null;
+        String encodedPatternLog = null;
+        String encodedTypingJournal = null;
+        synchronized (this) {
+            if (touchBiasDirty) {
+                encodedBias = cachedBias.encode();
+                touchBiasDirty = false;
+            }
+            if (dingulTouchProfileDirty) {
+                encodedDingulProfile = cachedDingulTouchProfile.encode();
+                dingulTouchProfileDirty = false;
+            }
+            if (typingPatternLogDirty) {
+                encodedPatternLog = typingPatternLog.toString();
+                typingPatternLogDirty = false;
+            }
+            if (typingEventJournalDirty) {
+                encodedTypingJournal = typingEventJournal.encode();
+                typingEventJournalDirty = false;
+            }
+        }
+        if (encodedBias == null
+                && encodedDingulProfile == null
+                && encodedPatternLog == null
+                && encodedTypingJournal == null) {
             return;
         }
-        preferences.edit()
-                .putString(
-                        TYPING_EVENT_JOURNAL,
-                        TypingEventJournal.appendInput(
-                                preferences.getString(TYPING_EVENT_JOURNAL, ""),
-                                input,
-                                MAX_TYPING_PATTERN_EVENTS))
-                .apply();
+        SharedPreferences.Editor editor = preferences.edit();
+        if (encodedBias != null) {
+            editor.putString(TOUCH_BIAS_STATS, encodedBias);
+        }
+        if (encodedDingulProfile != null) {
+            editor.putString(DINGUL_TOUCH_PROFILE, encodedDingulProfile);
+        }
+        if (encodedPatternLog != null) {
+            editor.putString(TYPING_PATTERN_LOG, encodedPatternLog);
+        }
+        if (encodedTypingJournal != null) {
+            editor.putString(TYPING_EVENT_JOURNAL, encodedTypingJournal);
+        }
+        editor.apply();
     }
 
-    void recordTypingJournalDelete(long timeMs) {
-        preferences.edit()
-                .putString(
-                        TYPING_EVENT_JOURNAL,
-                        TypingEventJournal.appendDelete(
-                                preferences.getString(TYPING_EVENT_JOURNAL, ""),
-                                timeMs,
-                                MAX_TYPING_PATTERN_EVENTS))
-                .apply();
+    private void scheduleFlush() {
+        if (flushHandler == null) {
+            flushNow();
+            return;
+        }
+        flushHandler.removeCallbacks(flushRunnable);
+        flushHandler.postDelayed(flushRunnable, FLUSH_DELAY_MS);
+    }
+
+    private void loadFromPreferences() {
+        cachedBias = Bias.decode(preferences.getString(TOUCH_BIAS_STATS, ""));
+        cachedDingulTouchProfile = DingulTouchProfile.decode(
+                preferences.getString(DINGUL_TOUCH_PROFILE, ""));
+        typingPatternLog = decodeTypingPatternLog(preferences.getString(TYPING_PATTERN_LOG, ""));
+        typingEventJournal = TypingEventJournal.RuntimeJournal.decode(
+                preferences.getString(TYPING_EVENT_JOURNAL, ""));
+        touchBiasDirty = false;
+        dingulTouchProfileDirty = false;
+        typingPatternLogDirty = false;
+        typingEventJournalDirty = false;
     }
 
     static void reset(Context context) {
@@ -148,10 +258,32 @@ final class TouchBiasStore {
             GestureAction action,
             float offsetXDp,
             float offsetYDp) {
+        JSONArray events = decodeTypingPatternLog(encodedLog);
+        appendTypingEvent(events, type, text, action, offsetXDp, offsetYDp);
+        return events.toString();
+    }
+
+    private static JSONArray decodeTypingPatternLog(String encodedLog) {
         try {
-            JSONArray events = encodedLog == null || encodedLog.isEmpty()
+            return encodedLog == null || encodedLog.isEmpty()
                     ? new JSONArray()
                     : new JSONArray(encodedLog);
+        } catch (JSONException exception) {
+            return new JSONArray();
+        }
+    }
+
+    private static void appendTypingEvent(
+            JSONArray events,
+            String type,
+            String text,
+            GestureAction action,
+            float offsetXDp,
+            float offsetYDp) {
+        if (events == null) {
+            return;
+        }
+        try {
             JSONObject event = new JSONObject();
             event.put("timeMs", System.currentTimeMillis());
             event.put("type", type == null ? "" : type);
@@ -165,9 +297,8 @@ final class TouchBiasStore {
             while (events.length() > MAX_TYPING_PATTERN_EVENTS) {
                 events.remove(0);
             }
-            return events.toString();
         } catch (JSONException exception) {
-            return appendTypingEvent("", type, text, action, offsetXDp, offsetYDp);
+            // Best-effort local research log; never block input handling.
         }
     }
 

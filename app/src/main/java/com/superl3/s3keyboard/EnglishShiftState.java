@@ -42,6 +42,12 @@ final class EnglishShiftState {
         return mode == Mode.LOCKED;
     }
 
+    void consumeOnce() {
+        if (mode == Mode.ONCE) {
+            mode = Mode.OFF;
+        }
+    }
+
     String applyToInput(String text) {
         if (!isSingleAsciiLetter(text)) {
             return text;

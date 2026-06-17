@@ -347,6 +347,79 @@ public final class KeyboardLayoutFactoryTest {
     }
 
     @Test
+    public void hangulQwertyProfileUsesTwoBeolsikJamoOnQwertyGeometry() {
+        KeyboardLayoutProfiles profiles = KeyboardLayoutProfiles.defaults()
+                .withHangulLayout(KeyboardLayoutProfile.QWERTY);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(
+                KeyboardSettings.defaults(),
+                KeyboardSurface.NORMAL,
+                profiles);
+
+        assertEquals(20, rows.get(0).baseUnits);
+        assertEquals(
+                "\u3142,\u3148,\u3137,\u3131,\u3145,\u315B,\u3155,\u3151,\u3150,\u3154",
+                labels(rows.get(0)));
+        assertEquals("\u3142", findKey(rows, "\u3142").valueFor(GestureAction.TAP));
+        assertEquals("\u3143", findKey(rows, "\u3142").valueFor(GestureAction.UP));
+        assertEquals("1", findKey(rows, "\u3142").valueFor(GestureAction.DOWN));
+        assertEquals(KeyIcon.SHIFT, findKey(rows, "Shift").icon);
+        assertEquals(KeyboardCommands.CMD_DELETE, findKey(rows, "Del").tap);
+    }
+
+    @Test
+    public void englishDingulProfileUsesDingulGeometryWithLatinGestures() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withEnglishNumberRow(false);
+        KeyboardLayoutProfiles profiles = KeyboardLayoutProfiles.defaults()
+                .withEnglishLayout(KeyboardLayoutProfile.DINGUL);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(
+                settings,
+                KeyboardSurface.NORMAL,
+                profiles);
+
+        assertEquals(300, rows.get(0).baseUnits);
+        assertEquals("abc,def,ghi,Del", labels(rows.get(0)));
+        assertEquals("83,83,83,51", widths(rows.get(0)));
+        GestureKey abc = findKey(rows, "abc");
+        assertEquals("a", abc.valueFor(GestureAction.TAP));
+        assertEquals("b", abc.valueFor(GestureAction.UP));
+        assertEquals("c", abc.valueFor(GestureAction.DOWN));
+        assertEquals("1", abc.valueFor(GestureAction.LEFT));
+        assertEquals("!", abc.valueFor(GestureAction.RIGHT));
+    }
+
+    @Test
+    public void remoteModeKeepsEnglishQwertyWhenEnglishDingulProfileIsSelected() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+        KeyboardLayoutProfiles profiles = KeyboardLayoutProfiles.defaults()
+                .withEnglishLayout(KeyboardLayoutProfile.DINGUL);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(
+                settings,
+                KeyboardSurface.NORMAL,
+                profiles);
+
+        assertEquals("1,2,3,4,5,6,7,8,9,0", labels(rows.get(0)));
+        assertEquals("q,w,e,r,t,y,u,i,o,p", labels(rows.get(1)));
+        assertEquals(KeyboardCommands.CMD_REMOTE_TAB, findKey(rows, "q").valueFor(GestureAction.UP));
+    }
+
+    @Test
+    public void remoteModeUsesPcQwertyEvenWhenStoredModeIsHangul() {
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.HANGUL)
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
+
+        assertEquals("1,2,3,4,5,6,7,8,9,0", labels(rows.get(0)));
+        assertEquals("q,w,e,r,t,y,u,i,o,p", labels(rows.get(1)));
+        assertEquals(KeyboardCommands.CMD_REMOTE_TAB, findKey(rows, "q").valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_REMOTE_CTRL_LATCH, findKey(rows, "Ctrl").valueFor(GestureAction.TAP));
+    }
+
+    @Test
     public void englishQwertySlideSymbolsMatchCompactSampleLayout() {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withKeyboardMode(KeyboardMode.ENGLISH)

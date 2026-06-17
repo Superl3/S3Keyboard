@@ -4,7 +4,8 @@
 
 - Remote mode is a user setting and defaults to off.
 - When enabled, the keyboard keeps the normal input engine but overlays a Windows-oriented runtime layout. It must not mutate the saved Hangul/English number-row visibility preferences or theme/icon choices.
-- The current target is remote desktop style apps that accept Android IME `InputConnection.sendKeyEvent(...)` events and forward them to Windows.
+- The overlay always uses the PC QWERTY surface while remote mode is enabled, even if the saved local language mode is Hangul. Leaving remote mode restores the normal saved layout choice.
+- The current target is remote desktop style apps that accept Android IME `InputConnection.sendKeyEvent(...)` events and forward them to Windows. Modifier shortcuts are sent as explicit modifier down, main key down/up, modifier up sequences instead of relying only on a key event meta state.
 - Remote mode forces fixed text labels only for the visible PC modifier keys: `Ctrl`, `Win`, and `Alt`. Shift, Backspace, Space, Lang, Menu, and Enter keep the normal icon/display-pack rendering path. The Menu key still exposes quick settings, and Menu long press remains the local escape path to app settings.
 - When remote mode is on, quick settings exposes a small test pad that sends `Esc`, `Tab`, `F1`, `Ctrl+A`, `Alt+Shift`, `Ctrl+Space`, `Win+Space`, and `LanguageSwitch` to the currently focused remote app.
 
@@ -17,7 +18,7 @@
 - Menu: tap quick settings; long press app settings.
 - Enter: tap `Enter`; long press `Ctrl+Enter`.
 - Number row: remote mode force-enables the row at runtime. Tap keeps digits. Down slide maps `1..0 = F1..F10`; up slide maps `1 = Esc`, `9 = F11`, and `0 = F12`. Normal non-remote number rows keep only tap digits and down-slide symbols.
-- QWERTY alpha remote cluster uses up/down slide hints where they are most readable: `q` up slide is `Tab`; `r/t/y` up slide maps `Shift+Tab/Ctrl+Tab/Alt+Tab`; `i/o/p` up slide maps `Ins/Home/PgUp`; and `i/o/p` down slide maps `Del/End/PgDn`. Other QWERTY keys stay close to the normal layout.
+- QWERTY alpha remote cluster uses up/down slide hints where they are most readable: `q` up slide is `Tab`; `r/t/y` up slide maps `Shift+Tab/Ctrl+Tab/Alt+Tab`; `i/o/p` up slide maps `Ins/Home/PgUp`; and `i/o/p` down slide maps `Del/End/PgDn`. Plain ASCII alpha, digit, and common punctuation taps are sent as remote key events rather than `commitText`.
 - QWERTY alpha keys do not use long press for alternate input in either normal or remote mode.
 
 ## Compatibility risk

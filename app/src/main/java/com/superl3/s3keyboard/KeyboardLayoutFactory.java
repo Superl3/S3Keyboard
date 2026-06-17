@@ -38,21 +38,44 @@ final class KeyboardLayoutFactory {
     }
 
     static List<KeyboardRow> build(KeyboardSettings settings, KeyboardSurface surface) {
-        KeyboardSurface effectiveSurface = effectiveSurface(settings, surface);
+        return build(settings, surface, KeyboardLayoutProfiles.defaults());
+    }
+
+    static List<KeyboardRow> build(
+            KeyboardSettings settings,
+            KeyboardSurface surface,
+            KeyboardLayoutProfiles layoutProfiles) {
+        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardLayoutProfiles safeProfiles = layoutProfiles == null
+                ? KeyboardLayoutProfiles.defaults()
+                : layoutProfiles;
+        KeyboardSurface effectiveSurface = effectiveSurface(safeSettings, surface);
         List<KeyboardRow> rows = new ArrayList<>();
-        if (replacesMainRows(effectiveSurface)) {
+        if (safeSettings.remoteModeEnabled) {
+            if (safeSettings.showNumberRow) {
+                rows.add(numberRow(safeSettings));
+            }
+            rows.addAll(englishRows(true));
+        } else if (replacesMainRows(effectiveSurface)) {
             rows.addAll(surfaceRows(effectiveSurface));
         } else {
-            if (settings.showNumberRow) {
-                rows.add(numberRow(settings));
+            if (safeSettings.showNumberRow) {
+                rows.add(numberRow(safeSettings));
             }
-            if (settings.keyboardMode == KeyboardMode.ENGLISH) {
-                rows.addAll(englishRows(settings.remoteModeEnabled));
+            if (safeSettings.keyboardMode == KeyboardMode.ENGLISH) {
+                KeyboardLayoutProfile profile = safeSettings.remoteModeEnabled
+                        ? KeyboardLayoutProfile.QWERTY
+                        : safeProfiles.englishLayout;
+                rows.addAll(profile == KeyboardLayoutProfile.DINGUL
+                        ? englishDingulRows(safeSettings.hangulSpecialColumnPercent)
+                        : englishRows(safeSettings.remoteModeEnabled));
             } else {
-                rows.addAll(hangulRows(settings.hangulSpecialColumnPercent));
+                rows.addAll(safeProfiles.hangulLayout == KeyboardLayoutProfile.QWERTY
+                        ? hangulQwertyRows()
+                        : hangulRows(safeSettings.hangulSpecialColumnPercent));
             }
         }
-        rows.add(bottomRow(settings));
+        rows.add(bottomRow(safeSettings));
         return rows;
     }
 
@@ -248,6 +271,51 @@ final class KeyboardLayoutFactory {
                         specialKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits));
     }
 
+    private static List<KeyboardRow> hangulQwertyRows() {
+        return Arrays.asList(
+                new KeyboardRow(Arrays.asList(
+                        hangulQwertyKey("\u3142", "\u3143", single("1"), 2),
+                        hangulQwertyKey("\u3148", "\u3149", single("2"), 2),
+                        hangulQwertyKey("\u3137", "\u3138", single("3"), 2),
+                        hangulQwertyKey("\u3131", "\u3132", single("4"), 2),
+                        hangulQwertyKey("\u3145", "\u3146", single("5"), 2),
+                        hangulQwertyKey("\u315B", null, single("6"), 2),
+                        hangulQwertyKey("\u3155", null, single("7"), 2),
+                        hangulQwertyKey("\u3151", null, single("8"), 2),
+                        hangulQwertyKey("\u3150", "\u3152", single("9"), 2),
+                        hangulQwertyKey("\u3154", "\u3156", single("0"), 2)), 20),
+                new KeyboardRow(Arrays.asList(
+                        hangulQwertyKey("\u3141", null, HOME_QWERTY_SLIDES[0], 2),
+                        hangulQwertyKey("\u3134", null, HOME_QWERTY_SLIDES[1], 2),
+                        hangulQwertyKey("\u3147", null, HOME_QWERTY_SLIDES[2], 2),
+                        hangulQwertyKey("\u3139", null, HOME_QWERTY_SLIDES[3], 2),
+                        hangulQwertyKey("\u314E", null, HOME_QWERTY_SLIDES[4], 2),
+                        hangulQwertyKey("\u3157", null, HOME_QWERTY_SLIDES[5], 2),
+                        hangulQwertyKey("\u3153", null, HOME_QWERTY_SLIDES[6], 2),
+                        hangulQwertyKey("\u314F", null, HOME_QWERTY_SLIDES[7], 2),
+                        hangulQwertyKey("\u3163", null, HOME_QWERTY_SLIDES[8], 2)), 20),
+                new KeyboardRow(Arrays.asList(
+                        GestureKey.command(
+                                "Shift",
+                                KeyboardCommands.CMD_SHIFT_ONCE,
+                                KeyboardCommands.CMD_SHIFT_LOCK,
+                                3,
+                                KeyIcon.SHIFT),
+                        hangulQwertyKey("\u314B", null, pair("(", ")"), 2),
+                        hangulQwertyKey("\u314C", null, pair("[", "]"), 2),
+                        hangulQwertyKey("\u314A", null, pair(";", ":"), 2),
+                        hangulQwertyKey("\u314D", null, pair("'", "\""), 2),
+                        hangulQwertyKey("\u3160", null, pair("&", "|"), 2),
+                        hangulQwertyKey("\u315C", null, single("!"), 2),
+                        hangulQwertyKey("\u3161", null, single("?"), 2),
+                        GestureKey.command(
+                                "Del",
+                                KeyboardCommands.CMD_DELETE,
+                                null,
+                                3,
+                                KeyIcon.BACKSPACE)), 20));
+    }
+
     private static List<KeyboardRow> englishRows(boolean remoteModeEnabled) {
         EnglishSlideSpec[] topSlides = remoteModeEnabled ? REMOTE_TOP_QWERTY_SLIDES : TOP_QWERTY_SLIDES;
         return Arrays.asList(
@@ -275,6 +343,36 @@ final class KeyboardLayoutFactory {
                                 KeyIcon.BACKSPACE)), 20));
     }
 
+    private static List<KeyboardRow> englishDingulRows(int specialColumnPercent) {
+        int specialPercent = Math.max(
+                KeyboardSettings.MIN_HANGUL_SPECIAL_COLUMN_PERCENT,
+                Math.min(KeyboardSettings.MAX_HANGUL_SPECIAL_COLUMN_PERCENT, specialColumnPercent));
+        int mainUnits = 100 - specialPercent;
+        int specialUnits = specialPercent * 3;
+        int baseUnits = 300;
+        return Arrays.asList(
+                new KeyboardRow(Arrays.asList(
+                        dingulLatinKey("abc", "a", "b", "c", "1", "!", mainUnits),
+                        dingulLatinKey("def", "d", "e", "f", "2", "@", mainUnits),
+                        dingulLatinKey("ghi", "g", "h", "i", "3", "#", mainUnits),
+                        specialKey("Del", KeyboardCommands.CMD_DELETE, specialUnits)), baseUnits),
+                new KeyboardRow(Arrays.asList(
+                        dingulLatinKey("jkl", "j", "k", "l", "4", "$", mainUnits),
+                        dingulLatinKey("mno", "m", "n", "o", "5", "%", mainUnits),
+                        dingulLatinKey("pqr", "p", "q", "r", "6", "^", mainUnits),
+                        specialKey("?", "?", "!", "*", "+", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits),
+                new KeyboardRow(Arrays.asList(
+                        dingulLatinKey("stu", "s", "t", "u", "7", "&", mainUnits),
+                        dingulLatinKey("vwx", "v", "w", "x", "8", "|", mainUnits),
+                        dingulLatinKey("yz", "y", "z", "Y", "9", "Z", mainUnits),
+                        specialKey(".", ".", "\"", "`", ",", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits),
+                new KeyboardRow(Arrays.asList(
+                        dingulLatinKey("'\"", "'", "\"", "`", "~", "_", mainUnits),
+                        dingulLatinKey("@#", "@", "#", "$", "%", "&", mainUnits),
+                        dingulLatinKey(".,", ",", ".", "/", "-", "=", mainUnits),
+                        specialKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits));
+    }
+
     private static KeyboardRow englishRow(String letters, EnglishSlideSpec[] slides) {
         List<GestureKey> keys = new ArrayList<>();
         for (int i = 0; i < letters.length(); i++) {
@@ -295,6 +393,33 @@ final class KeyboardLayoutFactory {
                 slide.right,
                 slide.longPress,
                 widthUnits);
+    }
+
+    private static GestureKey hangulQwertyKey(
+            String value,
+            String shiftedValue,
+            EnglishSlideSpec slide,
+            int widthUnits) {
+        return new GestureKey(
+                value,
+                value,
+                shiftedValue == null ? value : shiftedValue,
+                slide.down,
+                slide.left,
+                slide.right,
+                slide.longPress,
+                widthUnits);
+    }
+
+    private static GestureKey dingulLatinKey(
+            String label,
+            String tap,
+            String up,
+            String down,
+            String left,
+            String right,
+            int widthUnits) {
+        return new GestureKey(label, tap, up, down, left, right, null, widthUnits);
     }
 
     private static EnglishSlideSpec single(String value) {

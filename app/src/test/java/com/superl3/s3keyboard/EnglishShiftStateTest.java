@@ -60,6 +60,22 @@ public final class EnglishShiftStateTest {
     }
 
     @Test
+    public void consumeOnceClearsOnlyOneShotShift() {
+        EnglishShiftState state = new EnglishShiftState();
+
+        state.onShiftOnceCommand();
+        state.consumeOnce();
+
+        assertFalse(state.isActive());
+
+        state.onShiftLockCommand();
+        state.consumeOnce();
+
+        assertTrue(state.isActive());
+        assertTrue(state.isLocked());
+    }
+
+    @Test
     public void resetClearsShiftState() {
         EnglishShiftState state = new EnglishShiftState();
 

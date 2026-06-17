@@ -8,6 +8,8 @@ import org.json.JSONObject;
 
 final class KeyboardPreferences {
     static final String KEYBOARD_MODE_LAST = "keyboard_mode_last";
+    static final String HANGUL_LAYOUT_PROFILE = "hangul_layout_profile";
+    static final String ENGLISH_LAYOUT_PROFILE = "english_layout_profile";
     static final String HANDEDNESS_MODE = "handedness_mode";
     static final String LEFT_MARGIN_DP = "left_margin_dp";
     static final String RIGHT_MARGIN_DP = "right_margin_dp";
@@ -515,6 +517,37 @@ final class KeyboardPreferences {
     static void saveKeyboardMode(Context context, KeyboardMode mode) {
         prefs(context).edit()
                 .putString(KEYBOARD_MODE_LAST, mode.preferenceValue)
+                .apply();
+    }
+
+    static KeyboardLayoutProfiles loadLayoutProfiles(Context context) {
+        SharedPreferences prefs = prefs(context);
+        return new KeyboardLayoutProfiles(
+                KeyboardLayoutProfile.fromPreference(
+                        prefs.getString(
+                                HANGUL_LAYOUT_PROFILE,
+                                KeyboardLayoutProfiles.DEFAULT_HANGUL.preferenceValue),
+                        KeyboardLayoutProfiles.DEFAULT_HANGUL),
+                KeyboardLayoutProfile.fromPreference(
+                        prefs.getString(
+                                ENGLISH_LAYOUT_PROFILE,
+                                KeyboardLayoutProfiles.DEFAULT_ENGLISH.preferenceValue),
+                        KeyboardLayoutProfiles.DEFAULT_ENGLISH));
+    }
+
+    static void saveHangulLayoutProfile(Context context, KeyboardLayoutProfile profile) {
+        prefs(context).edit()
+                .putString(
+                        HANGUL_LAYOUT_PROFILE,
+                        (profile == null ? KeyboardLayoutProfiles.DEFAULT_HANGUL : profile).preferenceValue)
+                .apply();
+    }
+
+    static void saveEnglishLayoutProfile(Context context, KeyboardLayoutProfile profile) {
+        prefs(context).edit()
+                .putString(
+                        ENGLISH_LAYOUT_PROFILE,
+                        (profile == null ? KeyboardLayoutProfiles.DEFAULT_ENGLISH : profile).preferenceValue)
                 .apply();
     }
 

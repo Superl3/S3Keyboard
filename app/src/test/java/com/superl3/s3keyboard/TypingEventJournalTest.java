@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -56,6 +57,10 @@ public final class TypingEventJournalTest {
         assertEquals(
                 TypingEventJournal.Label.MISSED_SLIDE,
                 TypingEventJournal.latestLabelFor(journal, "a"));
+        assertTrue(journal.contains("\"source\":\"rollback_replacement\""));
+        assertTrue(journal.contains("\"confidence\":95"));
+        assertTrue(journal.contains("\"deleteDepth\":3"));
+        assertTrue(journal.contains("\"deleteBurstSize\":3"));
     }
 
     @Test
@@ -183,6 +188,31 @@ public final class TypingEventJournalTest {
         assertEquals(
                 false,
                 stats.shouldApplyActiveSlide("3131", "3131", GestureAction.UP, 1.10f, true));
+    }
+
+    @Test
+    public void runtimeJournalStatsMatchSerializedStats() {
+        TypingEventJournal.RuntimeJournal runtimeJournal = TypingEventJournal.RuntimeJournal.decode("");
+        runtimeJournal.appendInput(input("a", "3131", "3131", GestureAction.TAP), 50);
+        runtimeJournal.appendDelete(10, 50);
+        runtimeJournal.appendInput(input("b", "3131", "3132", GestureAction.UP), 50);
+        runtimeJournal.appendInput(input("c", "3145", "3145", GestureAction.TAP), 50);
+        runtimeJournal.appendInput(input("d", "3147", "3147", GestureAction.TAP), 50);
+        runtimeJournal.appendInput(input("e", "3134", "3134", GestureAction.TAP), 50);
+
+        TypingEventJournal.CorrectionStats runtimeStats = runtimeJournal.correctionStats();
+        TypingEventJournal.CorrectionStats serializedStats =
+                TypingEventJournal.correctionStats(runtimeJournal.encode());
+
+        assertEquals(
+                serializedStats.missedSlideCount("3131", "3131", GestureAction.UP),
+                runtimeStats.missedSlideCount("3131", "3131", GestureAction.UP));
+        assertEquals(
+                serializedStats.thresholdAdjustmentDp("3131", GestureAction.UP),
+                runtimeStats.thresholdAdjustmentDp("3131", GestureAction.UP));
+        assertEquals(
+                serializedStats.shouldApplyActiveSlide("3131", "3131", GestureAction.UP, 0.82f, true),
+                runtimeStats.shouldApplyActiveSlide("3131", "3131", GestureAction.UP, 0.82f, true));
     }
 
     private static String appendMissedSlideEpisode(String journal, String tapId, String replacementId) {
