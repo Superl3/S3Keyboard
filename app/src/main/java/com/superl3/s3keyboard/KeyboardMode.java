@@ -1,15 +1,15 @@
 package com.superl3.s3keyboard;
 
 enum KeyboardMode {
-    HANGUL("hangul", "한글"),
-    ENGLISH("english", "English");
+    HANGUL("hangul", R.string.keyboard_mode_hangul),
+    ENGLISH("english", R.string.keyboard_mode_english);
 
     final String preferenceValue;
-    final String displayName;
+    final int labelResId;
 
-    KeyboardMode(String preferenceValue, String displayName) {
+    KeyboardMode(String preferenceValue, int labelResId) {
         this.preferenceValue = preferenceValue;
-        this.displayName = displayName;
+        this.labelResId = labelResId;
     }
 
     KeyboardMode next() {

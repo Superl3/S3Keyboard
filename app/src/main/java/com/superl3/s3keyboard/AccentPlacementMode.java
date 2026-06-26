@@ -1,21 +1,21 @@
 package com.superl3.s3keyboard;
 
 enum AccentPlacementMode {
-    THEME_DEFAULT("theme_default", "테마 기본"),
-    NONE("none", "Accent 없음"),
-    ENTER_SHIFT("enter_shift", "전송 / Shift 계열"),
-    META("meta", "예약어 / 한영"),
-    COMMAND("command", "Shift / Backspace"),
-    ALL_MODIFIERS("all_modifiers", "모든 modifier");
+    THEME_DEFAULT("theme_default", R.string.accent_placement_mode_theme_default),
+    NONE("none", R.string.accent_placement_mode_none),
+    ENTER_SHIFT("enter_shift", R.string.accent_placement_mode_enter_shift),
+    META("meta", R.string.accent_placement_mode_meta),
+    COMMAND("command", R.string.accent_placement_mode_command),
+    ALL_MODIFIERS("all_modifiers", R.string.accent_placement_mode_all_modifiers);
 
     static final AccentPlacementMode DEFAULT = THEME_DEFAULT;
 
     final String preferenceValue;
-    private final String label;
+    final int labelResId;
 
-    AccentPlacementMode(String preferenceValue, String label) {
+    AccentPlacementMode(String preferenceValue, int labelResId) {
         this.preferenceValue = preferenceValue;
-        this.label = label;
+        this.labelResId = labelResId;
     }
 
     static AccentPlacementMode fromPreference(String value) {
@@ -33,6 +33,6 @@ enum AccentPlacementMode {
 
     @Override
     public String toString() {
-        return label;
+        return preferenceValue;
     }
 }

@@ -40,14 +40,14 @@ public class ClipboardView extends LinearLayout {
         header.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         TextView title = new TextView(context);
-        title.setText("클립보드");
+        title.setText(R.string.clipboard_panel_title);
         title.setTextSize(18);
         title.setTextColor(ui.textPrimary);
         title.setGravity(Gravity.CENTER_VERTICAL);
         header.addView(title, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
 
         Button closeBtn = new Button(context);
-        closeBtn.setText("닫기");
+        closeBtn.setText(R.string.action_close);
         SettingsViewStyler.button(closeBtn, context, false);
         closeBtn.setOnClickListener(v -> onClose.run());
         header.addView(closeBtn);
@@ -69,7 +69,7 @@ public class ClipboardView extends LinearLayout {
         List<String> entries = store.getEntries();
         if (entries.isEmpty()) {
             TextView emptyText = new TextView(getContext());
-            emptyText.setText("클립보드 기록이 비어 있습니다.");
+            emptyText.setText(R.string.clipboard_history_empty);
             emptyText.setTextColor(SettingsUiPalette.from(getContext()).textSecondary);
             emptyText.setPadding(dp(20), dp(40), dp(20), dp(40));
             emptyText.setGravity(Gravity.CENTER);

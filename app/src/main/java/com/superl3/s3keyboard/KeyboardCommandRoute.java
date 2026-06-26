@@ -1,0 +1,30 @@
+package com.superl3.s3keyboard;
+
+enum KeyboardCommandRoute {
+    NOOP,
+    DELETE,
+    SPACE,
+    ENTER,
+    MOVE_LEFT,
+    MOVE_RIGHT,
+    TOGGLE_LANGUAGE,
+    SHIFT_ONCE,
+    SHIFT_LOCK,
+    RESERVED_PHRASE,
+    DINGUL_CENTER_VOWEL,
+    DINGUL_WIDE_VOWEL,
+    OPEN_OPTIONS,
+    QUICK_SETTINGS,
+    CLIPBOARD_PANEL,
+    VOICE_INPUT,
+    UNDO,
+    TOOLS,
+    HAND_LEFT,
+    HAND_RIGHT,
+    HAND_BALANCED,
+    INPUT_PICKER,
+    SETTINGS,
+    HIDE,
+    REMOTE,
+    TEXT
+}

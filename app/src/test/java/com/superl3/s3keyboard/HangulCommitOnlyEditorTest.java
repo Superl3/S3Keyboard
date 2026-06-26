@@ -1,6 +1,8 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -56,6 +58,41 @@ public final class HangulCommitOnlyEditorTest {
         editor.finish(automata, sink);
 
         assertEquals("\uAC04", sink.text.toString());
+    }
+
+    @Test
+    public void ownCommitOnlySelectionUpdatesKeepFallbackCompositionAlive() {
+        HangulCommitOnlyEditor editor = new HangulCommitOnlyEditor();
+        TestSink sink = new TestSink();
+        HangulAutomata automata = new HangulAutomata();
+
+        editor.input(automata, "\u3131", sink);
+
+        assertFalse(editor.shouldAcceptExternalSelectionChange(0, 0, 1, 1, -1, -1));
+
+        editor.input(automata, "\u314F", sink);
+
+        assertFalse(editor.shouldAcceptExternalSelectionChange(1, 1, 0, 0, -1, -1));
+        assertFalse(editor.shouldAcceptExternalSelectionChange(0, 0, 1, 1, -1, -1));
+        assertEquals("\uAC00", automata.getComposingText());
+        assertEquals("\uAC00", sink.text.toString());
+    }
+
+    @Test
+    public void externalSelectionChangeAcceptsDisplayedFallbackComposition() {
+        HangulCommitOnlyEditor editor = new HangulCommitOnlyEditor();
+        TestSink sink = new TestSink();
+        HangulAutomata automata = new HangulAutomata();
+        editor.input(automata, "\u3131\u314F", sink);
+        editor.shouldAcceptExternalSelectionChange(0, 0, 1, 1, -1, -1);
+        editor.shouldAcceptExternalSelectionChange(1, 1, 0, 0, -1, -1);
+        editor.shouldAcceptExternalSelectionChange(0, 0, 1, 1, -1, -1);
+
+        assertTrue(editor.shouldAcceptExternalSelectionChange(1, 1, 0, 0, -1, -1));
+        editor.acceptDisplayedComposition(automata);
+
+        assertEquals("", automata.getComposingText());
+        assertEquals("\uAC00", sink.text.toString());
     }
 
     private static final class TestSink implements HangulCommitOnlyEditor.Sink {

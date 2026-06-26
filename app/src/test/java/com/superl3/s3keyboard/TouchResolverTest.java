@@ -122,6 +122,23 @@ public final class TouchResolverTest {
     }
 
     @Test
+    public void overlappingHitRectsUseStableTouchPriority() {
+        FakeTarget main = new FakeTarget("main", 50, 0, 100, 50, false, 10);
+        FakeTarget function = new FakeTarget("function", 50, 0, 100, 50, false, 35);
+
+        FakeTarget resolved = TouchResolver.resolve(
+                Arrays.asList(main, function),
+                54,
+                25,
+                10,
+                0,
+                0,
+                0);
+
+        assertEquals("function", resolved.name);
+    }
+
+    @Test
     public void ignoresTouchOutsideHitSlop() {
         FakeTarget key = new FakeTarget("key", 0, 0, 50, 50, false);
 
@@ -153,14 +170,27 @@ public final class TouchResolverTest {
         final float right;
         final float bottom;
         final boolean primary;
+        final int priority;
 
         FakeTarget(String name, float left, float top, float right, float bottom, boolean primary) {
+            this(name, left, top, right, bottom, primary, primary ? 40 : 0);
+        }
+
+        FakeTarget(
+                String name,
+                float left,
+                float top,
+                float right,
+                float bottom,
+                boolean primary,
+                int priority) {
             this.name = name;
             this.left = left;
             this.top = top;
             this.right = right;
             this.bottom = bottom;
             this.primary = primary;
+            this.priority = priority;
         }
 
         @Override
@@ -196,6 +226,11 @@ public final class TouchResolverTest {
         public boolean isPrimaryBottomControl() {
             return primary;
         }
+
+        @Override
+        public int touchPriority() {
+            return priority;
+        }
     }
 
     private static List<SlotTarget> slotTargets(List<KeyboardLayoutCalculator.Slot> slots) {
@@ -226,13 +261,13 @@ public final class TouchResolverTest {
 
         @Override
         public boolean contains(float x, float y) {
-            return x >= slot.left && x <= slot.right && y >= slot.top && y <= slot.bottom;
+            return x >= slot.hitLeft && x <= slot.hitRight && y >= slot.hitTop && y <= slot.hitBottom;
         }
 
         @Override
         public boolean expandedContains(float x, float y, float slop) {
-            return x >= slot.left - slop && x <= slot.right + slop
-                    && y >= slot.top - slop && y <= slot.bottom + slop;
+            return x >= slot.hitLeft - slop && x <= slot.hitRight + slop
+                    && y >= slot.hitTop - slop && y <= slot.hitBottom + slop;
         }
 
         @Override
@@ -257,6 +292,22 @@ public final class TouchResolverTest {
         @Override
         public boolean isPrimaryBottomControl() {
             return slot.primaryBottomControl;
+        }
+
+        @Override
+        public boolean visualContains(float x, float y) {
+            return x >= slot.left && x <= slot.right && y >= slot.top && y <= slot.bottom;
+        }
+
+        @Override
+        public int touchPriority() {
+            if (slot.primaryBottomControl) {
+                return 40;
+            }
+            if (KeyboardCommands.CMD_DELETE.equals(slot.key.tap)) {
+                return 35;
+            }
+            return slot.compactSpecialColumn ? 10 : 20;
         }
     }
 }

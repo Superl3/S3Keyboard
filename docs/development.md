@@ -78,22 +78,232 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   keys. Function keys are on number-row down slides; QWERTY alpha long press
   remains empty. Remote ASCII taps and shortcuts are sent as explicit KeyEvent
   down/up sequences, including modifier down/up events for chords.
+- `RemoteCommandResolver` maps remote command strings to key, modifier latch,
+  modifier lock, or IME-toggle actions. `RemoteInputController` owns
+  `RemoteKeySession`, pending/locked modifier state, Windows IME shortcut
+  execution, and `InputConnection` soft-key dispatch through
+  `ImeConnectionDispatcher`. `S3KeyboardService` only commits pending local text
+  before remote commands and updates the view through the controller callback.
+- Remote compatibility proofing uses `RemoteCompatibilityMatrix`,
+  `RemoteCompatibilityLog`, `RemoteCompatibilityReport`, and
+  `RemoteCompatibilityPanelController`. The quick settings test pad sends the
+  matrix cases through a narrow `S3KeyboardService` callback, records
+  Android-side accepted-event evidence as `acceptedEventCount` plus
+  `expectedEventCount`, and lets testers mark the latest case as pass/fail
+  after checking the remote desktop result. Local transport is considered
+  complete only when every generated event was accepted; that complete local
+  count is still not proof that the remote Windows session received the key.
+  Remote reports include `groupSummaries` for `BASIC`, `FUNCTION`, and `IME`
+  cases so a failed run shows which shortcut family is blocked without manually
+  scanning every case.
+- App input profiles are resolved when a new editor starts. `AppPackageCatalog`
+  owns package-family lists, `RemoteAppCatalog` owns remote package families,
+  and `AppInputProfileCatalog` owns the profile policy values. Keep
+  `AppInputProfileResolver` as routing glue so package lists and profile
+  behavior do not drift. `InputSessionSettingsResolver` is the service-facing
+  boundary that combines the editor policy, built-in profile, user override
+  lists, enter action label, forced number row, and runtime remote-mode overlay;
+  keep that calculation out of `S3KeyboardService` so `onStartInput` remains
+  thin and testable. Built-in profiles cover requested remote desktop
+  packages, password fields, number-like fields, URL/email/search/browser
+  fields, explicit WebView provider/shell packages, and common messaging
+  packages. The built-in remote set includes Parsec,
+  Moonlight, Microsoft/Chrome Remote Desktop, Steam Link, AnyDesk, and
+  TeamViewer; the browser and messaging sets include common stable/beta
+  variants such as Chrome beta/dev/canary, Edge, Brave, Firefox beta, WhatsApp,
+  Line, Signal, Discord, and Facebook Messenger. Profiles tune remote mode,
+  ASCII preference, number-row forcing, composing, and text convenience behavior
+  without overwriting the user's saved language mode. Remote package matching is
+  gated by the user's remote-auto setting or explicit remote mode; a package is
+  never promoted to remote mode just because it is known. Matched remote
+  packages use family-specific profile ids such as `remote_parsec`,
+  `remote_moonlight`, `remote_microsoft_rdp`, and
+  `remote_chrome_remote_desktop`; user-configured remote matches fall back to
+  `remote_desktop` with source `remote_auto_package`. URL and email profiles
+  prefer ASCII, disable text
+  conveniences, and also use commit-only input so fragile browser/editor fields
+  do not receive Hangul composing spans.
+- User app-profile overrides are additive package lists stored in
+  `KeyboardPreferences` and applied by `AppInputProfileOverrides` after the
+  built-in resolver. Use them to force ASCII, force the number row, disable
+  composing, or disable text conveniences for exact app package tokens without
+  changing the built-in catalog defaults.
+- `KeyboardSettingsSections` is the current read-only typed schema boundary for
+  issue reports and future settings refactors. It groups the large legacy
+  `KeyboardSettings` object into `appearance`, `layout`, `input`, `remote`, and
+  `ergonomics` sections without changing the saved preference schema yet.
+  Appearance snapshots include theme colors, typography, depth/outline, display
+  pack ids, override counts, and visual effects; layout snapshots include both
+  stored per-layout dimensions and runtime-derived visibility such as
+  `showNumberRow`. `ProductionReadinessConfigTest` checks that package-level
+  `KeyboardSettings` fields remain represented in `KeyboardSettingsSections` so
+  new fields cannot silently disappear from redacted issue reports.
+- `KeyboardSettingsSchema` is the preference-key descriptor. Every package-level
+  `KeyboardPreferences` key must be assigned to a section and storage-risk class
+  there, so new settings cannot silently skip privacy/debug/remote
+  classification. Redacted issue reports include an aggregate schema summary so
+  exported diagnostics show how many local-text, local-diagnostic, and
+  compatibility keys the build knows about without dumping raw local data.
+- `KeyboardSettingsSnapshot` serializes `KeyboardSettingsSections` for redacted
+  issue reports, including the currently loaded Dingul ergonomics options.
+- `InputIssueReportClipboardController` owns copying redacted input issue
+  reports to the clipboard. `S3KeyboardService` only flushes pending learning
+  state and exposes the current editor/package/settings snapshot through the
+  controller host callback. Reports include the effective app input profile
+  details, including profile source, remote-mode activation, and nullable ASCII,
+  number-row, composing, and text-convenience overrides, so per-app behavior can
+  be debugged without exporting typed text. User app-profile override lists are
+  not exported; reports include only per-flag match booleans for the current
+  package so compatibility debugging does not leak the user's configured app
+  list. Reports also include current, Hangul, and QWERTY layout accessibility
+  summaries with hard 30dp issue counts and recommended 40dp advisory counts,
+  so cramped touch targets can be debugged without exporting typed text.
+  `localDataSummary` exports only local feature state and counts, including
+  clipboard-history enabled state, clipboard entry count, input-log counts, and
+  remote-test count; it never exports clipboard entries themselves. Journal
+  export must also redact any future text-like, clipboard, or phrase preview
+  fields, not only the current code-point fields.
+- `ImeConnectionDispatcher` owns testable `InputConnection` transport decisions
+  for Enter fallback, raw ASCII key dispatch, and soft-key event generation.
+  Raw ASCII/newline dispatch should prefer soft key events but fall back to
+  `commitText` if the sender is missing, rejects the event, or accepts only a
+  partial down/up sequence, so text does not silently disappear in custom
+  editors. Cursor movement also belongs here so boundary checks and soft D-pad
+  dispatch do not drift back into `S3KeyboardService`. Keep service-level
+  command routing separate from this helper so WebView/custom editor fallback
+  behavior can stay covered by JVM tests.
+- `InputConnectionTextOperator` owns low-level composing, committed-text delete,
+  cursor-boundary checks, normal text commits, and the commit-only Hangul sink.
+  Keep direct `commitText`, `setComposingText`,
+  `deleteSurroundingTextInCodePoints`, and stale composing cleanup out of
+  `S3KeyboardService` so conventional editor behavior can be regression-tested
+  with fake `InputConnection` instances. Service code should not call
+  `commitText`, `deleteSurroundingText`, `setComposingText`, or
+  `finishComposingText` directly.
+- `InputConnectionSequenceTest` verifies the higher-level editor sequence:
+  composing text updates, commit-current finishing, stale-composing cleanup
+  around delete, rejected `performEditorAction`, soft Enter `sendKeyEvent`
+  fallback, and the final newline commit fallback when the soft sender rejects
+  Enter. Update it when changing IME transport order.
+- `KeyboardCommandRouter` maps raw key gesture strings to local command routes.
+  `KeyboardCommandDispatcher` owns the route-to-callback dispatch table, and
+  `S3KeyboardCommandTarget` owns the route callback implementation that bridges
+  to service side effects. `S3KeyboardService` keeps the actual IME state,
+  lifecycle, and input side effects instead of embedding the full dispatch
+  target table in its body. `RemoteCommandResolver` remains responsible only for
+  Windows remote commands.
+- `QuickThemePanelController` owns the quick-settings theme spinner and theme
+  application persistence. The service only receives the runtime-adjusted
+  settings object so current language mode, enter label, and forced number-row
+  state are preserved without keeping theme UI logic in the IME lifecycle class.
+- `QuickSettingsPanelController` owns the quick-settings panel body: remote
+  toggle, remote compatibility pad insertion, number-row toggle, handedness
+  buttons, theme selector, clipboard theme import, issue-report copy, and close
+  action. `S3KeyboardService` keeps only the `PopupWindow` lifecycle and the
+  IME/session side effects behind host callbacks.
+- `ThemeClipboardImportController` owns quick-settings theme import from the
+  clipboard, including clipboard reading, JSON import, preference persistence,
+  toast feedback, and dismissal. `S3KeyboardService` only applies the imported
+  settings back to the active keyboard view through a host callback.
+- `ClipboardPanelController` owns optional clipboard-history UI, clipboard
+  listener registration, password-field suppression, and local history refresh.
+  `S3KeyboardService` only provides the current editor policy/settings snapshot
+  and commits a selected clipboard item into the active `InputConnection`.
+- Display assistance is grouped by `InputAssistanceMode`: clean mode hides
+  hints and preview, learning mode keeps hints and preview visible, and debug
+  mode also enables the debug key-bounds overlay on debuggable builds. Each mode
+  carries a recommended Dingul ergonomics preset for diagnostics, but applying
+  an input-assistance mode does not automatically change ergonomics layout
+  settings because that would move existing users' keys. The mode selector
+  derives its current state from the real preferences, so manual edits show as
+  custom rather than writing a second source of truth.
+  `InputAssistanceSettingsController` owns mode persistence, visible mode lists
+  for debug/release builds, and individual hint/debug-overlay saves; keep that
+  logic out of `MainActivity`.
 - `KeyboardMode` is the language/composition mode only. `KeyboardLayoutProfiles`
   stores the physical surface per language, defaulting to Hangul Dingul and
   English QWERTY while allowing Hangul QWERTY and English Dingul from settings.
-- Fields that reject composing spans, including `TYPE_NULL` raw-key targets, use
-  a commit-only Hangul fallback. The app keeps the internal automata state,
-  deletes the previous visible fallback composition, and commits the updated
-  complete syllable so sequences like `ㄱㅏㄴ` do not remain split when composing
-  text is unavailable.
+- English QWERTY has a clean-room swipe-typing path. `HangulKeyboardView`
+  records a `SwipeTrace` only for normal/search/multiline English QWERTY
+  surfaces, leaves tap input intact, and commits the top
+  `SwipeDecoder` candidate only when the path crosses at least two alpha keys.
+  `HeuristicEnglishSwipeDecoder` is a local fallback so the end-to-end pipeline
+  can be tested before adding a model-backed decoder. Do not import FUTO app
+  code or assume the FUTO C++ inference library can be bundled without a
+  separate license decision.
+- Fields that reject composing spans, including `TYPE_NULL` raw-key targets and
+  `TYPE_TEXT_VARIATION_WEB_EDIT_TEXT`, use a commit-only Hangul fallback. The
+  app keeps the internal automata state, deletes the previous visible fallback
+  composition, and commits the updated complete syllable so sequences like
+  `ㄱㅏㄴ` do not remain split when composing text is unavailable.
 - `HangulKeyboardView` keeps the preview strip inside the measured keyboard
   height, so preview space does not create a transparent area over the app UI.
+- Non-interactive keyboard previews in settings, theme selection, and accent
+  placement screens should be created through `KeyboardPreviewFactory`; it
+  centralizes compact rendering, touch suppression, and accessibility exclusion
+  for preview-only views.
+- `HangulKeyboardView` exposes a concise accessibility summary with mode,
+  surface, key count, remote mode, preview, and debug-overlay state. It also
+  exposes per-key virtual accessibility nodes with tap/slide descriptions,
+  matching text/content descriptions, hit-bound based node bounds, focusable
+  click actions, and accessibility click mapped to the key's tap output. The
+  virtual node provider lives in `KeyboardVirtualKeyAccessibilityProvider`; keep
+  TalkBack node construction out of the Canvas view body.
+- `KeyboardAccessibilityLayoutTest` verifies that default Hangul and QWERTY
+  layouts expose non-empty, non-raw-command labels for every key, and that
+  layout hit bounds do not shrink below the base key bounds. Keep this test
+  updated when adding command keys, surfaces, or ergonomics hitbox changes.
+- `KeyboardAccessibilityAudit.audit(...)` is the hard runtime/layout gate and
+  intentionally keeps the compact keyboard's minimum hit target at 30dp.
+  `KeyboardAccessibilityAudit.advisoryAudit(...)` uses a 40dp recommended
+  target so QA and diagnostic work can find cramped keys without silently
+  changing the default keyboard size or QWERTY layout.
+- Preview tooltip display is split between `PreviewBubbleAnimation` for
+  testable bubble lifetime/progress/alpha state, `HangulKeyboardView` for
+  touch-to-preview value resolution, and `PreviewOverlayController` for the
+  popup window/TextView rendering. Keep animation timing changes in
+  `PreviewBubbleAnimationTest` rather than burying them in Canvas-only code.
 - `TouchBiasStore` learns from local input patterns. It stores aggregate touch
   center and gesture-threshold statistics, and also keeps a capped local raw key
   event log for future typo analysis. Runtime learning state is cached in memory
   and flushed to preferences on a short debounce or IME session finish, so normal
   key input does not wait on preference reads/writes. Resetting input correction
   clears both.
+- Settings expose separate local deletion controls for touch correction/input
+  logs, optional clipboard history, and remote compatibility test logs.
+  `LocalDataControlsController` owns these destructive local-data actions and
+  the clipboard-history toggle side effect. It also formats the read-only local
+  data summary shown in settings, so `MainActivity` should only wire controls,
+  display controller text, and resync state.
+- `KeyboardSettingsSchema` tracks both user-facing preference keys and internal
+  local-data keys such as clipboard entries, touch-bias stats, typing pattern
+  logs, gesture journals, Dingul touch profiles, and remote compatibility logs.
+  Mark internal local-data entries as `userFacing=false` while preserving their
+  storage-risk classification.
+- `LocalDataControlsController.managedLocalDataKeys()` is the deletion contract
+  for internal local data. Any non-user-facing schema entry with local text,
+  diagnostic, or compatibility risk must be covered there so privacy/debug data
+  cannot be added without a matching clear path.
+- Local-data and remote-compatibility status text is user-facing UI, not a log
+  constant. Keep summary and empty-state copy in `strings.xml`; readiness tests
+  guard the local-data summary and remote-test empty state against drifting back
+  into Java literals.
+- Main settings copy that explains local-only input logs, clipboard history, or
+  reserved phrase behavior should also live in `strings.xml`. Keep these labels
+  resource-backed so localization, mojibake scanning, and privacy copy review do
+  not depend on escaped Java string literals.
+- `scripts\smoke-ime-apps.ps1` installs the debug APK, activates the IME, opens
+  the local practice surface plus installed browser, messaging, notes, and
+  remote-desktop packages, and writes `captures\smoke\smoke-ime-apps-report.json`
+  with package, expected profile policy, IME-selected, IME-visible, dump, and
+  screenshot evidence. Report schema v2 stores `profileExpectation` fields for
+  expected remote mode, ASCII preference, number-row forcing, composing usage,
+  text conveniences, and whether manual remote delivery confirmation is still
+  required. Each result also includes `remoteCompatibilityEvidence`, including
+  the local matrix export command, required shortcut labels, and required remote
+  app families. That block is a next-step checklist, not proof of Windows
+  delivery. Use `-Serial <device>` for a physical device, or omit it to launch
+  the local emulator path.
 - `scripts\analyze-device-learning.ps1` summarizes pulled
   `keyboard_preferences.xml` captures, including gesture-intent labels, delete
   bursts, pattern counts, touch bias, and Dingul profile size. It handles UTF-16
@@ -258,3 +468,33 @@ skin. Reuse `SettingsUiPalette`, `SettingsArrayAdapter`, and `SettingsViewStyler
 for text, spinner rows, buttons, checkboxes/radio buttons, and numeric inputs.
 This prevents Android default widgets from leaving black text or black checkbox
 tints on dark system UI.
+
+## Dingul Ergonomics Manual Checklist
+
+Use this checklist on a real device after installing a debug APK:
+
+- Apply `Legacy` and confirm the Dingul layout matches the previous default
+  layout.
+- Apply `Stable` and confirm the main 12 keys are centered while the right
+  function rail remains usable.
+- Apply `Ergonomic` and confirm the left assist rail appears, the 5-column
+  visual grid is aligned, and main key order does not change.
+- Apply `Aggressive` and confirm the left assist rail, main 12 keys, and right
+  function rail stay inside the keyboard area.
+- Change one individual ergonomics toggle after applying a preset and confirm
+  the preset state changes to custom.
+- Type with every main Dingul key using tap, up, down, left, and right slide.
+- Hold backspace and confirm repeated deletion starts naturally.
+- Tap the four right function rail keys, especially near the right bezel.
+- Enable left assist rail and tap clipboard, voice, undo, and tools. Clipboard
+  and tools should open existing panels; voice should show the explicit
+  unavailable message, and undo should use the editor's conventional undo
+  context-menu action when the target app supports it.
+- With compact function rail and ergonomic hitbox enabled, confirm backspace
+  accepts touches toward the main keys and downward edge.
+- Confirm left assist rail, main 12 keys, and right function rail look like one
+  aligned 5-column group when left assist rail and uniform gap are enabled.
+- On a large-screen device, confirm Dingul main keys are centered only when the
+  centering option is enabled.
+- Confirm QWERTY mode keeps its previous layout and is not centered or compacted
+  by Dingul ergonomics settings.

@@ -19,6 +19,10 @@ final class KeyIcon {
     static final int MOVE_RIGHT = 15;
     static final int KEYBOARD = 16;
     static final int RESET = 17;
+    static final int CLIPBOARD = 18;
+    static final int MICROPHONE = 19;
+    static final int UNDO = 20;
+    static final int TOOLS = 21;
 
     private KeyIcon() {
     }
@@ -66,6 +70,18 @@ final class KeyIcon {
         }
         if (KeyboardCommands.CMD_MOVE_RIGHT.equals(command)) {
             return MOVE_RIGHT;
+        }
+        if (KeyboardCommands.CMD_CLIPBOARD_PANEL.equals(command)) {
+            return CLIPBOARD;
+        }
+        if (KeyboardCommands.CMD_VOICE_INPUT.equals(command)) {
+            return MICROPHONE;
+        }
+        if (KeyboardCommands.CMD_UNDO.equals(command)) {
+            return UNDO;
+        }
+        if (KeyboardCommands.CMD_TOOLS.equals(command)) {
+            return TOOLS;
         }
         return NONE;
     }

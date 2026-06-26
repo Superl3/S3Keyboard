@@ -1,15 +1,15 @@
 package com.superl3.s3keyboard;
 
 enum KeyboardLayoutProfile {
-    DINGUL("dingul", "\uB529\uAD74"),
-    QWERTY("qwerty", "QWERTY");
+    DINGUL("dingul", R.string.keyboard_layout_profile_dingul),
+    QWERTY("qwerty", R.string.keyboard_layout_profile_qwerty);
 
     final String preferenceValue;
-    final String displayName;
+    final int labelResId;
 
-    KeyboardLayoutProfile(String preferenceValue, String displayName) {
+    KeyboardLayoutProfile(String preferenceValue, int labelResId) {
         this.preferenceValue = preferenceValue;
-        this.displayName = displayName;
+        this.labelResId = labelResId;
     }
 
     static KeyboardLayoutProfile fromPreference(String value, KeyboardLayoutProfile fallback) {
@@ -23,6 +23,6 @@ enum KeyboardLayoutProfile {
 
     @Override
     public String toString() {
-        return displayName;
+        return preferenceValue;
     }
 }

@@ -60,6 +60,21 @@ public final class EnglishShiftStateTest {
     }
 
     @Test
+    public void shiftAppliesNaturallyToSwipeWords() {
+        EnglishShiftState state = new EnglishShiftState();
+
+        state.onShiftOnceCommand();
+
+        assertEquals("Hello", state.applyToInput("hello"));
+        assertFalse(state.isActive());
+
+        state.onShiftLockCommand();
+
+        assertEquals("KEYBOARD", state.applyToInput("keyboard"));
+        assertTrue(state.isActive());
+    }
+
+    @Test
     public void consumeOnceClearsOnlyOneShotShift() {
         EnglishShiftState state = new EnglishShiftState();
 

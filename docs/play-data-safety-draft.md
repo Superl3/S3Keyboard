@@ -15,8 +15,8 @@ Under Google Play Data safety guidance, collection means transmitting data off t
 
 - Keyboard preferences: mode, handedness, margins, height, visual theme, haptic setting, number-row settings.
 - Touch correction statistics: aggregate touch offset bias after immediate delete patterns.
-- Typing pattern log: recent local key input and correction events, including raw typed key values, gesture action, and correction metadata. This is capped and reset with input correction.
-- Gesture-intent journal: recent local key input events, touch geometry, policy snapshot fields, shadow correction candidates, delete rollback targets, and derived labels such as missed slide, false slide, wrong direction, wrong origin key, accepted tap, accepted slide, and shadow false alarm. Typed key values are redacted for password, number-like, URI, and email fields.
+- Typing pattern log: recent local key input and correction events, including event type, gesture action, correction metadata, and redacted text length rather than raw typed text. This is capped and reset with input correction.
+- Gesture-intent journal: recent local key input events, touch geometry, policy snapshot fields, shadow correction candidates, delete rollback targets, and derived labels such as missed slide, false slide, wrong direction, wrong origin key, accepted tap, accepted slide, and shadow false alarm. Typed key values are redacted for password, number-like, URI, email, and web-edit fields. Copied issue reports additionally redact text-like future fields, clipboard/phrase preview fields, and code-point values, and include a redaction summary plus remote compatibility accepted-event and pass/fail metadata without clipboard history contents.
 - Optional clipboard history: recent clipboard text when the clipboard history setting is enabled.
 - No typed content, clipboard content, passwords, personal identifiers, account information, contacts, location, photos, files, microphone, or camera data is transmitted off device.
 

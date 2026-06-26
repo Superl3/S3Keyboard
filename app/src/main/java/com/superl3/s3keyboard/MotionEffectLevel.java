@@ -1,17 +1,17 @@
 package com.superl3.s3keyboard;
 
 enum MotionEffectLevel {
-    OFF("off", "끄기", 0),
-    SUBTLE("subtle", "약하게", 1),
-    NORMAL("normal", "보통", 2);
+    OFF("off", R.string.motion_effect_off, 0),
+    SUBTLE("subtle", R.string.motion_effect_subtle, 1),
+    NORMAL("normal", R.string.motion_effect_normal, 2);
 
     final String preferenceValue;
-    final String displayName;
+    final int labelResId;
     final int intensity;
 
-    MotionEffectLevel(String preferenceValue, String displayName, int intensity) {
+    MotionEffectLevel(String preferenceValue, int labelResId, int intensity) {
         this.preferenceValue = preferenceValue;
-        this.displayName = displayName;
+        this.labelResId = labelResId;
         this.intensity = intensity;
     }
 

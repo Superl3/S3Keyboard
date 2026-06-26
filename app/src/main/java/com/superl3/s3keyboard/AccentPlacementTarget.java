@@ -3,20 +3,20 @@ package com.superl3.s3keyboard;
 import java.util.EnumSet;
 
 enum AccentPlacementTarget {
-    SETTINGS_ENTER("settings_enter", "\uC124\uC815 / \uC804\uC1A1"),
-    META("meta", "\uC608\uC57D\uC5B4 / \uD55C\uC601"),
-    QWERTY_SHIFT("qwerty_shift", "QWERTY Shift"),
-    BACKSPACE("backspace", "Backspace"),
-    DINGUL_DOT("dingul_dot", "\uB529\uAD74 . visual Enter"),
-    DINGUL_SLASH("dingul_slash", "\uB529\uAD74 / visual Shift"),
-    ESC_POINT("esc_point", "ESC point keycap");
+    SETTINGS_ENTER("settings_enter", R.string.accent_target_settings_enter),
+    META("meta", R.string.accent_target_meta),
+    QWERTY_SHIFT("qwerty_shift", R.string.accent_target_qwerty_shift),
+    BACKSPACE("backspace", R.string.accent_target_backspace),
+    DINGUL_DOT("dingul_dot", R.string.accent_target_dingul_dot),
+    DINGUL_SLASH("dingul_slash", R.string.accent_target_dingul_slash),
+    ESC_POINT("esc_point", R.string.accent_target_esc_point);
 
     final String preferenceValue;
-    final String label;
+    final int labelResId;
 
-    AccentPlacementTarget(String preferenceValue, String label) {
+    AccentPlacementTarget(String preferenceValue, int labelResId) {
         this.preferenceValue = preferenceValue;
-        this.label = label;
+        this.labelResId = labelResId;
     }
 
     static void addPreferenceTargets(String value, EnumSet<AccentPlacementTarget> targets) {
@@ -61,7 +61,7 @@ enum AccentPlacementTarget {
                 if (settings != null && settings.showNumberRow) {
                     return new String[]{"1"};
                 }
-                return mode == KeyboardMode.ENGLISH ? new String[]{"q"} : new String[]{"\u3131"};
+                return mode == KeyboardMode.ENGLISH ? new String[]{"q"} : new String[]{"ㄱ"};
             default:
                 return new String[0];
         }
@@ -69,6 +69,6 @@ enum AccentPlacementTarget {
 
     @Override
     public String toString() {
-        return label;
+        return preferenceValue;
     }
 }

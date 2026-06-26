@@ -20,7 +20,7 @@ import java.util.List;
  */
 final class ClipboardStore {
     private static final String PREF_NAME = "keyboard_preferences";
-    private static final String KEY_ENTRIES = "entries";
+    static final String KEY_ENTRIES = "entries";
     private static final String KEY_ENABLED = KeyboardPreferences.CLIPBOARD_HISTORY_ENABLED;
     private static final String SEPARATOR = "\u001F"; // Unit separator
     static final int MAX_ENTRIES = 10;

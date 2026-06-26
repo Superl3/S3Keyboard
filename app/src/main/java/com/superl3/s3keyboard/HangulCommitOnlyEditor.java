@@ -2,6 +2,7 @@ package com.superl3.s3keyboard;
 
 final class HangulCommitOnlyEditor {
     private int displayedComposingCodePoints;
+    private int pendingOwnSelectionUpdates;
 
     interface Sink {
         void deleteBeforeCursorCodePoints(int count);
@@ -10,6 +11,37 @@ final class HangulCommitOnlyEditor {
 
     boolean hasDisplayedComposing() {
         return displayedComposingCodePoints > 0;
+    }
+
+    boolean shouldAcceptExternalSelectionChange(
+            int oldSelStart,
+            int oldSelEnd,
+            int newSelStart,
+            int newSelEnd,
+            int candidatesStart,
+            int candidatesEnd) {
+        if (!hasDisplayedComposing()) {
+            pendingOwnSelectionUpdates = 0;
+            return false;
+        }
+        if (pendingOwnSelectionUpdates > 0) {
+            pendingOwnSelectionUpdates--;
+            return false;
+        }
+        if (newSelStart != newSelEnd) {
+            return true;
+        }
+        if (candidatesStart >= 0 || candidatesEnd >= 0) {
+            return newSelStart < candidatesStart || newSelStart != candidatesEnd;
+        }
+        return oldSelStart != newSelStart || oldSelEnd != newSelEnd;
+    }
+
+    void acceptDisplayedComposition(HangulAutomata automata) {
+        if (automata != null) {
+            automata.flush();
+        }
+        reset();
     }
 
     void input(HangulAutomata automata, String text, Sink sink) {
@@ -60,6 +92,7 @@ final class HangulCommitOnlyEditor {
 
     void reset() {
         displayedComposingCodePoints = 0;
+        pendingOwnSelectionUpdates = 0;
     }
 
     private void inputHangulChar(HangulAutomata automata, char ch, Sink sink) {
@@ -77,6 +110,7 @@ final class HangulCommitOnlyEditor {
         }
         sink.deleteBeforeCursorCodePoints(displayedComposingCodePoints);
         displayedComposingCodePoints = 0;
+        pendingOwnSelectionUpdates++;
     }
 
     private void commitDisplayedComposing(String composing, Sink sink) {
@@ -85,5 +119,6 @@ final class HangulCommitOnlyEditor {
         }
         sink.commitText(composing);
         displayedComposingCodePoints = composing.codePointCount(0, composing.length());
+        pendingOwnSelectionUpdates++;
     }
 }

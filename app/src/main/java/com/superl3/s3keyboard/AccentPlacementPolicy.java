@@ -21,17 +21,17 @@ final class AccentPlacementPolicy {
     final QuestionRole questionRole;
 
     enum SpaceRole {
-        DEFAULT("", "\uD14C\uB9C8 \uAE30\uBCF8"),
-        ALPHA("space:alpha", "Space = Alpha"),
-        MOD("space:mod", "Space = Mod"),
-        ACCENT("space:accent", "Space = Accent");
+        DEFAULT("", R.string.accent_role_theme_default),
+        ALPHA("space:alpha", R.string.accent_role_space_alpha),
+        MOD("space:mod", R.string.accent_role_space_mod),
+        ACCENT("space:accent", R.string.accent_role_space_accent);
 
         final String preferenceValue;
-        final String label;
+        final int labelResId;
 
-        SpaceRole(String preferenceValue, String label) {
+        SpaceRole(String preferenceValue, int labelResId) {
             this.preferenceValue = preferenceValue;
-            this.label = label;
+            this.labelResId = labelResId;
         }
 
         static SpaceRole fromPreference(String value) {
@@ -45,22 +45,22 @@ final class AccentPlacementPolicy {
 
         @Override
         public String toString() {
-            return label;
+            return preferenceValue;
         }
     }
 
     enum QuestionRole {
-        DEFAULT("", "\uD14C\uB9C8 \uAE30\uBCF8"),
-        ALPHA("question:alpha", "? = Alpha"),
-        MOD("question:mod", "? = Mod"),
-        ACCENT("question:accent", "? = Accent");
+        DEFAULT("", R.string.accent_role_theme_default),
+        ALPHA("question:alpha", R.string.accent_role_question_alpha),
+        MOD("question:mod", R.string.accent_role_question_mod),
+        ACCENT("question:accent", R.string.accent_role_question_accent);
 
         final String preferenceValue;
-        final String label;
+        final int labelResId;
 
-        QuestionRole(String preferenceValue, String label) {
+        QuestionRole(String preferenceValue, int labelResId) {
             this.preferenceValue = preferenceValue;
-            this.label = label;
+            this.labelResId = labelResId;
         }
 
         static QuestionRole fromPreference(String value) {
@@ -74,7 +74,7 @@ final class AccentPlacementPolicy {
 
         @Override
         public String toString() {
-            return label;
+            return preferenceValue;
         }
     }
 

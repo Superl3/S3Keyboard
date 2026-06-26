@@ -2,6 +2,10 @@
 
 This workspace contains a clean-room Android input method prototype for studying a Korean gesture-keyboard UX. It is built from the described interaction model and screenshot, not from proprietary APK code or assets.
 
+The prototype includes Dingul-style Hangul gesture input, English QWERTY input,
+Windows remote-mode key mapping, theme/icon customization, and an experimental
+clean-room English QWERTY swipe-typing path backed by a local heuristic decoder.
+
 ## Setup
 
 ```powershell
@@ -131,7 +135,7 @@ The smoke script opens the local practice field and captures input-method state 
 - Clean-room generated vector icon pipeline for command keys and settings action buttons
 - Conventional keyboard usability hacks: hit slop, touch Y offset, locked slide direction, haptic feedback, delete/cursor repeat, spacebar cursor movement, contextual Enter labels, and English double-space period
 - Queued haptic ticks with adjustable duration/gap, plus bounded touch/slide correction learned from immediate deletes
-- Local typing pattern logging for future typo correction experiments; data stays on device and resets with input correction
+- Local redacted typing pattern logging for future typo correction experiments; data stays on device and resets with input correction
 - Theme system with JSON-sourced built-in presets, Dingul alpha/mod/mod-inverted role colors, per-key foreground/background overrides, optional number-row alpha/mod/accent styling, key display overrides, modifier icon packs, imported icon/display pack metadata, visual effects, and preview parity scripts
 - Launcher settings for handedness, left/right margins, keyboard height, per-language number row, theme colors, key roundness/gap, Android input-method settings, and input-method picker
 - Closed beta trust work: local privacy notice, Play Data safety draft, ASCII-capable IME subtype, explicit field policies, `TYPE_NULL` raw-key fallback, debug-gated demo overrides, and release build hardening

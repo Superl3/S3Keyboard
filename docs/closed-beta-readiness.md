@@ -16,7 +16,9 @@ Closed beta means a small tester group can install the keyboard without being su
 
 ## Manual closed-beta smoke matrix
 
-- Chrome or default browser: URL bar, page search field, and a `contenteditable` field.
+- Chrome or default browser: URL bar, page search field, and a
+  `TYPE_TEXT_VARIATION_WEB_EDIT_TEXT`/`contenteditable` field. Web-edit fields
+  should use the commit-only text path and avoid composing spans.
 - WebView-based app: plain text, search, email, URL, password, number, and multiline fields.
 - Messages or notes app: Hangul composition, English QWERTY, number row, delete repeat, enter action, and multiline newline.
 - Password manager/login form: password field starts in ASCII-capable mode and does not use composing text.
@@ -24,6 +26,18 @@ Closed beta means a small tester group can install the keyboard without being su
 
 ## Remaining beta risks
 
-- Full TalkBack virtual-key accessibility is not implemented yet; the custom keyboard view exposes a view-level description only.
+- TalkBack virtual-key nodes are implemented for the custom keyboard view, including per-key descriptions and accessibility click on tap outputs. Real-device TalkBack traversal and gesture conflict smoke testing is still required.
 - Browser and Messages/Notes smoke tests still require real-device or emulator app coverage because installed packages vary by system image.
+- `scripts\smoke-ime-apps.ps1` now records a JSON artifact for installed
+  browser, messaging, notes, and remote-desktop packages. Treat its
+  `profileExpectation`, `imeSelected`, and `imeVisible` fields as Android-side
+  smoke evidence only. Each remote target also records a
+  `remoteCompatibilityEvidence` checklist with the export command and required
+  shortcut labels; Parsec, Moonlight, RDP, and Chrome Remote Desktop still need
+  a tester to confirm that the remote Windows session actually received Esc,
+  Tab, F-key, and IME shortcut events.
+- Remote mode has a quick-settings compatibility matrix and JSON report for
+  Android-side accepted-event evidence plus tester-marked pass/fail results, but
+  Parsec/Moonlight/RDP receiving behavior still requires per-app real-device
+  confirmation.
 - The privacy policy draft needs the final developer entity and contact point before Play upload.

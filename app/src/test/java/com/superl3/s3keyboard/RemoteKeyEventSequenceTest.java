@@ -22,6 +22,12 @@ public final class RemoteKeyEventSequenceTest {
         assertEvent(events.get(1), KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A);
         assertEvent(events.get(2), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A);
         assertEvent(events.get(3), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_CTRL_LEFT);
+        assertEquals(100L, events.get(0).eventTimeMs);
+        assertEquals(101L, events.get(1).eventTimeMs);
+        assertEquals(102L, events.get(2).eventTimeMs);
+        assertEquals(103L, events.get(3).eventTimeMs);
+        assertEquals(events.get(1).downTimeMs, events.get(2).downTimeMs);
+        assertEquals(events.get(0).downTimeMs, events.get(3).downTimeMs);
         assertTrue((events.get(1).metaState & KeyEvent.META_CTRL_ON) != 0);
     }
 
@@ -40,6 +46,56 @@ public final class RemoteKeyEventSequenceTest {
         assertEvent(events.get(3), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SPACE);
         assertEvent(events.get(4), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT);
         assertEvent(events.get(5), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_META_LEFT);
+    }
+
+    @Test
+    public void keyEventsUseSoftKeyboardFlags() {
+        assertTrue((RemoteKeyEventSequence.KEY_EVENT_FLAGS & KeyEvent.FLAG_SOFT_KEYBOARD) != 0);
+        assertTrue((RemoteKeyEventSequence.KEY_EVENT_FLAGS & KeyEvent.FLAG_KEEP_TOUCH_MODE) != 0);
+    }
+
+    @Test
+    public void eventSpecCarriesConventionalVirtualKeyboardFields() {
+        RemoteKeyEventSequence.EventSpec spec = RemoteKeyEventSequence.build(
+                KeyEvent.KEYCODE_A,
+                KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON,
+                200L).get(1);
+
+        assertEquals(KeyEvent.ACTION_DOWN, spec.action);
+        assertEquals(KeyEvent.KEYCODE_A, spec.keyCode);
+        assertEquals(201L, spec.eventTimeMs);
+        assertEquals(201L, spec.downTimeMs);
+        assertTrue((spec.metaState & KeyEvent.META_SHIFT_ON) != 0);
+        assertTrue((spec.metaState & KeyEvent.META_SHIFT_LEFT_ON) != 0);
+    }
+
+    @Test
+    public void eventSpecDefinesSoftVirtualKeyboardKeyEventFields() {
+        RemoteKeyEventSequence.EventSpec spec = RemoteKeyEventSequence.build(
+                KeyEvent.KEYCODE_F1,
+                0,
+                300L).get(0);
+
+        assertEquals(KeyEvent.ACTION_DOWN, spec.action);
+        assertEquals(KeyEvent.KEYCODE_F1, spec.keyCode);
+        assertEquals(300L, spec.eventTimeMs);
+        assertEquals(300L, spec.downTimeMs);
+        assertEquals(android.view.KeyCharacterMap.VIRTUAL_KEYBOARD, RemoteKeyEventSequence.KEY_EVENT_DEVICE_ID);
+        assertTrue((RemoteKeyEventSequence.KEY_EVENT_FLAGS & KeyEvent.FLAG_SOFT_KEYBOARD) != 0);
+        assertTrue((RemoteKeyEventSequence.KEY_EVENT_FLAGS & KeyEvent.FLAG_KEEP_TOUCH_MODE) != 0);
+    }
+
+    @Test
+    public void eventCountMatchesGeneratedSequenceLength() {
+        assertEquals(2, RemoteKeyEventSequence.eventCount(KeyEvent.KEYCODE_ENTER, 0));
+        assertEquals(4, RemoteKeyEventSequence.eventCount(
+                KeyEvent.KEYCODE_A,
+                KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON));
+        assertEquals(6, RemoteKeyEventSequence.eventCount(
+                KeyEvent.KEYCODE_SPACE,
+                KeyEvent.META_META_ON | KeyEvent.META_META_LEFT_ON
+                        | KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON));
+        assertEquals(0, RemoteKeyEventSequence.eventCount(0, 0));
     }
 
     private static void assertEvent(RemoteKeyEventSequence.EventSpec event, int action, int keyCode) {

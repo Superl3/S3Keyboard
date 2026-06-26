@@ -46,7 +46,7 @@ rtk .\.android-tools\android-sdk\platform-tools\adb.exe -t <transport_id> shell 
 - `MainActivity`, `ThemeEditorActivity`, `ThemeSelectorActivity`: settings, theme editing, theme preview and reset UI.
 - `web-theme-builder/app.js`: browser-side theme authoring and preview parity.
 - `scripts/render-theme-previews.ps1`: static preview image parity for themes.
-- `TouchBiasStore`: local input learning stats and raw typing pattern event log.
+- `TouchBiasStore`: local input learning stats and redacted typing pattern event log.
 
 ## Theme And Icon Rules
 
@@ -153,9 +153,9 @@ Point display packs (`geo-points`, `soft-symbols`, `terminal-points`, `punctuati
 `TouchBiasStore` has two roles:
 
 - aggregate correction bias for touch center and gesture threshold adjustments.
-- local raw typing pattern log in `typing_pattern_log`, capped by `MAX_TYPING_PATTERN_EVENTS`.
+- local redacted typing pattern log in `typing_pattern_log`, capped by `MAX_TYPING_PATTERN_EVENTS`.
 
-The raw log is local SharedPreferences data and is reset by the same input correction reset path. If this app is prepared for external testers or Play distribution, update privacy docs and UI disclosure because typed key values are stored locally.
+The legacy pattern log stores event type, action, correction geometry, and redacted text length rather than raw typed text. It is local SharedPreferences data and is reset by the same input correction reset path. If this app is prepared for external testers or Play distribution, keep privacy docs and UI disclosure aligned with any future local raw-text storage changes.
 
 ## Settings And Quick UI
 

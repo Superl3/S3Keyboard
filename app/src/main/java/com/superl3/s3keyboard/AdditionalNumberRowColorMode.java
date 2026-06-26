@@ -1,28 +1,52 @@
 package com.superl3.s3keyboard;
 
 enum AdditionalNumberRowColorMode {
-    FULL_ALPHA("full_alpha", "\uC804\uCCB4 Alpha", KeyVisualRole.ALPHA, KeyVisualRole.ALPHA),
-    HALF_MOD_4567("half_mod_4567", "\uAC00\uC6B4\uB370 Mod", KeyVisualRole.ALPHA, KeyVisualRole.MODIFIER),
-    ALPHA_ACCENT("alpha_accent", "\uAC00\uC6B4\uB370 Accent", KeyVisualRole.ALPHA, KeyVisualRole.ACCENT),
-    MOD_ALPHA("mod_alpha", "\uBC14\uAE65 Mod / \uAC00\uC6B4\uB370 Alpha", KeyVisualRole.MODIFIER, KeyVisualRole.ALPHA),
-    FULL_MOD("full_mod", "\uC804\uCCB4 Mod", KeyVisualRole.MODIFIER, KeyVisualRole.MODIFIER),
-    MOD_ACCENT("mod_accent", "\uBC14\uAE65 Mod / \uAC00\uC6B4\uB370 Accent", KeyVisualRole.MODIFIER, KeyVisualRole.ACCENT),
-    ACCENT_ALPHA("accent_alpha", "\uBC14\uAE65 Accent / \uAC00\uC6B4\uB370 Alpha", KeyVisualRole.ACCENT, KeyVisualRole.ALPHA),
-    ACCENT_MOD("accent_mod", "\uBC14\uAE65 Accent / \uAC00\uC6B4\uB370 Mod", KeyVisualRole.ACCENT, KeyVisualRole.MODIFIER),
-    FULL_ACCENT("full_accent", "\uC804\uCCB4 Accent", KeyVisualRole.ACCENT, KeyVisualRole.ACCENT);
+    FULL_ALPHA("full_alpha", R.string.number_row_color_full_alpha, KeyVisualRole.ALPHA, KeyVisualRole.ALPHA),
+    HALF_MOD_4567(
+            "half_mod_4567",
+            R.string.number_row_color_half_mod_4567,
+            KeyVisualRole.ALPHA,
+            KeyVisualRole.MODIFIER),
+    ALPHA_ACCENT(
+            "alpha_accent",
+            R.string.number_row_color_alpha_accent,
+            KeyVisualRole.ALPHA,
+            KeyVisualRole.ACCENT),
+    MOD_ALPHA(
+            "mod_alpha",
+            R.string.number_row_color_mod_alpha,
+            KeyVisualRole.MODIFIER,
+            KeyVisualRole.ALPHA),
+    FULL_MOD("full_mod", R.string.number_row_color_full_mod, KeyVisualRole.MODIFIER, KeyVisualRole.MODIFIER),
+    MOD_ACCENT(
+            "mod_accent",
+            R.string.number_row_color_mod_accent,
+            KeyVisualRole.MODIFIER,
+            KeyVisualRole.ACCENT),
+    ACCENT_ALPHA(
+            "accent_alpha",
+            R.string.number_row_color_accent_alpha,
+            KeyVisualRole.ACCENT,
+            KeyVisualRole.ALPHA),
+    ACCENT_MOD(
+            "accent_mod",
+            R.string.number_row_color_accent_mod,
+            KeyVisualRole.ACCENT,
+            KeyVisualRole.MODIFIER),
+    FULL_ACCENT("full_accent", R.string.number_row_color_full_accent, KeyVisualRole.ACCENT, KeyVisualRole.ACCENT);
 
     final String preferenceValue;
-    final String label;
+    final int labelResId;
     private final KeyVisualRole outerRole;
     private final KeyVisualRole innerRole;
 
     AdditionalNumberRowColorMode(
             String preferenceValue,
-            String label,
+            int labelResId,
             KeyVisualRole outerRole,
             KeyVisualRole innerRole) {
         this.preferenceValue = preferenceValue;
-        this.label = label;
+        this.labelResId = labelResId;
         this.outerRole = outerRole;
         this.innerRole = innerRole;
     }
@@ -51,6 +75,6 @@ enum AdditionalNumberRowColorMode {
 
     @Override
     public String toString() {
-        return label;
+        return preferenceValue;
     }
 }

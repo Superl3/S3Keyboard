@@ -133,15 +133,15 @@ public final class ThemeEditorActivity extends Activity {
         root.setPadding(padding, padding, padding, padding);
         root.setBackgroundColor(ui.background);
 
-        TextView title = label("테마 편집기");
+        TextView title = label(getString(R.string.theme_editor_title));
         title.setTextSize(22);
         title.setGravity(Gravity.CENTER_VERTICAL);
         root.addView(title, matchWrap());
 
         modeGroup = new RadioGroup(this);
         modeGroup.setOrientation(RadioGroup.HORIZONTAL);
-        modeGroup.addView(radio(MODE_HANGUL_ID, "딩굴"));
-        modeGroup.addView(radio(MODE_ENGLISH_ID, "쿼티"));
+        modeGroup.addView(radio(MODE_HANGUL_ID, getString(R.string.theme_mode_dingul)));
+        modeGroup.addView(radio(MODE_ENGLISH_ID, getString(R.string.theme_mode_qwerty)));
         modeGroup.setOnCheckedChangeListener((group, checkedId) -> {
             if (syncing) {
                 return;
@@ -178,72 +178,85 @@ public final class ThemeEditorActivity extends Activity {
 
         addThemeSaveControls(editorRoot);
         addThemePromptControls(editorRoot);
-        LinearLayout globalSection = addExpandableSection(editorRoot, "전체", true);
-        addColorControls(addExpandableSection(globalSection, "색상", true));
-        addShapeControls(addExpandableSection(globalSection, "형태", false));
-        addIconPackControls(addExpandableSection(globalSection, "Icon packs", true));
-        addTypographyControls(addExpandableSection(globalSection, "글꼴", false));
+        LinearLayout globalSection = addExpandableSection(
+                editorRoot,
+                getString(R.string.theme_editor_global_section),
+                true);
+        addColorControls(addExpandableSection(
+                globalSection,
+                getString(R.string.theme_editor_colors_section),
+                true));
+        addShapeControls(addExpandableSection(
+                globalSection,
+                getString(R.string.theme_editor_shape_section),
+                false));
+        addIconPackControls(addExpandableSection(
+                globalSection,
+                getString(R.string.theme_editor_icon_packs_section),
+                true));
+        addTypographyControls(addExpandableSection(
+                globalSection,
+                getString(R.string.theme_editor_typography_section),
+                false));
         addSelectedKeyInspector(editorRoot);
         return root;
     }
 
     private void addThemeSaveControls(LinearLayout root) {
         Button saveThemeButton = new Button(this);
-        saveThemeButton.setText("현재 테마 저장");
+        saveThemeButton.setText(R.string.theme_save_current);
         styleSystemButton(saveThemeButton);
         saveThemeButton.setOnClickListener(v -> {
             UserThemeStore.UserTheme saved = UserThemeStore.saveCurrent(this, settings);
             KeyboardPreferences.saveSelectedThemeId(this, saved.id);
-            Toast.makeText(this, "테마 저장됨: " + saved.name, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.theme_saved_format, saved.name), Toast.LENGTH_SHORT).show();
         });
         root.addView(saveThemeButton, buttonParams());
 
         Button exportJsonButton = new Button(this);
-        exportJsonButton.setText("테마 JSON 복사");
+        exportJsonButton.setText(R.string.theme_json_copy);
         styleSystemButton(exportJsonButton);
         exportJsonButton.setOnClickListener(v -> copyThemeJsonToClipboard());
         root.addView(exportJsonButton, buttonParams());
 
         Button importJsonButton = new Button(this);
-        importJsonButton.setText("테마 JSON 가져오기");
+        importJsonButton.setText(R.string.theme_json_import_title);
         styleSystemButton(importJsonButton);
         importJsonButton.setOnClickListener(v -> showThemeJsonImportDialog());
         root.addView(importJsonButton, buttonParams());
     }
 
     private void addThemePromptControls(LinearLayout root) {
-        LinearLayout section = addExpandableSection(root, "AI 테마 프롬프트", false);
-        TextView description = label(
-                "이미지를 첨부한 채팅에서 붙여 넣으면 New Dingul 테마 JSON을 만들기 위한 프롬프트입니다. "
-                        + "키보드 사진용과 일반 이미지 팔레트용을 나눠서 복사할 수 있습니다.");
+        LinearLayout section = addExpandableSection(root, getString(R.string.theme_ai_prompt_section), false);
+        TextView description = label(getString(R.string.theme_ai_prompt_description));
         section.addView(description, matchWrapWithTop(6));
 
         Button keyboardPromptButton = actionButton(
-                "키보드 이미지 프롬프트 복사",
+                getString(R.string.theme_keyboard_image_prompt_copy),
                 v -> copyPromptToClipboard(
-                        "New Dingul keyboard image prompt",
+                        getString(R.string.theme_keyboard_image_prompt_clip_label),
                         ThemePromptTemplates.keyboardImagePrompt(currentThemeJson()),
-                        "키보드 이미지 프롬프트를 복사했습니다"));
+                        getString(R.string.theme_keyboard_image_prompt_copied)));
         section.addView(keyboardPromptButton, buttonParams());
 
         Button palettePromptButton = actionButton(
-                "일반 이미지 팔레트 프롬프트 복사",
+                getString(R.string.theme_palette_image_prompt_copy),
                 v -> copyPromptToClipboard(
-                        "New Dingul palette image prompt",
+                        getString(R.string.theme_palette_image_prompt_clip_label),
                         ThemePromptTemplates.paletteImagePrompt(currentThemeJson()),
-                        "일반 이미지 팔레트 프롬프트를 복사했습니다"));
+                        getString(R.string.theme_palette_image_prompt_copied)));
         section.addView(palettePromptButton, buttonParams());
     }
 
     private void addSelectedKeyInspector(LinearLayout root) {
-        LinearLayout section = addExpandableSection(root, "키별 색상 재정의", true);
-        selectedKeyLabel = label("선택된 키 없음");
+        LinearLayout section = addExpandableSection(root, getString(R.string.theme_per_key_override_section), true);
+        selectedKeyLabel = label(getString(R.string.theme_no_key_selected));
         section.addView(selectedKeyLabel, matchWrapWithTop(8));
 
         editScopeGroup = new RadioGroup(this);
         editScopeGroup.setOrientation(RadioGroup.HORIZONTAL);
-        editScopeGroup.addView(radio(EDIT_GLOBAL_ID, "전체 스타일"));
-        editScopeGroup.addView(radio(EDIT_KEY_TEXT_ID, "선택 키"));
+        editScopeGroup.addView(radio(EDIT_GLOBAL_ID, getString(R.string.theme_global_style)));
+        editScopeGroup.addView(radio(EDIT_KEY_TEXT_ID, getString(R.string.theme_selected_key)));
         editScopeGroup.check(EDIT_GLOBAL_ID);
         editScopeGroup.setOnCheckedChangeListener((group, checkedId) -> syncSelectedKeyInspector());
         section.addView(editScopeGroup, matchWrapWithTop(8));
@@ -257,10 +270,13 @@ public final class ThemeEditorActivity extends Activity {
             updateSettings(settings.withKeyColorOverrides(overrides));
         };
         selectedKeyColorSpinner = colorSpinner(selectedKeyTextListener);
-        section.addView(label("선택 키 글자/아이콘 색상"), matchWrapWithTop(8));
+        section.addView(label(getString(R.string.theme_selected_key_text_color)), matchWrapWithTop(8));
         selectedKeyColorSwatch = addInlineSwatch(section, settings.accentColor);
         selectedKeyColorSwatch.setOnClickListener(v ->
-                showColorEditDialog("선택 키 글자/아이콘 색상", colorTag(selectedKeyColorSwatch), selectedKeyTextListener));
+                showColorEditDialog(
+                        getString(R.string.theme_selected_key_text_color),
+                        colorTag(selectedKeyColorSwatch),
+                        selectedKeyTextListener));
         section.addView(selectedKeyColorSpinner, matchWrap());
 
         ColorChangeListener selectedKeyBackgroundListener = color -> {
@@ -272,14 +288,17 @@ public final class ThemeEditorActivity extends Activity {
             updateSettings(settings.withKeyColorOverrides(overrides));
         };
         selectedKeyBackgroundColorSpinner = colorSpinner(selectedKeyBackgroundListener);
-        section.addView(label("선택 키 배경색"), matchWrapWithTop(8));
+        section.addView(label(getString(R.string.theme_selected_key_background_color)), matchWrapWithTop(8));
         selectedKeyBackgroundColorSwatch = addInlineSwatch(section, settings.keyIdleColor);
         selectedKeyBackgroundColorSwatch.setOnClickListener(v ->
-                showColorEditDialog("선택 키 배경색", colorTag(selectedKeyBackgroundColorSwatch), selectedKeyBackgroundListener));
+                showColorEditDialog(
+                        getString(R.string.theme_selected_key_background_color),
+                        colorTag(selectedKeyBackgroundColorSwatch),
+                        selectedKeyBackgroundListener));
         section.addView(selectedKeyBackgroundColorSpinner, matchWrap());
 
         addSelectedKeyOverrideButton = new Button(this);
-        addSelectedKeyOverrideButton.setText("+ 선택 키 재정의 추가");
+        addSelectedKeyOverrideButton.setText(R.string.theme_add_selected_key_override);
         styleSystemButton(addSelectedKeyOverrideButton);
         addSelectedKeyOverrideButton.setOnClickListener(v -> {
             if (selectedOverrideKey.isEmpty()) {
@@ -297,7 +316,7 @@ public final class ThemeEditorActivity extends Activity {
         section.addView(addSelectedKeyOverrideButton, buttonParams());
 
         resetSelectedKeyButton = new Button(this);
-        resetSelectedKeyButton.setText("선택 키 재정의 초기화");
+        resetSelectedKeyButton.setText(R.string.theme_reset_selected_key_override);
         styleSystemButton(resetSelectedKeyButton);
         resetSelectedKeyButton.setOnClickListener(v -> {
             if (selectedOverrideKey.isEmpty()) {
@@ -321,8 +340,8 @@ public final class ThemeEditorActivity extends Activity {
         keyIdleColorSpinner = colorSpinner(keyIdleListener);
         keyIdleColorSwatch = addColorControl(
                 root,
-                "전체 - 기본 키",
-                "글자, 모음, 기호, 스페이스처럼 일반 입력 키의 기본 배경색입니다.",
+                getString(R.string.theme_color_alpha_title),
+                getString(R.string.theme_color_alpha_description),
                 keyIdleColorSpinner,
                 keyIdleListener);
         root.addView(keyIdleColorSpinner, matchWrap());
@@ -341,13 +360,13 @@ public final class ThemeEditorActivity extends Activity {
         functionKeyColorSpinner = colorSpinner(functionKeyListener);
         functionKeyColorSwatch = addColorControl(
                 root,
-                "전체 - 기능 키",
-                "옵션, 예약어, 한/영처럼 입력 보조 동작을 실행하는 키의 배경색입니다.",
+                getString(R.string.theme_color_modifier_title),
+                getString(R.string.theme_color_modifier_description),
                 functionKeyColorSpinner,
                 functionKeyListener);
         root.addView(functionKeyColorSpinner, matchWrap());
         root.addView(actionButton(
-                "기능 키 색상 = 기본 키를 살짝 어둡게",
+                getString(R.string.theme_color_modifier_from_alpha),
                 v -> functionKeyListener.onColorChanged(dimColor(settings.keyIdleColor, 0.90f))),
                 buttonParams());
         ColorChangeListener accentKeyListener = color -> updateSettings(settings.withExtendedThemeColors(
@@ -363,13 +382,13 @@ public final class ThemeEditorActivity extends Activity {
         accentKeyColorSpinner = colorSpinner(accentKeyListener);
         accentKeyColorSwatch = addColorControl(
                 root,
-                "전체 - 강조 키",
-                "딩굴 특수열과 테마에서 강조되는 키 그룹의 배경색입니다.",
+                getString(R.string.theme_color_accent_title),
+                getString(R.string.theme_color_accent_description),
                 accentKeyColorSpinner,
                 accentKeyListener);
         root.addView(accentKeyColorSpinner, matchWrap());
         root.addView(actionButton(
-                "강조 키 = 기능 키 전경/배경 반전",
+                getString(R.string.theme_color_accent_from_modifier_inverse),
                 v -> updateSettings(settings.withExtendedThemeColors(
                         settings.keyIdleColor,
                         settings.keyPressedColor,
@@ -389,7 +408,12 @@ public final class ThemeEditorActivity extends Activity {
                 settings.accentColor,
                 settings.secondaryColor));
         keyPressedColorSpinner = colorSpinner(keyPressedListener);
-        keyPressedColorSwatch = addColorControl(root, "눌림", "키를 누르고 있는 동안 잠시 표시되는 키 배경색입니다.", keyPressedColorSpinner, keyPressedListener);
+        keyPressedColorSwatch = addColorControl(
+                root,
+                getString(R.string.theme_color_pressed_title),
+                getString(R.string.theme_color_pressed_description),
+                keyPressedColorSpinner,
+                keyPressedListener);
         root.addView(keyPressedColorSpinner, matchWrap());
 
         ColorChangeListener keyboardBackgroundListener = color -> updateSettings(settings.withThemeColors(
@@ -399,10 +423,15 @@ public final class ThemeEditorActivity extends Activity {
                 settings.accentColor,
                 settings.secondaryColor));
         keyboardBackgroundColorSpinner = colorSpinner(keyboardBackgroundListener);
-        keyboardBackgroundColorSwatch = addColorControl(root, "키보드 배경", "키 사이와 키 뒤쪽 영역의 색상입니다.", keyboardBackgroundColorSpinner, keyboardBackgroundListener);
+        keyboardBackgroundColorSwatch = addColorControl(
+                root,
+                getString(R.string.theme_color_keyboard_background_title),
+                getString(R.string.theme_color_keyboard_background_description),
+                keyboardBackgroundColorSpinner,
+                keyboardBackgroundListener);
         root.addView(keyboardBackgroundColorSpinner, matchWrap());
 
-        panelGradientCheckBox = checkBox("\uD0A4\uBCF4\uB4DC \uB4A4\uD310 \uADF8\uB77C\uB370\uC774\uC158", checked ->
+        panelGradientCheckBox = checkBox(getString(R.string.theme_panel_gradient_enabled), checked ->
                 updateSettings(settings.withVisualEffects(settings.visualEffects.withPanelGradient(
                         checked,
                         settings.visualEffects.panelGradientStartColor,
@@ -417,8 +446,8 @@ public final class ThemeEditorActivity extends Activity {
         panelGradientStartColorSpinner = colorSpinner(panelGradientStartListener);
         panelGradientStartColorSwatch = addColorControl(
                 root,
-                "\uB4A4\uD310 \uADF8\uB77C\uB370\uC774\uC158 \uC2DC\uC791",
-                "\uD0A4 \uB4A4\uCABD \uD328\uB110\uC758 \uC704\uCABD\uC5D0\uC11C \uC2DC\uC791\uD558\uB294 \uBC30\uACBD \uADF8\uB77C\uB370\uC774\uC158 \uC0C9\uC0C1\uC785\uB2C8\uB2E4.",
+                getString(R.string.theme_panel_gradient_start_title),
+                getString(R.string.theme_panel_gradient_start_description),
                 panelGradientStartColorSpinner,
                 panelGradientStartListener);
         root.addView(panelGradientStartColorSpinner, matchWrap());
@@ -431,8 +460,8 @@ public final class ThemeEditorActivity extends Activity {
         panelGradientEndColorSpinner = colorSpinner(panelGradientEndListener);
         panelGradientEndColorSwatch = addColorControl(
                 root,
-                "\uB4A4\uD310 \uADF8\uB77C\uB370\uC774\uC158 \uB05D",
-                "\uD0A4 \uB4A4\uCABD \uD328\uB110\uC758 \uC544\uB798\uCABD\uC73C\uB85C \uC774\uC5B4\uC9C0\uB294 \uBC30\uACBD \uADF8\uB77C\uB370\uC774\uC158 \uC0C9\uC0C1\uC785\uB2C8\uB2E4.",
+                getString(R.string.theme_panel_gradient_end_title),
+                getString(R.string.theme_panel_gradient_end_description),
                 panelGradientEndColorSpinner,
                 panelGradientEndListener);
         root.addView(panelGradientEndColorSpinner, matchWrap());
@@ -449,16 +478,26 @@ public final class ThemeEditorActivity extends Activity {
                 settings.customDepthColorEnabled,
                 settings.depthColor));
         borderColorSpinner = colorSpinner(borderListener);
-        borderColorSwatch = addColorControl(root, "테두리", "각 키 외곽선 색상입니다. 입체 효과 색상을 따로 지정하지 않으면 이 색상을 기준으로 씁니다.", borderColorSpinner, borderListener);
+        borderColorSwatch = addColorControl(
+                root,
+                getString(R.string.theme_color_border_title),
+                getString(R.string.theme_color_border_description),
+                borderColorSpinner,
+                borderListener);
         root.addView(borderColorSpinner, matchWrap());
 
-        customDepthColorCheckBox = checkBox("입체 효과 색상 직접 지정", checked ->
+        customDepthColorCheckBox = checkBox(getString(R.string.theme_custom_depth_color_enabled), checked ->
                 updateSettings(settings.withDepthColor(checked, settings.depthColor)));
         root.addView(customDepthColorCheckBox, matchWrapWithTop(12));
 
         ColorChangeListener depthListener = color -> updateSettings(settings.withDepthColor(true, color));
         depthColorSpinner = colorSpinner(depthListener);
-        depthColorSwatch = addColorControl(root, "입체 효과 색상", "키 아래쪽 입체 효과에 쓰는 색상입니다. 입체 효과가 꺼져 있으면 적용되지 않습니다.", depthColorSpinner, depthListener);
+        depthColorSwatch = addColorControl(
+                root,
+                getString(R.string.theme_color_depth_title),
+                getString(R.string.theme_color_depth_description),
+                depthColorSpinner,
+                depthListener);
         root.addView(depthColorSpinner, matchWrap());
 
         ColorChangeListener accentListener = color -> updateSettings(settings.withThemeColors(
@@ -468,7 +507,12 @@ public final class ThemeEditorActivity extends Activity {
                 color,
                 settings.secondaryColor));
         accentColorSpinner = colorSpinner(accentListener);
-        accentColorSwatch = addColorControl(root, "주 글자", "키 중앙 글자, 아이콘, 선택 표시, 입력 미리보기의 기본 색상입니다.", accentColorSpinner, accentListener);
+        accentColorSwatch = addColorControl(
+                root,
+                getString(R.string.theme_color_primary_text_title),
+                getString(R.string.theme_color_primary_text_description),
+                accentColorSpinner,
+                accentListener);
         root.addView(accentColorSpinner, matchWrap());
 
         ColorChangeListener secondaryListener = color -> updateSettings(settings.withThemeColors(
@@ -478,7 +522,12 @@ public final class ThemeEditorActivity extends Activity {
                 settings.accentColor,
                 color));
         secondaryColorSpinner = colorSpinner(secondaryListener);
-        secondaryColorSwatch = addColorControl(root, "보조 글자", "슬라이드 힌트, 보조 라벨, 비활성 아이콘 디테일의 색상입니다.", secondaryColorSpinner, secondaryListener);
+        secondaryColorSwatch = addColorControl(
+                root,
+                getString(R.string.theme_color_secondary_text_title),
+                getString(R.string.theme_color_secondary_text_description),
+                secondaryColorSpinner,
+                secondaryListener);
         root.addView(secondaryColorSpinner, matchWrap());
     }
 
@@ -501,7 +550,7 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(keyGapValue, matchWrapWithTop(8));
         root.addView(keyGapSeekBar, matchWrap());
 
-        keyDepthCheckBox = checkBox("입체 효과 사용", checked ->
+        keyDepthCheckBox = checkBox(getString(R.string.theme_key_depth_enabled), checked ->
                 updateSettings(settings.withKeyDepth(checked, settings.keyDepthDp)));
         root.addView(keyDepthCheckBox, matchWrapWithTop(12));
 
@@ -511,7 +560,7 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(keyDepthValue, matchWrapWithTop(8));
         root.addView(keyDepthSeekBar, matchWrap());
 
-        keyFaceGradientCheckBox = checkBox("\uD0A4 \uD45C\uBA74 \uADF8\uB77C\uB370\uC774\uC158", checked ->
+        keyFaceGradientCheckBox = checkBox(getString(R.string.theme_key_face_gradient), checked ->
                 updateSettings(settings.withVisualEffects(
                         settings.visualEffects.withKeyFaceGradient(
                                 checked,
@@ -559,14 +608,14 @@ public final class ThemeEditorActivity extends Activity {
                 keyFaceGradientEndListener);
         root.addView(keyFaceGradientEndColorSpinner, matchWrap());
 
-        root.addView(label("Key face gradient curve"), matchWrapWithTop(8));
+        root.addView(label(getString(R.string.theme_key_face_gradient_curve)), matchWrapWithTop(8));
         keyFaceGradientCurveSpinner = createKeyFaceGradientCurveSpinner();
         root.addView(keyFaceGradientCurveSpinner, matchWrap());
     }
 
     private void addTypographyControls(LinearLayout root) {
         fontFamilySpinner = fontSpinner();
-        root.addView(label("폰트"), matchWrapWithTop(8));
+        root.addView(label(getString(R.string.theme_font_label)), matchWrapWithTop(8));
         root.addView(fontFamilySpinner, matchWrap());
 
         primaryTextSizeValue = label("");
@@ -593,7 +642,7 @@ public final class ThemeEditorActivity extends Activity {
         root.addView(secondaryTextSizeValue, matchWrapWithTop(8));
         root.addView(secondaryTextSizeSeekBar, matchWrap());
 
-        primaryTextBoldCheckBox = checkBox("주 글자 굵게", checked -> updateSettings(settings.withTypography(
+        primaryTextBoldCheckBox = checkBox(getString(R.string.theme_primary_text_bold), checked -> updateSettings(settings.withTypography(
                 settings.fontFamily,
                 settings.primaryTextSizePercent,
                 settings.secondaryTextSizePercent,
@@ -601,7 +650,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.primaryTextItalic,
                 settings.secondaryTextBold,
                 settings.secondaryTextItalic)));
-        primaryTextItalicCheckBox = checkBox("주 글자 기울임", checked -> updateSettings(settings.withTypography(
+        primaryTextItalicCheckBox = checkBox(getString(R.string.theme_primary_text_italic), checked -> updateSettings(settings.withTypography(
                 settings.fontFamily,
                 settings.primaryTextSizePercent,
                 settings.secondaryTextSizePercent,
@@ -609,7 +658,7 @@ public final class ThemeEditorActivity extends Activity {
                 checked,
                 settings.secondaryTextBold,
                 settings.secondaryTextItalic)));
-        secondaryTextBoldCheckBox = checkBox("보조 힌트 굵게", checked -> updateSettings(settings.withTypography(
+        secondaryTextBoldCheckBox = checkBox(getString(R.string.theme_secondary_text_bold), checked -> updateSettings(settings.withTypography(
                 settings.fontFamily,
                 settings.primaryTextSizePercent,
                 settings.secondaryTextSizePercent,
@@ -617,7 +666,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.primaryTextItalic,
                 checked,
                 settings.secondaryTextItalic)));
-        secondaryTextItalicCheckBox = checkBox("보조 힌트 기울임", checked -> updateSettings(settings.withTypography(
+        secondaryTextItalicCheckBox = checkBox(getString(R.string.theme_secondary_text_italic), checked -> updateSettings(settings.withTypography(
                 settings.fontFamily,
                 settings.primaryTextSizePercent,
                 settings.secondaryTextSizePercent,
@@ -633,11 +682,11 @@ public final class ThemeEditorActivity extends Activity {
 
     private void addIconPackControls(LinearLayout root) {
         modifierIconPackSpinner = modifierIconPackSpinner();
-        root.addView(label("\uBAA8\uB514\uD30C\uC774\uC5B4 \uC544\uC774\uCF58"), matchWrapWithTop(8));
+        root.addView(label(getString(R.string.theme_modifier_icons)), matchWrapWithTop(8));
         root.addView(modifierIconPackSpinner, matchWrap());
 
         keyDisplayPackSpinner = keyDisplayPackSpinner();
-        root.addView(label("Key display override pack"), matchWrapWithTop(8));
+        root.addView(label(getString(R.string.theme_key_display_override_pack)), matchWrapWithTop(8));
         root.addView(keyDisplayPackSpinner, matchWrap());
     }
 
@@ -727,22 +776,30 @@ public final class ThemeEditorActivity extends Activity {
         setSwatch(accentColorSwatch, settings.accentColor);
         setSwatch(secondaryColorSwatch, settings.secondaryColor);
 
-        setText(roundnessValue, "둥글기: " + settings.keyRoundnessDp + "dp");
-        setText(keyBorderWidthValue, "테두리 굵기: " + settings.keyBorderWidthDp + "dp");
-        setText(keyGapValue, "키 사이 시각 간격: " + settings.keyGapDp + "dp");
-        setText(keyDepthValue, "입체 높이: " + settings.keyDepthDp + "dp"
-                + (settings.keyDepthEnabled ? "" : " (flat)"));
+        setText(roundnessValue, getString(R.string.theme_roundness_format, settings.keyRoundnessDp));
+        setText(keyBorderWidthValue, getString(R.string.theme_border_width_format, settings.keyBorderWidthDp));
+        setText(keyGapValue, getString(R.string.theme_key_gap_format, settings.keyGapDp));
+        setText(keyDepthValue, getString(
+                R.string.theme_depth_format,
+                settings.keyDepthDp,
+                settings.keyDepthEnabled ? "" : " (flat)"));
         setText(
                 keyFaceGradientStrengthValue,
-                "\uD45C\uBA74 \uADF8\uB77C\uB370\uC774\uC158 \uAC15\uB3C4: "
-                        + settings.visualEffects.keyFaceGradientStrengthPercent
-                        + "%");
-        setText(primaryTextSizeValue, "주 글자 크기: " + settings.primaryTextSizePercent + "%");
-        setText(secondaryTextSizeValue, "보조 힌트 크기: " + settings.secondaryTextSizePercent + "%");
-        previewMeta.setText((settings.keyboardMode == KeyboardMode.ENGLISH ? "쿼티" : "딩굴")
-                + " 미리보기 / "
-                + settings.measuredHeightDp()
-                + "dp / 키를 눌러 색상 재정의");
+                getString(
+                        R.string.theme_surface_gradient_strength_format,
+                        settings.visualEffects.keyFaceGradientStrengthPercent));
+        setText(primaryTextSizeValue, getString(
+                R.string.theme_primary_text_size_format,
+                settings.primaryTextSizePercent));
+        setText(secondaryTextSizeValue, getString(
+                R.string.theme_secondary_text_size_format,
+                settings.secondaryTextSizePercent));
+        previewMeta.setText(getString(
+                R.string.theme_preview_meta_format,
+                settings.keyboardMode == KeyboardMode.ENGLISH
+                        ? getString(R.string.theme_preview_mode_qwerty)
+                        : getString(R.string.theme_preview_mode_dingul),
+                settings.measuredHeightDp()));
         updatePreviewHeight();
         preview.setSettings(settings);
         syncSelectedKeyInspector();
@@ -756,10 +813,12 @@ public final class ThemeEditorActivity extends Activity {
                 ? KeyboardKeyVisualClassifier.roleFor(settings, selectedKey)
                 : KeyVisualRole.ALPHA;
         selectedKeyLabel.setText(keySelected
-                ? "선택: " + displayKeyName(selectedKey)
-                        + " / 그룹: " + visualRoleLabel(role)
-                        + " / 키: " + selectedOverrideKey
-                : "선택된 키 없음");
+                ? getString(
+                        R.string.theme_selected_key_summary_format,
+                        displayKeyName(selectedKey),
+                        visualRoleLabel(role),
+                        selectedOverrideKey)
+                : getString(R.string.theme_no_key_selected));
         selectedKeyColorSpinner.setEnabled(keyEdit);
         selectedKeyBackgroundColorSpinner.setEnabled(keyEdit);
         addSelectedKeyOverrideButton.setEnabled(keyEdit);
@@ -871,7 +930,11 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private void setExpandableTitle(TextView title, String text, boolean expanded) {
-        title.setText((expanded ? "- " : "+ ") + text);
+        title.setText(getString(
+                expanded
+                        ? R.string.expandable_section_title_expanded
+                        : R.string.expandable_section_title_collapsed,
+                text));
     }
 
     private View addColorControl(
@@ -902,7 +965,7 @@ public final class ThemeEditorActivity extends Activity {
         info.setOnClickListener(v -> new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(description)
-                .setPositiveButton("확인", null)
+                .setPositiveButton(R.string.action_ok, null)
                 .show());
         LinearLayout.LayoutParams infoParams = new LinearLayout.LayoutParams(dp(30), dp(30));
         infoParams.leftMargin = dp(8);
@@ -977,7 +1040,7 @@ public final class ThemeEditorActivity extends Activity {
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(12), dp(8), dp(12), dp(4));
 
-        TextView description = label("프리셋을 고르거나 hex 색상 값을 직접 입력하세요.");
+        TextView description = label(getString(R.string.theme_color_edit_description));
         layout.addView(description, matchWrap());
 
         EditText editor = new EditText(this);
@@ -996,8 +1059,8 @@ public final class ThemeEditorActivity extends Activity {
         new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setView(layout)
-                .setNegativeButton("취소", null)
-                .setPositiveButton("적용", (dialog, which) -> {
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.action_apply, (dialog, which) -> {
                     Integer parsed = parseHexColor(editor.getText().toString());
                     if (parsed != null) {
                         listener.onColorChanged(parsed);
@@ -1016,7 +1079,7 @@ public final class ThemeEditorActivity extends Activity {
             }
             ColorOption option = ColorOption.EDITOR_OPTIONS[i];
             Button button = new Button(this);
-            button.setText(option.label);
+            button.setText(SettingsDisplayLabels.label(this, option));
             button.setAllCaps(false);
             button.setTextSize(11);
             button.setTextColor(contrastColor(option.color));
@@ -1085,9 +1148,9 @@ public final class ThemeEditorActivity extends Activity {
         String json = currentThemeJson();
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         if (clipboard != null) {
-            clipboard.setPrimaryClip(ClipData.newPlainText("New Dingul theme JSON", json));
+            clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.theme_json_clip_label), json));
         }
-        Toast.makeText(this, "테마 JSON을 복사했습니다", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.theme_json_copied, Toast.LENGTH_SHORT).show();
     }
 
     private String currentThemeJson() {
@@ -1116,10 +1179,10 @@ public final class ThemeEditorActivity extends Activity {
             editor.setSelection(editor.length());
         }
         new AlertDialog.Builder(this)
-                .setTitle("테마 JSON 가져오기")
+                .setTitle(R.string.theme_json_import_title)
                 .setView(editor)
-                .setNegativeButton("취소", null)
-                .setPositiveButton("가져오기", (dialog, which) -> importThemeJson(editor.getText().toString()))
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.action_import, (dialog, which) -> importThemeJson(editor.getText().toString()))
                 .show();
     }
 
@@ -1141,12 +1204,12 @@ public final class ThemeEditorActivity extends Activity {
             KeyboardPreferences.saveSelectedThemeId(this, "");
             KeyboardPreferences.saveSettings(this, settings);
             syncControls();
-            Toast.makeText(this, "테마 JSON을 가져왔습니다", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.theme_json_imported, Toast.LENGTH_SHORT).show();
         } catch (IllegalArgumentException exception) {
             new AlertDialog.Builder(this)
-                    .setTitle("테마 JSON 가져오기 실패")
+                    .setTitle(R.string.theme_json_import_failed)
                     .setMessage(exception.getMessage())
-                    .setPositiveButton("확인", null)
+                    .setPositiveButton(R.string.action_ok, null)
                     .show();
         }
     }
@@ -1154,9 +1217,9 @@ public final class ThemeEditorActivity extends Activity {
     private Spinner colorSpinner(final ColorChangeListener listener) {
         Spinner spinner = new Spinner(this);
         spinner.setTag(Boolean.FALSE);
-        ArrayAdapter<ColorOption> adapter = new SettingsArrayAdapter<>(
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
                 this,
-                ColorOption.EDITOR_OPTIONS);
+                SettingsDisplayLabels.labels(this, ColorOption.EDITOR_OPTIONS));
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -1176,9 +1239,9 @@ public final class ThemeEditorActivity extends Activity {
     private Spinner fontSpinner() {
         Spinner spinner = new Spinner(this);
         spinner.setTag(Boolean.FALSE);
-        ArrayAdapter<FontOption> adapter = new SettingsArrayAdapter<>(
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
                 this,
-                FontOption.EDITOR_OPTIONS);
+                SettingsDisplayLabels.labels(this, FontOption.EDITOR_OPTIONS));
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override

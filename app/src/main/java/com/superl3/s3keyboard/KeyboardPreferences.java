@@ -87,6 +87,13 @@ final class KeyboardPreferences {
     static final String REMOTE_MODE_ENABLED = "remote_mode_enabled";
     static final String REMOTE_KEY_PRESET = "remote_key_preset";
     static final String REMOTE_IME_SHORTCUT = "remote_ime_shortcut";
+    static final String REMOTE_AUTO_MODE_ENABLED = "remote_auto_mode_enabled";
+    static final String REMOTE_AUTO_MODE_PACKAGES = "remote_auto_mode_packages";
+    static final String APP_PROFILE_ASCII_PACKAGES = "app_profile_ascii_packages";
+    static final String APP_PROFILE_NUMBER_ROW_PACKAGES = "app_profile_number_row_packages";
+    static final String APP_PROFILE_NO_COMPOSING_PACKAGES = "app_profile_no_composing_packages";
+    static final String APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES =
+            "app_profile_no_text_conveniences_packages";
     static final String SELECTED_THEME_ID = "selected_theme_id";
     static final String RESERVED_TAP_TEXT = "reserved_tap_text";
     static final String RESERVED_LEFT_TEXT = "reserved_left_text";
@@ -98,6 +105,14 @@ final class KeyboardPreferences {
     static final String MOTION_EFFECT_LEVEL = "motion_effect_level";
     static final String CLIPBOARD_HISTORY_ENABLED = "clipboard_history_enabled";
     static final String FLOATING_MODE_ENABLED = "floating_mode_enabled";
+    static final String ERGONOMIC_MAIN_KEY_CENTERING_ENABLED = "ergonomic_main_key_centering_enabled";
+    static final String ERGONOMIC_COMPACT_FUNCTION_RAIL_ENABLED = "ergonomic_compact_function_rail_enabled";
+    static final String ERGONOMIC_HITBOX_ENABLED = "ergonomic_hitbox_enabled";
+    static final String ERGONOMIC_POSITION_ADJUST_ENABLED = "ergonomic_position_adjust_enabled";
+    static final String ERGONOMIC_LEFT_ASSIST_RAIL_ENABLED = "ergonomic_left_assist_rail_enabled";
+    static final String ERGONOMIC_UNIFORM_GRID_GAP_ENABLED = "ergonomic_uniform_grid_gap_enabled";
+    static final String ERGONOMIC_VISUAL_CONSISTENCY_LEVEL = "ergonomic_visual_consistency_level";
+    static final String DEBUG_KEY_BOUNDS_OVERLAY_ENABLED = "debug_key_bounds_overlay_enabled";
 
     private static final String PREF_NAME = "keyboard_preferences";
     private static final String DEFAULT_RESERVED_TAP_TEXT = "ㅋㅋㅋ";
@@ -116,6 +131,7 @@ final class KeyboardPreferences {
     static final int MIN_HAPTIC_TICK_GAP_MS = 4;
     static final int MAX_HAPTIC_TICK_GAP_MS = 60;
     static final MotionEffectLevel DEFAULT_MOTION_EFFECT_LEVEL = MotionEffectLevel.NORMAL;
+    static final String DEFAULT_REMOTE_AUTO_MODE_PACKAGES = RemoteAppCatalog.defaultAutoPackageList();
 
     private KeyboardPreferences() {
     }
@@ -418,6 +434,162 @@ final class KeyboardPreferences {
                         REMOTE_IME_SHORTCUT,
                         (remoteImeShortcut == null ? KeyboardSettings.DEFAULT_REMOTE_IME_SHORTCUT : remoteImeShortcut)
                                 .preferenceValue)
+                .apply();
+    }
+
+    static boolean loadRemoteAutoModeEnabled(Context context) {
+        return prefs(context).getBoolean(REMOTE_AUTO_MODE_ENABLED, true);
+    }
+
+    static void saveRemoteAutoModeEnabled(Context context, boolean enabled) {
+        prefs(context).edit()
+                .putBoolean(REMOTE_AUTO_MODE_ENABLED, enabled)
+                .apply();
+    }
+
+    static String loadRemoteAutoModePackages(Context context) {
+        return prefs(context).getString(REMOTE_AUTO_MODE_PACKAGES, DEFAULT_REMOTE_AUTO_MODE_PACKAGES);
+    }
+
+    static void saveRemoteAutoModePackages(Context context, String packages) {
+        prefs(context).edit()
+                .putString(REMOTE_AUTO_MODE_PACKAGES, packages == null ? "" : packages)
+                .apply();
+    }
+
+    static boolean shouldAutoEnableRemoteMode(Context context, String packageName) {
+        return loadRemoteAutoModeEnabled(context)
+                && packageListContains(loadRemoteAutoModePackages(context), packageName);
+    }
+
+    static AppInputProfileOverrides loadAppInputProfileOverrides(Context context) {
+        SharedPreferences preferences = prefs(context);
+        return new AppInputProfileOverrides(
+                preferences.getString(APP_PROFILE_ASCII_PACKAGES, ""),
+                preferences.getString(APP_PROFILE_NUMBER_ROW_PACKAGES, ""),
+                preferences.getString(APP_PROFILE_NO_COMPOSING_PACKAGES, ""),
+                preferences.getString(APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES, ""));
+    }
+
+    static String loadAppProfileAsciiPackages(Context context) {
+        return prefs(context).getString(APP_PROFILE_ASCII_PACKAGES, "");
+    }
+
+    static void saveAppProfileAsciiPackages(Context context, String packages) {
+        prefs(context).edit()
+                .putString(APP_PROFILE_ASCII_PACKAGES, packages == null ? "" : packages)
+                .apply();
+    }
+
+    static String loadAppProfileNumberRowPackages(Context context) {
+        return prefs(context).getString(APP_PROFILE_NUMBER_ROW_PACKAGES, "");
+    }
+
+    static void saveAppProfileNumberRowPackages(Context context, String packages) {
+        prefs(context).edit()
+                .putString(APP_PROFILE_NUMBER_ROW_PACKAGES, packages == null ? "" : packages)
+                .apply();
+    }
+
+    static String loadAppProfileNoComposingPackages(Context context) {
+        return prefs(context).getString(APP_PROFILE_NO_COMPOSING_PACKAGES, "");
+    }
+
+    static void saveAppProfileNoComposingPackages(Context context, String packages) {
+        prefs(context).edit()
+                .putString(APP_PROFILE_NO_COMPOSING_PACKAGES, packages == null ? "" : packages)
+                .apply();
+    }
+
+    static String loadAppProfileNoTextConveniencesPackages(Context context) {
+        return prefs(context).getString(APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES, "");
+    }
+
+    static void saveAppProfileNoTextConveniencesPackages(Context context, String packages) {
+        prefs(context).edit()
+                .putString(APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES, packages == null ? "" : packages)
+                .apply();
+    }
+
+    static boolean packageListContains(String packageList, String packageName) {
+        if (packageList == null || packageName == null) {
+            return false;
+        }
+        String normalizedPackage = packageName.trim();
+        if (normalizedPackage.isEmpty()) {
+            return false;
+        }
+        String[] tokens = packageList.split("[,\\s]+");
+        for (String token : tokens) {
+            if (normalizedPackage.equals(token.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static KeyboardErgonomicsOptions loadErgonomicsOptions(Context context) {
+        SharedPreferences prefs = prefs(context);
+        KeyboardErgonomicsOptions defaults = KeyboardErgonomicsOptions.DEFAULT;
+        boolean mainKeyCenteringEnabled = prefs.getBoolean(
+                ERGONOMIC_MAIN_KEY_CENTERING_ENABLED,
+                defaults.mainKeyCenteringEnabled);
+        return new KeyboardErgonomicsOptions(
+                mainKeyCenteringEnabled,
+                prefs.getBoolean(
+                        ERGONOMIC_COMPACT_FUNCTION_RAIL_ENABLED,
+                        defaults.compactFunctionRailEnabled),
+                prefs.getBoolean(
+                        ERGONOMIC_HITBOX_ENABLED,
+                        defaults.ergonomicHitboxEnabled),
+                prefs.getBoolean(
+                        ERGONOMIC_POSITION_ADJUST_ENABLED,
+                        defaults.ergonomicPositionAdjustEnabled),
+                prefs.getBoolean(
+                        ERGONOMIC_LEFT_ASSIST_RAIL_ENABLED,
+                        defaults.leftAssistRailEnabled),
+                prefs.getBoolean(
+                        ERGONOMIC_UNIFORM_GRID_GAP_ENABLED,
+                        mainKeyCenteringEnabled),
+                VisualConsistencyLevel.fromPreference(prefs.getString(
+                        ERGONOMIC_VISUAL_CONSISTENCY_LEVEL,
+                        defaults.visualConsistencyLevel.preferenceValue)));
+    }
+
+    static void saveErgonomicsOptions(Context context, KeyboardErgonomicsOptions options) {
+        KeyboardErgonomicsOptions safeOptions = options == null
+                ? KeyboardErgonomicsOptions.DEFAULT
+                : options;
+        prefs(context).edit()
+                .putBoolean(
+                        ERGONOMIC_MAIN_KEY_CENTERING_ENABLED,
+                        safeOptions.mainKeyCenteringEnabled)
+                .putBoolean(
+                        ERGONOMIC_COMPACT_FUNCTION_RAIL_ENABLED,
+                        safeOptions.compactFunctionRailEnabled)
+                .putBoolean(ERGONOMIC_HITBOX_ENABLED, safeOptions.ergonomicHitboxEnabled)
+                .putBoolean(
+                        ERGONOMIC_POSITION_ADJUST_ENABLED,
+                        safeOptions.ergonomicPositionAdjustEnabled)
+                .putBoolean(
+                        ERGONOMIC_LEFT_ASSIST_RAIL_ENABLED,
+                        safeOptions.leftAssistRailEnabled)
+                .putBoolean(
+                        ERGONOMIC_UNIFORM_GRID_GAP_ENABLED,
+                        safeOptions.uniformGridGapEnabled)
+                .putString(
+                        ERGONOMIC_VISUAL_CONSISTENCY_LEVEL,
+                        safeOptions.visualConsistencyLevel.preferenceValue)
+                .apply();
+    }
+
+    static boolean loadDebugKeyBoundsOverlayEnabled(Context context) {
+        return prefs(context).getBoolean(DEBUG_KEY_BOUNDS_OVERLAY_ENABLED, false);
+    }
+
+    static void saveDebugKeyBoundsOverlayEnabled(Context context, boolean enabled) {
+        prefs(context).edit()
+                .putBoolean(DEBUG_KEY_BOUNDS_OVERLAY_ENABLED, enabled)
                 .apply();
     }
 

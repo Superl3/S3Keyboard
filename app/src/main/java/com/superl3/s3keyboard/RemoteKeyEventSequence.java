@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.List;
 
 final class RemoteKeyEventSequence {
+    static final int KEY_EVENT_FLAGS = KeyEvent.FLAG_SOFT_KEYBOARD | KeyEvent.FLAG_KEEP_TOUCH_MODE;
+    static final int KEY_EVENT_DEVICE_ID = KeyCharacterMap.VIRTUAL_KEYBOARD;
+
     private RemoteKeyEventSequence() {
     }
 
@@ -21,25 +24,57 @@ final class RemoteKeyEventSequence {
             return Collections.emptyList();
         }
         List<Modifier> modifiers = modifiersFor(metaState);
+        List<PressedModifier> pressedModifiers = new ArrayList<>();
         List<EventSpec> events = new ArrayList<>();
+        long nextEventTimeMs = Math.max(0L, eventTimeMs);
         int activeMetaState = 0;
         for (Modifier modifier : modifiers) {
             activeMetaState |= modifier.metaState;
-            events.add(event(KeyEvent.ACTION_DOWN, modifier.keyCode, activeMetaState, eventTimeMs));
+            events.add(event(
+                    KeyEvent.ACTION_DOWN,
+                    modifier.keyCode,
+                    activeMetaState,
+                    nextEventTimeMs,
+                    nextEventTimeMs));
+            pressedModifiers.add(new PressedModifier(modifier, nextEventTimeMs));
+            nextEventTimeMs++;
         }
         int keyMetaState = normalizeMetaState(metaState);
-        events.add(event(KeyEvent.ACTION_DOWN, keyCode, keyMetaState, eventTimeMs));
-        events.add(event(KeyEvent.ACTION_UP, keyCode, keyMetaState, eventTimeMs));
-        for (int i = modifiers.size() - 1; i >= 0; i--) {
-            Modifier modifier = modifiers.get(i);
-            events.add(event(KeyEvent.ACTION_UP, modifier.keyCode, activeMetaState, eventTimeMs));
-            activeMetaState &= ~modifier.metaState;
+        long keyDownTimeMs = nextEventTimeMs;
+        events.add(event(KeyEvent.ACTION_DOWN, keyCode, keyMetaState, nextEventTimeMs, keyDownTimeMs));
+        nextEventTimeMs++;
+        events.add(event(KeyEvent.ACTION_UP, keyCode, keyMetaState, nextEventTimeMs, keyDownTimeMs));
+        nextEventTimeMs++;
+        for (int i = pressedModifiers.size() - 1; i >= 0; i--) {
+            PressedModifier pressed = pressedModifiers.get(i);
+            events.add(event(
+                    KeyEvent.ACTION_UP,
+                    pressed.modifier.keyCode,
+                    activeMetaState,
+                    nextEventTimeMs,
+                    pressed.downTimeMs));
+            activeMetaState &= ~pressed.modifier.metaState;
+            nextEventTimeMs++;
         }
         return events;
     }
 
-    private static EventSpec event(int action, int keyCode, int metaState, long eventTimeMs) {
-        return new EventSpec(action, keyCode, metaState, Math.max(0L, eventTimeMs));
+    static int eventCount(int keyCode, int metaState) {
+        return build(keyCode, metaState, 0L).size();
+    }
+
+    private static EventSpec event(
+            int action,
+            int keyCode,
+            int metaState,
+            long eventTimeMs,
+            long downTimeMs) {
+        return new EventSpec(
+                action,
+                keyCode,
+                metaState,
+                Math.max(0L, eventTimeMs),
+                Math.max(0L, downTimeMs));
     }
 
     static final class EventSpec {
@@ -47,30 +82,27 @@ final class RemoteKeyEventSequence {
         final int keyCode;
         final int metaState;
         final long eventTimeMs;
+        final long downTimeMs;
 
-        EventSpec(int action, int keyCode, int metaState, long eventTimeMs) {
+        EventSpec(int action, int keyCode, int metaState, long eventTimeMs, long downTimeMs) {
             this.action = action;
             this.keyCode = keyCode;
             this.metaState = metaState;
             this.eventTimeMs = eventTimeMs;
+            this.downTimeMs = downTimeMs;
         }
 
         KeyEvent toKeyEvent() {
-            return toKeyEvent(eventTimeMs);
-        }
-
-        KeyEvent toKeyEvent(long downTimeMs) {
-            long safeTime = Math.max(0L, eventTimeMs);
             return new KeyEvent(
-                    Math.max(0L, downTimeMs),
-                    safeTime,
+                    downTimeMs,
+                    eventTimeMs,
                     action,
                     keyCode,
                     0,
                     metaState,
-                    KeyCharacterMap.VIRTUAL_KEYBOARD,
+                    KEY_EVENT_DEVICE_ID,
                     0,
-                    KeyEvent.FLAG_SOFT_KEYBOARD | KeyEvent.FLAG_KEEP_TOUCH_MODE);
+                    KEY_EVENT_FLAGS);
         }
     }
 
@@ -123,6 +155,16 @@ final class RemoteKeyEventSequence {
         Modifier(int keyCode, int metaState) {
             this.keyCode = keyCode;
             this.metaState = metaState;
+        }
+    }
+
+    private static final class PressedModifier {
+        final Modifier modifier;
+        final long downTimeMs;
+
+        PressedModifier(Modifier modifier, long downTimeMs) {
+            this.modifier = modifier;
+            this.downTimeMs = downTimeMs;
         }
     }
 

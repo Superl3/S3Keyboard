@@ -27,10 +27,15 @@ final class TouchResolver {
         float adjustedX = x + biasX;
         float adjustedY = y + touchYOffset + biasY;
 
+        T bestVisual = null;
+        float bestVisualDistance = Float.MAX_VALUE;
+        int bestVisualPriority = Integer.MIN_VALUE;
         T bestContained = null;
         float bestContainedDistance = Float.MAX_VALUE;
+        int bestContainedPriority = Integer.MIN_VALUE;
         T bestExpanded = null;
         float bestExpandedDistance = Float.MAX_VALUE;
+        int bestExpandedPriority = Integer.MIN_VALUE;
         for (T target : targets) {
             boolean contains = target.contains(adjustedX, adjustedY);
             float effectiveSlop = hitSlop + (target.isPrimaryBottomControl() ? hitSlop * 0.75f : 0f);
@@ -40,15 +45,30 @@ final class TouchResolver {
                 continue;
             }
             float distance = target.distanceSquaredTo(adjustedX, adjustedY);
-            if (contains) {
-                if (distance < bestContainedDistance) {
+            int priority = target.touchPriority();
+            if (target.visualContains(adjustedX, adjustedY)) {
+                if (distance < bestVisualDistance
+                        || (distance == bestVisualDistance && priority > bestVisualPriority)) {
+                    bestVisual = target;
+                    bestVisualDistance = distance;
+                    bestVisualPriority = priority;
+                }
+            } else if (contains) {
+                if (priority > bestContainedPriority
+                        || (priority == bestContainedPriority && distance < bestContainedDistance)) {
                     bestContained = target;
                     bestContainedDistance = distance;
+                    bestContainedPriority = priority;
                 }
-            } else if (distance < bestExpandedDistance) {
+            } else if (priority > bestExpandedPriority
+                    || (priority == bestExpandedPriority && distance < bestExpandedDistance)) {
                 bestExpanded = target;
                 bestExpandedDistance = distance;
+                bestExpandedPriority = priority;
             }
+        }
+        if (bestVisual != null) {
+            return bestVisual;
         }
         return bestContained != null ? bestContained : bestExpanded;
     }
@@ -100,5 +120,13 @@ final class TouchResolver {
         float distanceSquaredTo(float x, float y);
 
         boolean isPrimaryBottomControl();
+
+        default boolean visualContains(float x, float y) {
+            return contains(x, y);
+        }
+
+        default int touchPriority() {
+            return isPrimaryBottomControl() ? 40 : 0;
+        }
     }
 }

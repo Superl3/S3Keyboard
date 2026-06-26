@@ -97,23 +97,27 @@ public final class TouchBiasStoreTest {
     }
 
     @Test
-    public void typingPatternLogKeepsRawTextForLocalLearning() {
+    public void typingPatternLogRedactsRawTextAtWriteTime() {
         String log = TouchBiasStore.appendTypingEvent(
                 "",
                 "input",
-                "ㄱ",
+                "secret",
                 GestureAction.TAP,
                 0f,
                 0f);
         log = TouchBiasStore.appendTypingEvent(
                 log,
                 "correction",
-                "ㄱ",
+                "fixed",
                 GestureAction.TAP,
                 2f,
                 -1f);
 
-        org.junit.Assert.assertTrue(log.contains("\"text\":\"ㄱ\""));
+        org.junit.Assert.assertFalse(log.contains("secret"));
+        org.junit.Assert.assertFalse(log.contains("fixed"));
+        org.junit.Assert.assertTrue(log.contains("\"textRedacted\":true"));
+        org.junit.Assert.assertTrue(log.contains("\"textLength\":6"));
+        org.junit.Assert.assertTrue(log.contains("\"textLength\":5"));
         org.junit.Assert.assertTrue(log.contains("\"type\":\"correction\""));
     }
 

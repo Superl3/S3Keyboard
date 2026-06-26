@@ -16,7 +16,7 @@ public final class ImeActionLabelResolverTest {
                 EditorInfo.IME_ACTION_SEARCH,
                 0);
 
-        assertEquals("검색", action.label);
+        assertEquals(R.string.ime_action_search, action.labelResId);
         assertTrue(action.performEditorAction);
         assertEquals(EditorInfo.IME_ACTION_SEARCH, action.editorActionId);
     }
@@ -27,8 +27,21 @@ public final class ImeActionLabelResolverTest {
                 EditorInfo.IME_ACTION_DONE,
                 0);
 
-        assertEquals("완료", action.label);
+        assertEquals(R.string.ime_action_done, action.labelResId);
         assertTrue(action.performEditorAction);
+    }
+
+    @Test
+    public void nextGoAndSendActionsUseKoreanLabels() {
+        assertEquals(R.string.ime_action_next, ImeActionLabelResolver.resolve(
+                EditorInfo.IME_ACTION_NEXT,
+                0).labelResId);
+        assertEquals(R.string.ime_action_go, ImeActionLabelResolver.resolve(
+                EditorInfo.IME_ACTION_GO,
+                0).labelResId);
+        assertEquals(R.string.ime_action_send, ImeActionLabelResolver.resolve(
+                EditorInfo.IME_ACTION_SEND,
+                0).labelResId);
     }
 
     @Test
@@ -37,7 +50,7 @@ public final class ImeActionLabelResolverTest {
                 EditorInfo.IME_ACTION_NONE,
                 InputType.TYPE_TEXT_FLAG_MULTI_LINE);
 
-        assertEquals("줄바꿈", action.label);
+        assertEquals(R.string.ime_action_newline, action.labelResId);
         assertFalse(action.performEditorAction);
     }
 }

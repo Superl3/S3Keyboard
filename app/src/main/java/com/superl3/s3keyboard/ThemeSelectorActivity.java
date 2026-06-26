@@ -53,14 +53,14 @@ public final class ThemeSelectorActivity extends Activity {
         root.setPadding(dp(20), dp(20), dp(20), dp(24));
         scrollView.addView(root);
 
-        TextView title = label("테마 선택");
+        TextView title = label(getString(R.string.theme_selector_title));
         title.setTextColor(ui.textPrimary);
         title.setTextSize(22);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         root.addView(title, matchWrap());
 
         Button editorButton = new Button(this);
-        editorButton.setText("테마 편집기 열기");
+        editorButton.setText(R.string.theme_editor_open);
         styleSystemButton(editorButton, false);
         editorButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_keyboard_settings, 0, 0, 0);
         editorButton.setCompoundDrawablePadding(dp(8));
@@ -68,7 +68,7 @@ public final class ThemeSelectorActivity extends Activity {
         root.addView(editorButton, topParams(12));
 
         Button resetButton = new Button(this);
-        resetButton.setText("\uAE30\uBCF8\uAC12\uC73C\uB85C \uBCF5\uC6D0");
+        resetButton.setText(R.string.theme_reset_default);
         styleSystemButton(resetButton, false);
         resetButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_keyboard_reset, 0, 0, 0);
         resetButton.setCompoundDrawablePadding(dp(8));
@@ -83,12 +83,12 @@ public final class ThemeSelectorActivity extends Activity {
         LinearLayout externalRow = new LinearLayout(this);
         externalRow.setOrientation(LinearLayout.HORIZONTAL);
         Button externalPathButton = new Button(this);
-        externalPathButton.setText("\uC678\uBD80 \uD14C\uB9C8 \uD3F4\uB354 \uC124\uC815");
+        externalPathButton.setText(R.string.external_theme_folder_setting);
         styleSystemButton(externalPathButton, false);
         externalPathButton.setOnClickListener(v -> showExternalThemePathDialog());
         externalRow.addView(externalPathButton, weightedButtonParams());
         Button refreshExternalButton = new Button(this);
-        refreshExternalButton.setText("\uC0C8\uB85C\uACE0\uCE68");
+        refreshExternalButton.setText(R.string.action_refresh);
         styleSystemButton(refreshExternalButton, false);
         refreshExternalButton.setOnClickListener(v -> rebuildCards());
         externalRow.addView(refreshExternalButton, weightedButtonParams());
@@ -96,8 +96,12 @@ public final class ThemeSelectorActivity extends Activity {
 
         LinearLayout previewModeRow = new LinearLayout(this);
         previewModeRow.setOrientation(LinearLayout.HORIZONTAL);
-        dingulPreviewButton = previewModeButton("Dingul", KeyboardMode.HANGUL);
-        qwertyPreviewButton = previewModeButton("QWERTY", KeyboardMode.ENGLISH);
+        dingulPreviewButton = previewModeButton(
+                getString(R.string.theme_preview_mode_dingul),
+                KeyboardMode.HANGUL);
+        qwertyPreviewButton = previewModeButton(
+                getString(R.string.theme_preview_mode_qwerty),
+                KeyboardMode.ENGLISH);
         previewModeRow.addView(dingulPreviewButton, weightedButtonParams());
         previewModeRow.addView(qwertyPreviewButton, weightedButtonParams());
         root.addView(previewModeRow, topParams(10));
@@ -181,10 +185,10 @@ public final class ThemeSelectorActivity extends Activity {
         if (externalThemeSummary == null) {
             return;
         }
-        externalThemeSummary.setText("\uC678\uBD80 JSON \uD14C\uB9C8: "
-                + externalThemeCount
-                + "\uAC1C\n"
-                + ExternalThemeStore.loadDirectoryPath(this));
+        externalThemeSummary.setText(getString(
+                R.string.external_theme_summary_format,
+                externalThemeCount,
+                ExternalThemeStore.loadDirectoryPath(this)));
     }
 
     private void showExternalThemePathDialog() {
@@ -199,25 +203,25 @@ public final class ThemeSelectorActivity extends Activity {
         container.addView(input, matchWrap());
 
         new AlertDialog.Builder(this)
-                .setTitle("\uC678\uBD80 \uD14C\uB9C8 \uD3F4\uB354")
-                .setMessage("JSON \uD14C\uB9C8 \uD30C\uC77C\uC744 \uC77D\uC5B4\uC62C \uD3F4\uB354 \uACBD\uB85C\uC785\uB2C8\uB2E4. \uAE30\uBCF8\uAC12\uC740 \uC571 \uC678\uBD80 files/themes \uD3F4\uB354\uC785\uB2C8\uB2E4.")
+                .setTitle(R.string.external_theme_folder_title)
+                .setMessage(R.string.external_theme_folder_message)
                 .setView(container)
-                .setNegativeButton("\uCDE8\uC18C", null)
-                .setNeutralButton("\uAE30\uBCF8\uACBD\uB85C", (dialog, which) -> {
+                .setNegativeButton(R.string.action_cancel, null)
+                .setNeutralButton(R.string.action_default_path, (dialog, which) -> {
                     ExternalThemeStore.saveDirectoryPath(this, ExternalThemeStore.defaultDirectoryPath(this));
                     rebuildCards();
-                    Toast.makeText(this, "\uAE30\uBCF8 \uC678\uBD80 \uD14C\uB9C8 \uD3F4\uB354\uB85C \uBCF5\uC6D0\uD588\uC2B5\uB2C8\uB2E4.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.external_theme_folder_reset, Toast.LENGTH_SHORT).show();
                 })
-                .setPositiveButton("\uC800\uC7A5", (dialog, which) -> {
+                .setPositiveButton(R.string.action_save, (dialog, which) -> {
                     ExternalThemeStore.saveDirectoryPath(this, input.getText().toString());
                     rebuildCards();
-                    Toast.makeText(this, "\uC678\uBD80 \uD14C\uB9C8 \uD3F4\uB354\uB97C \uC800\uC7A5\uD588\uC2B5\uB2C8\uB2E4.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.external_theme_folder_saved, Toast.LENGTH_SHORT).show();
                 })
                 .show();
     }
 
     private TextView selectedBadge(SettingsUiPalette ui) {
-        TextView badge = label("선택됨");
+        TextView badge = label(getString(R.string.selected_badge));
         badge.setTextColor(ui.selectedText);
         badge.setTextSize(12);
         badge.setTypeface(Typeface.DEFAULT_BOLD);
@@ -276,14 +280,7 @@ public final class ThemeSelectorActivity extends Activity {
     }
 
     private HangulKeyboardView previewKeyboard(KeyboardSettings previewSettings) {
-        HangulKeyboardView preview = new HangulKeyboardView(this);
-        preview.setCompactPreviewRendering(true);
-        preview.setSettings(previewSettings);
-        preview.setClickable(true);
-        preview.setFocusable(false);
-        preview.setOnTouchListener((v, event) -> true);
-        preview.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        return preview;
+        return KeyboardPreviewFactory.nonInteractive(this, previewSettings);
     }
 
     private int indexOfSelectedTheme(String selectedThemeId) {

@@ -287,7 +287,11 @@ final class TouchBiasStore {
             JSONObject event = new JSONObject();
             event.put("timeMs", System.currentTimeMillis());
             event.put("type", type == null ? "" : type);
-            event.put("text", text == null ? "" : text);
+            String safeText = text == null ? "" : text;
+            if (!safeText.isEmpty()) {
+                event.put("textRedacted", true);
+                event.put("textLength", safeText.codePointCount(0, safeText.length()));
+            }
             event.put("action", action == null ? GestureAction.TAP.name() : action.name());
             if ("correction".equals(type)) {
                 event.put("offsetXDp", offsetXDp);

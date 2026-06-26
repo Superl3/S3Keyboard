@@ -23,17 +23,17 @@
         <activity
             android:name=".ThemeEditorActivity"
             android:exported="false"
-            android:label="Theme Editor" />
+            android:label="@string/theme_editor_activity_label" />
 
         <activity
             android:name=".ThemeSelectorActivity"
             android:exported="false"
-            android:label="Theme Selector" />
+            android:label="@string/theme_selector_activity_label" />
 
         <activity
             android:name=".AccentPlacementActivity"
             android:exported="false"
-            android:label="Accent Placement" />
+            android:label="@string/accent_placement_activity_label" />
 
         <service
             android:name=".S3KeyboardService"

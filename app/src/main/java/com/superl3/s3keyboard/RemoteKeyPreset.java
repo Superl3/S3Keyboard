@@ -1,14 +1,14 @@
 package com.superl3.s3keyboard;
 
 enum RemoteKeyPreset {
-    PC_KEYBOARD("pc_keyboard", "PC keyboard");
+    PC_KEYBOARD("pc_keyboard", R.string.remote_key_preset_pc_keyboard);
 
     final String preferenceValue;
-    final String displayName;
+    final int labelResId;
 
-    RemoteKeyPreset(String preferenceValue, String displayName) {
+    RemoteKeyPreset(String preferenceValue, int labelResId) {
         this.preferenceValue = preferenceValue;
-        this.displayName = displayName;
+        this.labelResId = labelResId;
     }
 
     static RemoteKeyPreset fromPreference(String value) {

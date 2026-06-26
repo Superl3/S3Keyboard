@@ -14,10 +14,23 @@ final class KeyboardLayoutCalculator {
             float width,
             float height,
             float density) {
+        return layout(rows, settings, KeyboardErgonomicsOptions.DEFAULT, width, height, density);
+    }
+
+    static List<Slot> layout(
+            List<KeyboardRow> rows,
+            KeyboardSettings settings,
+            KeyboardErgonomicsOptions ergonomicsOptions,
+            float width,
+            float height,
+            float density) {
         if (rows == null || rows.isEmpty()) {
             return Collections.emptyList();
         }
 
+        KeyboardErgonomicsOptions safeErgonomicsOptions = ergonomicsOptions == null
+                ? KeyboardErgonomicsOptions.DEFAULT
+                : ergonomicsOptions;
         float safeDensity = Math.max(0.1f, density);
         float leftInset = dp(settings.activeLeftPaddingDp(), safeDensity);
         float rightInset = dp(settings.activeRightPaddingDp(), safeDensity);
@@ -80,6 +93,7 @@ final class KeyboardLayoutCalculator {
             float maxContentWidth = KeyboardRowMetrics.maxContentWidth(row, unitWidth, rowGap) + rowSpecialGap;
             float left = leftInset + Math.max(0f, (maxContentWidth - contentWidth) / 2f);
 
+            List<Slot> rowSlots = new ArrayList<>();
             for (int keyIndex = 0; keyIndex < row.keys.size(); keyIndex++) {
                 GestureKey key = row.keys.get(keyIndex);
                 float right = left + KeyboardRowMetrics.keyWidth(key, unitWidth, rowGap);
@@ -91,7 +105,7 @@ final class KeyboardLayoutCalculator {
                         && (KeyboardCommands.CMD_SPACE.equals(key.tap)
                         || KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)
                         || KeyboardCommands.CMD_ENTER.equals(key.tap));
-                slots.add(new Slot(
+                rowSlots.add(new Slot(
                         key,
                         left,
                         top,
@@ -105,8 +119,319 @@ final class KeyboardLayoutCalculator {
                     left += rowSpecialGap;
                 }
             }
+            if (hangulCharacterRow && safeErgonomicsOptions.affectsLayout()) {
+                int characterRowIndex = hasNumberRow ? rowIndex - 1 : rowIndex;
+                slots.addAll(applyDingulErgonomics(
+                        rowSlots,
+                        safeErgonomicsOptions,
+                        Math.max(0, characterRowIndex),
+                        leftInset,
+                        leftInset + availableWidth,
+                        safeDensity));
+            } else {
+                slots.addAll(rowSlots);
+            }
         }
         return slots;
+    }
+
+    private static List<Slot> applyDingulErgonomics(
+            List<Slot> rowSlots,
+            KeyboardErgonomicsOptions options,
+            int characterRowIndex,
+            float rowLeft,
+            float rowRight,
+            float density) {
+        if (rowSlots.size() != 4) {
+            return rowSlots;
+        }
+        Slot firstMain = rowSlots.get(0);
+        Slot thirdMain = rowSlots.get(2);
+        Slot function = rowSlots.get(3);
+        float mainLeft = firstMain.left;
+        float mainRight = thirdMain.right;
+        float mainWidth = mainRight - mainLeft;
+        float functionHitWidth = function.right - function.left;
+        float functionVisualWidth = functionHitWidth;
+        boolean leftAssistRail = options.mainKeyCenteringEnabled && options.leftAssistRailEnabled;
+        if (options.compactFunctionRailEnabled) {
+            functionVisualWidth *= isBackspaceKey(function.key)
+                    ? options.visualConsistencyLevel.backspaceVisualScale
+                    : options.visualConsistencyLevel.functionVisualScale;
+        }
+        float mainColumnGap = rowSlots.get(1).left - rowSlots.get(0).right;
+        float functionGap = options.uniformGridGapEnabled && leftAssistRail
+                ? Math.max(0f, mainColumnGap)
+                : Math.max(function.left - thirdMain.right, dp(8, density));
+        float transformedMainLeft = mainLeft;
+        float transformedMainWidth = mainWidth;
+        float leftAssistHitLeft = function.left - functionHitWidth - functionGap;
+        float leftAssistHitRight = leftAssistHitLeft + functionHitWidth;
+        float functionHitLeft = function.left;
+        float functionHitRight = function.right;
+
+        if (options.mainKeyCenteringEnabled) {
+            float availableWidth = Math.max(1f, rowRight - rowLeft);
+            if (leftAssistRail) {
+                float railWidth = Math.min(functionHitWidth, Math.max(1f, availableWidth * 0.22f));
+                float baseGap = functionGap;
+                float mainScale = Math.min(
+                        1f,
+                        Math.max(0.05f, (availableWidth - railWidth * 2f)
+                                / Math.max(1f, mainWidth + baseGap * 2f)));
+                float gap = baseGap * mainScale;
+                transformedMainWidth = mainWidth * mainScale;
+                float groupWidth = railWidth * 2f + gap * 2f + transformedMainWidth;
+                float groupLeft = rowLeft + (availableWidth - groupWidth) / 2f;
+                leftAssistHitLeft = groupLeft;
+                leftAssistHitRight = leftAssistHitLeft + railWidth;
+                transformedMainLeft = leftAssistHitRight + gap;
+                functionHitLeft = transformedMainLeft + transformedMainWidth + gap;
+                functionHitRight = functionHitLeft + railWidth;
+                functionGap = gap;
+                functionHitWidth = railWidth;
+                functionVisualWidth = Math.min(functionVisualWidth, railWidth);
+            } else {
+                float minSideForFunction = functionHitWidth + functionGap;
+                float maxCenteredMainWidth = Math.max(1f, availableWidth - minSideForFunction * 2f);
+                float mainScale = Math.min(1f, maxCenteredMainWidth / Math.max(1f, mainWidth));
+                transformedMainWidth = mainWidth * mainScale;
+                transformedMainLeft = rowLeft + (availableWidth - transformedMainWidth) / 2f;
+                functionHitRight = rowRight;
+                functionHitLeft = functionHitRight - functionHitWidth;
+            }
+        }
+
+        boolean applyPositionAdjust = options.ergonomicPositionAdjustEnabled
+                && !(leftAssistRail && options.uniformGridGapEnabled);
+        float railVisualYShift = 0f;
+        if (applyPositionAdjust) {
+            float firstMainWidth = transformedMainWidth * (firstMain.right - firstMain.left) / mainWidth;
+            float maxShift = Math.min(firstMainWidth, firstMain.bottom - firstMain.top)
+                    * options.visualConsistencyLevel.maxMainShiftRatio;
+            railVisualYShift = ((characterRowIndex - 1.5f) / 1.5f) * 0.25f * maxShift;
+        }
+
+        List<Slot> result = new ArrayList<>(leftAssistRail ? 5 : 4);
+        if (leftAssistRail) {
+            result.add(assistSlot(
+                    characterRowIndex,
+                    function,
+                    leftAssistHitLeft,
+                    leftAssistHitRight,
+                    rowLeft,
+                    rowRight,
+                    density,
+                    railVisualYShift,
+                    options));
+        }
+        for (int i = 0; i < 3; i++) {
+            Slot slot = rowSlots.get(i);
+            float left = transformedMainLeft + (slot.left - mainLeft) / mainWidth * transformedMainWidth;
+            float right = transformedMainLeft + (slot.right - mainLeft) / mainWidth * transformedMainWidth;
+            if (applyPositionAdjust) {
+                float maxShift = Math.min(right - left, slot.bottom - slot.top)
+                        * options.visualConsistencyLevel.maxMainShiftRatio;
+                float xShift = (i == 0 ? 0.55f : (i == 2 ? -0.55f : 0f)) * maxShift;
+                float yShift = ((characterRowIndex - 1.5f) / 1.5f) * 0.25f * maxShift;
+                left += xShift;
+                right += xShift;
+                float top = slot.top + yShift;
+                float bottom = slot.bottom + yShift;
+                Rect rect = clampRect(
+                        left,
+                        top,
+                        right,
+                        bottom,
+                        rowLeft,
+                        slot.top - maxShift,
+                        functionHitLeft - functionGap * 0.25f,
+                        slot.bottom + maxShift);
+                result.add(withHitRect(slot, rect, ergonomicHitRect(
+                        rect,
+                        rowLeft,
+                        functionHitLeft,
+                        false,
+                        false,
+                        density,
+                        options.ergonomicHitboxEnabled)));
+            } else {
+                Rect rect = new Rect(left, slot.top, right, slot.bottom);
+                result.add(withHitRect(slot, rect, ergonomicHitRect(
+                        rect,
+                        rowLeft,
+                        functionHitLeft,
+                        false,
+                        false,
+                        density,
+                        options.ergonomicHitboxEnabled)));
+            }
+        }
+
+        Slot functionSlot = rowSlots.get(3);
+        boolean backspace = isBackspaceKey(functionSlot.key);
+        float functionVisualHeight = functionSlot.bottom - functionSlot.top;
+        if (options.compactFunctionRailEnabled) {
+            functionVisualHeight *= backspace
+                    ? options.visualConsistencyLevel.backspaceVisualScale
+                    : options.visualConsistencyLevel.functionVisualScale;
+        }
+        if (options.ergonomicHitboxEnabled) {
+            functionVisualWidth = Math.min(functionVisualWidth, Math.max(1f, functionHitWidth - dp(4, density)));
+        }
+        float functionCenterY = (functionSlot.top + functionSlot.bottom) / 2f + railVisualYShift;
+        float functionVisualTop = functionCenterY - functionVisualHeight / 2f;
+        float functionVisualBottom = functionCenterY + functionVisualHeight / 2f;
+        float functionVisualLeft = functionHitLeft;
+        float functionVisualRight = functionVisualLeft + functionVisualWidth;
+        Rect functionVisualRect = new Rect(
+                functionVisualLeft,
+                functionVisualTop,
+                functionVisualRight,
+                functionVisualBottom);
+        Rect functionHitRect = new Rect(functionHitLeft, functionSlot.top, functionHitRight, functionSlot.bottom);
+        if (options.ergonomicHitboxEnabled) {
+            functionHitRect = railHitRect(
+                    functionHitRect,
+                    thirdMain.right,
+                    rowRight,
+                    false,
+                    backspace,
+                    density,
+                    true);
+        }
+        result.add(withHitRect(functionSlot, functionVisualRect, functionHitRect));
+        return result;
+    }
+
+    private static Slot assistSlot(
+            int characterRowIndex,
+            Slot rowReference,
+            float hitLeft,
+            float hitRight,
+            float rowLeft,
+            float rowRight,
+            float density,
+            float visualYShift,
+            KeyboardErgonomicsOptions options) {
+        GestureKey key = LeftAssistRailItem.keyForRow(characterRowIndex);
+        float hitTop = rowReference.top;
+        float hitBottom = rowReference.bottom;
+        float scale = options.compactFunctionRailEnabled
+                ? options.visualConsistencyLevel.functionVisualScale
+                : 1f;
+        float visualWidth = (hitRight - hitLeft) * scale;
+        float visualHeight = (hitBottom - hitTop) * scale;
+        float centerY = (hitTop + hitBottom) / 2f + visualYShift;
+        Rect visualRect = new Rect(
+                hitRight - visualWidth,
+                centerY - visualHeight / 2f,
+                hitRight,
+                centerY + visualHeight / 2f);
+        Rect hitRect = new Rect(hitLeft, hitTop, hitRight, hitBottom);
+        if (options.ergonomicHitboxEnabled) {
+            hitRect = railHitRect(hitRect, rowLeft, rowRight, true, false, density, true);
+        }
+        return new Slot(
+                key,
+                visualRect.left,
+                visualRect.top,
+                visualRect.right,
+                visualRect.bottom,
+                hitRect.left,
+                hitRect.top,
+                hitRect.right,
+                hitRect.bottom,
+                visualRect.centerX(),
+                visualRect.centerY(),
+                false,
+                true,
+                0);
+    }
+
+    private static Slot withHitRect(Slot slot, Rect visualRect, Rect hitRect) {
+        return new Slot(
+                slot.key,
+                visualRect.left,
+                visualRect.top,
+                visualRect.right,
+                visualRect.bottom,
+                hitRect.left,
+                hitRect.top,
+                hitRect.right,
+                hitRect.bottom,
+                visualRect.centerX(),
+                visualRect.centerY(),
+                slot.primaryBottomControl,
+                slot.compactSpecialColumn,
+                slot.bottomSpaceDirection);
+    }
+
+    private static Rect ergonomicHitRect(
+            Rect rect,
+            float minLeft,
+            float maxRight,
+            boolean functionRail,
+            boolean backspace,
+            float density,
+            boolean enabled) {
+        if (!enabled) {
+            return rect;
+        }
+        float expandX = dp(functionRail ? 3 : 4, density);
+        float expandY = dp(functionRail ? 2 : 3, density);
+        float left = rect.left - expandX;
+        float right = rect.right + expandX;
+        float top = rect.top - expandY;
+        float bottom = rect.bottom + expandY;
+        if (functionRail) {
+            float bezelShrink = dp(4, density);
+            left = rect.left - (backspace ? dp(12, density) : dp(7, density));
+            right = rect.right - bezelShrink;
+            bottom = rect.bottom + (backspace ? dp(7, density) : expandY);
+        }
+        return clampRect(left, top, right, bottom, minLeft, rect.top - dp(6, density), maxRight, rect.bottom + dp(8, density));
+    }
+
+    private static Rect railHitRect(
+            Rect rect,
+            float minLeft,
+            float maxRight,
+            boolean leftRail,
+            boolean backspace,
+            float density,
+            boolean enabled) {
+        if (!enabled) {
+            return rect;
+        }
+        float expandY = dp(2, density);
+        float bezelShrink = dp(4, density);
+        float inwardExpand = backspace ? dp(12, density) : dp(7, density);
+        float left = leftRail ? rect.left + bezelShrink : rect.left - inwardExpand;
+        float right = leftRail ? rect.right + inwardExpand : rect.right - bezelShrink;
+        float top = rect.top - expandY;
+        float bottom = rect.bottom + (backspace ? dp(7, density) : expandY);
+        return clampRect(left, top, right, bottom, minLeft, rect.top - dp(6, density), maxRight, rect.bottom + dp(8, density));
+    }
+
+    private static Rect clampRect(
+            float left,
+            float top,
+            float right,
+            float bottom,
+            float minLeft,
+            float minTop,
+            float maxRight,
+            float maxBottom) {
+        float width = Math.max(1f, right - left);
+        float height = Math.max(1f, bottom - top);
+        float clampedLeft = Math.max(minLeft, Math.min(left, maxRight - width));
+        float clampedTop = Math.max(minTop, Math.min(top, maxBottom - height));
+        return new Rect(clampedLeft, clampedTop, clampedLeft + width, clampedTop + height);
+    }
+
+    private static boolean isBackspaceKey(GestureKey key) {
+        return key != null && KeyboardCommands.CMD_DELETE.equals(key.tap);
     }
 
     private static boolean hasAdditionalNumberRow(KeyboardSettings settings, List<KeyboardRow> rows) {
@@ -193,6 +518,12 @@ final class KeyboardLayoutCalculator {
         final float top;
         final float right;
         final float bottom;
+        final float hitLeft;
+        final float hitTop;
+        final float hitRight;
+        final float hitBottom;
+        final float gestureOriginX;
+        final float gestureOriginY;
         final boolean primaryBottomControl;
         final boolean compactSpecialColumn;
         final int bottomSpaceDirection;
@@ -206,14 +537,74 @@ final class KeyboardLayoutCalculator {
                 boolean primaryBottomControl,
                 boolean compactSpecialColumn,
                 int bottomSpaceDirection) {
+            this(
+                    key,
+                    left,
+                    top,
+                    right,
+                    bottom,
+                    left,
+                    top,
+                    right,
+                    bottom,
+                    (left + right) / 2f,
+                    (top + bottom) / 2f,
+                    primaryBottomControl,
+                    compactSpecialColumn,
+                    bottomSpaceDirection);
+        }
+
+        Slot(
+                GestureKey key,
+                float left,
+                float top,
+                float right,
+                float bottom,
+                float hitLeft,
+                float hitTop,
+                float hitRight,
+                float hitBottom,
+                float gestureOriginX,
+                float gestureOriginY,
+                boolean primaryBottomControl,
+                boolean compactSpecialColumn,
+                int bottomSpaceDirection) {
             this.key = key;
             this.left = left;
             this.top = top;
             this.right = right;
             this.bottom = bottom;
+            this.hitLeft = hitLeft;
+            this.hitTop = hitTop;
+            this.hitRight = hitRight;
+            this.hitBottom = hitBottom;
+            this.gestureOriginX = gestureOriginX;
+            this.gestureOriginY = gestureOriginY;
             this.primaryBottomControl = primaryBottomControl;
             this.compactSpecialColumn = compactSpecialColumn;
             this.bottomSpaceDirection = bottomSpaceDirection;
+        }
+    }
+
+    private static final class Rect {
+        final float left;
+        final float top;
+        final float right;
+        final float bottom;
+
+        Rect(float left, float top, float right, float bottom) {
+            this.left = left;
+            this.top = top;
+            this.right = right;
+            this.bottom = bottom;
+        }
+
+        float centerX() {
+            return (left + right) / 2f;
+        }
+
+        float centerY() {
+            return (top + bottom) / 2f;
         }
     }
 }

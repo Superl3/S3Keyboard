@@ -13,11 +13,13 @@ final class SettingsSectionCard {
 
     private final TextView header;
     private final String title;
+    private final Context context;
 
     private SettingsSectionCard(
             Context context,
             String title,
             boolean expandedByDefault) {
+        this.context = context;
         this.title = title;
         SettingsUiPalette ui = SettingsUiPalette.from(context);
         container = new LinearLayout(context);
@@ -55,7 +57,11 @@ final class SettingsSectionCard {
 
     private void setExpanded(boolean expanded) {
         content.setVisibility(expanded ? View.VISIBLE : View.GONE);
-        header.setText((expanded ? "▼ " : "▶ ") + title);
+        header.setText(context.getString(
+                expanded
+                        ? R.string.expandable_section_title_expanded
+                        : R.string.expandable_section_title_collapsed,
+                title));
     }
 
     private static int dp(Context context, int value) {

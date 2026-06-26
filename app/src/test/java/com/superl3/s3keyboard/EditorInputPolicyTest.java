@@ -97,6 +97,19 @@ public final class EditorInputPolicyTest {
     }
 
     @Test
+    public void webEditFieldsPreferAsciiAndAvoidComposingSpans() {
+        EditorInputPolicy policy = EditorInputPolicy.fromInputType(
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT);
+
+        assertTrue(policy.webEditLike);
+        assertEquals(KeyboardSurface.WEB_EXTENDED, policy.surface);
+        assertTrue(policy.preferAsciiLayout);
+        assertFalse(policy.forceNumberRow);
+        assertFalse(policy.allowComposingText);
+        assertFalse(policy.allowTextConveniences);
+    }
+
+    @Test
     public void typeNullUsesRawKeyFallbackAndDisablesComposing() {
         EditorInputPolicy policy = EditorInputPolicy.fromInputType(InputType.TYPE_NULL);
 

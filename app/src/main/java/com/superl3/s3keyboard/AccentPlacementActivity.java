@@ -51,22 +51,22 @@ public final class AccentPlacementActivity extends Activity {
         root.setPadding(dp(16), dp(18), dp(16), dp(24));
         scrollView.addView(root);
 
-        TextView title = label("\uC2DC\uAC01 \uC5ED\uD560 \uD3B8\uC9D1");
+        TextView title = label(getString(R.string.accent_placement_title));
         title.setTextSize(20);
         root.addView(title, matchWrap());
 
-        TextView helper = label("\uD14C\uB9C8\uC758 alpha / modifier / accent \uC5ED\uD560\uC744 \uD0A4 \uC704\uCE58\uBCC4\uB85C \uC801\uC6A9\uD569\uB2C8\uB2E4.");
+        TextView helper = label(getString(R.string.accent_placement_helper));
         root.addView(helper, topParams(6));
 
-        root.addView(sectionLabel("QWERTY"), topParams(16));
+        root.addView(sectionLabel(getString(R.string.accent_placement_qwerty_section)), topParams(16));
         qwertyPreview = previewKeyboard(KeyboardMode.ENGLISH);
         root.addView(qwertyPreview, previewParams(118));
 
-        root.addView(sectionLabel("\uB529\uAD74"), topParams(14));
+        root.addView(sectionLabel(getString(R.string.accent_placement_dingul_section)), topParams(14));
         dingulPreview = previewKeyboard(KeyboardMode.HANGUL);
         root.addView(dingulPreview, previewParams(144));
 
-        themeDefaultCheckBox = checkBox("\uD14C\uB9C8 \uAE30\uBCF8 \uBC30\uCE58 \uC0AC\uC6A9");
+        themeDefaultCheckBox = checkBox(getString(R.string.accent_placement_theme_default));
         themeDefaultCheckBox.setOnClickListener(v -> {
             if (!syncing) {
                 AccentPlacementPolicy current = KeyboardPreferences.loadAccentPlacementPolicy(this);
@@ -90,23 +90,23 @@ public final class AccentPlacementActivity extends Activity {
         root.addView(dingulSlashCheckBox, topParams(4));
         root.addView(escPointCheckBox, topParams(4));
 
-        root.addView(sectionLabel("Spacebar"), topParams(16));
+        root.addView(sectionLabel(getString(R.string.accent_placement_spacebar_section)), topParams(16));
         spaceRoleSpinner = spaceRoleSpinner();
         root.addView(spaceRoleSpinner, topParams(6));
 
-        root.addView(sectionLabel("? key"), topParams(16));
+        root.addView(sectionLabel(getString(R.string.accent_placement_question_section)), topParams(16));
         questionRoleSpinner = questionRoleSpinner();
         root.addView(questionRoleSpinner, topParams(6));
 
-        root.addView(sectionLabel("Number row preview"), topParams(16));
+        root.addView(sectionLabel(getString(R.string.accent_placement_number_row_section)), topParams(16));
         numberRowModeSpinner = numberRowModeSpinner();
         root.addView(numberRowModeSpinner, topParams(6));
 
         LinearLayout buttonRow = new LinearLayout(this);
         buttonRow.setOrientation(LinearLayout.HORIZONTAL);
-        Button noneButton = actionButton("Accent \uC5C6\uC74C");
+        Button noneButton = actionButton(getString(R.string.accent_placement_none));
         noneButton.setOnClickListener(v -> savePolicy(AccentPlacementPolicy.none()));
-        Button allButton = actionButton("\uBAA8\uB450 \uC120\uD0DD");
+        Button allButton = actionButton(getString(R.string.accent_placement_select_all));
         allButton.setOnClickListener(v -> savePolicy(AccentPlacementPolicy.of(
                 EnumSet.allOf(AccentPlacementTarget.class),
                 AccentPlacementPolicy.SpaceRole.ACCENT,
@@ -115,14 +115,14 @@ public final class AccentPlacementActivity extends Activity {
         buttonRow.addView(allButton, weightedButtonParams());
         root.addView(buttonRow, topParams(14));
 
-        Button closeButton = actionButton("\uB2EB\uAE30");
+        Button closeButton = actionButton(getString(R.string.action_close));
         closeButton.setOnClickListener(v -> finish());
         root.addView(closeButton, topParams(16));
         return scrollView;
     }
 
     private CheckBox targetCheckBox(AccentPlacementTarget target) {
-        CheckBox checkBox = checkBox(target.label);
+        CheckBox checkBox = checkBox(getString(target.labelResId));
         checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (!syncing) {
                 savePolicy(policyFromControls());
@@ -218,23 +218,18 @@ public final class AccentPlacementActivity extends Activity {
     }
 
     private HangulKeyboardView previewKeyboard(KeyboardMode mode) {
-        HangulKeyboardView preview = new HangulKeyboardView(this);
-        preview.setCompactPreviewRendering(true);
         KeyboardSettings previewSettings = settings.withKeyboardMode(mode)
                 .withEnglishNumberRow(true)
                 .withHangulNumberRow(true)
                 .withHintVisibility(false, false, false);
-        preview.setSettings(previewSettings);
-        preview.setOnTouchListener((v, event) -> true);
-        preview.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        return preview;
+        return KeyboardPreviewFactory.nonInteractive(this, previewSettings);
     }
 
     private Spinner spaceRoleSpinner() {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<AccentPlacementPolicy.SpaceRole> adapter = new SettingsArrayAdapter<>(
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
                 this,
-                AccentPlacementPolicy.SpaceRole.values());
+                SettingsDisplayLabels.labels(this, AccentPlacementPolicy.SpaceRole.values()));
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -253,9 +248,9 @@ public final class AccentPlacementActivity extends Activity {
 
     private Spinner questionRoleSpinner() {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<AccentPlacementPolicy.QuestionRole> adapter = new SettingsArrayAdapter<>(
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
                 this,
-                AccentPlacementPolicy.QuestionRole.values());
+                SettingsDisplayLabels.labels(this, AccentPlacementPolicy.QuestionRole.values()));
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -274,9 +269,9 @@ public final class AccentPlacementActivity extends Activity {
 
     private Spinner numberRowModeSpinner() {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<AdditionalNumberRowColorMode> adapter = new SettingsArrayAdapter<>(
+        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
                 this,
-                AdditionalNumberRowColorMode.values());
+                SettingsDisplayLabels.labels(this, AdditionalNumberRowColorMode.values()));
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override

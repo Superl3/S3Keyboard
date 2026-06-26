@@ -12,6 +12,7 @@ final class EditorInputPolicy {
             false,
             false,
             false,
+            false,
             KeyboardSurface.NORMAL,
             false,
             false,
@@ -22,6 +23,7 @@ final class EditorInputPolicy {
     final boolean numberLike;
     final boolean uriLike;
     final boolean emailLike;
+    final boolean webEditLike;
     final boolean multiline;
     final boolean searchAction;
     final boolean rawKeyInput;
@@ -36,6 +38,7 @@ final class EditorInputPolicy {
             boolean numberLike,
             boolean uriLike,
             boolean emailLike,
+            boolean webEditLike,
             boolean multiline,
             boolean searchAction,
             boolean rawKeyInput,
@@ -48,6 +51,7 @@ final class EditorInputPolicy {
         this.numberLike = numberLike;
         this.uriLike = uriLike;
         this.emailLike = emailLike;
+        this.webEditLike = webEditLike;
         this.multiline = multiline;
         this.searchAction = searchAction;
         this.rawKeyInput = rawKeyInput;
@@ -82,6 +86,8 @@ final class EditorInputPolicy {
         boolean emailLike = inputClass == InputType.TYPE_CLASS_TEXT
                 && (variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
                 || variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS);
+        boolean webEditLike = inputClass == InputType.TYPE_CLASS_TEXT
+                && variation == InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT;
         boolean multiline = (inputType & InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0;
         boolean searchAction = (imeOptions & EditorInfo.IME_MASK_ACTION) == EditorInfo.IME_ACTION_SEARCH;
         KeyboardSurface surface = surfaceFor(
@@ -91,20 +97,24 @@ final class EditorInputPolicy {
                 variation,
                 uriLike,
                 emailLike,
+                webEditLike,
                 multiline,
                 searchAction);
         boolean asciiPreferred = surface == KeyboardSurface.RAW
                 || surface == KeyboardSurface.PASSWORD_SAFE
                 || surface == KeyboardSurface.URL_EXTENDED
-                || surface == KeyboardSurface.EMAIL_EXTENDED;
+                || surface == KeyboardSurface.EMAIL_EXTENDED
+                || surface == KeyboardSurface.WEB_EXTENDED;
         boolean forceNumberRow = surface == KeyboardSurface.PASSWORD_SAFE;
-        boolean allowComposingText = !rawKeyInput && !password && !numberLike;
-        boolean allowTextConveniences = !rawKeyInput && !password && !numberLike && !uriLike && !emailLike;
+        boolean allowComposingText = !rawKeyInput && !password && !numberLike && !webEditLike;
+        boolean allowTextConveniences =
+                !rawKeyInput && !password && !numberLike && !uriLike && !emailLike && !webEditLike;
         return new EditorInputPolicy(
                 password,
                 numberLike,
                 uriLike,
                 emailLike,
+                webEditLike,
                 multiline,
                 searchAction,
                 rawKeyInput,
@@ -136,6 +146,27 @@ final class EditorInputPolicy {
                 || surface == KeyboardSurface.PINPAD;
     }
 
+    EditorInputPolicy withOverrides(
+            Boolean preferAsciiLayout,
+            Boolean forceNumberRow,
+            Boolean allowComposingText,
+            Boolean allowTextConveniences) {
+        return new EditorInputPolicy(
+                password,
+                numberLike,
+                uriLike,
+                emailLike,
+                webEditLike,
+                multiline,
+                searchAction,
+                rawKeyInput,
+                surface,
+                preferAsciiLayout == null ? this.preferAsciiLayout : preferAsciiLayout,
+                forceNumberRow == null ? this.forceNumberRow : forceNumberRow,
+                allowComposingText == null ? this.allowComposingText : allowComposingText,
+                allowTextConveniences == null ? this.allowTextConveniences : allowTextConveniences);
+    }
+
     private static KeyboardSurface surfaceFor(
             boolean rawKeyInput,
             boolean password,
@@ -143,6 +174,7 @@ final class EditorInputPolicy {
             int variation,
             boolean uriLike,
             boolean emailLike,
+            boolean webEditLike,
             boolean multiline,
             boolean searchAction) {
         if (rawKeyInput) {
@@ -167,6 +199,9 @@ final class EditorInputPolicy {
         }
         if (emailLike) {
             return KeyboardSurface.EMAIL_EXTENDED;
+        }
+        if (webEditLike) {
+            return KeyboardSurface.WEB_EXTENDED;
         }
         if (searchAction) {
             return KeyboardSurface.SEARCH_EXTENDED;

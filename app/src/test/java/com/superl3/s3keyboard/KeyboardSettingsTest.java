@@ -72,6 +72,41 @@ public final class KeyboardSettingsTest {
     }
 
     @Test
+    public void ergonomicsDefaultsPreserveLegacyLayoutUnlessEnabled() {
+        KeyboardErgonomicsOptions defaults = KeyboardErgonomicsOptions.DEFAULT;
+
+        assertFalse(defaults.mainKeyCenteringEnabled);
+        assertFalse(defaults.compactFunctionRailEnabled);
+        assertFalse(defaults.ergonomicHitboxEnabled);
+        assertFalse(defaults.ergonomicPositionAdjustEnabled);
+        assertFalse(defaults.leftAssistRailEnabled);
+        assertFalse(defaults.uniformGridGapEnabled);
+        assertEquals(VisualConsistencyLevel.NONE, defaults.visualConsistencyLevel);
+        assertFalse(defaults.affectsLayout());
+        assertTrue(KeyboardErgonomicsPreset.STABLE.options.affectsLayout());
+        assertFalse(KeyboardErgonomicsPreset.STABLE.options.leftAssistRailEnabled);
+        assertTrue(KeyboardErgonomicsPreset.STABLE.options.uniformGridGapEnabled);
+        assertTrue(KeyboardErgonomicsPreset.ERGONOMIC.options.leftAssistRailEnabled);
+        assertTrue(KeyboardErgonomicsPreset.AGGRESSIVE.options.leftAssistRailEnabled);
+        assertEquals(VisualConsistencyLevel.SUBTLE, KeyboardErgonomicsPreset.ERGONOMIC.options.visualConsistencyLevel);
+        assertEquals(KeyboardErgonomicsPreset.LEGACY, KeyboardErgonomicsPreset.findMatching(defaults));
+        assertEquals(
+                KeyboardErgonomicsPreset.STABLE,
+                KeyboardErgonomicsPreset.findMatching(KeyboardErgonomicsPreset.STABLE.options));
+        assertEquals(
+                KeyboardErgonomicsPreset.ERGONOMIC,
+                KeyboardErgonomicsPreset.findMatching(KeyboardErgonomicsPreset.ERGONOMIC.options));
+    }
+
+    @Test
+    public void modifiedErgonomicsOptionsBecomeCustomPresetState() {
+        KeyboardErgonomicsOptions custom = KeyboardErgonomicsPreset.STABLE.options
+                .withErgonomicPositionAdjust(true);
+
+        assertEquals(null, KeyboardErgonomicsPreset.findMatching(custom));
+    }
+
+    @Test
     public void touchYOffsetCanBeAdjustedAndClamped() {
         assertEquals(KeyboardSettings.MAX_TOUCH_Y_OFFSET_DP,
                 KeyboardSettings.defaults().withTouchYOffset(99).touchYOffsetDp);
