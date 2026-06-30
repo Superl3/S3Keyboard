@@ -37,6 +37,10 @@ The repo also includes wrapper scripts for the common path:
 .\scripts\install-debug.ps1 -Serial <device-ip>:<connect-port>
 ```
 
+Optional FUTO swipe inference setup is documented in
+`docs/futo-swipe-integration.md`. The default build keeps using the built-in
+heuristic swipe decoder unless the local FUTO AAR and model files are present.
+
 The debug APK is written to:
 
 ```text

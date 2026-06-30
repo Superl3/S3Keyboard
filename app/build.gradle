@@ -53,6 +53,11 @@ android {
 }
 
 dependencies {
+    def futoSwipeAar = file("libs/futo-swipe.aar")
+    if (futoSwipeAar.exists()) {
+        implementation files(futoSwipeAar)
+        implementation "org.jetbrains.kotlin:kotlin-stdlib:2.0.21"
+    }
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.json:json:20240303"
 }

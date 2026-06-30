@@ -4,7 +4,8 @@ This workspace contains a clean-room Android input method prototype for studying
 
 The prototype includes Dingul-style Hangul gesture input, English QWERTY input,
 Windows remote-mode key mapping, theme/icon customization, and an experimental
-clean-room English QWERTY swipe-typing path backed by a local heuristic decoder.
+English QWERTY swipe-typing path backed by a local heuristic decoder with an
+optional FUTO model backend.
 
 ## Setup
 
@@ -85,6 +86,9 @@ the web builder's generated theme contract and theme index.
 
 External modifier/display icon pack authoring is documented in
 `docs\icon-pack-import.md`.
+
+Optional FUTO swipe inference setup is documented in
+`docs\futo-swipe-integration.md`.
 
 ## Icon Assets
 

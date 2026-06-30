@@ -1,9 +1,11 @@
 .android-tools/
 .gradle/
 .tmp/
+external/
 build/
 local.properties
 captures/
 *.iml
 .idea/
 app/build/
+app/libs/*.aar

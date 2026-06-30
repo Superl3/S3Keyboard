@@ -64,7 +64,7 @@ public final class HangulKeyboardView extends View {
     private final Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint overlayTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final KeyboardDebugOverlayRenderer debugOverlayRenderer = new KeyboardDebugOverlayRenderer();
-    private final SwipeDecoder englishSwipeDecoder = HeuristicEnglishSwipeDecoder.DEFAULT;
+    private final SwipeDecoder englishSwipeDecoder;
     private final KeyboardIconRegistry iconRegistry;
     private final List<TouchState> activeTouches = new ArrayList<>();
     private final List<PendingTouchOutput> pendingTouchOutputs = new ArrayList<>();
@@ -208,6 +208,7 @@ public final class HangulKeyboardView extends View {
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
         setContentDescription(context.getString(R.string.keyboard_view_description));
         iconRegistry = new KeyboardIconRegistry(context);
+        englishSwipeDecoder = SwipeDecoderProvider.create(context);
         touchBiasStore = new TouchBiasStore(context);
         touchBias = touchBiasStore.load();
         dingulTouchProfile = touchBiasStore.loadDingulTouchProfile();
@@ -732,8 +733,27 @@ public final class HangulKeyboardView extends View {
         if (state == null || !englishSwipeTypingActive() || !isEnglishLetterKey(state.keySlot.key)) {
             return;
         }
-        state.swipeTraceBuilder = new SwipeTrace.Builder();
+        RectF bounds = englishSwipeNormalizationBounds();
+        state.swipeTraceBuilder = bounds == null
+                ? new SwipeTrace.Builder()
+                : new SwipeTrace.Builder(bounds.left, bounds.top, bounds.right, bounds.bottom);
         state.swipeTraceBuilder.add(state.downX, state.downY, eventTimeMs, state.keySlot.key);
+    }
+
+    private RectF englishSwipeNormalizationBounds() {
+        RectF bounds = null;
+        for (KeySlot keySlot : keySlots) {
+            if (!isEnglishLetterKey(keySlot.key)) {
+                continue;
+            }
+            RectF keyBounds = keySlot.bounds;
+            if (bounds == null) {
+                bounds = new RectF(keyBounds);
+            } else {
+                bounds.union(keyBounds);
+            }
+        }
+        return bounds;
     }
 
     private void recordEnglishSwipePoint(TouchState state, float x, float y, long eventTimeMs) {
