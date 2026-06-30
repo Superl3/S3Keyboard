@@ -37,10 +37,6 @@ The repo also includes wrapper scripts for the common path:
 .\scripts\install-debug.ps1 -Serial <device-ip>:<connect-port>
 ```
 
-Optional FUTO swipe inference setup is documented in
-`docs/futo-swipe-integration.md`. The default build keeps using the built-in
-heuristic swipe decoder unless the local FUTO AAR and model files are present.
-
 The debug APK is written to:
 
 ```text
@@ -227,14 +223,12 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 - `KeyboardMode` is the language/composition mode only. `KeyboardLayoutProfiles`
   stores the physical surface per language, defaulting to Hangul Dingul and
   English QWERTY while allowing Hangul QWERTY and English Dingul from settings.
-- English QWERTY has a clean-room swipe-typing path. `HangulKeyboardView`
-  records a `SwipeTrace` only for normal/search/multiline English QWERTY
-  surfaces, leaves tap input intact, and commits the top
-  `SwipeDecoder` candidate only when the path crosses at least two alpha keys.
-  `HeuristicEnglishSwipeDecoder` is a local fallback so the end-to-end pipeline
-  can be tested before adding a model-backed decoder. Do not import FUTO app
-  code or assume the FUTO C++ inference library can be bundled without a
-  separate license decision.
+- English QWERTY is tap-first. `EnglishQwertyInputAssistant` keeps only the
+  current in-memory word for suggestion strip updates, applies exact typo
+  corrections before boundary keys such as space and punctuation, and lets the
+  user tap a suggestion to replace the current word through the active
+  `InputConnection`. It is disabled for remote, raw-key, password, and other
+  fields where `EditorInputPolicy` disables text conveniences.
 - Fields that reject composing spans, including `TYPE_NULL` raw-key targets and
   `TYPE_TEXT_VARIATION_WEB_EDIT_TEXT`, use a commit-only Hangul fallback. The
   app keeps the internal automata state, deletes the previous visible fallback

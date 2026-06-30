@@ -55,9 +55,9 @@ public final class KeyboardRowMetricsTest {
         float bottomUnitWidth = unitWidth(bottomControls, availableWidth, gap);
 
         assertEquals("Shift", qwertyBottom.keys.get(0).label);
-        assertEquals("옵션", bottomControls.keys.get(0).label);
-        assertEquals("삭제", qwertyBottom.keys.get(qwertyBottom.keys.size() - 1).label);
-        assertEquals("전송", bottomControls.keys.get(bottomControls.keys.size() - 1).label);
+        assertEquals(KeyboardCommands.CMD_OPEN_OPTIONS, bottomControls.keys.get(0).tap);
+        assertEquals("Del", qwertyBottom.keys.get(qwertyBottom.keys.size() - 1).label);
+        assertEquals(KeyboardCommands.CMD_ENTER, bottomControls.keys.get(bottomControls.keys.size() - 1).tap);
 
         assertEquals(
                 KeyboardRowMetrics.keyLeft(bottomControls, 0, rowLeft, bottomUnitWidth, gap),

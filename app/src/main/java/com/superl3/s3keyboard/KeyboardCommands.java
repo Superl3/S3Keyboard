@@ -2,6 +2,7 @@ package com.superl3.s3keyboard;
 
 final class KeyboardCommands {
     static final String CMD_DELETE = "__delete__";
+    static final String CMD_DELETE_WORD = "__delete_word__";
     static final String CMD_SPACE = "__space__";
     static final String CMD_ENTER = "__enter__";
     static final String CMD_MOVE_LEFT = "__move_left__";

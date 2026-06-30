@@ -220,7 +220,16 @@ final class KeyboardLayoutFactory {
     }
 
     private static GestureKey deleteKey(int widthUnits) {
-        return GestureKey.command("Del", KeyboardCommands.CMD_DELETE, null, widthUnits, KeyIcon.BACKSPACE);
+        return new GestureKey(
+                "Del",
+                KeyboardCommands.CMD_DELETE,
+                null,
+                null,
+                KeyboardCommands.CMD_DELETE_WORD,
+                null,
+                null,
+                widthUnits,
+                KeyIcon.BACKSPACE);
     }
 
     private static GestureKey enterKey(int widthUnits) {
@@ -308,12 +317,7 @@ final class KeyboardLayoutFactory {
                         hangulQwertyKey("\u3160", null, pair("&", "|"), 2),
                         hangulQwertyKey("\u315C", null, single("!"), 2),
                         hangulQwertyKey("\u3161", null, single("?"), 2),
-                        GestureKey.command(
-                                "Del",
-                                KeyboardCommands.CMD_DELETE,
-                                null,
-                                3,
-                                KeyIcon.BACKSPACE)), 20));
+                        deleteKey(3)), 20));
     }
 
     private static List<KeyboardRow> englishRows(boolean remoteModeEnabled) {
@@ -335,12 +339,7 @@ final class KeyboardLayoutFactory {
                         englishKey('b', pair("&", "|"), 2),
                         englishKey('n', single("!"), 2),
                         englishKey('m', single("?"), 2),
-                        GestureKey.command(
-                                "삭제",
-                                KeyboardCommands.CMD_DELETE,
-                                null,
-                                3,
-                                KeyIcon.BACKSPACE)), 20));
+                        deleteKey(3)), 20));
     }
 
     private static List<KeyboardRow> englishDingulRows(int specialColumnPercent) {
@@ -565,8 +564,8 @@ final class KeyboardLayoutFactory {
         return new GestureKey(
                 "스페이스",
                 KeyboardCommands.CMD_SPACE,
-                ".com",
-                null,
+                settings.keyboardMode == KeyboardMode.ENGLISH ? "." : ".com",
+                settings.keyboardMode == KeyboardMode.ENGLISH ? "," : null,
                 KeyboardCommands.CMD_MOVE_LEFT,
                 KeyboardCommands.CMD_MOVE_RIGHT,
                 null,

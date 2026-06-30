@@ -39,7 +39,6 @@ public final class HangulKeyboardView extends View {
     private static final int MAX_RELEASED_PREVIEW_BUBBLES = 4;
     private static final long LONG_PRESS_PULSE_MS = 280;
     private static final long MODE_TRANSITION_MS = 260;
-    private static final int MAX_ENGLISH_SWIPE_CANDIDATES = 4;
     private static final String TYPING_PROBE_TAG = "DingulTypingProbe";
     private static final float DINGUL_AXIS_DOMINANCE_RATIO = 1.15f;
     private static final GestureAction[] TYPING_PROBE_ACTIONS = {
@@ -64,7 +63,6 @@ public final class HangulKeyboardView extends View {
     private final Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint overlayTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final KeyboardDebugOverlayRenderer debugOverlayRenderer = new KeyboardDebugOverlayRenderer();
-    private final SwipeDecoder englishSwipeDecoder;
     private final KeyboardIconRegistry iconRegistry;
     private final List<TouchState> activeTouches = new ArrayList<>();
     private final List<PendingTouchOutput> pendingTouchOutputs = new ArrayList<>();
@@ -208,7 +206,6 @@ public final class HangulKeyboardView extends View {
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
         setContentDescription(context.getString(R.string.keyboard_view_description));
         iconRegistry = new KeyboardIconRegistry(context);
-        englishSwipeDecoder = SwipeDecoderProvider.create(context);
         touchBiasStore = new TouchBiasStore(context);
         touchBias = touchBiasStore.load();
         dingulTouchProfile = touchBiasStore.loadDingulTouchProfile();
@@ -415,7 +412,6 @@ public final class HangulKeyboardView extends View {
         for (KeySlot keySlot : keySlots) {
             drawKey(canvas, keySlot);
         }
-        drawEnglishSwipeTraces(canvas);
         drawModeTransition(canvas);
         drawDebugKeyBoundsOverlay(canvas);
         updatePreviewBubbles();
@@ -565,36 +561,6 @@ public final class HangulKeyboardView extends View {
                 debugLastAction);
     }
 
-    private void drawEnglishSwipeTraces(Canvas canvas) {
-        if (!englishSwipeTypingActive()) {
-            return;
-        }
-        overlayPaint.setShader(null);
-        overlayPaint.setStyle(Paint.Style.STROKE);
-        overlayPaint.setStrokeCap(Paint.Cap.ROUND);
-        overlayPaint.setStrokeJoin(Paint.Join.ROUND);
-        overlayPaint.setStrokeWidth(Math.max(renderDp(3), getHeight() * 0.006f));
-        overlayPaint.setColor(withAlpha(settings.accentColor, 150));
-        for (TouchState state : activeTouches) {
-            if (state.swipeTraceBuilder == null) {
-                continue;
-            }
-            SwipeTrace trace = state.swipeTraceBuilder.build();
-            if (trace.points.size() < 2) {
-                continue;
-            }
-            Path path = new Path();
-            SwipeTrace.Point first = trace.points.get(0);
-            path.moveTo(first.x, first.y);
-            for (int i = 1; i < trace.points.size(); i++) {
-                SwipeTrace.Point point = trace.points.get(i);
-                path.lineTo(point.x, point.y);
-            }
-            canvas.drawPath(path, overlayPaint);
-        }
-        overlayPaint.setStyle(Paint.Style.FILL);
-    }
-
     private void scheduleNextAnimationFrameIfNeeded() {
         if (!motionEffectsEnabled()) {
             return;
@@ -657,7 +623,6 @@ public final class HangulKeyboardView extends View {
                 previewGestureGeneration,
                 SystemClock.uptimeMillis(),
                 !keySlot.contains(event.getX(pointerIndex), event.getY(pointerIndex)));
-        maybeStartEnglishSwipeTrace(state, event.getEventTime());
         rememberDebugTouch(state, GestureAction.TAP, keySlot);
         updatePreviewBubbleForTouch(state, false);
         activeTouches.add(state);
@@ -699,7 +664,6 @@ public final class HangulKeyboardView extends View {
     }
 
     private void updateTouchMove(TouchState state, float x, float y, long eventTimeMs) {
-        recordEnglishSwipePoint(state, x, y, eventTimeMs);
         boolean wasLocked = state.gestureState.isLocked();
         GestureAction action = state.gestureState.update(
                 x - state.downX,
@@ -729,74 +693,6 @@ public final class HangulKeyboardView extends View {
         rememberDebugTouch(state, state.activeAction, state.keySlot);
     }
 
-    private void maybeStartEnglishSwipeTrace(TouchState state, long eventTimeMs) {
-        if (state == null || !englishSwipeTypingActive() || !isEnglishLetterKey(state.keySlot.key)) {
-            return;
-        }
-        RectF bounds = englishSwipeNormalizationBounds();
-        state.swipeTraceBuilder = bounds == null
-                ? new SwipeTrace.Builder()
-                : new SwipeTrace.Builder(bounds.left, bounds.top, bounds.right, bounds.bottom);
-        state.swipeTraceBuilder.add(state.downX, state.downY, eventTimeMs, state.keySlot.key);
-    }
-
-    private RectF englishSwipeNormalizationBounds() {
-        RectF bounds = null;
-        for (KeySlot keySlot : keySlots) {
-            if (!isEnglishLetterKey(keySlot.key)) {
-                continue;
-            }
-            RectF keyBounds = keySlot.bounds;
-            if (bounds == null) {
-                bounds = new RectF(keyBounds);
-            } else {
-                bounds.union(keyBounds);
-            }
-        }
-        return bounds;
-    }
-
-    private void recordEnglishSwipePoint(TouchState state, float x, float y, long eventTimeMs) {
-        if (state == null || state.swipeTraceBuilder == null) {
-            return;
-        }
-        KeySlot current = findKey(x, y);
-        state.swipeTraceBuilder.add(
-                x,
-                y,
-                eventTimeMs,
-                current != null && isEnglishLetterKey(current.key) ? current.key : null);
-    }
-
-    private boolean queueEnglishSwipeOutputIfReady(TouchState state, float x, float y) {
-        if (state == null || state.swipeTraceBuilder == null) {
-            return false;
-        }
-        SwipeTrace trace = state.swipeTraceBuilder.build();
-        if (trace.distinctKeyCount() < 2) {
-            return false;
-        }
-        List<SwipeCandidate> candidates = englishSwipeDecoder.decode(trace, MAX_ENGLISH_SWIPE_CANDIDATES);
-        if (candidates.isEmpty() || candidates.get(0).word.isEmpty()) {
-            return false;
-        }
-        queueTouchOutput(
-                state,
-                new ResolvedTouchOutput(
-                        state.keySlot,
-                        GestureAction.TAP,
-                        GestureAction.TAP,
-                        null,
-                        null,
-                        candidates.get(0).score,
-                        false),
-                candidates.get(0).word,
-                x,
-                y);
-        feedback.tapConfirm();
-        return true;
-    }
-
     private boolean handlePointerUp(MotionEvent event, int pointerIndex) {
         TouchState state = findTouchState(event.getPointerId(pointerIndex));
         if (state == null) {
@@ -812,15 +708,6 @@ public final class HangulKeyboardView extends View {
         }
         boolean repeatAlreadyFired = repeatController.hasFired();
         if (!state.longPressTriggered && !repeatAlreadyFired && !state.tapOutputAlreadyEmitted) {
-            recordEnglishSwipePoint(state, event.getX(pointerIndex), event.getY(pointerIndex), event.getEventTime());
-            if (queueEnglishSwipeOutputIfReady(
-                    state,
-                    event.getX(pointerIndex),
-                    event.getY(pointerIndex))) {
-                removeTouchState(state, true);
-                flushPendingTouchOutputs();
-                return true;
-            }
             GestureAction action = state.gestureState.release(
                     event.getX(pointerIndex) - state.downX,
                     event.getY(pointerIndex) - state.downY,
@@ -4349,10 +4236,6 @@ public final class HangulKeyboardView extends View {
         return settings.keyboardMode == KeyboardMode.HANGUL && activeLayoutIsDingul();
     }
 
-    private boolean englishSwipeTypingActive() {
-        return EnglishSwipeTypingPolicy.active(settings, keyboardSurface, layoutProfiles);
-    }
-
     public interface OnKeyGestureListener {
         void onKeyGesture(String value);
     }
@@ -4386,7 +4269,6 @@ public final class HangulKeyboardView extends View {
         long longPressAnimationStartMs = -1;
         Runnable longPressRunnable;
         PreviewBubbleAnimation previewBubble;
-        SwipeTrace.Builder swipeTraceBuilder;
 
         TouchState(
                 int pointerId,

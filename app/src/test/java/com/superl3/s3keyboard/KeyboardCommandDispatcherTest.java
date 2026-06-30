@@ -13,12 +13,14 @@ public final class KeyboardCommandDispatcherTest {
         RecordingTarget target = new RecordingTarget();
 
         KeyboardCommandDispatcher.dispatch(KeyboardCommands.CMD_DELETE, target);
+        KeyboardCommandDispatcher.dispatch(KeyboardCommands.CMD_DELETE_WORD, target);
         KeyboardCommandDispatcher.dispatch(KeyboardCommands.CMD_SPACE, target);
         KeyboardCommandDispatcher.dispatch("가", target);
 
         assertEquals("delete", target.calls.get(0));
-        assertEquals("space", target.calls.get(1));
-        assertEquals("text:가", target.calls.get(2));
+        assertEquals("deleteWord", target.calls.get(1));
+        assertEquals("space", target.calls.get(2));
+        assertEquals("text:가", target.calls.get(3));
     }
 
     @Test
@@ -62,6 +64,11 @@ public final class KeyboardCommandDispatcherTest {
         @Override
         void delete() {
             calls.add("delete");
+        }
+
+        @Override
+        void deleteWord() {
+            calls.add("deleteWord");
         }
 
         @Override

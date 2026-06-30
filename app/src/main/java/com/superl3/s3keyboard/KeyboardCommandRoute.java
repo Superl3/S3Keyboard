@@ -3,6 +3,7 @@ package com.superl3.s3keyboard;
 enum KeyboardCommandRoute {
     NOOP,
     DELETE,
+    DELETE_WORD,
     SPACE,
     ENTER,
     MOVE_LEFT,

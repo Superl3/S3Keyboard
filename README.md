@@ -3,9 +3,9 @@
 This workspace contains a clean-room Android input method prototype for studying a Korean gesture-keyboard UX. It is built from the described interaction model and screenshot, not from proprietary APK code or assets.
 
 The prototype includes Dingul-style Hangul gesture input, English QWERTY input,
-Windows remote-mode key mapping, theme/icon customization, and an experimental
-English QWERTY swipe-typing path backed by a local heuristic decoder with an
-optional FUTO model backend.
+Windows remote-mode key mapping, theme/icon customization, and English QWERTY
+tap-typing assistance for typo suggestions, quick punctuation, and word-level
+editing.
 
 ## Setup
 
@@ -87,9 +87,6 @@ the web builder's generated theme contract and theme index.
 External modifier/display icon pack authoring is documented in
 `docs\icon-pack-import.md`.
 
-Optional FUTO swipe inference setup is documented in
-`docs\futo-swipe-integration.md`.
-
 ## Icon Assets
 
 ```powershell
@@ -135,6 +132,7 @@ The smoke script opens the local practice field and captures input-method state 
 - Internal Hangul/English mode toggle
 - Selectable Hangul Dingul/QWERTY and English QWERTY/Dingul layouts
 - English QWERTY layout with tap lowercase, up-slide uppercase, and long-press symbols
+- English QWERTY tap assistance with current-word suggestions, safe exact typo correction on boundary keys, spacebar quick punctuation, and backspace word-delete slide
 - Per-language top number row, default off for Hangul and on for English
 - Clean-room generated vector icon pipeline for command keys and settings action buttons
 - Conventional keyboard usability hacks: hit slop, touch Y offset, locked slide direction, haptic feedback, delete/cursor repeat, spacebar cursor movement, contextual Enter labels, and English double-space period

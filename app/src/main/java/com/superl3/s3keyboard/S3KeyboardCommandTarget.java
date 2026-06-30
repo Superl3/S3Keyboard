@@ -17,6 +17,13 @@ final class S3KeyboardCommandTarget extends KeyboardCommandDispatcher.Target {
     }
 
     @Override
+    void deleteWord() {
+        InputConnection inputConnection = service.commandInputConnection();
+        service.resetDoubleSpacePeriodState();
+        service.deleteWord(inputConnection);
+    }
+
+    @Override
     void space() {
         service.commitSpace(service.commandInputConnection());
     }

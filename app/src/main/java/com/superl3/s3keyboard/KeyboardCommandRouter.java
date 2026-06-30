@@ -13,6 +13,8 @@ final class KeyboardCommandRouter {
                 return KeyboardCommandRoute.NOOP;
             case KeyboardCommands.CMD_DELETE:
                 return KeyboardCommandRoute.DELETE;
+            case KeyboardCommands.CMD_DELETE_WORD:
+                return KeyboardCommandRoute.DELETE_WORD;
             case KeyboardCommands.CMD_SPACE:
                 return KeyboardCommandRoute.SPACE;
             case KeyboardCommands.CMD_ENTER:

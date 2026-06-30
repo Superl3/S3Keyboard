@@ -14,6 +14,9 @@ final class KeyboardCommandDispatcher {
             case DELETE:
                 target.delete();
                 return;
+            case DELETE_WORD:
+                target.deleteWord();
+                return;
             case SPACE:
                 target.space();
                 return;
@@ -91,6 +94,8 @@ final class KeyboardCommandDispatcher {
 
     abstract static class Target {
         abstract void delete();
+
+        abstract void deleteWord();
 
         abstract void space();
 

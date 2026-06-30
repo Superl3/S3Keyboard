@@ -168,7 +168,8 @@ public final class KeyboardLayoutFactoryTest {
         GestureKey space = findKey(rows, "스페이스");
         GestureKey language = findKey(rows, "한/영");
 
-        assertEquals(".com", space.valueFor(GestureAction.UP));
+        assertEquals(".", space.valueFor(GestureAction.UP));
+        assertEquals(",", space.valueFor(GestureAction.DOWN));
         assertEquals(KeyboardCommands.CMD_MOVE_LEFT, space.valueFor(GestureAction.LEFT));
         assertEquals(KeyboardCommands.CMD_MOVE_RIGHT, space.valueFor(GestureAction.RIGHT));
         assertEquals(KeyboardCommands.CMD_TOGGLE_LANGUAGE, language.valueFor(GestureAction.TAP));
@@ -176,6 +177,16 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals(",", language.valueFor(GestureAction.LEFT));
         assertEquals(".", language.valueFor(GestureAction.RIGHT));
         assertNull(language.valueFor(GestureAction.LONG_PRESS));
+    }
+
+    @Test
+    public void qwertyBackspaceLeftSlideDeletesWord() {
+        KeyboardSettings settings = KeyboardSettings.defaults().withKeyboardMode(KeyboardMode.ENGLISH);
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
+        GestureKey backspace = findKey(rows, "Del");
+
+        assertEquals(KeyboardCommands.CMD_DELETE, backspace.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_DELETE_WORD, backspace.valueFor(GestureAction.LEFT));
     }
 
     @Test
@@ -342,7 +353,7 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals("2,2,2,2,2,2,2,2,2", widths(rows.get(1)));
 
         assertEquals(20, rows.get(2).baseUnits);
-        assertEquals("Shift,z,x,c,v,b,n,m,삭제", labels(rows.get(2)));
+        assertEquals("Shift,z,x,c,v,b,n,m,Del", labels(rows.get(2)));
         assertEquals("3,2,2,2,2,2,2,2,3", widths(rows.get(2)));
     }
 
@@ -452,7 +463,7 @@ public final class KeyboardLayoutFactoryTest {
         List<KeyboardRow> rows = KeyboardLayoutFactory.build(settings);
 
         assertEquals(KeyIcon.SHIFT, findKey(rows, "Shift").icon);
-        assertEquals(KeyIcon.BACKSPACE, findKey(rows, "삭제").icon);
+        assertEquals(KeyIcon.BACKSPACE, findKey(rows, "Del").icon);
         assertEquals(KeyIcon.NONE, findKey(rows, "a").icon);
     }
 

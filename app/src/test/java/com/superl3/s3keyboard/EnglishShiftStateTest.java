@@ -60,7 +60,7 @@ public final class EnglishShiftStateTest {
     }
 
     @Test
-    public void shiftAppliesNaturallyToSwipeWords() {
+    public void shiftAppliesNaturallyToMultiLetterWords() {
         EnglishShiftState state = new EnglishShiftState();
 
         state.onShiftOnceCommand();
