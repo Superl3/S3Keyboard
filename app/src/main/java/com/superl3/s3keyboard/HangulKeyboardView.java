@@ -36,7 +36,7 @@ public final class HangulKeyboardView extends View {
     private static final int TOOL_TYPE_PALM = 5;
     private static final long KEY_PRESS_ANIMATION_MS = 105;
     private static final long SLIDE_LOCK_ANIMATION_MS = 170;
-    private static final int MAX_RELEASED_PREVIEW_BUBBLES = 4;
+    private static final int MAX_RELEASED_PREVIEW_BUBBLES = 6;
     private static final long LONG_PRESS_PULSE_MS = 280;
     private static final long MODE_TRANSITION_MS = 260;
     private static final String TYPING_PROBE_TAG = "DingulTypingProbe";
@@ -1153,8 +1153,8 @@ public final class HangulKeyboardView extends View {
     private void removeTouchState(TouchState state, boolean stopRepeat) {
         cancelLongPressTimer(state);
         activeTouches.remove(state);
+        enqueuePreviewBubble(state);
         if (state.pointerId == previewPointerId) {
-            enqueuePreviewBubble(state);
             previewPointerId = -1;
         }
         if (stopRepeat) {
@@ -3152,15 +3152,14 @@ public final class HangulKeyboardView extends View {
                 renderDp(48),
                 Math.round(overlayTextPaint.measureText(bubble.label)) + renderDp(28)));
         int popupHeight = renderDp(61);
-        float previewProgress = bubble.popProgress(
-                SystemClock.uptimeMillis(),
-                motionEffectsEnabled(),
-                motionDurationScale());
         float previewMotionProgress = bubble.motionProgress(
                 SystemClock.uptimeMillis(),
                 motionEffectsEnabled(),
                 motionDurationScale());
-        float previewScale = 0.99f + 0.01f * previewProgress;
+        float previewScale = bubble.scale(
+                SystemClock.uptimeMillis(),
+                motionEffectsEnabled(),
+                motionDurationScale());
         int previewLift = previewBubbleLift(previewMotionProgress);
         int x = Math.round(clamp(
                 bubble.anchorCenterX - popupWidth / 2f,
@@ -3217,6 +3216,7 @@ public final class HangulKeyboardView extends View {
                     previewBubbleBackgroundFor(state.keySlot),
                     settings.borderColor,
                     renderDp(settings.keyBorderWidthDp),
+                    SystemClock.uptimeMillis(),
                     released);
         }
         if (released) {
@@ -3285,12 +3285,12 @@ public final class HangulKeyboardView extends View {
         if (!motionEffectsEnabled()) {
             return 0;
         }
-        float peakLiftDp = 9f * motionIntensityScale();
-        float settleLiftDp = 6f * motionIntensityScale();
-        if (progress < 0.30f) {
-            return Math.round(renderDp(peakLiftDp) * smoothStep(progress / 0.30f));
-        } else if (progress < 0.52f) {
-            float descend = smoothStep((progress - 0.30f) / 0.22f);
+        float peakLiftDp = 14f * motionIntensityScale();
+        float settleLiftDp = 8f * motionIntensityScale();
+        if (progress < 0.34f) {
+            return Math.round(renderDp(peakLiftDp) * smoothStep(progress / 0.34f));
+        } else if (progress < 0.62f) {
+            float descend = smoothStep((progress - 0.34f) / 0.28f);
             return Math.round(renderDp(peakLiftDp + (settleLiftDp - peakLiftDp) * descend));
         }
         return Math.round(renderDp(settleLiftDp));

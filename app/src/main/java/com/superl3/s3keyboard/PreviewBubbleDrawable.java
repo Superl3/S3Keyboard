@@ -64,9 +64,9 @@ final class PreviewBubbleDrawable extends Drawable {
         float corner = Math.min(cornerPx, Math.min(right - left, bottom - top) / 2f);
         float centerX = (left + right) / 2f;
         float width = Math.max(1f, right - left);
-        float tailTopHalf = width * 0.43f;
-        float tailMidHalf = width * 0.28f;
-        float tailBottomHalf = Math.max(width * 0.16f, 1f);
+        float tailTopHalf = width * 0.39f;
+        float tailMidHalf = width * 0.22f;
+        float tailBottomHalf = Math.max(width * 0.08f, 1f);
 
         body.set(left, top, right, bottom);
         canvas.drawRoundRect(body, corner, corner, fillPaint);
@@ -96,23 +96,23 @@ final class PreviewBubbleDrawable extends Drawable {
             tailPath.lineTo(centerX + tailTopHalf, bottom - 0.5f);
             tailPath.cubicTo(
                     centerX + tailTopHalf * 0.96f,
-                    bottom + tailHeightPx * 0.32f,
+                    bottom + tailHeightPx * 0.34f,
                     centerX + tailMidHalf,
-                    bottom + tailHeightPx * 0.70f,
+                    bottom + tailHeightPx * 0.72f,
                     centerX + tailBottomHalf,
                     tailBottomY);
             tailPath.cubicTo(
-                    centerX + tailBottomHalf * 0.58f,
+                    centerX + tailBottomHalf * 0.42f,
                     tailBottomY - concaveLift,
-                    centerX - tailBottomHalf * 0.58f,
+                    centerX - tailBottomHalf * 0.42f,
                     tailBottomY - concaveLift,
                     centerX - tailBottomHalf,
                     tailBottomY);
             tailPath.cubicTo(
                     centerX - tailMidHalf,
-                    bottom + tailHeightPx * 0.70f,
+                    bottom + tailHeightPx * 0.72f,
                     centerX - tailTopHalf * 0.96f,
-                    bottom + tailHeightPx * 0.32f,
+                    bottom + tailHeightPx * 0.34f,
                     centerX - tailTopHalf,
                     bottom - 0.5f);
             tailPath.close();
@@ -124,15 +124,15 @@ final class PreviewBubbleDrawable extends Drawable {
                     new int[] {
                             withAlpha(backgroundColor, alpha),
                             withAlpha(backgroundColor, alpha),
-                            withAlpha(backgroundColor, Math.round(alpha * 0.36f)),
+                            withAlpha(backgroundColor, Math.round(alpha * 0.30f)),
                             withAlpha(backgroundColor, 0)
                     },
-                    new float[] { 0f, 0.44f, 0.78f, 1f },
+                    new float[] { 0f, 0.55f, 0.84f, 1f },
                     Shader.TileMode.CLAMP));
             canvas.drawPath(tailPath, tailPaint);
             tailPaint.setShader(null);
             if (borderWidthPx > 0) {
-                tailStrokePaint.setAlpha(Math.round(alpha * 0.26f));
+                tailStrokePaint.setAlpha(Math.round(alpha * 0.18f));
                 canvas.drawPath(tailPath, tailStrokePaint);
             }
         }

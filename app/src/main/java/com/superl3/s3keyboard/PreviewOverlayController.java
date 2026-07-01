@@ -15,7 +15,7 @@ import java.util.List;
 
 final class PreviewOverlayController {
     private static final int TOP_RESERVE_DP = 112;
-    private static final int ANGULAR_TAIL_DP = 22;
+    private static final int ANGULAR_TAIL_DP = 26;
 
     private final Context context;
     private final FrameLayout overlayContainer;
@@ -117,6 +117,8 @@ final class PreviewOverlayController {
             overlay.setIncludeFontPadding(false);
             overlay.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
             overlay.setVisibility(View.VISIBLE);
+            overlay.setElevation(dp(8));
+            overlay.setTranslationZ(dp(4));
             overlayPool.add(overlay);
             overlayContainer.addView(overlay, new FrameLayout.LayoutParams(1, 1));
         }
