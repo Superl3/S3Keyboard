@@ -587,6 +587,32 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void gestureTouchSettingsPersistenceStaysBehindController() throws Exception {
+        String activity = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
+        String controller = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/GestureTouchSettingsController.java");
+
+        assertTrue(activity.contains("GestureTouchSettingsController"));
+        assertTrue(activity.contains("gestureTouchSettingsController.addTo("));
+        assertFalse(activity.contains("gestureThresholdSeekBar"));
+        assertFalse(activity.contains("touchYOffsetSeekBar"));
+        assertFalse(activity.contains("spacebarCursorDeadZoneSeekBar"));
+        assertFalse(activity.contains("dingulVowelGestureProfileSpinner"));
+        assertFalse(activity.contains("withGestureThreshold("));
+        assertFalse(activity.contains("withTouchYOffset("));
+        assertFalse(activity.contains("saveSpacebarCursorDeadZoneDp("));
+        assertFalse(activity.contains("saveDingulVowelGestureProfile("));
+        assertTrue(controller.contains("withGestureThreshold("));
+        assertTrue(controller.contains("withTouchYOffset("));
+        assertTrue(controller.contains("saveSpacebarCursorDeadZoneDp("));
+        assertTrue(controller.contains("saveDingulVowelGestureProfile("));
+        assertTrue(controller.contains("SettingsValueFormatter.gestureThreshold("));
+        assertTrue(controller.contains("SettingsValueFormatter.spacebarCursorDeadZone("));
+        assertTrue(controller.contains("SettingsValueFormatter.touchYOffset("));
+    }
+
+    @Test
     public void localDataDeletionStaysBehindSettingsController() throws Exception {
         String activity = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
@@ -646,11 +672,13 @@ public final class ProductionReadinessConfigTest {
     public void mainSettingsDynamicValueFormattingStaysInDedicatedFormatter() throws Exception {
         String activity = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
+        String gestureTouchController = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/GestureTouchSettingsController.java");
         String formatter = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/SettingsValueFormatter.java");
 
         assertTrue(activity.contains("SettingsValueFormatter.hangulHeight("));
-        assertTrue(activity.contains("SettingsValueFormatter.gestureThreshold("));
+        assertTrue(gestureTouchController.contains("SettingsValueFormatter.gestureThreshold("));
         assertFalse(activity.contains("settings_hangul_height_format"));
         assertFalse(activity.contains("settings_gesture_threshold_format"));
         assertTrue(formatter.contains("R.string.settings_hangul_height_format"));

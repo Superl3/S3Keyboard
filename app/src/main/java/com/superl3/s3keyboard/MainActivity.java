@@ -70,6 +70,7 @@ public final class MainActivity extends Activity {
     private DebugOverlaySettingsController debugOverlaySettingsController;
     private HapticSettingsController hapticSettingsController;
     private RepeatSettingsController repeatSettingsController;
+    private GestureTouchSettingsController gestureTouchSettingsController;
     private boolean syncing;
     private boolean demoShowKeyboard;
     private Spinner handednessSpinner;
@@ -86,9 +87,6 @@ public final class MainActivity extends Activity {
     private SeekBar keyBorderWidthSeekBar;
     private SeekBar keyGapSeekBar;
     private SeekBar keyDepthSeekBar;
-    private SeekBar gestureThresholdSeekBar;
-    private SeekBar touchYOffsetSeekBar;
-    private SeekBar spacebarCursorDeadZoneSeekBar;
     private SeekBar primaryTextSizeSeekBar;
     private SeekBar secondaryTextSizeSeekBar;
     private Spinner themePresetSpinner;
@@ -108,7 +106,6 @@ public final class MainActivity extends Activity {
     private Spinner remoteKeyPresetSpinner;
     private Spinner remoteImeShortcutSpinner;
     private Spinner inputAssistanceModeSpinner;
-    private Spinner dingulVowelGestureProfileSpinner;
     private InputAssistanceMode[] inputAssistanceModes =
             InputAssistanceSettingsController.availableModes(false);
     private Spinner motionEffectLevelSpinner;
@@ -170,9 +167,6 @@ public final class MainActivity extends Activity {
     private TextView keyBorderWidthValue;
     private TextView keyGapValue;
     private TextView keyDepthValue;
-    private TextView gestureThresholdValue;
-    private TextView touchYOffsetValue;
-    private TextView spacebarCursorDeadZoneValue;
     private TextView dingulInputDiagnosticsValue;
     private TextView currentAppProfileSummaryValue;
     private TextView primaryTextSizeValue;
@@ -1221,79 +1215,26 @@ public final class MainActivity extends Activity {
         });
         hapticSettingsController.addTo(root);
 
-        gestureThresholdValue = label("");
-        gestureThresholdSeekBar = seekBar(
-                KeyboardSettings.MAX_GESTURE_THRESHOLD_DP - KeyboardSettings.MIN_GESTURE_THRESHOLD_DP);
-        gestureThresholdSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    settings = settings.withGestureThreshold(
-                            KeyboardSettings.MIN_GESTURE_THRESHOLD_DP + progress);
-                    saveAndSync();
-                }
-            }
-        });
-        root.addView(gestureThresholdValue, matchWrapWithTop(12));
-        root.addView(gestureThresholdSeekBar, matchWrap());
-
-        root.addView(label(getString(R.string.settings_dingul_vowel_gesture_profile)), matchWrapWithTop(12));
-        dingulVowelGestureProfileSpinner = new Spinner(this);
-        dingulVowelGestureProfileSpinner.setAdapter(new SettingsArrayAdapter<>(
+        gestureTouchSettingsController = new GestureTouchSettingsController(
                 this,
-                SettingsDisplayLabels.labels(this, DingulVowelGestureProfile.values())));
-        dingulVowelGestureProfileSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (syncing) {
-                    return;
-                }
-                DingulVowelGestureProfile[] profiles = DingulVowelGestureProfile.values();
-                if (position >= 0 && position < profiles.length) {
-                    KeyboardPreferences.saveDingulVowelGestureProfile(MainActivity.this, profiles[position]);
-                    syncControls();
-                }
-            }
+                new GestureTouchSettingsController.Host() {
+                    @Override
+                    public KeyboardSettings settings() {
+                        return settings;
+                    }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        root.addView(dingulVowelGestureProfileSpinner, matchWrap());
+                    @Override
+                    public void saveSettings(KeyboardSettings nextSettings) {
+                        settings = nextSettings;
+                        saveAndSync();
+                    }
 
-        spacebarCursorDeadZoneValue = label("");
-        spacebarCursorDeadZoneSeekBar = seekBar(
-                KeyboardPreferences.MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP
-                        - KeyboardPreferences.MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP);
-        spacebarCursorDeadZoneSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    KeyboardPreferences.saveSpacebarCursorDeadZoneDp(
-                            MainActivity.this,
-                            KeyboardPreferences.MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP + progress);
-                    syncControls();
-                }
-            }
-        });
-        root.addView(spacebarCursorDeadZoneValue, matchWrapWithTop(12));
-        root.addView(spacebarCursorDeadZoneSeekBar, matchWrap());
-
-        touchYOffsetValue = label("");
-        touchYOffsetSeekBar = seekBar(
-                KeyboardSettings.MAX_TOUCH_Y_OFFSET_DP - KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP);
-        touchYOffsetSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    settings = settings.withTouchYOffset(
-                            KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP + progress);
-                    saveAndSync();
-                }
-            }
-        });
-        root.addView(touchYOffsetValue, matchWrapWithTop(12));
-        root.addView(touchYOffsetSeekBar, matchWrap());
+                    @Override
+                    public void syncControls() {
+                        MainActivity.this.syncControls();
+                    }
+                });
+        gestureTouchSettingsController.addTo(root);
 
         repeatSettingsController = new RepeatSettingsController(this, new RepeatSettingsController.Host() {
             @Override
@@ -1753,6 +1694,9 @@ public final class MainActivity extends Activity {
         if (repeatSettingsController != null) {
             repeatSettingsController.sync(settings);
         }
+        if (gestureTouchSettingsController != null) {
+            gestureTouchSettingsController.sync(settings);
+        }
         if (themeOptions.length == 0) {
             reloadThemeOptions();
         }
@@ -1797,10 +1741,6 @@ public final class MainActivity extends Activity {
         keyBorderWidthSeekBar.setProgress(settings.keyBorderWidthDp);
         keyGapSeekBar.setProgress(settings.keyGapDp);
         keyDepthSeekBar.setProgress(settings.keyDepthDp);
-        gestureThresholdSeekBar.setProgress(
-                settings.gestureThresholdDp - KeyboardSettings.MIN_GESTURE_THRESHOLD_DP);
-        touchYOffsetSeekBar.setProgress(
-                settings.touchYOffsetDp - KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP);
         keyIdleColorSpinner.setSelection(indexOfColor(settings.keyIdleColor));
         keyPressedColorSpinner.setSelection(indexOfColor(settings.keyPressedColor));
         keyboardBackgroundColorSpinner.setSelection(indexOfColor(settings.keyboardBackgroundColor));
@@ -1857,10 +1797,6 @@ public final class MainActivity extends Activity {
                     InputAssistanceSettingsController.indexOf(
                             inputAssistanceModes,
                             currentInputAssistanceMode()));
-        }
-        if (dingulVowelGestureProfileSpinner != null) {
-            dingulVowelGestureProfileSpinner.setSelection(
-                    KeyboardPreferences.loadDingulVowelGestureProfile(this).ordinal());
         }
         hangulNumberRowCheckBox.setChecked(settings.showHangulNumberRow);
         englishNumberRowCheckBox.setChecked(settings.showEnglishNumberRow);
@@ -1948,20 +1884,12 @@ public final class MainActivity extends Activity {
         keyBorderWidthValue.setText(SettingsValueFormatter.borderWidth(this, settings.keyBorderWidthDp));
         keyGapValue.setText(SettingsValueFormatter.visualGap(this, settings.keyGapDp));
         keyDepthValue.setText(SettingsValueFormatter.depthHeight(this, settings));
-        gestureThresholdValue.setText(SettingsValueFormatter.gestureThreshold(this, settings.gestureThresholdDp));
-        if (spacebarCursorDeadZoneValue != null) {
-            int deadZoneDp = KeyboardPreferences.loadSpacebarCursorDeadZoneDp(this);
-            spacebarCursorDeadZoneValue.setText(SettingsValueFormatter.spacebarCursorDeadZone(this, deadZoneDp));
-            spacebarCursorDeadZoneSeekBar.setProgress(
-                    deadZoneDp - KeyboardPreferences.MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP);
-        }
         primaryTextSizeValue.setText(SettingsValueFormatter.primaryTextSize(
                 this,
                 settings.primaryTextSizePercent));
         secondaryTextSizeValue.setText(SettingsValueFormatter.secondaryTextSize(
                 this,
                 settings.secondaryTextSizePercent));
-        touchYOffsetValue.setText(SettingsValueFormatter.touchYOffset(this, settings.touchYOffsetDp));
         handednessSpinner.post(() -> syncing = false);
     }
 
