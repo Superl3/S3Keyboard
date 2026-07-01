@@ -10,6 +10,7 @@ This audit tracks evidence-based simplification targets for the keyboard codebas
 - `S3KeyboardService` owns IME lifecycle, editor policy, Hangul composition, English assistance, remote mode, clipboard, quick settings, and command dispatch. Input correctness fixes should keep `InputConnectionTextOperator` as the only direct composing/commit/delete boundary.
 - `RecentInputCorrectionController` was unused and has been removed. Geometry-only correction is already available through `TouchBiasStore`, so keeping an extra controller added API surface without behavior.
 - Repeated Hangul automata committed-fragment calls in `S3KeyboardService` now route through one helper, keeping the composing replacement contract in one local place.
+- Preview bubble width, position, lift, and corner-radius rules now live in `PreviewBubbleLayout`, so popup tuning can be tested without touching the full keyboard view.
 
 ## Preferred Direction
 
@@ -21,7 +22,6 @@ This audit tracks evidence-based simplification targets for the keyboard codebas
 
 ## Next Refactor Units
 
-1. Extract preview bubble layout calculation from `HangulKeyboardView` into a small pure helper with tests for clamping, lift, scale, and multi-touch release ordering.
-2. Move settings category construction out of `MainActivity` one section at a time, starting with debug/input-assistance sections because they are currently option-heavy.
-3. Introduce grouped settings value objects only when they reduce constructor churn in `KeyboardSettings`; do not add compatibility aliases unless an importer actually needs them.
-4. Keep removing unused one-method controller classes when their behavior is already expressed by an existing service/store.
+1. Move settings category construction out of `MainActivity` one section at a time, starting with debug/input-assistance sections because they are currently option-heavy.
+2. Introduce grouped settings value objects only when they reduce constructor churn in `KeyboardSettings`; do not add compatibility aliases unless an importer actually needs them.
+3. Keep removing unused one-method controller classes when their behavior is already expressed by an existing service/store.

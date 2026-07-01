@@ -3148,9 +3148,11 @@ public final class HangulKeyboardView extends View {
                 settings.fontFamily,
                 settings.primaryTextBold,
                 settings.primaryTextItalic));
-        int popupWidth = Math.min(renderDp(92), Math.max(
+        int popupWidth = PreviewBubbleLayout.widthPx(
+                overlayTextPaint.measureText(bubble.label),
                 renderDp(48),
-                Math.round(overlayTextPaint.measureText(bubble.label)) + renderDp(28)));
+                renderDp(92),
+                renderDp(28));
         int popupHeight = renderDp(61);
         float previewMotionProgress = bubble.motionProgress(
                 SystemClock.uptimeMillis(),
@@ -3161,12 +3163,8 @@ public final class HangulKeyboardView extends View {
                 motionEffectsEnabled(),
                 motionDurationScale());
         int previewLift = previewBubbleLift(previewMotionProgress);
-        int x = Math.round(clamp(
-                bubble.anchorCenterX - popupWidth / 2f,
-                renderDp(2),
-                Math.max(renderDp(2), getWidth() - popupWidth - renderDp(2))));
-        float preferredY = bubble.anchorTop - renderDp(3) - popupHeight - previewLift;
-        int y = Math.round(preferredY);
+        int x = PreviewBubbleLayout.xPx(bubble.anchorCenterX, popupWidth, getWidth(), renderDp(2));
+        int y = PreviewBubbleLayout.yPx(bubble.anchorTop, popupHeight, renderDp(3), previewLift);
         float alpha = bubble.alpha(
                 SystemClock.uptimeMillis(),
                 motionEffectsEnabled(),
@@ -3282,26 +3280,20 @@ public final class HangulKeyboardView extends View {
     }
 
     private int previewBubbleLift(float progress) {
-        if (!motionEffectsEnabled()) {
-            return 0;
-        }
-        float peakLiftDp = 14f * motionIntensityScale();
-        float settleLiftDp = 8f * motionIntensityScale();
-        if (progress < 0.34f) {
-            return Math.round(renderDp(peakLiftDp) * smoothStep(progress / 0.34f));
-        } else if (progress < 0.62f) {
-            float descend = smoothStep((progress - 0.34f) / 0.28f);
-            return Math.round(renderDp(peakLiftDp + (settleLiftDp - peakLiftDp) * descend));
-        }
-        return Math.round(renderDp(settleLiftDp));
+        return PreviewBubbleLayout.liftPx(
+                motionEffectsEnabled(),
+                progress,
+                renderDp(14f * motionIntensityScale()),
+                renderDp(8f * motionIntensityScale()));
     }
 
     private int previewBubbleCornerRadius() {
-        int keyRadius = renderDp(settings.keyRoundnessDp);
-        if (settings.visualEffects.angularPreviewBubble) {
-            return Math.max(renderDp(2), Math.min(renderDp(6), keyRadius));
-        }
-        return Math.max(renderDp(2), Math.min(renderDp(18), keyRadius));
+        return PreviewBubbleLayout.cornerRadiusPx(
+                renderDp(settings.keyRoundnessDp),
+                settings.visualEffects.angularPreviewBubble,
+                renderDp(2),
+                renderDp(6),
+                renderDp(18));
     }
 
     private void hidePreviewPopup() {
