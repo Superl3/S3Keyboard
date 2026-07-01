@@ -1257,6 +1257,7 @@ public final class HangulKeyboardView extends View {
                     ergonomicsOptions.ergonomicHitboxEnabled,
                     slot.primaryBottomControl,
                     slot.compactSpecialColumn,
+                    slot.edgeRailDirection,
                     visualGap,
                     slot.bottomSpaceDirection));
         }
@@ -4390,6 +4391,7 @@ public final class HangulKeyboardView extends View {
         final boolean ergonomicHitboxPriority;
         final boolean primaryBottomControl;
         final boolean compactSpecialColumn;
+        final int edgeRailDirection;
         final float visualGap;
         final int bottomSpaceDirection;
 
@@ -4402,6 +4404,7 @@ public final class HangulKeyboardView extends View {
                 boolean ergonomicHitboxPriority,
                 boolean primaryBottomControl,
                 boolean compactSpecialColumn,
+                int edgeRailDirection,
                 float visualGap,
                 int bottomSpaceDirection) {
             this.key = key;
@@ -4412,6 +4415,7 @@ public final class HangulKeyboardView extends View {
             this.ergonomicHitboxPriority = ergonomicHitboxPriority;
             this.primaryBottomControl = primaryBottomControl;
             this.compactSpecialColumn = compactSpecialColumn;
+            this.edgeRailDirection = edgeRailDirection < 0 ? -1 : (edgeRailDirection > 0 ? 1 : 0);
             this.visualGap = Math.max(0f, visualGap);
             this.bottomSpaceDirection = bottomSpaceDirection;
         }
@@ -4440,6 +4444,13 @@ public final class HangulKeyboardView extends View {
 
         RectF hitBounds() {
             float insetX = Math.max(0f, visualGap / 2f);
+            if (usesDirectionalRailSlop()) {
+                return new RectF(
+                        hitBounds.left - EdgeRailSlopPolicy.leftSlop(edgeRailDirection, insetX),
+                        hitBounds.top,
+                        hitBounds.right + EdgeRailSlopPolicy.rightSlop(edgeRailDirection, insetX),
+                        hitBounds.bottom);
+            }
             return new RectF(
                     hitBounds.left - insetX,
                     hitBounds.top,
@@ -4473,6 +4484,17 @@ public final class HangulKeyboardView extends View {
         @Override
         public boolean expandedContains(float x, float y, float slop) {
             RectF hitBounds = hitBounds();
+            if (usesDirectionalRailSlop()) {
+                return EdgeRailSlopPolicy.expandedContains(
+                        hitBounds.left,
+                        hitBounds.top,
+                        hitBounds.right,
+                        hitBounds.bottom,
+                        x,
+                        y,
+                        slop,
+                        edgeRailDirection);
+            }
             return x >= hitBounds.left - slop
                     && x <= hitBounds.right + slop
                     && y >= hitBounds.top - slop
@@ -4535,6 +4557,10 @@ public final class HangulKeyboardView extends View {
                 return 35;
             }
             return compactSpecialColumn ? 10 : 20;
+        }
+
+        private boolean usesDirectionalRailSlop() {
+            return ergonomicHitboxPriority && compactSpecialColumn && edgeRailDirection != 0;
         }
     }
 

@@ -2,6 +2,7 @@ package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -163,6 +164,34 @@ public final class TouchResolverTest {
         assertEquals(key, TouchResolver.resolve(Arrays.asList(key), 25, 54, 0, -4, 0, 0));
     }
 
+    @Test
+    public void rightEdgeCompactRailDoesNotReopenBezelSideWithHitSlop() {
+        DirectionalTarget rail = new DirectionalTarget("rail", 70, 0, 106, 50, 1);
+
+        assertNull(TouchResolver.resolve(Arrays.asList(rail), 112, 25, 8, 0, 0, 0));
+    }
+
+    @Test
+    public void rightEdgeCompactRailStillAcceptsInwardHitSlop() {
+        DirectionalTarget rail = new DirectionalTarget("rail", 70, 0, 106, 50, 1);
+
+        assertSame(rail, TouchResolver.resolve(Arrays.asList(rail), 65, 25, 8, 0, 0, 0));
+    }
+
+    @Test
+    public void leftEdgeCompactRailDoesNotReopenBezelSideWithHitSlop() {
+        DirectionalTarget rail = new DirectionalTarget("rail", 14, 0, 50, 50, -1);
+
+        assertNull(TouchResolver.resolve(Arrays.asList(rail), 8, 25, 8, 0, 0, 0));
+    }
+
+    @Test
+    public void leftEdgeCompactRailStillAcceptsInwardHitSlop() {
+        DirectionalTarget rail = new DirectionalTarget("rail", 14, 0, 50, 50, -1);
+
+        assertSame(rail, TouchResolver.resolve(Arrays.asList(rail), 55, 25, 8, 0, 0, 0));
+    }
+
     private static final class FakeTarget implements TouchResolver.Target {
         final String name;
         final float left;
@@ -308,6 +337,53 @@ public final class TouchResolverTest {
                 return 35;
             }
             return slot.compactSpecialColumn ? 10 : 20;
+        }
+    }
+
+    private static final class DirectionalTarget implements TouchResolver.Target {
+        final String name;
+        final float left;
+        final float top;
+        final float right;
+        final float bottom;
+        final int edgeRailDirection;
+
+        DirectionalTarget(String name, float left, float top, float right, float bottom, int edgeRailDirection) {
+            this.name = name;
+            this.left = left;
+            this.top = top;
+            this.right = right;
+            this.bottom = bottom;
+            this.edgeRailDirection = edgeRailDirection;
+        }
+
+        @Override
+        public boolean contains(float x, float y) {
+            return x >= left && x <= right && y >= top && y <= bottom;
+        }
+
+        @Override
+        public boolean expandedContains(float x, float y, float slop) {
+            return EdgeRailSlopPolicy.expandedContains(left, top, right, bottom, x, y, slop, edgeRailDirection);
+        }
+
+        @Override
+        public boolean coreContains(float x, float y, float inset) {
+            return false;
+        }
+
+        @Override
+        public float distanceSquaredTo(float x, float y) {
+            float nearestX = Math.max(left, Math.min(right, x));
+            float nearestY = Math.max(top, Math.min(bottom, y));
+            float dx = x - nearestX;
+            float dy = y - nearestY;
+            return dx * dx + dy * dy;
+        }
+
+        @Override
+        public boolean isPrimaryBottomControl() {
+            return false;
         }
     }
 }

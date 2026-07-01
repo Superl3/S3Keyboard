@@ -113,6 +113,7 @@ final class KeyboardLayoutCalculator {
                         top + rowHeight,
                         primaryBottomControl,
                         hangulCharacterRow && keyIndex == row.keys.size() - 1,
+                        hangulCharacterRow && keyIndex == row.keys.size() - 1 ? 1 : 0,
                         bottomSpaceDirection));
                 left = right + rowGap;
                 if (hangulCharacterRow && keyIndex == 2) {
@@ -346,6 +347,7 @@ final class KeyboardLayoutCalculator {
                 visualRect.centerY(),
                 false,
                 true,
+                -1,
                 0);
     }
 
@@ -364,6 +366,7 @@ final class KeyboardLayoutCalculator {
                 visualRect.centerY(),
                 slot.primaryBottomControl,
                 slot.compactSpecialColumn,
+                slot.edgeRailDirection,
                 slot.bottomSpaceDirection);
     }
 
@@ -526,6 +529,7 @@ final class KeyboardLayoutCalculator {
         final float gestureOriginY;
         final boolean primaryBottomControl;
         final boolean compactSpecialColumn;
+        final int edgeRailDirection;
         final int bottomSpaceDirection;
 
         Slot(
@@ -536,6 +540,7 @@ final class KeyboardLayoutCalculator {
                 float bottom,
                 boolean primaryBottomControl,
                 boolean compactSpecialColumn,
+                int edgeRailDirection,
                 int bottomSpaceDirection) {
             this(
                     key,
@@ -551,6 +556,7 @@ final class KeyboardLayoutCalculator {
                     (top + bottom) / 2f,
                     primaryBottomControl,
                     compactSpecialColumn,
+                    edgeRailDirection,
                     bottomSpaceDirection);
         }
 
@@ -568,6 +574,7 @@ final class KeyboardLayoutCalculator {
                 float gestureOriginY,
                 boolean primaryBottomControl,
                 boolean compactSpecialColumn,
+                int edgeRailDirection,
                 int bottomSpaceDirection) {
             this.key = key;
             this.left = left;
@@ -582,6 +589,7 @@ final class KeyboardLayoutCalculator {
             this.gestureOriginY = gestureOriginY;
             this.primaryBottomControl = primaryBottomControl;
             this.compactSpecialColumn = compactSpecialColumn;
+            this.edgeRailDirection = edgeRailDirection < 0 ? -1 : (edgeRailDirection > 0 ? 1 : 0);
             this.bottomSpaceDirection = bottomSpaceDirection;
         }
     }
