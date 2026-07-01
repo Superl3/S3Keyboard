@@ -544,6 +544,30 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void hapticSettingsPersistenceStaysBehindController() throws Exception {
+        String activity = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
+        String controller = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/HapticSettingsController.java");
+
+        assertTrue(activity.contains("HapticSettingsController"));
+        assertTrue(activity.contains("hapticSettingsController.addTo("));
+        assertFalse(activity.contains("hapticCheckBox"));
+        assertFalse(activity.contains("differentiatedHapticCheckBox"));
+        assertFalse(activity.contains("hapticDurationSeekBar"));
+        assertFalse(activity.contains("hapticGapSeekBar"));
+        assertFalse(activity.contains("saveHapticTickDurationMs("));
+        assertFalse(activity.contains("saveHapticTickGapMs("));
+        assertFalse(activity.contains("saveDifferentiatedHapticEnabled("));
+        assertTrue(controller.contains("withHapticFeedback("));
+        assertTrue(controller.contains("saveHapticTickDurationMs("));
+        assertTrue(controller.contains("saveHapticTickGapMs("));
+        assertTrue(controller.contains("saveDifferentiatedHapticEnabled("));
+        assertTrue(controller.contains("SettingsValueFormatter.hapticDuration("));
+        assertTrue(controller.contains("setEnabled(safe.hapticFeedbackEnabled)"));
+    }
+
+    @Test
     public void localDataDeletionStaysBehindSettingsController() throws Exception {
         String activity = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");

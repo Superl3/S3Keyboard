@@ -12,6 +12,7 @@ This audit tracks evidence-based simplification targets for the keyboard codebas
 - Repeated Hangul automata committed-fragment calls in `S3KeyboardService` now route through one helper, keeping the composing replacement contract in one local place.
 - Preview bubble width, position, lift, and corner-radius rules now live in `PreviewBubbleLayout`, so popup tuning can be tested without touching the full keyboard view.
 - Debug overlay settings are now owned by `DebugOverlaySettingsController`, keeping debug-only preference wiring out of the main settings activity.
+- Haptic feedback settings are now owned by `HapticSettingsController`, keeping haptic preference persistence, seekbar formatting, and enable/disable state out of `MainActivity`.
 
 ## Preferred Direction
 
@@ -23,6 +24,6 @@ This audit tracks evidence-based simplification targets for the keyboard codebas
 
 ## Next Refactor Units
 
-1. Continue moving settings category construction out of `MainActivity` one section at a time. The debug overlay controls are the first extracted slice; input-assistance controls are the next likely target.
+1. Continue moving settings category construction out of `MainActivity` one section at a time. Debug overlay and haptic controls are extracted; the remaining input-feel controls are the next likely target.
 2. Introduce grouped settings value objects only when they reduce constructor churn in `KeyboardSettings`; do not add compatibility aliases unless an importer actually needs them.
 3. Keep removing unused one-method controller classes when their behavior is already expressed by an existing service/store.

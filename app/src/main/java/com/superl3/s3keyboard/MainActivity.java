@@ -68,6 +68,7 @@ public final class MainActivity extends Activity {
     private KeyboardErgonomicsOptions ergonomicsOptions = KeyboardErgonomicsOptions.DEFAULT;
     private LocalDataControlsController localDataControlsController;
     private DebugOverlaySettingsController debugOverlaySettingsController;
+    private HapticSettingsController hapticSettingsController;
     private boolean syncing;
     private boolean demoShowKeyboard;
     private Spinner handednessSpinner;
@@ -86,8 +87,6 @@ public final class MainActivity extends Activity {
     private SeekBar keyDepthSeekBar;
     private SeekBar gestureThresholdSeekBar;
     private SeekBar touchYOffsetSeekBar;
-    private SeekBar hapticDurationSeekBar;
-    private SeekBar hapticGapSeekBar;
     private SeekBar repeatStartDelaySeekBar;
     private SeekBar repeatIntervalSeekBar;
     private SeekBar spacebarCursorDeadZoneSeekBar;
@@ -119,8 +118,6 @@ public final class MainActivity extends Activity {
     private Button deleteThemeButton;
     private CheckBox hangulNumberRowCheckBox;
     private CheckBox englishNumberRowCheckBox;
-    private CheckBox hapticCheckBox;
-    private CheckBox differentiatedHapticCheckBox;
     private CheckBox touchBiasAutoCorrectionCheckBox;
     private CheckBox palmRejectionCheckBox;
     private CheckBox clipboardHistoryCheckBox;
@@ -179,8 +176,6 @@ public final class MainActivity extends Activity {
     private TextView repeatStartDelayValue;
     private TextView repeatIntervalValue;
     private TextView spacebarCursorDeadZoneValue;
-    private TextView hapticDurationValue;
-    private TextView hapticGapValue;
     private TextView dingulInputDiagnosticsValue;
     private TextView currentAppProfileSummaryValue;
     private TextView primaryTextSizeValue;
@@ -1210,62 +1205,24 @@ public final class MainActivity extends Activity {
     }
 
     private void addInputFeelControls(LinearLayout root) {
-        hapticCheckBox = new CheckBox(this);
-        hapticCheckBox.setText(R.string.settings_haptic_feedback);
-        hapticCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+        hapticSettingsController = new HapticSettingsController(this, new HapticSettingsController.Host() {
             @Override
-            protected void onUserChanged(boolean isChecked) {
-                settings = settings.withHapticFeedback(isChecked);
+            public KeyboardSettings settings() {
+                return settings;
+            }
+
+            @Override
+            public void saveSettings(KeyboardSettings nextSettings) {
+                settings = nextSettings;
                 saveAndSync();
             }
-        });
-        root.addView(hapticCheckBox, matchWrapWithTop(8));
 
-        differentiatedHapticCheckBox = new CheckBox(this);
-        differentiatedHapticCheckBox.setText(R.string.settings_differentiated_haptic);
-        differentiatedHapticCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
             @Override
-            protected void onUserChanged(boolean isChecked) {
-                KeyboardPreferences.saveDifferentiatedHapticEnabled(MainActivity.this, isChecked);
-                syncControls();
+            public void syncControls() {
+                MainActivity.this.syncControls();
             }
         });
-        root.addView(differentiatedHapticCheckBox, matchWrapWithTop(4));
-
-        hapticDurationValue = label("");
-        hapticDurationSeekBar = seekBar(
-                KeyboardPreferences.MAX_HAPTIC_TICK_DURATION_MS
-                        - KeyboardPreferences.MIN_HAPTIC_TICK_DURATION_MS);
-        hapticDurationSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    KeyboardPreferences.saveHapticTickDurationMs(
-                            MainActivity.this,
-                            KeyboardPreferences.MIN_HAPTIC_TICK_DURATION_MS + progress);
-                    syncControls();
-                }
-            }
-        });
-        root.addView(hapticDurationValue, matchWrapWithTop(12));
-        root.addView(hapticDurationSeekBar, matchWrap());
-
-        hapticGapValue = label("");
-        hapticGapSeekBar = seekBar(
-                KeyboardPreferences.MAX_HAPTIC_TICK_GAP_MS - KeyboardPreferences.MIN_HAPTIC_TICK_GAP_MS);
-        hapticGapSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    KeyboardPreferences.saveHapticTickGapMs(
-                            MainActivity.this,
-                            KeyboardPreferences.MIN_HAPTIC_TICK_GAP_MS + progress);
-                    syncControls();
-                }
-            }
-        });
-        root.addView(hapticGapValue, matchWrapWithTop(12));
-        root.addView(hapticGapSeekBar, matchWrap());
+        hapticSettingsController.addTo(root);
 
         gestureThresholdValue = label("");
         gestureThresholdSeekBar = seekBar(
@@ -1794,8 +1751,6 @@ public final class MainActivity extends Activity {
         styleCheckBox(pointKeycapStyleCheckBox);
         styleCheckBox(hangulNumberRowCheckBox);
         styleCheckBox(englishNumberRowCheckBox);
-        styleCheckBox(hapticCheckBox);
-        styleCheckBox(differentiatedHapticCheckBox);
         styleCheckBox(touchBiasAutoCorrectionCheckBox);
         styleCheckBox(palmRejectionCheckBox);
         styleCheckBox(clipboardHistoryCheckBox);
@@ -1814,6 +1769,9 @@ public final class MainActivity extends Activity {
         styleCheckBox(ergonomicPositionAdjustCheckBox);
         if (debugOverlaySettingsController != null) {
             debugOverlaySettingsController.sync();
+        }
+        if (hapticSettingsController != null) {
+            hapticSettingsController.sync(settings);
         }
         if (themeOptions.length == 0) {
             reloadThemeOptions();
@@ -1867,10 +1825,6 @@ public final class MainActivity extends Activity {
                 settings.repeatStartDelayMs - KeyboardSettings.MIN_REPEAT_START_DELAY_MS);
         repeatIntervalSeekBar.setProgress(
                 settings.repeatIntervalMs - KeyboardSettings.MIN_REPEAT_INTERVAL_MS);
-        int hapticDurationMs = KeyboardPreferences.loadHapticTickDurationMs(this);
-        int hapticGapMs = KeyboardPreferences.loadHapticTickGapMs(this);
-        hapticDurationSeekBar.setProgress(hapticDurationMs - KeyboardPreferences.MIN_HAPTIC_TICK_DURATION_MS);
-        hapticGapSeekBar.setProgress(hapticGapMs - KeyboardPreferences.MIN_HAPTIC_TICK_GAP_MS);
         keyIdleColorSpinner.setSelection(indexOfColor(settings.keyIdleColor));
         keyPressedColorSpinner.setSelection(indexOfColor(settings.keyPressedColor));
         keyboardBackgroundColorSpinner.setSelection(indexOfColor(settings.keyboardBackgroundColor));
@@ -1934,8 +1888,6 @@ public final class MainActivity extends Activity {
         }
         hangulNumberRowCheckBox.setChecked(settings.showHangulNumberRow);
         englishNumberRowCheckBox.setChecked(settings.showEnglishNumberRow);
-        hapticCheckBox.setChecked(settings.hapticFeedbackEnabled);
-        differentiatedHapticCheckBox.setChecked(KeyboardPreferences.loadDifferentiatedHapticEnabled(this));
         touchBiasAutoCorrectionCheckBox.setChecked(
                 KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(this));
         palmRejectionCheckBox.setChecked(KeyboardPreferences.loadPalmRejectionEnabled(this));
@@ -1946,9 +1898,6 @@ public final class MainActivity extends Activity {
         if (dingulInputDiagnosticsValue != null) {
             dingulInputDiagnosticsValue.setText(DingulInputDiagnostics.load(this).summaryText(this));
         }
-        hapticDurationSeekBar.setEnabled(settings.hapticFeedbackEnabled);
-        hapticGapSeekBar.setEnabled(settings.hapticFeedbackEnabled);
-        differentiatedHapticCheckBox.setEnabled(settings.hapticFeedbackEnabled);
         doubleSpacePeriodCheckBox.setChecked(settings.englishDoubleSpacePeriodEnabled);
         keyDepthCheckBox.setChecked(settings.keyDepthEnabled);
         customDepthColorCheckBox.setChecked(settings.customDepthColorEnabled);
@@ -2030,8 +1979,6 @@ public final class MainActivity extends Activity {
             spacebarCursorDeadZoneSeekBar.setProgress(
                     deadZoneDp - KeyboardPreferences.MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP);
         }
-        hapticDurationValue.setText(SettingsValueFormatter.hapticDuration(this, hapticDurationMs));
-        hapticGapValue.setText(SettingsValueFormatter.hapticGap(this, hapticGapMs));
         primaryTextSizeValue.setText(SettingsValueFormatter.primaryTextSize(
                 this,
                 settings.primaryTextSizePercent));
