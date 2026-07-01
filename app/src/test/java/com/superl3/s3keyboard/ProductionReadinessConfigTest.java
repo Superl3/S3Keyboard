@@ -568,6 +568,25 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void repeatSettingsPersistenceStaysBehindController() throws Exception {
+        String activity = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
+        String controller = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/RepeatSettingsController.java");
+
+        assertTrue(activity.contains("RepeatSettingsController"));
+        assertTrue(activity.contains("repeatSettingsController.addTo("));
+        assertFalse(activity.contains("repeatStartDelaySeekBar"));
+        assertFalse(activity.contains("repeatIntervalSeekBar"));
+        assertFalse(activity.contains("repeatStartDelayValue"));
+        assertFalse(activity.contains("repeatIntervalValue"));
+        assertFalse(activity.contains("withRepeatTiming("));
+        assertTrue(controller.contains("withRepeatTiming("));
+        assertTrue(controller.contains("SettingsValueFormatter.repeatStartDelay("));
+        assertTrue(controller.contains("SettingsValueFormatter.repeatInterval("));
+    }
+
+    @Test
     public void localDataDeletionStaysBehindSettingsController() throws Exception {
         String activity = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");

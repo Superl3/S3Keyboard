@@ -69,6 +69,7 @@ public final class MainActivity extends Activity {
     private LocalDataControlsController localDataControlsController;
     private DebugOverlaySettingsController debugOverlaySettingsController;
     private HapticSettingsController hapticSettingsController;
+    private RepeatSettingsController repeatSettingsController;
     private boolean syncing;
     private boolean demoShowKeyboard;
     private Spinner handednessSpinner;
@@ -87,8 +88,6 @@ public final class MainActivity extends Activity {
     private SeekBar keyDepthSeekBar;
     private SeekBar gestureThresholdSeekBar;
     private SeekBar touchYOffsetSeekBar;
-    private SeekBar repeatStartDelaySeekBar;
-    private SeekBar repeatIntervalSeekBar;
     private SeekBar spacebarCursorDeadZoneSeekBar;
     private SeekBar primaryTextSizeSeekBar;
     private SeekBar secondaryTextSizeSeekBar;
@@ -173,8 +172,6 @@ public final class MainActivity extends Activity {
     private TextView keyDepthValue;
     private TextView gestureThresholdValue;
     private TextView touchYOffsetValue;
-    private TextView repeatStartDelayValue;
-    private TextView repeatIntervalValue;
     private TextView spacebarCursorDeadZoneValue;
     private TextView dingulInputDiagnosticsValue;
     private TextView currentAppProfileSummaryValue;
@@ -1298,39 +1295,19 @@ public final class MainActivity extends Activity {
         root.addView(touchYOffsetValue, matchWrapWithTop(12));
         root.addView(touchYOffsetSeekBar, matchWrap());
 
-        repeatStartDelayValue = label("");
-        repeatStartDelaySeekBar = seekBar(
-                KeyboardSettings.MAX_REPEAT_START_DELAY_MS - KeyboardSettings.MIN_REPEAT_START_DELAY_MS);
-        repeatStartDelaySeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
+        repeatSettingsController = new RepeatSettingsController(this, new RepeatSettingsController.Host() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    settings = settings.withRepeatTiming(
-                            KeyboardSettings.MIN_REPEAT_START_DELAY_MS + progress,
-                            settings.repeatIntervalMs);
-                    saveAndSync();
-                }
+            public KeyboardSettings settings() {
+                return settings;
             }
-        });
-        root.addView(repeatStartDelayValue, matchWrapWithTop(12));
-        root.addView(repeatStartDelaySeekBar, matchWrap());
 
-        repeatIntervalValue = label("");
-        repeatIntervalSeekBar = seekBar(
-                KeyboardSettings.MAX_REPEAT_INTERVAL_MS - KeyboardSettings.MIN_REPEAT_INTERVAL_MS);
-        repeatIntervalSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    settings = settings.withRepeatTiming(
-                            settings.repeatStartDelayMs,
-                            KeyboardSettings.MIN_REPEAT_INTERVAL_MS + progress);
-                    saveAndSync();
-                }
+            public void saveSettings(KeyboardSettings nextSettings) {
+                settings = nextSettings;
+                saveAndSync();
             }
         });
-        root.addView(repeatIntervalValue, matchWrapWithTop(8));
-        root.addView(repeatIntervalSeekBar, matchWrap());
+        repeatSettingsController.addTo(root);
 
         touchBiasAutoCorrectionCheckBox = new CheckBox(this);
         touchBiasAutoCorrectionCheckBox.setText(R.string.touch_bias_auto_correction);
@@ -1773,6 +1750,9 @@ public final class MainActivity extends Activity {
         if (hapticSettingsController != null) {
             hapticSettingsController.sync(settings);
         }
+        if (repeatSettingsController != null) {
+            repeatSettingsController.sync(settings);
+        }
         if (themeOptions.length == 0) {
             reloadThemeOptions();
         }
@@ -1821,10 +1801,6 @@ public final class MainActivity extends Activity {
                 settings.gestureThresholdDp - KeyboardSettings.MIN_GESTURE_THRESHOLD_DP);
         touchYOffsetSeekBar.setProgress(
                 settings.touchYOffsetDp - KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP);
-        repeatStartDelaySeekBar.setProgress(
-                settings.repeatStartDelayMs - KeyboardSettings.MIN_REPEAT_START_DELAY_MS);
-        repeatIntervalSeekBar.setProgress(
-                settings.repeatIntervalMs - KeyboardSettings.MIN_REPEAT_INTERVAL_MS);
         keyIdleColorSpinner.setSelection(indexOfColor(settings.keyIdleColor));
         keyPressedColorSpinner.setSelection(indexOfColor(settings.keyPressedColor));
         keyboardBackgroundColorSpinner.setSelection(indexOfColor(settings.keyboardBackgroundColor));
@@ -1986,10 +1962,6 @@ public final class MainActivity extends Activity {
                 this,
                 settings.secondaryTextSizePercent));
         touchYOffsetValue.setText(SettingsValueFormatter.touchYOffset(this, settings.touchYOffsetDp));
-        repeatStartDelayValue.setText(SettingsValueFormatter.repeatStartDelay(
-                this,
-                settings.repeatStartDelayMs));
-        repeatIntervalValue.setText(SettingsValueFormatter.repeatInterval(this, settings.repeatIntervalMs));
         handednessSpinner.post(() -> syncing = false);
     }
 
