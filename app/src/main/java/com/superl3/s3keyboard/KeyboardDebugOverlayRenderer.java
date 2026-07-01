@@ -27,7 +27,9 @@ final class KeyboardDebugOverlayRenderer {
             float lastDownX,
             float lastDownY,
             String lastKeyId,
-            GestureAction lastAction) {
+            GestureAction lastAction,
+            GestureCandidateScore candidateScore,
+            int edgeRailDirection) {
         float stroke = Math.max(1f, dp(1, density, renderScale));
         float radius = Math.max(0f, dp(settings.keyRoundnessDp, density, renderScale));
         String safeLastKeyId = lastKeyId == null ? "" : lastKeyId;
@@ -35,12 +37,20 @@ final class KeyboardDebugOverlayRenderer {
             boolean recent = keySlot.debugId().equals(safeLastKeyId);
             drawRect(canvas, keySlot.hitBounds(), HIT_RECT_COLOR, stroke, radius, recent ? 118 : 68);
             drawRect(canvas, keySlot.visualBounds(), VISUAL_RECT_COLOR, stroke, radius, recent ? 190 : 112);
-            drawOrigin(canvas, keySlot.centerX(), keySlot.centerY(), ORIGIN_COLOR, density, renderScale);
+            drawOrigin(canvas, keySlot.gestureOriginX, keySlot.gestureOriginY, ORIGIN_COLOR, density, renderScale);
         }
         if (!Float.isNaN(lastDownX) && !Float.isNaN(lastDownY)) {
             drawLastTouch(canvas, lastDownX, lastDownY, stroke, density, renderScale);
         }
-        drawLegend(canvas, density, scaledDensity, renderScale, safeLastKeyId, lastAction);
+        drawLegend(
+                canvas,
+                density,
+                scaledDensity,
+                renderScale,
+                safeLastKeyId,
+                lastAction,
+                candidateScore,
+                edgeRailDirection);
     }
 
     private void drawRect(
@@ -102,11 +112,24 @@ final class KeyboardDebugOverlayRenderer {
             float scaledDensity,
             float renderScale,
             String lastKeyId,
-            GestureAction lastAction) {
+            GestureAction lastAction,
+            GestureCandidateScore candidateScore,
+            int edgeRailDirection) {
         String info = "debug key bounds  key="
                 + (lastKeyId.isEmpty() ? "-" : lastKeyId)
                 + "  action="
-                + (lastAction == null ? GestureAction.TAP : lastAction).name();
+                + (lastAction == null ? GestureAction.TAP : lastAction).name()
+                + "  rail="
+                + edgeDirectionText(edgeRailDirection);
+        if (candidateScore != null && candidateScore.isPresent()) {
+            info += "  candidate="
+                    + candidateScore.keyId
+                    + "/"
+                    + candidateScore.action.name()
+                    + " score="
+                    + String.format(java.util.Locale.US, "%.2f", candidateScore.score)
+                    + (candidateScore.applied ? " applied" : " shadow");
+        }
         Typeface previousTypeface = textPaint.getTypeface();
         Paint.Align previousAlign = textPaint.getTextAlign();
         float textSize = sp(10, scaledDensity, renderScale);
@@ -138,5 +161,15 @@ final class KeyboardDebugOverlayRenderer {
 
     private static float sp(float value, float scaledDensity, float renderScale) {
         return value * scaledDensity * renderScale;
+    }
+
+    private static String edgeDirectionText(int edgeRailDirection) {
+        if (edgeRailDirection < 0) {
+            return "left-inward";
+        }
+        if (edgeRailDirection > 0) {
+            return "right-inward";
+        }
+        return "-";
     }
 }

@@ -36,6 +36,12 @@ final class SettingsDisplayLabels {
         return label(context, value == null ? InputAssistanceMode.CUSTOM.labelResId : value.labelResId);
     }
 
+    static String label(Context context, DingulVowelGestureProfile value) {
+        return label(context, value == null
+                ? DingulVowelGestureProfile.DEFAULT.labelResId
+                : value.labelResId);
+    }
+
     static String label(Context context, AdditionalNumberRowColorMode value) {
         return label(context, value == null
                 ? AdditionalNumberRowColorMode.FULL_MOD.labelResId
@@ -119,6 +125,14 @@ final class SettingsDisplayLabels {
     }
 
     static String[] labels(Context context, InputAssistanceMode[] values) {
+        String[] labels = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            labels[i] = label(context, values[i]);
+        }
+        return labels;
+    }
+
+    static String[] labels(Context context, DingulVowelGestureProfile[] values) {
         String[] labels = new String[values.length];
         for (int i = 0; i < values.length; i++) {
             labels[i] = label(context, values[i]);

@@ -106,7 +106,9 @@ final class InputConnectionTextOperator {
 
     static void commitText(InputConnection inputConnection, String text) {
         if (inputConnection != null && text != null && !text.isEmpty()) {
+            finishComposing(inputConnection);
             inputConnection.commitText(text, 1);
+            finishComposing(inputConnection);
         }
     }
 }

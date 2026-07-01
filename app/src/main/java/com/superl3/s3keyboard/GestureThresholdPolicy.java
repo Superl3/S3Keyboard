@@ -8,8 +8,15 @@ final class GestureThresholdPolicy {
     }
 
     static int baseThresholdDp(KeyboardSettings settings, GestureKey key) {
+        return baseThresholdDp(settings, key, DingulVowelGestureProfile.STANDARD);
+    }
+
+    static int baseThresholdDp(
+            KeyboardSettings settings,
+            GestureKey key,
+            DingulVowelGestureProfile vowelProfile) {
         KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
-        return thresholdForKey(safeSettings.gestureThresholdDp, key);
+        return thresholdForKey(safeSettings.gestureThresholdDp, key, vowelProfile);
     }
 
     static int thresholdDp(
@@ -17,13 +24,29 @@ final class GestureThresholdPolicy {
             TouchBiasStore.Bias touchBias,
             GestureKey key,
             GestureAction action) {
+        return thresholdDp(settings, touchBias, key, action, DingulVowelGestureProfile.STANDARD);
+    }
+
+    static int thresholdDp(
+            KeyboardSettings settings,
+            TouchBiasStore.Bias touchBias,
+            GestureKey key,
+            GestureAction action,
+            DingulVowelGestureProfile vowelProfile) {
         KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
         int adjustment = touchBias == null ? 0 : touchBias.gestureThresholdAdjustmentForDirection(action);
-        return thresholdForKey(safeSettings.gestureThresholdDp + adjustment, key);
+        return thresholdForKey(safeSettings.gestureThresholdDp + adjustment, key, vowelProfile);
     }
 
     private static int thresholdForKey(int thresholdDp, GestureKey key) {
-        float scale = dingulThresholdScale(key);
+        return thresholdForKey(thresholdDp, key, DingulVowelGestureProfile.STANDARD);
+    }
+
+    private static int thresholdForKey(
+            int thresholdDp,
+            GestureKey key,
+            DingulVowelGestureProfile vowelProfile) {
+        float scale = dingulThresholdScale(key, vowelProfile);
         if (scale >= 1f) {
             return thresholdDp;
         }
@@ -31,14 +54,20 @@ final class GestureThresholdPolicy {
         return Math.max(KeyboardSettings.MIN_GESTURE_THRESHOLD_DP, scaled);
     }
 
-    private static float dingulThresholdScale(GestureKey key) {
+    private static float dingulThresholdScale(
+            GestureKey key,
+            DingulVowelGestureProfile vowelProfile) {
         if (isDingulVowelGestureKey(key)) {
-            return DINGUL_VOWEL_THRESHOLD_SCALE;
+            return (vowelProfile == null ? DingulVowelGestureProfile.STANDARD : vowelProfile).thresholdScale;
         }
         if (isDingulConsonantGestureKey(key)) {
             return DINGUL_CONSONANT_THRESHOLD_SCALE;
         }
         return 1f;
+    }
+
+    static boolean isDingulVowelGestureKeyForProfile(GestureKey key) {
+        return isDingulVowelGestureKey(key);
     }
 
     private static boolean isDingulVowelGestureKey(GestureKey key) {

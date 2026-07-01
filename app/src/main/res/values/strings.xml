@@ -430,4 +430,19 @@
     <string name="accent_target_dingul_dot">딩굴 . visual Enter</string>
     <string name="accent_target_dingul_slash">딩굴 / visual Shift</string>
     <string name="accent_target_esc_point">ESC point keycap</string>
+    <string name="dingul_vowel_gesture_profile_standard">기존 모음 민감도</string>
+    <string name="dingul_vowel_gesture_profile_stable">추천 모음 민감도</string>
+    <string name="dingul_vowel_gesture_profile_aggressive">적극 모음 민감도</string>
+    <string name="settings_dingul_vowel_gesture_profile">딩굴 모음 슬라이드 민감도</string>
+    <string name="settings_spacebar_cursor_dead_zone_format">스페이스바 커서 dead-zone: %1$ddp</string>
+    <string name="settings_debug_resolver_scores">resolver 후보 점수 표시 (디버그)</string>
+    <string name="settings_show_current_app_profile">현재 앱 입력 정책 보기</string>
+    <string name="current_app_profile_summary_format">저장 remote %1$s / 자동 remote %2$s\n자동 remote 앱: %3$s\nASCII: %4$s\n숫자줄: %5$s\n조합 끔: %6$s\n텍스트 편의 끔: %7$s</string>
+    <string name="dingul_input_diagnostics_summary_format">딩굴 입력 진단: epoch %1$s\n최근 %2$s\n패턴 %3$d / journal %4$d / 딩굴 profile %5$d\n입력 %6$d / 보정 %7$d / 보정률 %8$s</string>
+    <string name="clear_input_logs_only">입력 로그만 삭제</string>
+    <string name="clear_touch_bias_only">터치 보정만 삭제</string>
+    <string name="practice_mode_section">연습 모드</string>
+    <string name="practice_mode_idle">연습 키를 눌러도 외부 입력 필드에는 전송되지 않습니다.</string>
+    <string name="practice_mode_selected_format">연습 선택: %1$s</string>
+    <string name="build_info_summary_format">버전 %1$s (%2$d) / commit %3$s / build %4$s</string>
 </resources>

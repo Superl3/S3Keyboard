@@ -51,6 +51,7 @@ final class InputAssistanceSettingsController {
         if (mode == null || !mode.isPreset()) {
             return settings == null ? KeyboardSettings.defaults() : settings;
         }
+        KeyboardPreferences.saveInputAssistanceMode(context, mode);
         InputAssistanceMode.Profile profile = mode.profile;
         saveHangulConsonantHints(context, profile.showHangulConsonantHints);
         saveHangulVowelHints(context, profile.showHangulVowelHints);

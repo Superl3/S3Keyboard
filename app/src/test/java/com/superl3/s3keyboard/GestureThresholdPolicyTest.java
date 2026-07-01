@@ -33,6 +33,21 @@ public final class GestureThresholdPolicyTest {
     }
 
     @Test
+    public void stableVowelProfileUsesShorterThresholdAndStrongerAxisDominance() {
+        KeyboardSettings settings = KeyboardSettings.defaults();
+
+        assertEquals(
+                14,
+                GestureThresholdPolicy.thresholdDp(
+                        settings,
+                        TouchBiasStore.Bias.none(),
+                        centerVowelKey(),
+                        GestureAction.LEFT,
+                        DingulVowelGestureProfile.STABLE));
+        assertEquals(1.28f, DingulVowelGestureProfile.STABLE.axisDominanceRatio, 0.001f);
+    }
+
+    @Test
     public void consonantGestureKeysUseShorterDirectionalThreshold() {
         KeyboardSettings settings = KeyboardSettings.defaults();
         GestureKey key = consonantKey();

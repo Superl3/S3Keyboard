@@ -503,8 +503,8 @@ public final class ProductionReadinessConfigTest {
         assertTrue(renderer.contains("debug key bounds  key="));
         assertTrue(renderer.contains("keySlot.hitBounds()"));
         assertTrue(renderer.contains("keySlot.visualBounds()"));
-        assertTrue(renderer.contains("keySlot.centerX()"));
-        assertTrue(renderer.contains("keySlot.centerY()"));
+        assertTrue(renderer.contains("keySlot.gestureOriginX"));
+        assertTrue(renderer.contains("keySlot.gestureOriginY"));
     }
 
     @Test

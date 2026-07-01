@@ -194,10 +194,15 @@ public final class HangulKeyboardView extends View {
     private long previewGestureGeneration;
     private KeyboardErgonomicsOptions ergonomicsOptions = KeyboardErgonomicsOptions.DEFAULT;
     private boolean debugKeyBoundsOverlayEnabled;
+    private boolean debugShowResolverScores;
+    private DingulVowelGestureProfile dingulVowelGestureProfile = DingulVowelGestureProfile.DEFAULT;
+    private int spacebarCursorDeadZoneDp = KeyboardPreferences.DEFAULT_SPACEBAR_CURSOR_DEAD_ZONE_DP;
     private float debugLastDownX = Float.NaN;
     private float debugLastDownY = Float.NaN;
     private String debugLastKeyId = "";
     private GestureAction debugLastAction = GestureAction.TAP;
+    private GestureCandidateScore debugLastCandidateScore = GestureCandidateScore.NONE;
+    private int debugLastEdgeRailDirection;
 
     public HangulKeyboardView(Context context) {
         super(context);
@@ -214,6 +219,9 @@ public final class HangulKeyboardView extends View {
         touchBiasAutoCorrectionEnabled = KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(context);
         palmRejectionEnabled = KeyboardPreferences.loadPalmRejectionEnabled(context);
         debugKeyBoundsOverlayEnabled = KeyboardPreferences.loadDebugKeyBoundsOverlayEnabled(context);
+        debugShowResolverScores = KeyboardPreferences.loadDebugShowResolverScores(context);
+        dingulVowelGestureProfile = KeyboardPreferences.loadDingulVowelGestureProfile(context);
+        spacebarCursorDeadZoneDp = KeyboardPreferences.loadSpacebarCursorDeadZoneDp(context);
         initPaints();
         setSettings(KeyboardPreferences.load(context));
     }
@@ -243,6 +251,9 @@ public final class HangulKeyboardView extends View {
         palmRejectionEnabled = KeyboardPreferences.loadPalmRejectionEnabled(getContext());
         ergonomicsOptions = KeyboardPreferences.loadErgonomicsOptions(getContext());
         debugKeyBoundsOverlayEnabled = KeyboardPreferences.loadDebugKeyBoundsOverlayEnabled(getContext());
+        debugShowResolverScores = KeyboardPreferences.loadDebugShowResolverScores(getContext());
+        dingulVowelGestureProfile = KeyboardPreferences.loadDingulVowelGestureProfile(getContext());
+        spacebarCursorDeadZoneDp = KeyboardPreferences.loadSpacebarCursorDeadZoneDp(getContext());
         showHangulConsonantSlideHints =
                 KeyboardPreferences.loadShowHangulConsonantSlideHints(getContext());
         showHangulVowelSlideHints =
@@ -542,6 +553,20 @@ public final class HangulKeyboardView extends View {
         debugLastDownY = state.downY;
         debugLastKeyId = resolvedKeySlot == null ? "" : resolvedKeySlot.debugId();
         debugLastAction = action == null ? GestureAction.TAP : action;
+        debugLastEdgeRailDirection = resolvedKeySlot == null ? 0 : resolvedKeySlot.edgeRailDirection;
+        debugLastCandidateScore = GestureCandidateScore.NONE;
+    }
+
+    private void rememberDebugCandidate(ResolvedTouchOutput output) {
+        if (!debugKeyBoundsOverlayEnabled || output == null || output.shadowKeySlot == null) {
+            debugLastCandidateScore = GestureCandidateScore.NONE;
+            return;
+        }
+        debugLastCandidateScore = new GestureCandidateScore(
+                output.shadowKeySlot.debugId(),
+                output.shadowAction,
+                output.shadowScore,
+                output.shadowApplied);
     }
 
     private void drawDebugKeyBoundsOverlay(Canvas canvas) {
@@ -558,7 +583,9 @@ public final class HangulKeyboardView extends View {
                 debugLastDownX,
                 debugLastDownY,
                 debugLastKeyId,
-                debugLastAction);
+                debugLastAction,
+                debugShowResolverScores ? debugLastCandidateScore : GestureCandidateScore.NONE,
+                debugLastEdgeRailDirection);
     }
 
     private void scheduleNextAnimationFrameIfNeeded() {
@@ -724,6 +751,7 @@ public final class HangulKeyboardView extends View {
                     action);
             state.activeAction = output.action;
             rememberDebugTouch(state, output.action, output.keySlot);
+            rememberDebugCandidate(output);
             if (output.action == GestureAction.TAP) {
                 feedbackForKey(output.keySlot.key, output.action);
             }
@@ -4184,11 +4212,19 @@ public final class HangulKeyboardView extends View {
     }
 
     private int baseGestureThresholdPx(GestureKey key) {
-        return dp(GestureThresholdPolicy.baseThresholdDp(settings, key));
+        return dp(GestureThresholdPolicy.baseThresholdDp(settings, key, dingulVowelGestureProfile));
     }
 
     private int gestureThresholdPxFor(GestureKey key, GestureAction action) {
-        int thresholdDp = GestureThresholdPolicy.thresholdDp(settings, touchBias, key, action);
+        int thresholdDp = GestureThresholdPolicy.thresholdDp(
+                settings,
+                touchBias,
+                key,
+                action,
+                dingulVowelGestureProfile);
+        if (isSpaceKey(key) && (action == GestureAction.LEFT || action == GestureAction.RIGHT)) {
+            thresholdDp = Math.max(thresholdDp, spacebarCursorDeadZoneDp);
+        }
         if (touchBiasAutoCorrectionEnabled && isDingulTypingKey(key)) {
             thresholdDp += dingulTouchProfile.penaltyDp(codePoints(key.label), action);
             if (!redactTypingEventText) {
@@ -4199,12 +4235,18 @@ public final class HangulKeyboardView extends View {
     }
 
     private int shadowGestureThresholdPxFor(GestureKey key) {
-        int baseDp = GestureThresholdPolicy.baseThresholdDp(settings, key);
+        int baseDp = GestureThresholdPolicy.baseThresholdDp(settings, key, dingulVowelGestureProfile);
         return dp(Math.max(8, Math.round(baseDp * 0.72f)));
     }
 
     private float axisDominanceRatioFor(GestureKey key) {
-        return isDingulTypingKey(key) ? DINGUL_AXIS_DOMINANCE_RATIO : 0f;
+        if (!isDingulTypingKey(key)) {
+            return 0f;
+        }
+        if (GestureThresholdPolicy.isDingulVowelGestureKeyForProfile(key)) {
+            return dingulVowelGestureProfile.axisDominanceRatio;
+        }
+        return DINGUL_AXIS_DOMINANCE_RATIO;
     }
 
     private boolean isDingulTypingKey(GestureKey key) {

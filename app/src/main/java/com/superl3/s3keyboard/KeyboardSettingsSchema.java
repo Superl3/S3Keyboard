@@ -152,7 +152,10 @@ final class KeyboardSettingsSchema {
                 KeyboardPreferences.HAPTIC_TICK_GAP_MS,
                 KeyboardPreferences.DIFFERENTIATED_HAPTIC_ENABLED,
                 KeyboardPreferences.TOUCH_BIAS_AUTO_CORRECTION_ENABLED,
-                KeyboardPreferences.PALM_REJECTION_ENABLED);
+                KeyboardPreferences.PALM_REJECTION_ENABLED,
+                KeyboardPreferences.DINGUL_VOWEL_GESTURE_PROFILE,
+                KeyboardPreferences.INPUT_ASSISTANCE_MODE,
+                KeyboardPreferences.SPACEBAR_CURSOR_DEAD_ZONE_DP);
 
         add(entries, Section.THEME,
                 KeyboardPreferences.ACCENT_PLACEMENT_MODE,
@@ -187,7 +190,10 @@ final class KeyboardSettingsSchema {
         add(entries, Section.PRIVACY_DEBUG, StorageRisk.LOCAL_TEXT, true,
                 KeyboardPreferences.CLIPBOARD_HISTORY_ENABLED);
         add(entries, Section.PRIVACY_DEBUG, StorageRisk.LOCAL_DIAGNOSTIC, true,
-                KeyboardPreferences.DEBUG_KEY_BOUNDS_OVERLAY_ENABLED);
+                KeyboardPreferences.DEBUG_KEY_BOUNDS_OVERLAY_ENABLED,
+                KeyboardPreferences.DEBUG_SHOW_RESOLVER_SCORES,
+                KeyboardPreferences.INPUT_LEARNING_EPOCH,
+                KeyboardPreferences.SHOW_CURRENT_APP_PROFILE);
         add(entries, Section.PRIVACY_DEBUG, StorageRisk.LOCAL_TEXT, false,
                 ClipboardStore.KEY_ENTRIES,
                 TouchBiasStore.TYPING_EVENT_JOURNAL);

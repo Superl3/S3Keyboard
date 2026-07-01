@@ -66,6 +66,17 @@ enum InputAssistanceMode {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
+    static InputAssistanceMode valueOfPreference(String value) {
+        if (value != null) {
+            for (InputAssistanceMode mode : values()) {
+                if (mode.toString().equals(value)) {
+                    return mode;
+                }
+            }
+        }
+        return CUSTOM;
+    }
+
     static final class Profile {
         final boolean showHangulConsonantHints;
         final boolean showHangulVowelHints;

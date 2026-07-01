@@ -104,6 +104,12 @@ final class KeyboardPreferences {
     static final String PALM_REJECTION_ENABLED = "palm_rejection_enabled";
     static final String MOTION_EFFECT_LEVEL = "motion_effect_level";
     static final String CLIPBOARD_HISTORY_ENABLED = "clipboard_history_enabled";
+    static final String DINGUL_VOWEL_GESTURE_PROFILE = "dingul_vowel_gesture_profile";
+    static final String INPUT_LEARNING_EPOCH = "input_learning_epoch";
+    static final String DEBUG_SHOW_RESOLVER_SCORES = "debug_show_resolver_scores";
+    static final String INPUT_ASSISTANCE_MODE = "input_assistance_mode";
+    static final String SHOW_CURRENT_APP_PROFILE = "show_current_app_profile";
+    static final String SPACEBAR_CURSOR_DEAD_ZONE_DP = "spacebar_cursor_dead_zone_dp";
     static final String FLOATING_MODE_ENABLED = "floating_mode_enabled";
     static final String ERGONOMIC_MAIN_KEY_CENTERING_ENABLED = "ergonomic_main_key_centering_enabled";
     static final String ERGONOMIC_COMPACT_FUNCTION_RAIL_ENABLED = "ergonomic_compact_function_rail_enabled";
@@ -132,6 +138,9 @@ final class KeyboardPreferences {
     static final int MAX_HAPTIC_TICK_GAP_MS = 60;
     static final MotionEffectLevel DEFAULT_MOTION_EFFECT_LEVEL = MotionEffectLevel.NORMAL;
     static final String DEFAULT_REMOTE_AUTO_MODE_PACKAGES = RemoteAppCatalog.defaultAutoPackageList();
+    static final int DEFAULT_SPACEBAR_CURSOR_DEAD_ZONE_DP = 26;
+    static final int MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP = 12;
+    static final int MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP = 48;
 
     private KeyboardPreferences() {
     }
@@ -785,6 +794,71 @@ final class KeyboardPreferences {
 
     static void saveClipboardHistoryEnabled(Context context, boolean enabled) {
         prefs(context).edit().putBoolean(CLIPBOARD_HISTORY_ENABLED, enabled).apply();
+    }
+
+    static DingulVowelGestureProfile loadDingulVowelGestureProfile(Context context) {
+        return DingulVowelGestureProfile.fromPreference(prefs(context).getString(
+                DINGUL_VOWEL_GESTURE_PROFILE,
+                DingulVowelGestureProfile.DEFAULT.preferenceValue));
+    }
+
+    static void saveDingulVowelGestureProfile(Context context, DingulVowelGestureProfile profile) {
+        prefs(context).edit()
+                .putString(
+                        DINGUL_VOWEL_GESTURE_PROFILE,
+                        (profile == null ? DingulVowelGestureProfile.DEFAULT : profile).preferenceValue)
+                .apply();
+    }
+
+    static long loadInputLearningEpoch(Context context) {
+        return LearningEpoch.current(context);
+    }
+
+    static long resetInputLearningEpoch(Context context) {
+        return LearningEpoch.reset(context);
+    }
+
+    static boolean loadDebugShowResolverScores(Context context) {
+        return prefs(context).getBoolean(DEBUG_SHOW_RESOLVER_SCORES, false);
+    }
+
+    static void saveDebugShowResolverScores(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(DEBUG_SHOW_RESOLVER_SCORES, enabled).apply();
+    }
+
+    static InputAssistanceMode loadInputAssistanceMode(Context context) {
+        return InputAssistanceMode.valueOfPreference(prefs(context).getString(
+                INPUT_ASSISTANCE_MODE,
+                InputAssistanceMode.CUSTOM.toString()));
+    }
+
+    static void saveInputAssistanceMode(Context context, InputAssistanceMode mode) {
+        prefs(context).edit()
+                .putString(INPUT_ASSISTANCE_MODE, (mode == null ? InputAssistanceMode.CUSTOM : mode).toString())
+                .apply();
+    }
+
+    static boolean loadShowCurrentAppProfile(Context context) {
+        return prefs(context).getBoolean(SHOW_CURRENT_APP_PROFILE, false);
+    }
+
+    static void saveShowCurrentAppProfile(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(SHOW_CURRENT_APP_PROFILE, enabled).apply();
+    }
+
+    static int loadSpacebarCursorDeadZoneDp(Context context) {
+        return clamp(
+                prefs(context).getInt(SPACEBAR_CURSOR_DEAD_ZONE_DP, DEFAULT_SPACEBAR_CURSOR_DEAD_ZONE_DP),
+                MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP,
+                MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP);
+    }
+
+    static void saveSpacebarCursorDeadZoneDp(Context context, int valueDp) {
+        prefs(context).edit()
+                .putInt(
+                        SPACEBAR_CURSOR_DEAD_ZONE_DP,
+                        clamp(valueDp, MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP, MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP))
+                .apply();
     }
 
     static boolean loadFloatingModeEnabled(Context context) {

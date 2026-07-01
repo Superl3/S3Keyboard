@@ -101,8 +101,10 @@ public final class InputConnectionTextOperatorTest {
         sink.commitText("x");
         sink.deleteBeforeCursorCodePoints(2);
 
-        assertEquals("commitText", fake.calls.get(0));
-        assertTrue(fake.calls.get(1).startsWith("deleteSurroundingText"));
+        assertEquals("finishComposingText", fake.calls.get(0));
+        assertEquals("commitText", fake.calls.get(1));
+        assertEquals("finishComposingText", fake.calls.get(2));
+        assertTrue(fake.calls.get(3).startsWith("deleteSurroundingText"));
         assertEquals("x", fake.committedText.get(0));
     }
 

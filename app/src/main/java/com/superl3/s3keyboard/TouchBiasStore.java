@@ -15,6 +15,7 @@ final class TouchBiasStore {
     static final String TYPING_PATTERN_LOG = "typing_pattern_log";
     static final String TYPING_EVENT_JOURNAL = "typing_event_journal_v1";
     static final String DINGUL_TOUCH_PROFILE = "dingul_touch_profile_v1";
+    static final String LEARNING_EPOCH_MARKER = "input_learning_epoch_marker";
     static final float MAX_BIAS_DP = 6f;
     static final int MAX_GESTURE_THRESHOLD_ADJUSTMENT_DP = 6;
     static final int MAX_GLOBAL_GESTURE_THRESHOLD_ADJUSTMENT_DP = 4;
@@ -35,9 +36,11 @@ final class TouchBiasStore {
     private boolean dingulTouchProfileDirty;
     private boolean typingPatternLogDirty;
     private boolean typingEventJournalDirty;
+    private final long learningEpoch;
 
     TouchBiasStore(Context context) {
         preferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        learningEpoch = LearningEpoch.current(context);
         Looper looper = Looper.myLooper();
         if (looper == null) {
             looper = Looper.getMainLooper();
@@ -86,7 +89,8 @@ final class TouchBiasStore {
                     correctedText,
                     action,
                     touchOffsetXDp,
-                    touchOffsetYDp);
+                    touchOffsetYDp,
+                    learningEpoch);
             touchBiasDirty = true;
             typingPatternLogDirty = true;
             next = cachedBias;
@@ -103,7 +107,7 @@ final class TouchBiasStore {
         Bias next;
         synchronized (this) {
             cachedBias = cachedBias.recordTextInput(action);
-            appendTypingEvent(typingPatternLog, "input", text, action, 0f, 0f);
+            appendTypingEvent(typingPatternLog, "input", text, action, 0f, 0f, learningEpoch);
             touchBiasDirty = true;
             typingPatternLogDirty = true;
             next = cachedBias;
@@ -216,6 +220,7 @@ final class TouchBiasStore {
         if (encodedTypingJournal != null) {
             editor.putString(TYPING_EVENT_JOURNAL, encodedTypingJournal);
         }
+        editor.putLong(LEARNING_EPOCH_MARKER, learningEpoch);
         editor.apply();
     }
 
@@ -229,12 +234,21 @@ final class TouchBiasStore {
     }
 
     private void loadFromPreferences() {
-        cachedBias = Bias.decode(preferences.getString(TOUCH_BIAS_STATS, ""));
-        cachedDingulTouchProfile = DingulTouchProfile.decode(
-                preferences.getString(DINGUL_TOUCH_PROFILE, ""));
-        typingPatternLog = decodeTypingPatternLog(preferences.getString(TYPING_PATTERN_LOG, ""));
-        typingEventJournal = TypingEventJournal.RuntimeJournal.decode(
-                preferences.getString(TYPING_EVENT_JOURNAL, ""));
+        long storedEpoch = preferences.getLong(LEARNING_EPOCH_MARKER, 0L);
+        if (!LearningEpoch.matches(storedEpoch, learningEpoch)) {
+            cachedBias = Bias.none();
+            cachedDingulTouchProfile = DingulTouchProfile.empty(learningEpoch);
+            typingPatternLog = new JSONArray();
+            typingEventJournal = TypingEventJournal.RuntimeJournal.decode("");
+        } else {
+            cachedBias = Bias.decode(preferences.getString(TOUCH_BIAS_STATS, ""));
+            cachedDingulTouchProfile = DingulTouchProfile.decode(
+                    preferences.getString(DINGUL_TOUCH_PROFILE, ""),
+                    learningEpoch);
+            typingPatternLog = decodeTypingPatternLog(preferences.getString(TYPING_PATTERN_LOG, ""));
+            typingEventJournal = TypingEventJournal.RuntimeJournal.decode(
+                    preferences.getString(TYPING_EVENT_JOURNAL, ""));
+        }
         touchBiasDirty = false;
         dingulTouchProfileDirty = false;
         typingPatternLogDirty = false;
@@ -248,7 +262,9 @@ final class TouchBiasStore {
                 .remove(TYPING_PATTERN_LOG)
                 .remove(TYPING_EVENT_JOURNAL)
                 .remove(DINGUL_TOUCH_PROFILE)
+                .remove(LEARNING_EPOCH_MARKER)
                 .apply();
+        LearningEpoch.reset(context);
     }
 
     static String appendTypingEvent(
@@ -259,7 +275,7 @@ final class TouchBiasStore {
             float offsetXDp,
             float offsetYDp) {
         JSONArray events = decodeTypingPatternLog(encodedLog);
-        appendTypingEvent(events, type, text, action, offsetXDp, offsetYDp);
+        appendTypingEvent(events, type, text, action, offsetXDp, offsetYDp, 0L);
         return events.toString();
     }
 
@@ -279,13 +295,17 @@ final class TouchBiasStore {
             String text,
             GestureAction action,
             float offsetXDp,
-            float offsetYDp) {
+            float offsetYDp,
+            long learningEpoch) {
         if (events == null) {
             return;
         }
         try {
             JSONObject event = new JSONObject();
             event.put("timeMs", System.currentTimeMillis());
+            if (learningEpoch > 0L) {
+                event.put("learningEpoch", learningEpoch);
+            }
             event.put("type", type == null ? "" : type);
             String safeText = text == null ? "" : text;
             if (!safeText.isEmpty()) {
@@ -332,17 +352,32 @@ final class TouchBiasStore {
         }
 
         static DingulTouchProfile empty() {
-            return new DingulTouchProfile(new JSONObject());
+            return empty(0L);
+        }
+
+        static DingulTouchProfile empty(long learningEpoch) {
+            JSONObject root = new JSONObject();
+            putLong(root, "learningEpoch", learningEpoch);
+            return new DingulTouchProfile(root);
         }
 
         static DingulTouchProfile decode(String encoded) {
+            return decode(encoded, 0L);
+        }
+
+        static DingulTouchProfile decode(String encoded, long learningEpoch) {
             if (encoded == null || encoded.isEmpty()) {
-                return empty();
+                return empty(learningEpoch);
             }
             try {
-                return new DingulTouchProfile(new JSONObject(encoded));
+                JSONObject root = new JSONObject(encoded);
+                if (learningEpoch > 0L
+                        && !LearningEpoch.matches(root.optLong("learningEpoch", 0L), learningEpoch)) {
+                    return empty(learningEpoch);
+                }
+                return new DingulTouchProfile(root);
             } catch (JSONException exception) {
-                return empty();
+                return empty(learningEpoch);
             }
         }
 
@@ -486,6 +521,16 @@ final class TouchBiasStore {
         private static void putFloat(JSONObject object, String key, float value) {
             try {
                 object.put(key, value);
+            } catch (JSONException exception) {
+                // Ignore malformed in-memory state.
+            }
+        }
+
+        private static void putLong(JSONObject object, String key, long value) {
+            try {
+                if (value > 0L) {
+                    object.put(key, value);
+                }
             } catch (JSONException exception) {
                 // Ignore malformed in-memory state.
             }

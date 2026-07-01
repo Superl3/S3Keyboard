@@ -34,6 +34,22 @@ final class LocalDataControlsController {
         TouchBiasStore.reset(context);
     }
 
+    void clearInputLogsOnly() {
+        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove(TouchBiasStore.TYPING_PATTERN_LOG)
+                .remove(TouchBiasStore.TYPING_EVENT_JOURNAL)
+                .apply();
+    }
+
+    void clearTouchBiasOnly() {
+        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove(TouchBiasStore.TOUCH_BIAS_STATS)
+                .remove(TouchBiasStore.DINGUL_TOUCH_PROFILE)
+                .apply();
+    }
+
     void clearRemoteCompatibilityLog() {
         RemoteCompatibilityLog.clear(context);
     }
@@ -51,6 +67,7 @@ final class LocalDataControlsController {
                 TouchBiasStore.TYPING_PATTERN_LOG,
                 TouchBiasStore.TYPING_EVENT_JOURNAL,
                 TouchBiasStore.DINGUL_TOUCH_PROFILE,
+                TouchBiasStore.LEARNING_EPOCH_MARKER,
                 RemoteCompatibilityLog.KEY_ENTRIES
         };
     }

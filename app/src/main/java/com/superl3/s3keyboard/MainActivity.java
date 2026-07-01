@@ -89,6 +89,7 @@ public final class MainActivity extends Activity {
     private SeekBar hapticGapSeekBar;
     private SeekBar repeatStartDelaySeekBar;
     private SeekBar repeatIntervalSeekBar;
+    private SeekBar spacebarCursorDeadZoneSeekBar;
     private SeekBar primaryTextSizeSeekBar;
     private SeekBar secondaryTextSizeSeekBar;
     private Spinner themePresetSpinner;
@@ -108,6 +109,7 @@ public final class MainActivity extends Activity {
     private Spinner remoteKeyPresetSpinner;
     private Spinner remoteImeShortcutSpinner;
     private Spinner inputAssistanceModeSpinner;
+    private Spinner dingulVowelGestureProfileSpinner;
     private InputAssistanceMode[] inputAssistanceModes =
             InputAssistanceSettingsController.availableModes(false);
     private Spinner motionEffectLevelSpinner;
@@ -133,6 +135,7 @@ public final class MainActivity extends Activity {
     private CheckBox pointKeycapStyleCheckBox;
     private CheckBox remoteModeCheckBox;
     private CheckBox remoteAutoModeCheckBox;
+    private CheckBox showCurrentAppProfileCheckBox;
     private CheckBox hangulConsonantSlideHintsCheckBox;
     private CheckBox hangulVowelSlideHintsCheckBox;
     private CheckBox englishSlideHintsCheckBox;
@@ -145,6 +148,7 @@ public final class MainActivity extends Activity {
     private CheckBox leftAssistRailCheckBox;
     private CheckBox uniformGridGapCheckBox;
     private CheckBox debugKeyBoundsOverlayCheckBox;
+    private CheckBox debugShowResolverScoresCheckBox;
     private TextView leftMarginValue;
     private TextView rightMarginValue;
     private TextView hangulHeightValue;
@@ -175,8 +179,11 @@ public final class MainActivity extends Activity {
     private TextView touchYOffsetValue;
     private TextView repeatStartDelayValue;
     private TextView repeatIntervalValue;
+    private TextView spacebarCursorDeadZoneValue;
     private TextView hapticDurationValue;
     private TextView hapticGapValue;
+    private TextView dingulInputDiagnosticsValue;
+    private TextView currentAppProfileSummaryValue;
     private TextView primaryTextSizeValue;
     private TextView secondaryTextSizeValue;
     private TextView ergonomicsPresetStateValue;
@@ -445,6 +452,7 @@ public final class MainActivity extends Activity {
 
         LinearLayout hubSection = addExpandableSection(root, getString(R.string.settings_hub_title), true);
         addBodyText(hubSection, getString(R.string.gesture_practice_body), 0);
+        addBodyText(hubSection, BuildInfoProvider.summary(this), 6);
 
         EditText testInput = new EditText(this);
         gestureTestInput = testInput;
@@ -1276,6 +1284,48 @@ public final class MainActivity extends Activity {
         root.addView(gestureThresholdValue, matchWrapWithTop(12));
         root.addView(gestureThresholdSeekBar, matchWrap());
 
+        root.addView(label(getString(R.string.settings_dingul_vowel_gesture_profile)), matchWrapWithTop(12));
+        dingulVowelGestureProfileSpinner = new Spinner(this);
+        dingulVowelGestureProfileSpinner.setAdapter(new SettingsArrayAdapter<>(
+                this,
+                SettingsDisplayLabels.labels(this, DingulVowelGestureProfile.values())));
+        dingulVowelGestureProfileSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (syncing) {
+                    return;
+                }
+                DingulVowelGestureProfile[] profiles = DingulVowelGestureProfile.values();
+                if (position >= 0 && position < profiles.length) {
+                    KeyboardPreferences.saveDingulVowelGestureProfile(MainActivity.this, profiles[position]);
+                    syncControls();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        root.addView(dingulVowelGestureProfileSpinner, matchWrap());
+
+        spacebarCursorDeadZoneValue = label("");
+        spacebarCursorDeadZoneSeekBar = seekBar(
+                KeyboardPreferences.MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP
+                        - KeyboardPreferences.MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP);
+        spacebarCursorDeadZoneSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && !syncing) {
+                    KeyboardPreferences.saveSpacebarCursorDeadZoneDp(
+                            MainActivity.this,
+                            KeyboardPreferences.MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP + progress);
+                    syncControls();
+                }
+            }
+        });
+        root.addView(spacebarCursorDeadZoneValue, matchWrapWithTop(12));
+        root.addView(spacebarCursorDeadZoneSeekBar, matchWrap());
+
         touchYOffsetValue = label("");
         touchYOffsetSeekBar = seekBar(
                 KeyboardSettings.MAX_TOUCH_Y_OFFSET_DP - KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP);
@@ -1378,6 +1428,13 @@ public final class MainActivity extends Activity {
         localDataSummaryValue.setLineSpacing(dp(2), 1.0f);
         root.addView(localDataSummaryValue, matchWrapWithTop(6));
 
+        dingulInputDiagnosticsValue = label("");
+        dingulInputDiagnosticsValue.setLineSpacing(dp(2), 1.0f);
+        root.addView(dingulInputDiagnosticsValue, matchWrapWithTop(6));
+
+        root.addView(label(getString(R.string.practice_mode_section)), matchWrapWithTop(12));
+        root.addView(PracticeModeController.createPanel(this), matchWrapWithTop(6));
+
         Button clearAllLocalDataButton = new Button(this);
         clearAllLocalDataButton.setText(R.string.clear_all_local_data);
         styleSystemButton(clearAllLocalDataButton);
@@ -1397,6 +1454,26 @@ public final class MainActivity extends Activity {
             syncControls();
         });
         root.addView(resetTouchBiasButton, buttonParams());
+
+        Button clearInputLogsButton = new Button(this);
+        clearInputLogsButton.setText(R.string.clear_input_logs_only);
+        styleSystemButton(clearInputLogsButton);
+        setButtonIcon(clearInputLogsButton, R.drawable.ic_keyboard_reset);
+        clearInputLogsButton.setOnClickListener(v -> {
+            localDataControlsController.clearInputLogsOnly();
+            syncControls();
+        });
+        root.addView(clearInputLogsButton, buttonParams());
+
+        Button clearTouchBiasOnlyButton = new Button(this);
+        clearTouchBiasOnlyButton.setText(R.string.clear_touch_bias_only);
+        styleSystemButton(clearTouchBiasOnlyButton);
+        setButtonIcon(clearTouchBiasOnlyButton, R.drawable.ic_keyboard_reset);
+        clearTouchBiasOnlyButton.setOnClickListener(v -> {
+            localDataControlsController.clearTouchBiasOnly();
+            syncControls();
+        });
+        root.addView(clearTouchBiasOnlyButton, buttonParams());
 
         Button clearClipboardButton = new Button(this);
         clearClipboardButton.setText(R.string.clear_clipboard_history);
@@ -1481,6 +1558,21 @@ public final class MainActivity extends Activity {
             }
         });
         root.addView(remoteAutoModeCheckBox, matchWrapWithTop(8));
+
+        showCurrentAppProfileCheckBox = new CheckBox(this);
+        showCurrentAppProfileCheckBox.setText(R.string.settings_show_current_app_profile);
+        showCurrentAppProfileCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+            @Override
+            protected void onUserChanged(boolean isChecked) {
+                KeyboardPreferences.saveShowCurrentAppProfile(MainActivity.this, isChecked);
+                syncControls();
+            }
+        });
+        root.addView(showCurrentAppProfileCheckBox, matchWrapWithTop(8));
+
+        currentAppProfileSummaryValue = label("");
+        currentAppProfileSummaryValue.setLineSpacing(dp(2), 1.0f);
+        root.addView(currentAppProfileSummaryValue, matchWrapWithTop(6));
 
         root.addView(label(getString(R.string.settings_remote_auto_packages)), matchWrapWithTop(8));
         remoteAutoPackagesInput = new EditText(this);
@@ -1664,6 +1756,17 @@ public final class MainActivity extends Activity {
                 }
             });
             root.addView(debugKeyBoundsOverlayCheckBox, matchWrapWithTop(12));
+
+            debugShowResolverScoresCheckBox = new CheckBox(this);
+            debugShowResolverScoresCheckBox.setText(R.string.settings_debug_resolver_scores);
+            debugShowResolverScoresCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
+                @Override
+                protected void onUserChanged(boolean isChecked) {
+                    KeyboardPreferences.saveDebugShowResolverScores(MainActivity.this, isChecked);
+                    syncControls();
+                }
+            });
+            root.addView(debugShowResolverScoresCheckBox, matchWrapWithTop(8));
         }
     }
 
@@ -1707,6 +1810,7 @@ public final class MainActivity extends Activity {
         styleCheckBox(secondaryTextItalicCheckBox);
         styleCheckBox(remoteModeCheckBox);
         styleCheckBox(remoteAutoModeCheckBox);
+        styleCheckBox(showCurrentAppProfileCheckBox);
         styleCheckBox(pointKeycapStyleCheckBox);
         styleCheckBox(hangulNumberRowCheckBox);
         styleCheckBox(englishNumberRowCheckBox);
@@ -1729,6 +1833,7 @@ public final class MainActivity extends Activity {
         styleCheckBox(ergonomicHitboxCheckBox);
         styleCheckBox(ergonomicPositionAdjustCheckBox);
         styleCheckBox(debugKeyBoundsOverlayCheckBox);
+        styleCheckBox(debugShowResolverScoresCheckBox);
         if (themeOptions.length == 0) {
             reloadThemeOptions();
         }
@@ -1842,6 +1947,10 @@ public final class MainActivity extends Activity {
                             inputAssistanceModes,
                             currentInputAssistanceMode()));
         }
+        if (dingulVowelGestureProfileSpinner != null) {
+            dingulVowelGestureProfileSpinner.setSelection(
+                    KeyboardPreferences.loadDingulVowelGestureProfile(this).ordinal());
+        }
         hangulNumberRowCheckBox.setChecked(settings.showHangulNumberRow);
         englishNumberRowCheckBox.setChecked(settings.showEnglishNumberRow);
         hapticCheckBox.setChecked(settings.hapticFeedbackEnabled);
@@ -1852,6 +1961,9 @@ public final class MainActivity extends Activity {
         clipboardHistoryCheckBox.setChecked(localDataControlsController.clipboardHistoryEnabled());
         if (localDataSummaryValue != null) {
             localDataSummaryValue.setText(localDataControlsController.summaryText());
+        }
+        if (dingulInputDiagnosticsValue != null) {
+            dingulInputDiagnosticsValue.setText(DingulInputDiagnostics.load(this).summaryText(this));
         }
         hapticDurationSeekBar.setEnabled(settings.hapticFeedbackEnabled);
         hapticGapSeekBar.setEnabled(settings.hapticFeedbackEnabled);
@@ -1878,9 +1990,23 @@ public final class MainActivity extends Activity {
             debugKeyBoundsOverlayCheckBox.setChecked(
                     KeyboardPreferences.loadDebugKeyBoundsOverlayEnabled(this));
         }
+        if (debugShowResolverScoresCheckBox != null) {
+            boolean debugOverlayEnabled = KeyboardPreferences.loadDebugKeyBoundsOverlayEnabled(this);
+            debugShowResolverScoresCheckBox.setChecked(
+                    KeyboardPreferences.loadDebugShowResolverScores(this));
+            debugShowResolverScoresCheckBox.setEnabled(debugOverlayEnabled);
+        }
         remoteModeCheckBox.setChecked(settings.remoteModeEnabled);
         boolean remoteAutoModeEnabled = KeyboardPreferences.loadRemoteAutoModeEnabled(this);
         remoteAutoModeCheckBox.setChecked(remoteAutoModeEnabled);
+        if (showCurrentAppProfileCheckBox != null) {
+            boolean showProfile = KeyboardPreferences.loadShowCurrentAppProfile(this);
+            showCurrentAppProfileCheckBox.setChecked(showProfile);
+            if (currentAppProfileSummaryValue != null) {
+                currentAppProfileSummaryValue.setVisibility(showProfile ? View.VISIBLE : View.GONE);
+                currentAppProfileSummaryValue.setText(CurrentAppProfilePanelController.summary(this));
+            }
+        }
         if (remoteAutoPackagesInput != null) {
             setPackageListTextIfNotFocused(
                     remoteAutoPackagesInput,
@@ -1927,6 +2053,12 @@ public final class MainActivity extends Activity {
         keyGapValue.setText(SettingsValueFormatter.visualGap(this, settings.keyGapDp));
         keyDepthValue.setText(SettingsValueFormatter.depthHeight(this, settings));
         gestureThresholdValue.setText(SettingsValueFormatter.gestureThreshold(this, settings.gestureThresholdDp));
+        if (spacebarCursorDeadZoneValue != null) {
+            int deadZoneDp = KeyboardPreferences.loadSpacebarCursorDeadZoneDp(this);
+            spacebarCursorDeadZoneValue.setText(SettingsValueFormatter.spacebarCursorDeadZone(this, deadZoneDp));
+            spacebarCursorDeadZoneSeekBar.setProgress(
+                    deadZoneDp - KeyboardPreferences.MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP);
+        }
         hapticDurationValue.setText(SettingsValueFormatter.hapticDuration(this, hapticDurationMs));
         hapticGapValue.setText(SettingsValueFormatter.hapticGap(this, hapticGapMs));
         primaryTextSizeValue.setText(SettingsValueFormatter.primaryTextSize(

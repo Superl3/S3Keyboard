@@ -165,4 +165,19 @@ public final class TouchBiasStoreTest {
         assertEquals(1, decoded.correctionCount("3163+2E", GestureAction.RIGHT));
         org.junit.Assert.assertFalse(encoded.contains("ㄱ"));
     }
+
+    @Test
+    public void dingulProfileIgnoresDifferentLearningEpoch() {
+        TouchBiasStore.DingulTouchProfile profile = TouchBiasStore.DingulTouchProfile.empty(100L)
+                .recordInput("3163+2E", GestureAction.RIGHT);
+        String encoded = profile.encode();
+
+        TouchBiasStore.DingulTouchProfile sameEpoch =
+                TouchBiasStore.DingulTouchProfile.decode(encoded, 100L);
+        TouchBiasStore.DingulTouchProfile differentEpoch =
+                TouchBiasStore.DingulTouchProfile.decode(encoded, 200L);
+
+        assertEquals(1, sameEpoch.inputCount("3163+2E", GestureAction.RIGHT));
+        assertEquals(0, differentEpoch.inputCount("3163+2E", GestureAction.RIGHT));
+    }
 }
