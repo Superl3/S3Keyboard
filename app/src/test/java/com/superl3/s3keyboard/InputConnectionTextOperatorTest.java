@@ -76,7 +76,7 @@ public final class InputConnectionTextOperatorTest {
     }
 
     @Test
-    public void commitCurrentFlushesDraftTextAndFinishesComposingFirst() {
+    public void commitCurrentFlushesDraftTextByReplacingComposing() {
         FakeConnection fake = new FakeConnection();
         HangulAutomata automata = new HangulAutomata();
         automata.input('\u3131');
@@ -86,8 +86,8 @@ public final class InputConnectionTextOperatorTest {
                 automata,
                 new HangulCommitOnlyEditor());
 
-        assertEquals("finishComposingText", fake.calls.get(0));
-        assertEquals("commitText", fake.calls.get(1));
+        assertEquals("commitText", fake.calls.get(0));
+        assertEquals("finishComposingText", fake.calls.get(1));
         assertEquals("\u3131", fake.committedText.get(0));
     }
 

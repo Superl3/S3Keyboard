@@ -596,7 +596,7 @@ public final class S3KeyboardService extends InputMethodService
             for (int i = 0; i < decomposed.length(); i++) {
                 String committed = automata.input(decomposed.charAt(i));
                 if (!committed.isEmpty()) {
-                    InputConnectionTextOperator.commitText(inputConnection, committed);
+                    InputConnectionTextOperator.commitTextReplacingComposing(inputConnection, committed);
                 }
             }
             if (automata.replaceCurrentVowelWithoutFinal(replacementVowel)) {
@@ -617,12 +617,12 @@ public final class S3KeyboardService extends InputMethodService
         for (int i = 0; i < decomposed.length(); i++) {
             String committed = automata.input(decomposed.charAt(i));
             if (!committed.isEmpty()) {
-                InputConnectionTextOperator.commitText(inputConnection, committed);
+                InputConnectionTextOperator.commitTextReplacingComposing(inputConnection, committed);
             }
         }
         String committed = automata.input(nextVowel);
         if (!committed.isEmpty()) {
-            InputConnectionTextOperator.commitText(inputConnection, committed);
+            InputConnectionTextOperator.commitTextReplacingComposing(inputConnection, committed);
         }
         updateComposing(inputConnection);
         return true;
@@ -747,7 +747,7 @@ public final class S3KeyboardService extends InputMethodService
             }
             String committed = automata.input(ch);
             if (!committed.isEmpty()) {
-                InputConnectionTextOperator.commitText(inputConnection, committed);
+                InputConnectionTextOperator.commitTextReplacingComposing(inputConnection, committed);
             }
             updateComposing(inputConnection);
         }
@@ -861,11 +861,11 @@ public final class S3KeyboardService extends InputMethodService
         automata.reset();
         String committed = automata.input(previous);
         if (!committed.isEmpty()) {
-            InputConnectionTextOperator.commitText(inputConnection, committed);
+            InputConnectionTextOperator.commitTextReplacingComposing(inputConnection, committed);
         }
         committed = automata.input(vowel);
         if (!committed.isEmpty()) {
-            InputConnectionTextOperator.commitText(inputConnection, committed);
+            InputConnectionTextOperator.commitTextReplacingComposing(inputConnection, committed);
         }
         updateComposing(inputConnection);
         return true;
@@ -886,12 +886,12 @@ public final class S3KeyboardService extends InputMethodService
         for (int i = 0; i < decomposed.length(); i++) {
             String committed = automata.input(decomposed.charAt(i));
             if (!committed.isEmpty()) {
-                InputConnectionTextOperator.commitText(inputConnection, committed);
+                InputConnectionTextOperator.commitTextReplacingComposing(inputConnection, committed);
             }
         }
         String committed = automata.input(finalConsonant);
         if (!committed.isEmpty()) {
-            InputConnectionTextOperator.commitText(inputConnection, committed);
+            InputConnectionTextOperator.commitTextReplacingComposing(inputConnection, committed);
         }
         updateComposing(inputConnection);
         return true;

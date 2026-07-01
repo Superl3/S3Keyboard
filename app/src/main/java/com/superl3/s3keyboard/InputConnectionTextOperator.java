@@ -96,8 +96,7 @@ final class InputConnectionTextOperator {
         if (composing.isEmpty()) {
             finishComposing(inputConnection);
         } else {
-            finishComposing(inputConnection);
-            inputConnection.commitText(composing, 1);
+            commitTextReplacingComposing(inputConnection, composing);
         }
         if (commitOnlyEditor != null) {
             commitOnlyEditor.reset();
@@ -107,6 +106,13 @@ final class InputConnectionTextOperator {
     static void commitText(InputConnection inputConnection, String text) {
         if (inputConnection != null && text != null && !text.isEmpty()) {
             finishComposing(inputConnection);
+            inputConnection.commitText(text, 1);
+            finishComposing(inputConnection);
+        }
+    }
+
+    static void commitTextReplacingComposing(InputConnection inputConnection, String text) {
+        if (inputConnection != null && text != null && !text.isEmpty()) {
             inputConnection.commitText(text, 1);
             finishComposing(inputConnection);
         }
