@@ -11,6 +11,7 @@ This audit tracks evidence-based simplification targets for the keyboard codebas
 - `RecentInputCorrectionController` was unused and has been removed. Geometry-only correction is already available through `TouchBiasStore`, so keeping an extra controller added API surface without behavior.
 - Repeated Hangul automata committed-fragment calls in `S3KeyboardService` now route through one helper, keeping the composing replacement contract in one local place.
 - Preview bubble width, position, lift, and corner-radius rules now live in `PreviewBubbleLayout`, so popup tuning can be tested without touching the full keyboard view.
+- Debug overlay settings are now owned by `DebugOverlaySettingsController`, keeping debug-only preference wiring out of the main settings activity.
 
 ## Preferred Direction
 
@@ -22,6 +23,6 @@ This audit tracks evidence-based simplification targets for the keyboard codebas
 
 ## Next Refactor Units
 
-1. Move settings category construction out of `MainActivity` one section at a time, starting with debug/input-assistance sections because they are currently option-heavy.
+1. Continue moving settings category construction out of `MainActivity` one section at a time. The debug overlay controls are the first extracted slice; input-assistance controls are the next likely target.
 2. Introduce grouped settings value objects only when they reduce constructor churn in `KeyboardSettings`; do not add compatibility aliases unless an importer actually needs them.
 3. Keep removing unused one-method controller classes when their behavior is already expressed by an existing service/store.

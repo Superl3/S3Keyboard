@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class PreviewOverlayController {
-    private static final int TOP_RESERVE_DP = 112;
-    private static final int ANGULAR_TAIL_DP = 26;
+    private static final int TOP_RESERVE_DP = 124;
+    private static final int ANGULAR_TAIL_DP = 30;
 
     private final Context context;
     private final FrameLayout overlayContainer;

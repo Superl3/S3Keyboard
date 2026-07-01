@@ -508,6 +508,26 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void debugOverlaySettingsPersistenceStaysBehindController() throws Exception {
+        String activity = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
+        String controller = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/DebugOverlaySettingsController.java");
+
+        assertTrue(activity.contains("DebugOverlaySettingsController"));
+        assertTrue(activity.contains("debugOverlaySettingsController.addTo("));
+        assertFalse(activity.contains("debugKeyBoundsOverlayCheckBox"));
+        assertFalse(activity.contains("debugShowResolverScoresCheckBox"));
+        assertFalse(activity.contains("saveDebugShowResolverScores("));
+        assertFalse(activity.contains("loadDebugShowResolverScores("));
+        assertTrue(controller.contains("saveDebugOverlay("));
+        assertTrue(controller.contains("saveDebugShowResolverScores("));
+        assertTrue(controller.contains("loadDebugShowResolverScores("));
+        assertTrue(controller.contains("setEnabled(overlayEnabled)"));
+        assertTrue(controller.contains("SettingsViewStyler.compoundButton("));
+    }
+
+    @Test
     public void inputAssistanceModePersistenceStaysOutOfMainActivityBody() throws Exception {
         String activity = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");

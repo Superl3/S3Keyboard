@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 
 final class PreviewBubbleDrawable extends Drawable {
     private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint highlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint tailPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint tailStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -39,6 +40,8 @@ final class PreviewBubbleDrawable extends Drawable {
         this.borderWidthPx = Math.max(0, borderWidthPx);
         fillPaint.setStyle(Paint.Style.FILL);
         fillPaint.setColor(backgroundColor);
+        highlightPaint.setStyle(Paint.Style.FILL);
+        highlightPaint.setDither(true);
         strokePaint.setStyle(Paint.Style.STROKE);
         strokePaint.setStrokeJoin(Paint.Join.ROUND);
         strokePaint.setStrokeCap(Paint.Cap.ROUND);
@@ -70,6 +73,7 @@ final class PreviewBubbleDrawable extends Drawable {
 
         body.set(left, top, right, bottom);
         canvas.drawRoundRect(body, corner, corner, fillPaint);
+        drawBodyHighlight(canvas, corner);
         if (borderWidthPx > 0) {
             float tailJoinLeft = centerX - tailTopHalf;
             float tailJoinRight = centerX + tailTopHalf;
@@ -124,10 +128,10 @@ final class PreviewBubbleDrawable extends Drawable {
                     new int[] {
                             withAlpha(backgroundColor, alpha),
                             withAlpha(backgroundColor, alpha),
-                            withAlpha(backgroundColor, Math.round(alpha * 0.30f)),
+                            withAlpha(backgroundColor, Math.round(alpha * 0.44f)),
                             withAlpha(backgroundColor, 0)
                     },
-                    new float[] { 0f, 0.55f, 0.84f, 1f },
+                    new float[] { 0f, 0.60f, 0.86f, 1f },
                     Shader.TileMode.CLAMP));
             canvas.drawPath(tailPath, tailPaint);
             tailPaint.setShader(null);
@@ -160,5 +164,32 @@ final class PreviewBubbleDrawable extends Drawable {
 
     private int withAlpha(int color, int alpha) {
         return (Math.max(0, Math.min(255, alpha)) << 24) | (color & 0x00FFFFFF);
+    }
+
+    private void drawBodyHighlight(Canvas canvas, float corner) {
+        int luminance = perceivedLuminance(backgroundColor);
+        int highlightColor = luminance < 110 ? 0xFFFFFFFF : 0xFF000000;
+        int startAlpha = Math.round(alpha * (luminance < 110 ? 0.13f : 0.06f));
+        int endAlpha = 0;
+        highlightPaint.setShader(new LinearGradient(
+                0,
+                body.top,
+                0,
+                body.top + body.height() * 0.52f,
+                new int[] {
+                        withAlpha(highlightColor, startAlpha),
+                        withAlpha(highlightColor, endAlpha)
+                },
+                new float[] { 0f, 1f },
+                Shader.TileMode.CLAMP));
+        canvas.drawRoundRect(body, corner, corner, highlightPaint);
+        highlightPaint.setShader(null);
+    }
+
+    private int perceivedLuminance(int color) {
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        return (r * 299 + g * 587 + b * 114) / 1000;
     }
 }

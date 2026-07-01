@@ -2912,7 +2912,7 @@ public final class HangulKeyboardView extends View {
         int g = (baseColor >> 8) & 0xFF;
         int b = baseColor & 0xFF;
         int luminance = (r * 299 + g * 587 + b * 114) / 1000;
-        return luminance > 150 ? darkenColor(baseColor, 0.94f) : lightenColor(baseColor, 1.12f);
+        return luminance > 150 ? darkenColor(baseColor, 0.88f) : lightenColor(baseColor, 1.22f);
     }
 
     private int depthColor(KeySlot keySlot, float pressProgress) {
@@ -3153,7 +3153,7 @@ public final class HangulKeyboardView extends View {
                 renderDp(48),
                 renderDp(92),
                 renderDp(28));
-        int popupHeight = renderDp(61);
+        int popupHeight = renderDp(70);
         float previewMotionProgress = bubble.motionProgress(
                 SystemClock.uptimeMillis(),
                 motionEffectsEnabled(),
@@ -3283,8 +3283,8 @@ public final class HangulKeyboardView extends View {
         return PreviewBubbleLayout.liftPx(
                 motionEffectsEnabled(),
                 progress,
-                renderDp(14f * motionIntensityScale()),
-                renderDp(8f * motionIntensityScale()));
+                renderDp(20f * motionIntensityScale()),
+                renderDp(12f * motionIntensityScale()));
     }
 
     private int previewBubbleCornerRadius() {

@@ -28,9 +28,9 @@ public final class PreviewBubbleAnimationTest {
 
         assertEquals(1f, bubble.alpha(1100L, true, 1f), 0.001f);
         assertEquals(1f, bubble.alpha(1250L, true, 1f), 0.001f);
-        assertTrue(bubble.alpha(1320L, true, 1f) < 1f);
-        assertFalse(bubble.expired(1459L, true, 1f));
-        assertTrue(bubble.expired(1460L, true, 1f));
+        assertTrue(bubble.alpha(1390L, true, 1f) < 1f);
+        assertFalse(bubble.expired(1619L, true, 1f));
+        assertTrue(bubble.expired(1620L, true, 1f));
     }
 
     @Test

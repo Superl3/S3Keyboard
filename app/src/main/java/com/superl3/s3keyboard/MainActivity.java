@@ -67,6 +67,7 @@ public final class MainActivity extends Activity {
     private KeyboardLayoutProfiles layoutProfiles;
     private KeyboardErgonomicsOptions ergonomicsOptions = KeyboardErgonomicsOptions.DEFAULT;
     private LocalDataControlsController localDataControlsController;
+    private DebugOverlaySettingsController debugOverlaySettingsController;
     private boolean syncing;
     private boolean demoShowKeyboard;
     private Spinner handednessSpinner;
@@ -147,8 +148,6 @@ public final class MainActivity extends Activity {
     private CheckBox ergonomicPositionAdjustCheckBox;
     private CheckBox leftAssistRailCheckBox;
     private CheckBox uniformGridGapCheckBox;
-    private CheckBox debugKeyBoundsOverlayCheckBox;
-    private CheckBox debugShowResolverScoresCheckBox;
     private TextView leftMarginValue;
     private TextView rightMarginValue;
     private TextView hangulHeightValue;
@@ -1746,27 +1745,8 @@ public final class MainActivity extends Activity {
         root.addView(pickerButton, buttonParams());
 
         if (isDebuggableBuild()) {
-            debugKeyBoundsOverlayCheckBox = new CheckBox(this);
-            debugKeyBoundsOverlayCheckBox.setText(R.string.settings_debug_key_bounds_overlay);
-            debugKeyBoundsOverlayCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-                @Override
-                protected void onUserChanged(boolean isChecked) {
-                    InputAssistanceSettingsController.saveDebugOverlay(MainActivity.this, isChecked);
-                    syncControls();
-                }
-            });
-            root.addView(debugKeyBoundsOverlayCheckBox, matchWrapWithTop(12));
-
-            debugShowResolverScoresCheckBox = new CheckBox(this);
-            debugShowResolverScoresCheckBox.setText(R.string.settings_debug_resolver_scores);
-            debugShowResolverScoresCheckBox.setOnCheckedChangeListener(new BooleanSettingListener() {
-                @Override
-                protected void onUserChanged(boolean isChecked) {
-                    KeyboardPreferences.saveDebugShowResolverScores(MainActivity.this, isChecked);
-                    syncControls();
-                }
-            });
-            root.addView(debugShowResolverScoresCheckBox, matchWrapWithTop(8));
+            debugOverlaySettingsController = new DebugOverlaySettingsController(this, this::syncControls);
+            debugOverlaySettingsController.addTo(root);
         }
     }
 
@@ -1832,8 +1812,9 @@ public final class MainActivity extends Activity {
         styleCheckBox(compactFunctionRailCheckBox);
         styleCheckBox(ergonomicHitboxCheckBox);
         styleCheckBox(ergonomicPositionAdjustCheckBox);
-        styleCheckBox(debugKeyBoundsOverlayCheckBox);
-        styleCheckBox(debugShowResolverScoresCheckBox);
+        if (debugOverlaySettingsController != null) {
+            debugOverlaySettingsController.sync();
+        }
         if (themeOptions.length == 0) {
             reloadThemeOptions();
         }
@@ -1986,16 +1967,6 @@ public final class MainActivity extends Activity {
         compactFunctionRailCheckBox.setChecked(ergonomicsOptions.compactFunctionRailEnabled);
         ergonomicHitboxCheckBox.setChecked(ergonomicsOptions.ergonomicHitboxEnabled);
         ergonomicPositionAdjustCheckBox.setChecked(ergonomicsOptions.ergonomicPositionAdjustEnabled);
-        if (debugKeyBoundsOverlayCheckBox != null) {
-            debugKeyBoundsOverlayCheckBox.setChecked(
-                    KeyboardPreferences.loadDebugKeyBoundsOverlayEnabled(this));
-        }
-        if (debugShowResolverScoresCheckBox != null) {
-            boolean debugOverlayEnabled = KeyboardPreferences.loadDebugKeyBoundsOverlayEnabled(this);
-            debugShowResolverScoresCheckBox.setChecked(
-                    KeyboardPreferences.loadDebugShowResolverScores(this));
-            debugShowResolverScoresCheckBox.setEnabled(debugOverlayEnabled);
-        }
         remoteModeCheckBox.setChecked(settings.remoteModeEnabled);
         boolean remoteAutoModeEnabled = KeyboardPreferences.loadRemoteAutoModeEnabled(this);
         remoteAutoModeCheckBox.setChecked(remoteAutoModeEnabled);

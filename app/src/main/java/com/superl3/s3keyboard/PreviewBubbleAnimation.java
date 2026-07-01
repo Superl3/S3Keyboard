@@ -1,10 +1,10 @@
 package com.superl3.s3keyboard;
 
 final class PreviewBubbleAnimation {
-    private static final long POP_ANIMATION_MS = 155;
-    private static final long MOTION_ANIMATION_MS = 390;
-    private static final long RELEASE_ANIMATION_MS = 360;
-    private static final float POP_OVERSHOOT = 1.055f;
+    private static final long POP_ANIMATION_MS = 185;
+    private static final long MOTION_ANIMATION_MS = 460;
+    private static final long RELEASE_ANIMATION_MS = 520;
+    private static final float POP_OVERSHOOT = 1.24f;
 
     String label;
     final long sequence;
@@ -84,9 +84,9 @@ final class PreviewBubbleAnimation {
         }
         float progress = popProgress(nowMs, true, durationScale);
         if (progress <= 1f) {
-            return 0.91f + 0.09f * progress;
+            return 0.86f + 0.14f * progress;
         }
-        return 1f + (progress - 1f) * 0.55f;
+        return 1f + (progress - 1f) * 0.42f;
     }
 
     float motionProgress(long nowMs, boolean motionEnabled, float durationScale) {
@@ -101,10 +101,10 @@ final class PreviewBubbleAnimation {
             return 1f;
         }
         float progress = releaseProgress(nowMs, true, durationScale);
-        if (progress < 0.45f) {
+        if (progress < 0.36f) {
             return 1f;
         }
-        return 1f - smoothStep((progress - 0.45f) / 0.55f);
+        return 1f - smoothStep((progress - 0.36f) / 0.64f);
     }
 
     boolean expired(long nowMs, boolean motionEnabled, float durationScale) {
