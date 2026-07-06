@@ -107,6 +107,14 @@ final class SettingsValueFormatter {
         return context.getString(R.string.settings_repeat_interval_format, ms);
     }
 
+    static String singleTapStartHold(Context context, int ms) {
+        return context.getString(R.string.settings_single_tap_start_hold_format, ms);
+    }
+
+    static String singleTapCommitHold(Context context, int ms) {
+        return context.getString(R.string.settings_single_tap_commit_hold_format, ms);
+    }
+
     private static String numberRowSuffix(Context context, boolean visible) {
         return visible ? context.getString(R.string.settings_num_row_suffix) : "";
     }

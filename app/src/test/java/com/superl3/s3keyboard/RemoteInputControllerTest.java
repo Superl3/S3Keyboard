@@ -71,6 +71,19 @@ public final class RemoteInputControllerTest {
         assertEquals(0, sender.last().metaState & KeyEvent.META_CTRL_ON);
     }
 
+    @Test
+    public void remoteCursorKeysBypassLocalEditorBoundaryChecks() {
+        FakeRemoteState state = new FakeRemoteState();
+        RecordingKeySender sender = new RecordingKeySender();
+        RemoteInputController controller = newController(state, sender);
+
+        controller.moveCursor(null, false);
+        controller.moveCursor(null, true);
+
+        assertEquals(KeyEvent.KEYCODE_DPAD_LEFT, sender.sent.get(0).keyCode);
+        assertEquals(KeyEvent.KEYCODE_DPAD_RIGHT, sender.sent.get(1).keyCode);
+    }
+
     private static final class FakeRemoteState {
         RemoteImeShortcut shortcut = RemoteImeShortcut.ALT_SHIFT;
         int lastPendingMetaState;

@@ -93,6 +93,13 @@ final class RemoteInputController {
         return sendKey(inputConnection, keyCode, metaState);
     }
 
+    int moveCursor(InputConnection inputConnection, boolean right) {
+        return sendKey(
+                inputConnection,
+                right ? KeyEvent.KEYCODE_DPAD_RIGHT : KeyEvent.KEYCODE_DPAD_LEFT,
+                0);
+    }
+
     private void sendImeToggle(InputConnection inputConnection) {
         reset();
         switch (RuntimeDefaults.remoteImeShortcut(remoteImeShortcut.get())) {

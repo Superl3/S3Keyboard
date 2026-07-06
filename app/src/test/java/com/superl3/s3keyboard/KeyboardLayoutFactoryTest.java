@@ -35,11 +35,11 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals("ㄱ,ㄴ,ㅢ,삭제", labels(rows.get(0)));
         assertEquals("ㄹ,ㅁ,ㅣ.,?", labels(rows.get(1)));
         assertEquals("ㅅ,ㅇ,ㅡㅐ,.", labels(rows.get(2)));
-        assertEquals("ㅈ,ㅎ,. .,/", labels(rows.get(3)));
-        assertEquals("83,83,83,51", widths(rows.get(0)));
-        assertEquals("83,83,83,51", widths(rows.get(1)));
-        assertEquals("83,83,83,51", widths(rows.get(2)));
-        assertEquals("83,83,83,51", widths(rows.get(3)));
+        assertEquals("ㅈ,ㅎ,Enter,/", labels(rows.get(3)));
+        assertEquals("86,86,86,42", widths(rows.get(0)));
+        assertEquals("86,86,86,42", widths(rows.get(1)));
+        assertEquals("86,86,86,42", widths(rows.get(2)));
+        assertEquals("86,86,86,42", widths(rows.get(3)));
     }
 
     @Test
@@ -49,10 +49,10 @@ public final class KeyboardLayoutFactoryTest {
         for (int i = 0; i < 4; i++) {
             KeyboardRow row = rows.get(i);
             assertEquals(300, row.baseUnits);
-            assertEquals(83, row.keys.get(0).widthUnits);
-            assertEquals(83, row.keys.get(1).widthUnits);
-            assertEquals(83, row.keys.get(2).widthUnits);
-            assertEquals(51, row.keys.get(3).widthUnits);
+            assertEquals(86, row.keys.get(0).widthUnits);
+            assertEquals(86, row.keys.get(1).widthUnits);
+            assertEquals(86, row.keys.get(2).widthUnits);
+            assertEquals(42, row.keys.get(3).widthUnits);
         }
     }
 
@@ -83,8 +83,8 @@ public final class KeyboardLayoutFactoryTest {
         assertDirections(findKey(rows, "ㅢ"), "ㅚ", "ㅟ", "ㅝ", "ㅘ");
         assertDirections(findKey(rows, "ㅣ."), "ㅗ", "ㅜ", "ㅓ", "ㅏ");
         assertDirections(findKey(rows, "ㅡㅐ"), "ㅙ", "ㅞ", "ㅔ", "ㅐ");
-        assertDirections(findKey(rows, ". ."), "\u315B", "\u3160", "\u3155", "\u3151");
-        assertEquals(" ", findKey(rows, ". .").valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_ENTER, findKey(rows, "Enter").valueFor(GestureAction.TAP));
+        assertEquals(KeyIcon.ENTER, findKey(rows, "Enter").icon);
         assertDirections(findKey(rows, "?"), "!", "*", "+", KeyboardCommands.CMD_NOOP);
         assertDirections(findKey(rows, "."), "\"", "`", ",", KeyboardCommands.CMD_NOOP);
         assertDirections(findKey(rows, "/"), ":", ";", "@", KeyboardCommands.CMD_NOOP);
@@ -315,7 +315,7 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals(KeyboardCommands.CMD_REMOTE_SHIFT_TAB, findKey(rows, "r").valueFor(GestureAction.UP));
         assertEquals(KeyboardCommands.CMD_REMOTE_CTRL_TAB, findKey(rows, "t").valueFor(GestureAction.UP));
         assertEquals(KeyboardCommands.CMD_REMOTE_ALT_TAB, findKey(rows, "y").valueFor(GestureAction.UP));
-        assertEquals("U", findKey(rows, "u").valueFor(GestureAction.UP));
+        assertNull(findKey(rows, "u").upSlide);
         assertNull(findKey(rows, "q").valueFor(GestureAction.LONG_PRESS));
         assertNull(findKey(rows, "u").valueFor(GestureAction.LONG_PRESS));
         assertEquals(KeyboardCommands.CMD_REMOTE_INSERT, findKey(rows, "i").valueFor(GestureAction.UP));
@@ -324,8 +324,8 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals(KeyboardCommands.CMD_REMOTE_END, findKey(rows, "o").valueFor(GestureAction.DOWN));
         assertEquals(KeyboardCommands.CMD_REMOTE_PAGE_UP, findKey(rows, "p").valueFor(GestureAction.UP));
         assertEquals(KeyboardCommands.CMD_REMOTE_PAGE_DOWN, findKey(rows, "p").valueFor(GestureAction.DOWN));
-        assertEquals("@", findKey(rows, "a").valueFor(GestureAction.DOWN));
-        assertEquals("/", findKey(rows, "d").valueFor(GestureAction.DOWN));
+        assertNull(findKey(rows, "a").downSlide);
+        assertNull(findKey(rows, "d").downSlide);
     }
 
     @Test
@@ -391,7 +391,7 @@ public final class KeyboardLayoutFactoryTest {
 
         assertEquals(300, rows.get(0).baseUnits);
         assertEquals("abc,def,ghi,Del", labels(rows.get(0)));
-        assertEquals("83,83,83,51", widths(rows.get(0)));
+        assertEquals("86,86,86,42", widths(rows.get(0)));
         GestureKey abc = findKey(rows, "abc");
         assertEquals("a", abc.valueFor(GestureAction.TAP));
         assertEquals("b", abc.valueFor(GestureAction.UP));
@@ -427,6 +427,10 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals("1,2,3,4,5,6,7,8,9,0", labels(rows.get(0)));
         assertEquals("q,w,e,r,t,y,u,i,o,p", labels(rows.get(1)));
         assertEquals(KeyboardCommands.CMD_REMOTE_TAB, findKey(rows, "q").valueFor(GestureAction.UP));
+        assertNull(findKey(rows, "a").upSlide);
+        assertNull(findKey(rows, "a").downSlide);
+        assertNull(findKey(rows, "z").upSlide);
+        assertNull(findKey(rows, "Del").leftSlide);
         assertEquals(KeyboardCommands.CMD_REMOTE_CTRL_LATCH, findKey(rows, "Ctrl").valueFor(GestureAction.TAP));
     }
 

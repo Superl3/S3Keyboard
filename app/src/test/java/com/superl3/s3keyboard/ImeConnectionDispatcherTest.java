@@ -376,6 +376,17 @@ public final class ImeConnectionDispatcherTest {
     }
 
     @Test
+    public void moveCursorBoundaryCheckRemainsLocalOnly() {
+        FakeConnection fake = new FakeConnection();
+        RecordingKeySender softSender = new RecordingKeySender();
+
+        boolean moved = ImeConnectionDispatcher.moveCursor(fake.connection(), false, softSender);
+
+        assertEquals(false, moved);
+        assertEquals(0, softSender.sent.size());
+    }
+
+    @Test
     public void moveCursorDoesNotSendKeyAtBoundary() {
         FakeConnection fake = new FakeConnection();
         RecordingKeySender softSender = new RecordingKeySender();

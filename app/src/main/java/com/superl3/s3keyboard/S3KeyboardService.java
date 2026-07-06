@@ -573,13 +573,15 @@ public final class S3KeyboardService extends InputMethodService {
         doubleSpacePeriodState.reset();
         if (settings.remoteModeEnabled) {
             String remoteText = englishShiftState.applyToInput(text);
+            commitCurrent(inputConnection);
             RemoteKeyStroke stroke = RemoteKeyStroke.forText(remoteText);
             if (stroke != null) {
-                commitCurrent(inputConnection);
                 remoteInputController.sendKey(inputConnection, stroke.keyCode, stroke.metaState);
-                updateShiftStateView();
-                return;
+            } else {
+                InputConnectionTextOperator.commitText(inputConnection, remoteText);
             }
+            updateShiftStateView();
+            return;
         }
         if (editorPolicy.rawKeyInput) {
             String rawText = settings.keyboardMode == KeyboardMode.ENGLISH
@@ -988,6 +990,11 @@ public final class S3KeyboardService extends InputMethodService {
 
     void moveCursor(InputConnection inputConnection, boolean right) {
         commitCurrent(inputConnection);
+        if (settings.remoteModeEnabled) {
+            remoteInputController.moveCursor(inputConnection, right);
+            refreshQwertyAssistantFromEditor();
+            return;
+        }
         ImeConnectionDispatcher.moveCursor(
                 inputConnection,
                 right,

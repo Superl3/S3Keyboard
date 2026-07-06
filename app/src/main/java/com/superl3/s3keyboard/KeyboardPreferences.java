@@ -37,6 +37,9 @@ final class KeyboardPreferences {
     static final String TOUCH_Y_OFFSET_DP = "touch_y_offset_dp";
     static final String REPEAT_START_DELAY_MS = "repeat_start_delay_ms";
     static final String REPEAT_INTERVAL_MS = "repeat_interval_ms";
+    static final String SINGLE_TAP_COMMIT_MODE_ENABLED = "single_tap_commit_mode_enabled";
+    static final String SINGLE_TAP_START_HOLD_MS = "single_tap_start_hold_ms";
+    static final String SINGLE_TAP_COMMIT_HOLD_MS = "single_tap_commit_hold_ms";
     static final String ENGLISH_DOUBLE_SPACE_PERIOD_ENABLED = "english_double_space_period_enabled";
     static final String KEY_IDLE_COLOR = "key_idle_color";
     static final String KEY_PRESSED_COLOR = "key_pressed_color";
@@ -141,6 +144,10 @@ final class KeyboardPreferences {
     static final int DEFAULT_SPACEBAR_CURSOR_DEAD_ZONE_DP = 26;
     static final int MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP = 12;
     static final int MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP = 48;
+    static final int DEFAULT_SINGLE_TAP_START_HOLD_MS = 520;
+    static final int DEFAULT_SINGLE_TAP_COMMIT_HOLD_MS = 420;
+    static final int MIN_SINGLE_TAP_HOLD_MS = 180;
+    static final int MAX_SINGLE_TAP_HOLD_MS = 900;
 
     private KeyboardPreferences() {
     }
@@ -765,6 +772,46 @@ final class KeyboardPreferences {
 
     static void savePalmRejectionEnabled(Context context, boolean enabled) {
         saveBoolean(context, PALM_REJECTION_ENABLED, enabled);
+    }
+
+    static boolean loadSingleTapCommitModeEnabled(Context context) {
+        return prefs(context).getBoolean(SINGLE_TAP_COMMIT_MODE_ENABLED, false);
+    }
+
+    static void saveSingleTapCommitModeEnabled(Context context, boolean enabled) {
+        saveBoolean(context, SINGLE_TAP_COMMIT_MODE_ENABLED, enabled);
+    }
+
+    static int loadSingleTapStartHoldMs(Context context) {
+        return clamp(
+                prefs(context).getInt(SINGLE_TAP_START_HOLD_MS, DEFAULT_SINGLE_TAP_START_HOLD_MS),
+                MIN_SINGLE_TAP_HOLD_MS,
+                MAX_SINGLE_TAP_HOLD_MS);
+    }
+
+    static void saveSingleTapStartHoldMs(Context context, int valueMs) {
+        saveClampedInt(
+                context,
+                SINGLE_TAP_START_HOLD_MS,
+                valueMs,
+                MIN_SINGLE_TAP_HOLD_MS,
+                MAX_SINGLE_TAP_HOLD_MS);
+    }
+
+    static int loadSingleTapCommitHoldMs(Context context) {
+        return clamp(
+                prefs(context).getInt(SINGLE_TAP_COMMIT_HOLD_MS, DEFAULT_SINGLE_TAP_COMMIT_HOLD_MS),
+                MIN_SINGLE_TAP_HOLD_MS,
+                MAX_SINGLE_TAP_HOLD_MS);
+    }
+
+    static void saveSingleTapCommitHoldMs(Context context, int valueMs) {
+        saveClampedInt(
+                context,
+                SINGLE_TAP_COMMIT_HOLD_MS,
+                valueMs,
+                MIN_SINGLE_TAP_HOLD_MS,
+                MAX_SINGLE_TAP_HOLD_MS);
     }
 
     static boolean loadClipboardHistoryEnabled(Context context) {

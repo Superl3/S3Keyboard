@@ -564,6 +564,7 @@ public final class ProductionReadinessConfigTest {
         String remoteCatalog = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/RemoteAppCatalog.java");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
+        String normalizedPanel = normalizeNewlines(panel);
 
         assertTrue(service.contains("RemoteCompatibilityPanelController"));
         assertFalse(service.contains("RemoteCompatibilityLog.record("));
@@ -575,7 +576,7 @@ public final class ProductionReadinessConfigTest {
         assertFalse(service.contains("private String currentPackageName()"));
         assertTrue(panel.contains("RemoteCompatibilityLog.record("));
         assertTrue(panel.contains("RemoteCompatibilityReport.describe("));
-        assertTrue(panel.contains("RemoteCompatibilityReport.describe(\n                context,"));
+        assertTrue(normalizedPanel.contains("RemoteCompatibilityReport.describe(\n                context,"));
         assertTrue(panel.contains("RemoteCompatibilityReport.toJson("));
         assertFalse(panel.contains("interface Host"));
         assertTrue(panel.contains("private final Supplier<String> currentPackageName"));
@@ -806,6 +807,8 @@ public final class ProductionReadinessConfigTest {
         String provider = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/KeyboardVirtualKeyAccessibilityProvider.java");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
+        String normalizedView = normalizeNewlines(view);
+        String normalizedProvider = normalizeNewlines(provider);
 
         assertTrue(summary.contains("R.string.keyboard_accessibility_name"));
         assertTrue(summary.contains("R.string.keyboard_accessibility_mode_qwerty"));
@@ -822,8 +825,8 @@ public final class ProductionReadinessConfigTest {
         assertFalse(summary.contains("\"?��?"));
         assertFalse(summary.contains("\"?�문"));
         assertFalse(summary.contains("\"비�?번호"));
-        assertTrue(view.contains("KeyboardAccessibilitySummary.describe(\n                getContext(),"));
-        assertTrue(provider.contains("KeyboardAccessibilitySummary.describe(\n                view.getContext(),"));
+        assertTrue(normalizedView.contains("KeyboardAccessibilitySummary.describe(\n                getContext(),"));
+        assertTrue(normalizedProvider.contains("KeyboardAccessibilitySummary.describe(\n                view.getContext(),"));
         assertTrue(strings.contains("name=\"keyboard_accessibility_name\""));
         assertTrue(strings.contains("name=\"keyboard_surface_password\""));
     }
@@ -883,12 +886,14 @@ public final class ProductionReadinessConfigTest {
         String controller = javaSource("RepeatController");
 
         assertTrue(controller.contains("final class RepeatController implements Runnable"));
+        assertTrue(controller.contains("interface Scheduler"));
         assertTrue(controller.contains("private final Consumer<String> callback"));
         assertTrue(controller.contains("RuntimeDefaults.stringConsumer(callback)"));
-        assertTrue(controller.contains("callback.accept(activeValue)"));
+        assertTrue(controller.contains("callback.accept(value)"));
         assertTrue(controller.contains("public void run()"));
-        assertTrue(controller.contains("host.postDelayed(this,"));
-        assertTrue(controller.contains("host.removeCallbacks(this)"));
+        assertTrue(controller.contains("scheduler.postDelayed(this,"));
+        assertTrue(controller.contains("scheduler.removeCallbacks(this)"));
+        assertTrue(controller.contains("boolean hasFired(Object owner)"));
         assertFalse(controller.contains("interface Callback"));
         assertFalse(controller.contains("onRepeat("));
         assertFalse(controller.contains("new Runnable()"));
@@ -1095,6 +1100,40 @@ public final class ProductionReadinessConfigTest {
         assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsConsumer("));
         assertFalse(controller.contains("settings == null ? null"));
         assertFalse(controller.contains("settingsSaver != null"));
+    }
+
+    @Test
+    public void inputFeelSectionIsFirstTopLevelSettingsMenu() throws Exception {
+        String activity = javaSource("MainActivity");
+
+        int inputFeelIndex = activity.indexOf("R.string.settings_input_feel_section");
+        int hubIndex = activity.indexOf("R.string.settings_hub_title");
+        int layoutIndex = activity.indexOf("R.string.settings_layout_section");
+        int displayIndex = activity.indexOf("R.string.settings_display_section");
+
+        assertTrue(inputFeelIndex >= 0);
+        assertTrue(hubIndex > inputFeelIndex);
+        assertTrue(layoutIndex > inputFeelIndex);
+        assertTrue(displayIndex > inputFeelIndex);
+    }
+
+    @Test
+    public void singleTapTimingSettingsStayBehindInputConvenienceController() throws Exception {
+        String activity = javaSource("MainActivity");
+        String controller = javaSource("InputConvenienceSettingsController");
+        String preferences = javaSource("KeyboardPreferences");
+        String formatter = javaSource("SettingsValueFormatter");
+
+        assertFalse(activity.contains("singleTapStartHoldSeekBar"));
+        assertFalse(activity.contains("singleTapCommitHoldSeekBar"));
+        assertTrue(controller.contains("singleTapStartHoldSeekBar"));
+        assertTrue(controller.contains("singleTapCommitHoldSeekBar"));
+        assertTrue(controller.contains("saveSingleTapStartHoldMs("));
+        assertTrue(controller.contains("saveSingleTapCommitHoldMs("));
+        assertTrue(preferences.contains("SINGLE_TAP_START_HOLD_MS"));
+        assertTrue(preferences.contains("SINGLE_TAP_COMMIT_HOLD_MS"));
+        assertTrue(formatter.contains("singleTapStartHold("));
+        assertTrue(formatter.contains("singleTapCommitHold("));
     }
 
     @Test
@@ -2523,7 +2562,7 @@ public final class ProductionReadinessConfigTest {
                     source.contains("private CheckBox checkBox("));
         }
 
-        String sharedCheckboxSource = javaSource("SettingsRowBuilder");
+        String sharedCheckboxSource = normalizeNewlines(javaSource("SettingsRowBuilder"));
         assertTrue(sharedCheckboxSource.contains("static CheckBox checkBoxRow(\n"
                 + "            Context context,\n"
                 + "            LinearLayout root,\n"
@@ -3004,6 +3043,7 @@ public final class ProductionReadinessConfigTest {
 
         String clipboardView = javaSource("ClipboardView");
         String clipboardPanel = javaSource("ClipboardPanelController");
+        String normalizedClipboardPanel = normalizeNewlines(clipboardPanel);
         String englishSuggestions = javaSource("EnglishSuggestionStripController");
         String englishAssistant = javaSource("EnglishQwertyInputAssistant");
         String settingsRowBuilder = javaSource("SettingsRowBuilder");
@@ -3037,7 +3077,7 @@ public final class ProductionReadinessConfigTest {
         assertFalse(clipboardView.contains("Math.round(value *"));
         assertTrue(clipboardPanel.contains("SettingsRowBuilder.dp("));
         assertTrue(clipboardPanel.contains("SettingsRowBuilder.button("));
-        assertTrue(clipboardPanel.contains(
+        assertTrue(normalizedClipboardPanel.contains(
                 "SettingsRowBuilder.button(\n"
                         + "                context,\n"
                         + "                R.string.clipboard_toolbar_button,\n"
@@ -3204,6 +3244,10 @@ public final class ProductionReadinessConfigTest {
 
     private String javaSource(String className) throws IOException {
         return readWorkspaceFile("app/src/main/java/com/superl3/s3keyboard/" + className + ".java");
+    }
+
+    private static String normalizeNewlines(String source) {
+        return source == null ? "" : source.replace("\r\n", "\n");
     }
 
     private static void assertContainsAll(String source, String... needles) {

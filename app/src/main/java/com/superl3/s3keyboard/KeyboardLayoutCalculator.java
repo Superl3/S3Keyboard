@@ -5,6 +5,11 @@ import java.util.Collections;
 import java.util.List;
 
 final class KeyboardLayoutCalculator {
+    private static final float DINGUL_RIGHT_RAIL_WIDTH_SCALE = 0.80f;
+    private static final float DINGUL_RIGHT_RAIL_MAX_WIDTH_RATIO = 0.16f;
+    private static final float DINGUL_LEFT_ASSIST_WIDTH_SCALE = 1.18f;
+    private static final float DINGUL_LEFT_ASSIST_MAX_WIDTH_RATIO = 0.26f;
+
     private KeyboardLayoutCalculator() {
     }
 
@@ -112,6 +117,7 @@ final class KeyboardLayoutCalculator {
                         top + rowHeight,
                         primaryBottomControl,
                         hangulCharacterRow && keyIndex == row.keys.size() - 1,
+                        hangulCharacterRow && keyIndex < 3,
                         hangulCharacterRow && keyIndex == row.keys.size() - 1 ? 1 : 0,
                         bottomSpaceDirection));
                 left = right + rowGap;
@@ -151,20 +157,25 @@ final class KeyboardLayoutCalculator {
         float mainLeft = firstMain.left;
         float mainRight = thirdMain.right;
         float mainWidth = mainRight - mainLeft;
+        float mainKeyWidth = 0f;
+        for (int i = 0; i < 3; i++) {
+            Slot slot = rowSlots.get(i);
+            mainKeyWidth += slot.right - slot.left;
+        }
         float functionHitWidth = function.right - function.left;
         float functionVisualWidth = functionHitWidth;
         boolean leftAssistRail = options.mainKeyCenteringEnabled && options.leftAssistRailEnabled;
         if (options.compactFunctionRailEnabled) {
-            functionVisualWidth *= isBackspaceKey(function.key)
-                    ? options.visualConsistencyLevel.backspaceVisualScale
-                    : options.visualConsistencyLevel.functionVisualScale;
+            functionVisualWidth *= options.visualConsistencyLevel.functionVisualScale;
         }
         float mainColumnGap = rowSlots.get(1).left - rowSlots.get(0).right;
+        float mainInternalGap = Math.max(0f, mainColumnGap);
         float functionGap = options.uniformGridGapEnabled && leftAssistRail
                 ? Math.max(0f, mainColumnGap)
                 : Math.max(function.left - thirdMain.right, dp(8, density));
         float transformedMainLeft = mainLeft;
         float transformedMainWidth = mainWidth;
+        float mainKeyScale = 1f;
         float leftAssistHitLeft = function.left - functionHitWidth - functionGap;
         float leftAssistHitRight = leftAssistHitLeft + functionHitWidth;
         float functionHitLeft = function.left;
@@ -172,30 +183,44 @@ final class KeyboardLayoutCalculator {
 
         if (options.mainKeyCenteringEnabled) {
             float availableWidth = Math.max(1f, rowRight - rowLeft);
+            float compactFunctionHitWidth = options.compactFunctionRailEnabled
+                    ? Math.min(
+                    functionHitWidth * DINGUL_RIGHT_RAIL_WIDTH_SCALE,
+                    Math.max(1f, availableWidth * DINGUL_RIGHT_RAIL_MAX_WIDTH_RATIO))
+                    : functionHitWidth;
             if (leftAssistRail) {
-                float railWidth = Math.min(functionHitWidth, Math.max(1f, availableWidth * 0.22f));
+                float functionRailWidth = compactFunctionHitWidth;
+                float leftAssistRailWidth = Math.min(
+                        Math.max(functionRailWidth, functionHitWidth * DINGUL_LEFT_ASSIST_WIDTH_SCALE),
+                        Math.max(1f, availableWidth * DINGUL_LEFT_ASSIST_MAX_WIDTH_RATIO));
                 float baseGap = functionGap;
-                float mainScale = Math.min(
+                mainKeyScale = Math.min(
                         1f,
-                        Math.max(0.05f, (availableWidth - railWidth * 2f)
-                                / Math.max(1f, mainWidth + baseGap * 2f)));
-                float gap = baseGap * mainScale;
-                transformedMainWidth = mainWidth * mainScale;
-                float groupWidth = railWidth * 2f + gap * 2f + transformedMainWidth;
+                        Math.max(0.05f, (availableWidth - leftAssistRailWidth - functionRailWidth
+                                - baseGap * 2f - mainInternalGap * 2f)
+                                / Math.max(1f, mainKeyWidth)));
+                float gap = baseGap;
+                transformedMainWidth = mainKeyWidth * mainKeyScale + mainInternalGap * 2f;
+                float groupWidth = leftAssistRailWidth + functionRailWidth + gap * 2f + transformedMainWidth;
                 float groupLeft = rowLeft + (availableWidth - groupWidth) / 2f;
                 leftAssistHitLeft = groupLeft;
-                leftAssistHitRight = leftAssistHitLeft + railWidth;
+                leftAssistHitRight = leftAssistHitLeft + leftAssistRailWidth;
                 transformedMainLeft = leftAssistHitRight + gap;
                 functionHitLeft = transformedMainLeft + transformedMainWidth + gap;
-                functionHitRight = functionHitLeft + railWidth;
+                functionHitRight = functionHitLeft + functionRailWidth;
                 functionGap = gap;
-                functionHitWidth = railWidth;
-                functionVisualWidth = Math.min(functionVisualWidth, railWidth);
+                functionHitWidth = functionRailWidth;
+                functionVisualWidth = Math.min(functionVisualWidth, functionRailWidth);
             } else {
+                functionHitWidth = compactFunctionHitWidth;
+                functionVisualWidth = Math.min(functionVisualWidth, functionHitWidth);
                 float minSideForFunction = functionHitWidth + functionGap;
                 float maxCenteredMainWidth = Math.max(1f, availableWidth - minSideForFunction * 2f);
-                float mainScale = Math.min(1f, maxCenteredMainWidth / Math.max(1f, mainWidth));
-                transformedMainWidth = mainWidth * mainScale;
+                mainKeyScale = Math.min(
+                        1f,
+                        Math.max(0.05f, (maxCenteredMainWidth - mainInternalGap * 2f)
+                                / Math.max(1f, mainKeyWidth)));
+                transformedMainWidth = mainKeyWidth * mainKeyScale + mainInternalGap * 2f;
                 transformedMainLeft = rowLeft + (availableWidth - transformedMainWidth) / 2f;
                 functionHitRight = rowRight;
                 functionHitLeft = functionHitRight - functionHitWidth;
@@ -206,7 +231,7 @@ final class KeyboardLayoutCalculator {
                 && !(leftAssistRail && options.uniformGridGapEnabled);
         float railVisualYShift = 0f;
         if (applyPositionAdjust) {
-            float firstMainWidth = transformedMainWidth * (firstMain.right - firstMain.left) / mainWidth;
+            float firstMainWidth = (firstMain.right - firstMain.left) * mainKeyScale;
             float maxShift = Math.min(firstMainWidth, firstMain.bottom - firstMain.top)
                     * options.visualConsistencyLevel.maxMainShiftRatio;
             railVisualYShift = ((characterRowIndex - 1.5f) / 1.5f) * 0.25f * maxShift;
@@ -225,10 +250,13 @@ final class KeyboardLayoutCalculator {
                     railVisualYShift,
                     options));
         }
+        float mainCursor = transformedMainLeft;
         for (int i = 0; i < 3; i++) {
             Slot slot = rowSlots.get(i);
-            float left = transformedMainLeft + (slot.left - mainLeft) / mainWidth * transformedMainWidth;
-            float right = transformedMainLeft + (slot.right - mainLeft) / mainWidth * transformedMainWidth;
+            float keyWidth = (slot.right - slot.left) * mainKeyScale;
+            float left = mainCursor;
+            float right = left + keyWidth;
+            mainCursor = right + mainInternalGap;
             if (applyPositionAdjust) {
                 float maxShift = Math.min(right - left, slot.bottom - slot.top)
                         * options.visualConsistencyLevel.maxMainShiftRatio;
@@ -269,12 +297,9 @@ final class KeyboardLayoutCalculator {
         }
 
         Slot functionSlot = rowSlots.get(3);
-        boolean backspace = isBackspaceKey(functionSlot.key);
         float functionVisualHeight = functionSlot.bottom - functionSlot.top;
         if (options.compactFunctionRailEnabled) {
-            functionVisualHeight *= backspace
-                    ? options.visualConsistencyLevel.backspaceVisualScale
-                    : options.visualConsistencyLevel.functionVisualScale;
+            functionVisualHeight *= options.visualConsistencyLevel.functionVisualScale;
         }
         if (options.ergonomicHitboxEnabled) {
             functionVisualWidth = Math.min(functionVisualWidth, Math.max(1f, functionHitWidth - dp(4, density)));
@@ -296,7 +321,7 @@ final class KeyboardLayoutCalculator {
                     thirdMain.right,
                     rowRight,
                     false,
-                    backspace,
+                    false,
                     density,
                     true);
         }
@@ -346,6 +371,7 @@ final class KeyboardLayoutCalculator {
                 visualRect.centerY(),
                 false,
                 true,
+                false,
                 -1,
                 0);
     }
@@ -365,6 +391,7 @@ final class KeyboardLayoutCalculator {
                 visualRect.centerY(),
                 slot.primaryBottomControl,
                 slot.compactSpecialColumn,
+                slot.dingulMainKey,
                 slot.edgeRailDirection,
                 slot.bottomSpaceDirection);
     }
@@ -430,10 +457,6 @@ final class KeyboardLayoutCalculator {
         float clampedLeft = Math.max(minLeft, Math.min(left, maxRight - width));
         float clampedTop = Math.max(minTop, Math.min(top, maxBottom - height));
         return new Rect(clampedLeft, clampedTop, clampedLeft + width, clampedTop + height);
-    }
-
-    private static boolean isBackspaceKey(GestureKey key) {
-        return key != null && KeyboardCommands.CMD_DELETE.equals(key.tap);
     }
 
     private static boolean hasAdditionalNumberRow(KeyboardSettings settings, List<KeyboardRow> rows) {
@@ -528,6 +551,7 @@ final class KeyboardLayoutCalculator {
         final float gestureOriginY;
         final boolean primaryBottomControl;
         final boolean compactSpecialColumn;
+        final boolean dingulMainKey;
         final int edgeRailDirection;
         final int bottomSpaceDirection;
 
@@ -539,6 +563,7 @@ final class KeyboardLayoutCalculator {
                 float bottom,
                 boolean primaryBottomControl,
                 boolean compactSpecialColumn,
+                boolean dingulMainKey,
                 int edgeRailDirection,
                 int bottomSpaceDirection) {
             this(
@@ -555,6 +580,7 @@ final class KeyboardLayoutCalculator {
                     (top + bottom) / 2f,
                     primaryBottomControl,
                     compactSpecialColumn,
+                    dingulMainKey,
                     edgeRailDirection,
                     bottomSpaceDirection);
         }
@@ -573,6 +599,7 @@ final class KeyboardLayoutCalculator {
                 float gestureOriginY,
                 boolean primaryBottomControl,
                 boolean compactSpecialColumn,
+                boolean dingulMainKey,
                 int edgeRailDirection,
                 int bottomSpaceDirection) {
             this.key = key;
@@ -588,6 +615,7 @@ final class KeyboardLayoutCalculator {
             this.gestureOriginY = gestureOriginY;
             this.primaryBottomControl = primaryBottomControl;
             this.compactSpecialColumn = compactSpecialColumn;
+            this.dingulMainKey = dingulMainKey;
             this.edgeRailDirection = edgeRailDirection < 0 ? -1 : (edgeRailDirection > 0 ? 1 : 0);
             this.bottomSpaceDirection = bottomSpaceDirection;
         }

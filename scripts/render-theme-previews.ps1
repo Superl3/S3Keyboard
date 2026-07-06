@@ -2259,10 +2259,10 @@ function Draw-DingulSample {
 
         $rows = @(
             @(@("1",30,"number"), @("2",30,"number"), @("3",30,"number"), @("4",30,"number"), @("5",30,"number"), @("6",30,"number"), @("7",30,"number"), @("8",30,"number"), @("9",30,"number"), @("0",30,"number")),
-            @(@($g,83,"normal"), @($n,83,"normal"), @($ui,83,"normal"), @("bksp",51,"modifier")),
-            @(@($r,83,"normal"), @($m,83,"normal"), @("$i.",83,"normal"), @("?",51,"normal")),
-            @(@($s,83,"normal"), @($o,83,"pressed"), @("$eu$ae",83,"normal"), @(".",51,"modifier")),
-            @(@($j,83,"normal"), @($hieut,83,"normal"), @("..",83,"normal"), @("/",51,"modifier")),
+            @(@($g,86,"normal"), @($n,86,"normal"), @($ui,86,"normal"), @("bksp",42,"modifier")),
+            @(@($r,86,"normal"), @($m,86,"normal"), @("$i.",86,"normal"), @("?",42,"normal")),
+            @(@($s,86,"normal"), @($o,86,"pressed"), @("$eu$ae",86,"normal"), @(".",42,"modifier")),
+            @(@($j,86,"normal"), @($hieut,86,"normal"), @("enter",86,"modifier"), @("/",42,"modifier")),
             @(@("settings",45,"modifier"), @("reserved",30,"modifier"), @("space",150,"normal"), @("language",30,"modifier"), @("enter",45,"modifier"))
         )
 

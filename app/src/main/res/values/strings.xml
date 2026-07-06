@@ -195,6 +195,7 @@
     <string name="touch_bias_auto_correction">터치/슬라이드 보정 학습</string>
     <string name="palm_rejection">팜 리젝션</string>
     <string name="clipboard_history_setting">클립보드 기록</string>
+    <string name="single_tap_commit_mode">단일 탭 확정 모드</string>
     <string name="english_double_space_period">영어에서 스페이스 2번으로 마침표</string>
     <string name="local_data_disclosure">로컬 입력 로그와 클립보드 기록은 기기 안에만 저장되며 아래에서 각각 삭제할 수 있습니다.</string>
     <string name="clear_all_local_data">로컬 데이터 모두 삭제</string>
@@ -413,6 +414,8 @@
     <string name="settings_touch_y_offset_format">터치 Y 보정: %1$ddp (음수=아래쪽으로 보정)</string>
     <string name="settings_repeat_start_delay_format">반복 시작 지연: %1$dms</string>
     <string name="settings_repeat_interval_format">반복 간격: %1$dms</string>
+    <string name="settings_single_tap_start_hold_format">단일탭 첫 입력 시작 롱프레스: %1$dms</string>
+    <string name="settings_single_tap_commit_hold_format">단일탭 입력 확정 롱프레스: %1$dms</string>
     <string name="accent_placement_title">시각 역할 편집</string>
     <string name="accent_placement_helper">테마의 alpha / modifier / accent 역할을 각 위치별로 적용합니다.</string>
     <string name="accent_placement_qwerty_section">QWERTY</string>

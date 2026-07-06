@@ -93,6 +93,17 @@ public final class MainActivity extends Activity {
         titleParams.bottomMargin = SettingsRowBuilder.dp(this, 12);
         root.addView(title, titleParams);
 
+        LinearLayout inputSection = addExpandableSection(
+                root,
+                getString(R.string.settings_input_feel_section),
+                true);
+        inputFeelSettingsController = new InputFeelSettingsController(
+                this,
+                this::settings,
+                this::saveSettings,
+                this::syncControls);
+        inputFeelSettingsController.addTo(inputSection);
+
         LinearLayout hubSection = addExpandableSection(root, getString(R.string.settings_hub_title), true);
         settingsHubController = new SettingsHubController(
                 this,
@@ -124,17 +135,6 @@ public final class MainActivity extends Activity {
                 getString(R.string.settings_display_section),
                 true);
         addVisibleVisualControls(displaySection);
-
-        LinearLayout inputSection = addExpandableSection(
-                root,
-                getString(R.string.settings_input_feel_section),
-                false);
-        inputFeelSettingsController = new InputFeelSettingsController(
-                this,
-                this::settings,
-                this::saveSettings,
-                this::syncControls);
-        inputFeelSettingsController.addTo(inputSection);
 
         LinearLayout reservedSection = addExpandableSection(
                 root,

@@ -117,7 +117,12 @@ public final class HangulKeyboardView extends View
     private boolean touchBiasAutoCorrectionEnabled = true;
     private boolean redactTypingEventText;
     private boolean palmRejectionEnabled;
+    private boolean singleTapCommitModeEnabled;
+    private int singleTapStartHoldMs = KeyboardPreferences.DEFAULT_SINGLE_TAP_START_HOLD_MS;
+    private int singleTapCommitHoldMs = KeyboardPreferences.DEFAULT_SINGLE_TAP_COMMIT_HOLD_MS;
     private long previewGestureGeneration;
+    private PendingTouchOutput pendingSingleTapOutput;
+    private Runnable pendingSingleTapCommitRunnable;
     private KeyboardErgonomicsOptions ergonomicsOptions = KeyboardErgonomicsOptions.DEFAULT;
     private boolean debugKeyBoundsOverlayEnabled;
     private boolean debugShowResolverScores;
@@ -144,6 +149,9 @@ public final class HangulKeyboardView extends View
         differentiatedHapticEnabled = KeyboardPreferences.loadDifferentiatedHapticEnabled(context);
         touchBiasAutoCorrectionEnabled = KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(context);
         palmRejectionEnabled = KeyboardPreferences.loadPalmRejectionEnabled(context);
+        singleTapCommitModeEnabled = KeyboardPreferences.loadSingleTapCommitModeEnabled(context);
+        singleTapStartHoldMs = KeyboardPreferences.loadSingleTapStartHoldMs(context);
+        singleTapCommitHoldMs = KeyboardPreferences.loadSingleTapCommitHoldMs(context);
         debugKeyBoundsOverlayEnabled = KeyboardPreferences.loadDebugKeyBoundsOverlayEnabled(context);
         debugShowResolverScores = KeyboardPreferences.loadDebugShowResolverScores(context);
         dingulVowelGestureProfile = KeyboardPreferences.loadDingulVowelGestureProfile(context);
@@ -175,6 +183,12 @@ public final class HangulKeyboardView extends View
         differentiatedHapticEnabled = KeyboardPreferences.loadDifferentiatedHapticEnabled(getContext());
         touchBiasAutoCorrectionEnabled = KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(getContext());
         palmRejectionEnabled = KeyboardPreferences.loadPalmRejectionEnabled(getContext());
+        singleTapCommitModeEnabled = KeyboardPreferences.loadSingleTapCommitModeEnabled(getContext());
+        singleTapStartHoldMs = KeyboardPreferences.loadSingleTapStartHoldMs(getContext());
+        singleTapCommitHoldMs = KeyboardPreferences.loadSingleTapCommitHoldMs(getContext());
+        if (!singleTapCommitModeEnabled) {
+            cancelPendingSingleTapOutput();
+        }
         ergonomicsOptions = KeyboardPreferences.loadErgonomicsOptions(getContext());
         debugKeyBoundsOverlayEnabled = KeyboardPreferences.loadDebugKeyBoundsOverlayEnabled(getContext());
         debugShowResolverScores = KeyboardPreferences.loadDebugShowResolverScores(getContext());
@@ -555,10 +569,17 @@ public final class HangulKeyboardView extends View
         if (isRejectedPalmTouch(event, pointerIndex)) {
             return true;
         }
+        if (KeyboardEdgeGestureGuard.shouldIgnoreTouch(
+                event.getX(pointerIndex),
+                getWidth(),
+                getResources().getDisplayMetrics().density)) {
+            return false;
+        }
         KeySlot keySlot = findKey(event.getX(pointerIndex), event.getY(pointerIndex));
         if (keySlot == null) {
             return false;
         }
+        commitPendingSingleTapOutput();
 
         int pointerId = event.getPointerId(pointerIndex);
         boolean startingNewGesture = activeTouches.isEmpty();
@@ -619,6 +640,9 @@ public final class HangulKeyboardView extends View
     }
 
     private void updateTouchMove(TouchState state, float x, float y, long eventTimeMs) {
+        if (updateSingleInputContinuation(state, x, y)) {
+            return;
+        }
         boolean wasLocked = state.gestureState.isLocked();
         GestureAction action = state.gestureState.update(
                 x - state.downX,
@@ -637,11 +661,21 @@ public final class HangulKeyboardView extends View
             if (previewKeySelectionListener == null
                     && repeatValue != null
                     && (isCursorMove(repeatValue) || isInputRepeatKey(state.keySlot.key))) {
-                repeatController.start(
-                        repeatValue,
-                        settings.repeatStartDelayMs,
-                        settings.repeatIntervalMs,
-                        false);
+                if (usesSingleInputHoldCommit(state.keySlot.key, repeatValue)) {
+                    scheduleSingleInputHoldCommit(
+                            state,
+                            state.keySlot,
+                            action,
+                            repeatValue,
+                            singleTapCommitHoldMs);
+                } else {
+                    repeatController.start(
+                            state,
+                            repeatValue,
+                            settings.repeatStartDelayMs,
+                            settings.repeatIntervalMs,
+                            false);
+                }
             }
         }
         state.activeAction = state.longPressTriggered ? GestureAction.LONG_PRESS : action;
@@ -661,7 +695,7 @@ public final class HangulKeyboardView extends View
             removeTouchState(state, true);
             return true;
         }
-        boolean repeatAlreadyFired = repeatController.hasFired();
+        boolean repeatAlreadyFired = repeatController.hasFired(state);
         if (!state.longPressTriggered && !repeatAlreadyFired && !state.tapOutputAlreadyEmitted) {
             GestureAction action = state.gestureState.release(
                     event.getX(pointerIndex) - state.downX,
@@ -706,8 +740,13 @@ public final class HangulKeyboardView extends View
             state.longPressAnimationStartMs = SystemClock.uptimeMillis();
             feedback.longPress();
             String repeatValue = longPressRepeatValue(state.keySlot.key);
-            if (repeatValue != null) {
-                repeatController.start(repeatValue, settings.repeatIntervalMs, settings.repeatIntervalMs, true);
+            if (usesSingleInputHoldCommit(state.keySlot.key, repeatValue)) {
+                state.tapOutputAlreadyEmitted = true;
+                state.singleInputSessionActive = true;
+                state.singleInputLastCommittedSlot = state.keySlot;
+                emitValue(repeatValue);
+            } else if (repeatValue != null) {
+                repeatController.start(state, repeatValue, settings.repeatIntervalMs, settings.repeatIntervalMs, true);
             } else {
                 emitValue(state.keySlot.key.valueFor(GestureAction.LONG_PRESS));
             }
@@ -715,6 +754,100 @@ public final class HangulKeyboardView extends View
             invalidate();
         };
         postDelayed(state.longPressRunnable, delayMs);
+    }
+
+    private void scheduleSingleInputHoldCommit(
+            final TouchState state,
+            final KeySlot keySlot,
+            final GestureAction action,
+            final String value,
+            int delayMs) {
+        cancelSingleInputHoldCommit(state);
+        state.singleInputHoldCommitRunnable = () -> {
+            if (!activeTouches.contains(state) || state.singleInputHoldCommitSlot != keySlot) {
+                return;
+            }
+            state.tapOutputAlreadyEmitted = true;
+            state.singleInputSessionActive = true;
+            state.singleInputLastCommittedSlot = keySlot;
+            state.singleInputHoldCommitSlot = null;
+            state.singleInputHoldCommitRunnable = null;
+            state.activeAction = action;
+            rememberDebugTouch(state, action, keySlot);
+            feedback.longPress();
+            emitValue(value);
+            updatePreviewPopup();
+            invalidate();
+        };
+        state.singleInputHoldCommitSlot = keySlot;
+        postDelayed(state.singleInputHoldCommitRunnable, delayMs);
+    }
+
+    private boolean updateSingleInputContinuation(TouchState state, float x, float y) {
+        if (!state.singleInputSessionActive || !singleTapCommitModeEnabled) {
+            return false;
+        }
+        KeySlot target = findKey(x, y);
+        if (!isSingleInputContinuationKey(target)) {
+            clearSingleInputContinuationTarget(state);
+            state.singleInputLastCommittedSlot = null;
+            return true;
+        }
+        if (target == state.singleInputLastCommittedSlot) {
+            clearSingleInputContinuationTarget(state);
+            return true;
+        }
+        if (target != state.singleInputTargetSlot) {
+            beginSingleInputContinuationTarget(state, target, x, y);
+            return true;
+        }
+        boolean wasLocked = state.singleInputGestureState.isLocked();
+        GestureAction action = state.singleInputGestureState.update(
+                x - state.singleInputDownX,
+                y - state.singleInputDownY,
+                baseGestureThresholdPx(target.key),
+                gestureThresholdPxFor(target.key, GestureAction.UP),
+                gestureThresholdPxFor(target.key, GestureAction.DOWN),
+                gestureThresholdPxFor(target.key, GestureAction.LEFT),
+                gestureThresholdPxFor(target.key, GestureAction.RIGHT),
+                axisDominanceRatioFor(target.key));
+        if (state.singleInputGestureState.isLocked() && !wasLocked) {
+            feedback.slideLock();
+            scheduleSingleInputHoldCommit(
+                    state,
+                    target,
+                    action,
+                    target.key.valueFor(action),
+                    singleTapCommitHoldMs);
+        }
+        state.activeAction = action;
+        rememberDebugTouch(state, action, target);
+        return true;
+    }
+
+    private void beginSingleInputContinuationTarget(TouchState state, KeySlot target, float x, float y) {
+        clearSingleInputContinuationTarget(state);
+        state.singleInputTargetSlot = target;
+        state.singleInputDownX = x;
+        state.singleInputDownY = y;
+        state.singleInputGestureState.reset();
+        state.activeAction = GestureAction.TAP;
+        rememberDebugTouch(state, GestureAction.TAP, target);
+        scheduleSingleInputHoldCommit(
+                state,
+                target,
+                GestureAction.TAP,
+                target.key.valueFor(GestureAction.TAP),
+                singleTapCommitHoldMs);
+        updatePreviewPopup();
+        invalidate();
+    }
+
+    private void clearSingleInputContinuationTarget(TouchState state) {
+        cancelSingleInputHoldCommit(state);
+        state.singleInputTargetSlot = null;
+        state.singleInputHoldCommitSlot = null;
+        state.singleInputGestureState.reset();
     }
 
     private ResolvedTouchOutput resolveReleaseOutput(
@@ -814,7 +947,7 @@ public final class HangulKeyboardView extends View
             String value,
             float x,
             float y) {
-        pendingTouchOutputs.add(new PendingTouchOutput(
+        PendingTouchOutput pendingOutput = new PendingTouchOutput(
                 state.sequence,
                 output.keySlot,
                 output.action,
@@ -828,7 +961,12 @@ public final class HangulKeyboardView extends View
                 output.shadowKeySlot,
                 output.shadowAction,
                 output.shadowScore,
-                output.shadowApplied));
+                output.shadowApplied);
+        if (shouldDeferSingleTapOutput(pendingOutput)) {
+            setPendingSingleTapOutput(pendingOutput);
+            return;
+        }
+        pendingTouchOutputs.add(pendingOutput);
         flushPendingTouchOutputs();
     }
 
@@ -841,19 +979,78 @@ public final class HangulKeyboardView extends View
                 return;
             }
             pendingTouchOutputs.remove(nextIndex);
-            rememberTextTouch(next);
-            logTypingProbeEmit(next);
-            emitValue(next.value);
+            emitTouchOutput(next);
         }
+    }
+
+    private void emitTouchOutput(PendingTouchOutput output) {
+        if (output == null) {
+            return;
+        }
+        rememberTextTouch(output);
+        logTypingProbeEmit(output);
+        emitValue(output.value);
+    }
+
+    private boolean shouldDeferSingleTapOutput(PendingTouchOutput output) {
+        return singleTapCommitModeEnabled
+                && output != null
+                && isRepeatableInputText(output.value);
+    }
+
+    private void setPendingSingleTapOutput(PendingTouchOutput output) {
+        commitPendingSingleTapOutput();
+        pendingSingleTapOutput = output;
+        pendingSingleTapCommitRunnable = this::commitPendingSingleTapOutput;
+        postDelayed(pendingSingleTapCommitRunnable, ViewConfiguration.getLongPressTimeout());
+        updatePreviewPopup();
+        invalidate();
+    }
+
+    private void commitPendingSingleTapOutput() {
+        PendingTouchOutput output = pendingSingleTapOutput;
+        if (output == null) {
+            return;
+        }
+        cancelPendingSingleTapOutput();
+        emitTouchOutput(output);
+    }
+
+    private void cancelPendingSingleTapOutput() {
+        if (pendingSingleTapCommitRunnable != null) {
+            removeCallbacks(pendingSingleTapCommitRunnable);
+            pendingSingleTapCommitRunnable = null;
+        }
+        pendingSingleTapOutput = null;
     }
 
     private int longPressDelayFor(GestureKey key) {
         if (isDeleteKey(key)) {
             return Math.max(120, Math.min(settings.repeatStartDelayMs, 170));
         }
-        return longPressRepeatValue(key) == null
+        String repeatValue = longPressRepeatValue(key);
+        if (usesSingleInputHoldCommit(key, repeatValue)) {
+            return singleTapStartHoldMs;
+        }
+        return repeatValue == null
                 ? ViewConfiguration.getLongPressTimeout()
                 : settings.repeatStartDelayMs;
+    }
+
+    private boolean usesSingleInputHoldCommit(GestureKey key, String value) {
+        return SingleTapCommitModePolicy.usesOneShotHoldCommit(
+                singleTapCommitModeEnabled,
+                key,
+                value);
+    }
+
+    private boolean isSingleInputContinuationKey(KeySlot keySlot) {
+        return SingleTapCommitModePolicy.isContinuationMainKey(
+                singleTapCommitModeEnabled,
+                settings.keyboardMode,
+                activeLayoutIsDingul(),
+                keySlot == null ? null : keySlot.key,
+                keySlot != null && keySlot.dingulMainKey);
     }
 
     private int nextPendingOutputIndex() {
@@ -1055,9 +1252,11 @@ public final class HangulKeyboardView extends View
     private void clearTouchState() {
         for (TouchState state : new ArrayList<>(activeTouches)) {
             cancelLongPressTimer(state);
+            cancelSingleInputHoldCommit(state);
         }
         activeTouches.clear();
         pendingTouchOutputs.clear();
+        cancelPendingSingleTapOutput();
         recentTextTouchSamples.clear();
         lastTextTouchSample = null;
         releasedPreviewBubbles.clear();
@@ -1077,13 +1276,14 @@ public final class HangulKeyboardView extends View
 
     private void removeTouchState(TouchState state, boolean stopRepeat) {
         cancelLongPressTimer(state);
+        cancelSingleInputHoldCommit(state);
         activeTouches.remove(state);
         enqueuePreviewBubble(state);
         if (state.pointerId == previewPointerId) {
             previewPointerId = -1;
         }
         if (stopRepeat) {
-            repeatController.stop();
+            repeatController.stop(state);
         }
         updatePreviewPopup();
         invalidate();
@@ -1111,7 +1311,7 @@ public final class HangulKeyboardView extends View
 
     private TouchState touchForKeySlot(KeySlot keySlot) {
         for (TouchState state : activeTouches) {
-            if (state.keySlot == keySlot) {
+            if (state.keySlot == keySlot || state.singleInputTargetSlot == keySlot) {
                 return state;
             }
         }
@@ -1122,6 +1322,16 @@ public final class HangulKeyboardView extends View
         if (state != null && state.longPressRunnable != null) {
             removeCallbacks(state.longPressRunnable);
             state.longPressRunnable = null;
+        }
+    }
+
+    private void cancelSingleInputHoldCommit(TouchState state) {
+        if (state != null && state.singleInputHoldCommitRunnable != null) {
+            removeCallbacks(state.singleInputHoldCommitRunnable);
+            state.singleInputHoldCommitRunnable = null;
+        }
+        if (state != null) {
+            state.singleInputHoldCommitSlot = null;
         }
     }
 
@@ -1212,7 +1422,8 @@ public final class HangulKeyboardView extends View
                     slot.compactSpecialColumn,
                     slot.edgeRailDirection,
                     visualGap,
-                    slot.bottomSpaceDirection));
+                    slot.bottomSpaceDirection,
+                    slot.dingulMainKey));
         }
         updateAccessibilitySummary();
         sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
@@ -4282,9 +4493,17 @@ public final class HangulKeyboardView extends View
         GestureAction activeAction = GestureAction.TAP;
         boolean longPressTriggered;
         boolean tapOutputAlreadyEmitted;
+        boolean singleInputSessionActive;
+        KeySlot singleInputTargetSlot;
+        KeySlot singleInputHoldCommitSlot;
+        KeySlot singleInputLastCommittedSlot;
+        final GestureState singleInputGestureState = new GestureState();
+        float singleInputDownX;
+        float singleInputDownY;
         long lockAnimationStartMs = -1;
         long longPressAnimationStartMs = -1;
         Runnable longPressRunnable;
+        Runnable singleInputHoldCommitRunnable;
         PreviewBubbleAnimation previewBubble;
 
         TouchState(
@@ -4410,6 +4629,7 @@ public final class HangulKeyboardView extends View
         final int edgeRailDirection;
         final float visualGap;
         final int bottomSpaceDirection;
+        final boolean dingulMainKey;
 
         KeySlot(
                 GestureKey key,
@@ -4422,7 +4642,8 @@ public final class HangulKeyboardView extends View
                 boolean compactSpecialColumn,
                 int edgeRailDirection,
                 float visualGap,
-                int bottomSpaceDirection) {
+                int bottomSpaceDirection,
+                boolean dingulMainKey) {
             this.key = key;
             this.bounds = bounds;
             this.hitBounds = hitBounds == null ? new RectF(bounds) : hitBounds;
@@ -4434,6 +4655,7 @@ public final class HangulKeyboardView extends View
             this.edgeRailDirection = edgeRailDirection < 0 ? -1 : (edgeRailDirection > 0 ? 1 : 0);
             this.visualGap = Math.max(0f, visualGap);
             this.bottomSpaceDirection = bottomSpaceDirection;
+            this.dingulMainKey = dingulMainKey;
         }
 
         @Override

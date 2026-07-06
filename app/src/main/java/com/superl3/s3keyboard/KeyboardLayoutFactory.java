@@ -53,7 +53,7 @@ final class KeyboardLayoutFactory {
             if (safeSettings.showNumberRow) {
                 rows.add(numberRow(safeSettings));
             }
-            rows.addAll(englishRows(true));
+            rows.addAll(remoteEnglishRows());
         } else if (replacesMainRows(effectiveSurface)) {
             rows.addAll(surfaceRows(effectiveSurface));
         } else {
@@ -274,7 +274,7 @@ final class KeyboardLayoutFactory {
                 new KeyboardRow(Arrays.asList(
                         mainKey("ㅈ", "ㅈ", "ㅉ", "~", "ㅊ", "ㅊ", mainUnits),
                         mainKey("ㅎ", "ㅎ", "0", "8", "7", "9", mainUnits),
-                        mainKey(". .", " ", "\u315B", "\u3160", "\u3155", "\u3151", mainUnits),
+                        enterKey(mainUnits),
                         specialKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits));
     }
 
@@ -338,6 +338,56 @@ final class KeyboardLayoutFactory {
                         englishKey('n', single("!"), 2),
                         englishKey('m', single("?"), 2),
                         deleteKey(3)), 20));
+    }
+
+    private static List<KeyboardRow> remoteEnglishRows() {
+        return Arrays.asList(
+                remoteEnglishRow("qwertyuiop", REMOTE_TOP_QWERTY_SLIDES),
+                remoteEnglishRow("asdfghjkl", null),
+                new KeyboardRow(Arrays.asList(
+                        GestureKey.command(
+                                "Shift",
+                                KeyboardCommands.CMD_SHIFT_ONCE,
+                                KeyboardCommands.CMD_SHIFT_LOCK,
+                                3,
+                                KeyIcon.SHIFT),
+                        remoteEnglishKey('z', null, 2),
+                        remoteEnglishKey('x', null, 2),
+                        remoteEnglishKey('c', null, 2),
+                        remoteEnglishKey('v', null, 2),
+                        remoteEnglishKey('b', null, 2),
+                        remoteEnglishKey('n', null, 2),
+                        remoteEnglishKey('m', null, 2),
+                        GestureKey.command(
+                                "Del",
+                                KeyboardCommands.CMD_DELETE,
+                                null,
+                                3,
+                                KeyIcon.BACKSPACE)), 20));
+    }
+
+    private static KeyboardRow remoteEnglishRow(String letters, EnglishSlideSpec[] slides) {
+        List<GestureKey> keys = new ArrayList<>();
+        for (int i = 0; i < letters.length(); i++) {
+            keys.add(remoteEnglishKey(
+                    letters.charAt(i),
+                    slides == null || i >= slides.length ? null : slides[i],
+                    2));
+        }
+        return new KeyboardRow(keys, 20);
+    }
+
+    private static GestureKey remoteEnglishKey(char lower, EnglishSlideSpec slide, int widthUnits) {
+        String value = String.valueOf(lower);
+        return new GestureKey(
+                value,
+                value,
+                slide == null ? null : slide.up,
+                slide == null ? null : slide.down,
+                slide == null ? null : slide.left,
+                slide == null ? null : slide.right,
+                null,
+                widthUnits);
     }
 
     private static List<KeyboardRow> englishDingulRows(int specialColumnPercent) {

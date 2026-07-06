@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -233,7 +234,7 @@ public final class KeyboardLayoutCalculatorTest {
     }
 
     @Test
-    public void stableErgonomicsCentersDingulMainKeysAndShrinksFunctionVisualOnly() {
+    public void stableErgonomicsCentersDingulMainKeysAndShrinksFunctionRail() {
         KeyboardSettings settings = KeyboardSettings.defaults().withHangulNumberRow(false);
         KeyboardErgonomicsOptions options = new KeyboardErgonomicsOptions(
                 true,
@@ -251,14 +252,22 @@ public final class KeyboardLayoutCalculatorTest {
                 360f,
                 260f,
                 1f);
+        List<KeyboardLayoutCalculator.Slot> baseline = KeyboardLayoutCalculator.layout(
+                KeyboardLayoutFactory.build(settings),
+                settings,
+                KeyboardErgonomicsOptions.DEFAULT,
+                360f,
+                260f,
+                1f);
 
         KeyboardLayoutCalculator.Slot firstMain = slots.get(0);
         KeyboardLayoutCalculator.Slot thirdMain = slots.get(2);
         KeyboardLayoutCalculator.Slot specialSecondRow = slots.get(7);
+        KeyboardLayoutCalculator.Slot baselineSpecialSecondRow = baseline.get(7);
 
         assertEquals(180f, (firstMain.left + thirdMain.right) / 2f, 0.001f);
-        assertTrue(specialSecondRow.right - specialSecondRow.left
-                < specialSecondRow.hitRight - specialSecondRow.hitLeft);
+        assertTrue(width(specialSecondRow) < width(baselineSpecialSecondRow));
+        assertEquals(width(specialSecondRow), hitWidth(specialSecondRow), 0.001f);
         assertEquals(354f, specialSecondRow.hitRight, 0.001f);
     }
 
@@ -299,6 +308,29 @@ public final class KeyboardLayoutCalculatorTest {
     }
 
     @Test
+    public void dingulMainTypingAreaMarksExactlyTwelveKeys() {
+        KeyboardSettings settings = KeyboardSettings.defaults().withHangulNumberRow(false);
+
+        List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
+                KeyboardLayoutFactory.build(settings),
+                settings,
+                KeyboardErgonomicsPreset.ERGONOMIC.options,
+                360f,
+                260f,
+                1f);
+
+        int count = 0;
+        for (KeyboardLayoutCalculator.Slot slot : slots) {
+            if (slot.dingulMainKey) {
+                count++;
+                assertFalse(slot.compactSpecialColumn);
+                assertFalse(slot.primaryBottomControl);
+            }
+        }
+        assertEquals(12, count);
+    }
+
+    @Test
     public void leftAssistMainAndRightRailShareRowCenters() {
         KeyboardSettings settings = KeyboardSettings.defaults().withHangulNumberRow(false);
         List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
@@ -331,10 +363,20 @@ public final class KeyboardLayoutCalculatorTest {
                 360f,
                 260f,
                 1f);
+        List<KeyboardLayoutCalculator.Slot> base = KeyboardLayoutCalculator.layout(
+                KeyboardLayoutFactory.build(settings),
+                settings,
+                KeyboardErgonomicsOptions.DEFAULT,
+                360f,
+                260f,
+                1f);
 
         for (int row = 0; row < 4; row++) {
             int offset = row * 5;
+            int baseOffset = row * 4;
+            float originalGap = base.get(baseOffset + 1).left - base.get(baseOffset).right;
             float expectedGap = slots.get(offset + 2).left - slots.get(offset + 1).right;
+            assertEquals(originalGap, expectedGap, 0.001f);
             assertEquals(expectedGap, slots.get(offset + 1).left - slots.get(offset).right, 0.001f);
             assertEquals(expectedGap, slots.get(offset + 3).left - slots.get(offset + 2).right, 0.001f);
             assertEquals(expectedGap, slots.get(offset + 4).left - slots.get(offset + 3).right, 0.001f);
@@ -379,9 +421,38 @@ public final class KeyboardLayoutCalculatorTest {
         assertTrue(width(assist) < hitWidth(assist));
         assertTrue(width(backspace) <= hitWidth(backspace));
         assertTrue(hitWidth(assist) >= 40f);
-        assertTrue(hitWidth(backspace) >= 40f);
+        assertTrue(hitWidth(backspace) >= 36f);
         assertTrue(assist.hitRight > assist.right);
         assertTrue(backspace.hitLeft < backspace.left);
+    }
+
+    @Test
+    public void leftAssistRailIsLongerThanRightFunctionRail() {
+        KeyboardSettings settings = KeyboardSettings.defaults().withHangulNumberRow(false);
+        List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
+                KeyboardLayoutFactory.build(settings),
+                settings,
+                KeyboardErgonomicsPreset.ERGONOMIC.options,
+                360f,
+                260f,
+                1f);
+
+        float firstFunctionVisualWidth = -1f;
+        float firstFunctionHitWidth = -1f;
+        for (int row = 0; row < 4; row++) {
+            int offset = row * 5;
+            KeyboardLayoutCalculator.Slot assist = slots.get(offset);
+            KeyboardLayoutCalculator.Slot function = slots.get(offset + 4);
+
+            assertTrue(hitWidth(assist) > hitWidth(function));
+            if (row == 0) {
+                firstFunctionVisualWidth = width(function);
+                firstFunctionHitWidth = hitWidth(function);
+            } else {
+                assertEquals(firstFunctionVisualWidth, width(function), 0.001f);
+                assertEquals(firstFunctionHitWidth, hitWidth(function), 0.001f);
+            }
+        }
     }
 
     @Test
@@ -405,7 +476,7 @@ public final class KeyboardLayoutCalculatorTest {
     }
 
     @Test
-    public void ergonomicHitboxShrinksBezelSideOfFunctionRailAndExpandsBackspaceInward() {
+    public void ergonomicHitboxShrinksBezelSideOfFunctionRailUniformly() {
         KeyboardSettings settings = KeyboardSettings.defaults().withHangulNumberRow(false);
         KeyboardErgonomicsOptions options = KeyboardErgonomicsPreset.STABLE.options;
 
@@ -421,7 +492,6 @@ public final class KeyboardLayoutCalculatorTest {
 
         assertTrue(backspace.hitLeft < backspace.left);
         assertTrue(backspace.hitRight >= backspace.right);
-        assertTrue(backspace.hitBottom > backspace.bottom);
         assertTrue(360f - backspace.hitRight >= 4f);
         assertTrue(backspace.hitLeft <= backspace.left);
         assertTrue(backspace.hitTop <= backspace.top);
