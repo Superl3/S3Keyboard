@@ -13,46 +13,31 @@ final class PracticeModeController {
     }
 
     static View createPanel(Context context) {
-        LinearLayout root = new LinearLayout(context);
-        root.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout root = SettingsRowBuilder.vertical(context);
 
-        TextView status = SettingsRowBuilder.label(context, context.getString(R.string.practice_mode_idle));
-        root.addView(status, matchWrap());
+        TextView status = SettingsRowBuilder.labelRow(
+                context,
+                root,
+                R.string.practice_mode_idle,
+                0);
 
-        LinearLayout row = new LinearLayout(context);
-        row.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout row = SettingsRowBuilder.horizontal(context);
         for (String target : TARGETS) {
-            Button button = new Button(context);
-            button.setText(target);
-            SettingsViewStyler.button(button, context, false);
-            button.setOnClickListener(v -> status.setText(
-                    context.getString(R.string.practice_mode_selected_format, target)));
-            row.addView(button, new LinearLayout.LayoutParams(
-                    0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    1f));
+            Button button = SettingsRowBuilder.button(
+                    context,
+                    target,
+                    v -> status.setText(context.getString(
+                            R.string.practice_mode_selected_format,
+                            target)));
+            row.addView(button, SettingsRowBuilder.weightedWrap(context, 0, 0));
         }
-        root.addView(row, matchWrapWithTop(context, 6));
+        root.addView(row, SettingsRowBuilder.matchWrapWithTop(context, 6));
 
-        TextView hint = SettingsRowBuilder.label(context, DingulInputDiagnostics.load(context).summaryText(context));
-        hint.setLineSpacing(dp(context, 2), 1.0f);
-        root.addView(hint, matchWrapWithTop(context, 6));
+        SettingsRowBuilder.bodyLabelRow(
+                context,
+                root,
+                DingulInputDiagnostics.load(context).summaryText(context),
+                6);
         return root;
-    }
-
-    private static LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
-
-    private static LinearLayout.LayoutParams matchWrapWithTop(Context context, int topDp) {
-        LinearLayout.LayoutParams params = matchWrap();
-        params.topMargin = dp(context, topDp);
-        return params;
-    }
-
-    private static int dp(Context context, int value) {
-        return Math.round(value * context.getResources().getDisplayMetrics().density);
     }
 }

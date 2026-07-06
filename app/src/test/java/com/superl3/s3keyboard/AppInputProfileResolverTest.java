@@ -101,7 +101,7 @@ public final class AppInputProfileResolverTest {
                 AppInputProfileResolver.resolve("com.google.android.webview", text, false).apply(text),
                 true,
                 false,
-                false,
+                true,
                 true);
         assertPolicy(
                 AppInputProfileResolver.resolve("com.kakao.talk", text, false).apply(text),
@@ -181,7 +181,7 @@ public final class AppInputProfileResolverTest {
         assertEquals("url_field", urlProfile.source);
         assertTrue(appliedUrl.preferAsciiLayout);
         assertFalse(appliedUrl.forceNumberRow);
-        assertFalse(appliedUrl.allowComposingText);
+        assertTrue(appliedUrl.allowComposingText);
         assertFalse(appliedUrl.allowTextConveniences);
 
         AppInputProfile emailProfile = AppInputProfileResolver.resolve("com.example.mail", email, false);
@@ -191,7 +191,7 @@ public final class AppInputProfileResolverTest {
         assertEquals("email_field", emailProfile.source);
         assertTrue(appliedEmail.preferAsciiLayout);
         assertFalse(appliedEmail.forceNumberRow);
-        assertFalse(appliedEmail.allowComposingText);
+        assertTrue(appliedEmail.allowComposingText);
         assertFalse(appliedEmail.allowTextConveniences);
     }
 
@@ -212,7 +212,7 @@ public final class AppInputProfileResolverTest {
     }
 
     @Test
-    public void webViewProfilePrefersAsciiAndDisablesComposing() {
+    public void webViewProfilePrefersAsciiButKeepsHangulComposingAvailable() {
         EditorInputPolicy base = EditorInputPolicy.fromInputType(InputType.TYPE_CLASS_TEXT);
 
         for (String packageName : AppPackageCatalog.webViewPackages()) {
@@ -223,13 +223,13 @@ public final class AppInputProfileResolverTest {
             assertEquals("webview_package", profile.source);
             assertTrue(applied.preferAsciiLayout);
             assertFalse(applied.forceNumberRow);
-            assertFalse(applied.allowComposingText);
+            assertTrue(applied.allowComposingText);
             assertTrue(applied.allowTextConveniences);
         }
     }
 
     @Test
-    public void webEditProfileUsesCommitOnlyTextPath() {
+    public void webEditProfilePrefersAsciiButKeepsHangulComposingAvailable() {
         EditorInputPolicy base = EditorInputPolicy.fromInputType(
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT);
 
@@ -241,7 +241,7 @@ public final class AppInputProfileResolverTest {
         assertFalse(profile.remoteMode);
         assertTrue(applied.preferAsciiLayout);
         assertFalse(applied.forceNumberRow);
-        assertFalse(applied.allowComposingText);
+        assertTrue(applied.allowComposingText);
         assertFalse(applied.allowTextConveniences);
     }
 

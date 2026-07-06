@@ -15,7 +15,7 @@ final class KeyboardThemeJson {
     }
 
     static String exportTheme(KeyboardSettings settings, String name, String author, String description) {
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
         try {
             JSONObject root = new JSONObject();
             root.put("schemaVersion", SCHEMA_VERSION);
@@ -153,7 +153,7 @@ final class KeyboardThemeJson {
     }
 
     static KeyboardSettings importTheme(KeyboardSettings baseSettings, String json) {
-        KeyboardSettings base = baseSettings == null ? KeyboardSettings.defaults() : baseSettings;
+        KeyboardSettings base = RuntimeDefaults.keyboardSettings(baseSettings);
         try {
             JSONObject root = new JSONObject(json);
             int schemaVersion = root.optInt("schemaVersion", SCHEMA_VERSION);
@@ -823,7 +823,7 @@ final class KeyboardThemeJson {
         if (parsed != Integer.MIN_VALUE) {
             return parsed;
         }
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
         switch (value) {
             case "alphaKey":
                 return safeSettings.keyIdleColor;

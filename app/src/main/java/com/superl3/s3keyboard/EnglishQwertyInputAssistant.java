@@ -13,13 +13,11 @@ final class EnglishQwertyInputAssistant {
     private String currentWord = "";
 
     EnglishQwertyInputAssistant() {
-        this(EnglishQwertyCorrectionEngine.DEFAULT);
+        this(null);
     }
 
     EnglishQwertyInputAssistant(EnglishQwertyCorrectionEngine correctionEngine) {
-        this.correctionEngine = correctionEngine == null
-                ? EnglishQwertyCorrectionEngine.DEFAULT
-                : correctionEngine;
+        this.correctionEngine = RuntimeDefaults.englishQwertyCorrectionEngine(correctionEngine);
     }
 
     void reset() {

@@ -13,19 +13,19 @@ final class AppInputProfileCatalog {
     }
 
     static AppInputProfile url() {
-        return new AppInputProfile("url", false, true, false, false, false, "url_field");
+        return new AppInputProfile("url", false, true, false, true, false, "url_field");
     }
 
     static AppInputProfile email() {
-        return new AppInputProfile("email", false, true, false, false, false, "email_field");
+        return new AppInputProfile("email", false, true, false, true, false, "email_field");
     }
 
     static AppInputProfile webEdit() {
-        return new AppInputProfile("web_edit", false, true, false, false, false, "web_edit_field");
+        return new AppInputProfile("web_edit", false, true, false, true, false, "web_edit_field");
     }
 
     static AppInputProfile webView() {
-        return new AppInputProfile("webview", false, true, false, false, true, "webview_package");
+        return new AppInputProfile("webview", false, true, false, true, true, "webview_package");
     }
 
     static AppInputProfile browserSearch(boolean searchAction) {

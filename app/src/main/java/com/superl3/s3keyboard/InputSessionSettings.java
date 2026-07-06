@@ -16,10 +16,10 @@ final class InputSessionSettings {
             KeyboardSettings runtimeSettings,
             boolean remoteModeAutoActivated) {
         this.enterAction = enterAction == null ? ImeActionLabelResolver.defaultAction() : enterAction;
-        this.editorPolicy = editorPolicy == null ? EditorInputPolicy.DEFAULT : editorPolicy;
-        this.appInputProfile = appInputProfile == null ? AppInputProfile.STANDARD : appInputProfile;
-        this.packageName = packageName == null ? "" : packageName;
-        this.runtimeSettings = runtimeSettings == null ? KeyboardSettings.defaults() : runtimeSettings;
+        this.editorPolicy = RuntimeDefaults.editorInputPolicy(editorPolicy);
+        this.appInputProfile = RuntimeDefaults.appInputProfile(appInputProfile);
+        this.packageName = RuntimeDefaults.stringOrDefault(packageName, "");
+        this.runtimeSettings = RuntimeDefaults.keyboardSettings(runtimeSettings);
         this.remoteModeAutoActivated = remoteModeAutoActivated;
     }
 }

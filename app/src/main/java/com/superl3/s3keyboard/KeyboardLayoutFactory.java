@@ -45,10 +45,8 @@ final class KeyboardLayoutFactory {
             KeyboardSettings settings,
             KeyboardSurface surface,
             KeyboardLayoutProfiles layoutProfiles) {
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
-        KeyboardLayoutProfiles safeProfiles = layoutProfiles == null
-                ? KeyboardLayoutProfiles.defaults()
-                : layoutProfiles;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
+        KeyboardLayoutProfiles safeProfiles = RuntimeDefaults.keyboardLayoutProfiles(layoutProfiles);
         KeyboardSurface effectiveSurface = effectiveSurface(safeSettings, surface);
         List<KeyboardRow> rows = new ArrayList<>();
         if (safeSettings.remoteModeEnabled) {
@@ -83,7 +81,7 @@ final class KeyboardLayoutFactory {
         if (settings.remoteModeEnabled) {
             return KeyboardSurface.NORMAL;
         }
-        return surface == null ? KeyboardSurface.NORMAL : surface;
+        return RuntimeDefaults.keyboardSurface(surface);
     }
 
     private static boolean replacesMainRows(KeyboardSurface surface) {

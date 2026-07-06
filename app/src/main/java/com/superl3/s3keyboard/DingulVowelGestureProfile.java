@@ -1,11 +1,12 @@
 package com.superl3.s3keyboard;
 
-enum DingulVowelGestureProfile {
+enum DingulVowelGestureProfile implements SettingsLabelOption {
     STANDARD("standard", R.string.dingul_vowel_gesture_profile_standard, 0.72f, 1.15f),
     STABLE("stable", R.string.dingul_vowel_gesture_profile_stable, 0.64f, 1.28f),
     AGGRESSIVE("aggressive", R.string.dingul_vowel_gesture_profile_aggressive, 0.56f, 1.38f);
 
     static final DingulVowelGestureProfile DEFAULT = STABLE;
+    private static final DingulVowelGestureProfile[] DISPLAY_ORDER = values();
 
     final String preferenceValue;
     final int labelResId;
@@ -23,14 +24,32 @@ enum DingulVowelGestureProfile {
         this.axisDominanceRatio = axisDominanceRatio;
     }
 
+    @Override
+    public int labelResId() {
+        return labelResId;
+    }
+
     static DingulVowelGestureProfile fromPreference(String value) {
         if (value != null) {
-            for (DingulVowelGestureProfile profile : values()) {
+            for (DingulVowelGestureProfile profile : DISPLAY_ORDER) {
                 if (profile.preferenceValue.equals(value)) {
                     return profile;
                 }
             }
         }
         return DEFAULT;
+    }
+
+    static DingulVowelGestureProfile[] displayOrder() {
+        return DISPLAY_ORDER.clone();
+    }
+
+    static int indexOf(DingulVowelGestureProfile selected) {
+        for (int i = 0; i < DISPLAY_ORDER.length; i++) {
+            if (DISPLAY_ORDER[i] == selected) {
+                return i;
+            }
+        }
+        return indexOf(DEFAULT);
     }
 }

@@ -5,39 +5,34 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.widget.Toast;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
+import java.util.function.Supplier;
+
 final class ThemeClipboardImportController {
-    interface Host {
-        KeyboardSettings currentSettings();
+    private final Supplier<KeyboardSettings> currentSettings;
+    private final Supplier<String> enterKeyLabel;
+    private final BooleanSupplier forceNumberRow;
+    private final Consumer<KeyboardSettings> runtimeSettingsApplier;
+    private final Runnable dismissQuickSettings;
+    private final Supplier<String> clipboardTextReader;
+    private final Consumer<KeyboardSettings> settingsStore;
+    private final IntConsumer notifier;
 
-        String enterKeyLabel();
-
-        boolean forceNumberRow();
-
-        void applyImportedSettings(KeyboardSettings settings);
-
-        void dismissQuickSettings();
-    }
-
-    interface ClipboardTextReader {
-        String read();
-    }
-
-    interface SettingsStore {
-        void save(KeyboardSettings settings);
-    }
-
-    interface Notifier {
-        void show(int messageResId);
-    }
-
-    private final Host host;
-    private final ClipboardTextReader clipboardTextReader;
-    private final SettingsStore settingsStore;
-    private final Notifier notifier;
-
-    ThemeClipboardImportController(Context context, Host host) {
+    ThemeClipboardImportController(
+            Context context,
+            Supplier<KeyboardSettings> currentSettings,
+            Supplier<String> enterKeyLabel,
+            BooleanSupplier forceNumberRow,
+            Consumer<KeyboardSettings> runtimeSettingsApplier,
+            Runnable dismissQuickSettings) {
         this(
-                host,
+                currentSettings,
+                enterKeyLabel,
+                forceNumberRow,
+                runtimeSettingsApplier,
+                dismissQuickSettings,
                 new AndroidClipboardTextReader(context),
                 settings -> {
                     KeyboardPreferences.saveSelectedThemeId(context, "");
@@ -47,37 +42,48 @@ final class ThemeClipboardImportController {
     }
 
     ThemeClipboardImportController(
-            Host host,
-            ClipboardTextReader clipboardTextReader,
-            SettingsStore settingsStore,
-            Notifier notifier) {
-        this.host = host;
-        this.clipboardTextReader = clipboardTextReader;
-        this.settingsStore = settingsStore;
-        this.notifier = notifier;
+            Supplier<KeyboardSettings> currentSettings,
+            Supplier<String> enterKeyLabel,
+            BooleanSupplier forceNumberRow,
+            Consumer<KeyboardSettings> runtimeSettingsApplier,
+            Runnable dismissQuickSettings,
+            Supplier<String> clipboardTextReader,
+            Consumer<KeyboardSettings> settingsStore,
+            IntConsumer notifier) {
+        this.currentSettings = RuntimeDefaults.keyboardSettingsSupplier(currentSettings);
+        this.enterKeyLabel = RuntimeDefaults.nullStringSupplier(enterKeyLabel);
+        this.forceNumberRow = RuntimeDefaults.booleanSupplier(forceNumberRow);
+        this.runtimeSettingsApplier = RuntimeDefaults.keyboardSettingsConsumer(runtimeSettingsApplier);
+        this.dismissQuickSettings = RuntimeDefaults.runnable(dismissQuickSettings);
+        this.clipboardTextReader = RuntimeDefaults.emptyStringSupplier(clipboardTextReader);
+        this.settingsStore = RuntimeDefaults.keyboardSettingsConsumer(settingsStore);
+        this.notifier = RuntimeDefaults.intConsumer(notifier);
     }
 
     void importFromClipboard() {
-        String text = clipboardTextReader.read();
-        String json = text == null ? "" : text.trim();
+        String json = RuntimeDefaults.trimmedStringOrEmptyFrom(clipboardTextReader);
         if (json.isEmpty()) {
-            notifier.show(R.string.clipboard_theme_empty);
+            notifier.accept(R.string.clipboard_theme_empty);
             return;
         }
         try {
-            KeyboardSettings imported = KeyboardThemeJson.importTheme(host.currentSettings(), json)
-                    .withEnterKeyLabel(host.enterKeyLabel())
-                    .withRuntimeNumberRowForced(host.forceNumberRow());
-            settingsStore.save(imported);
-            host.applyImportedSettings(imported);
-            notifier.show(R.string.clipboard_theme_imported);
-            host.dismissQuickSettings();
+            KeyboardSettings current = RuntimeDefaults.keyboardSettingsFrom(currentSettings);
+            KeyboardSettings imported = RuntimeDefaults.withRuntimeImeState(
+                    KeyboardThemeJson.importTheme(current, json),
+                    null,
+                    enterKeyLabel.get(),
+                    current.enterKeyLabel,
+                    forceNumberRow.getAsBoolean());
+            settingsStore.accept(imported);
+            runtimeSettingsApplier.accept(imported);
+            notifier.accept(R.string.clipboard_theme_imported);
+            dismissQuickSettings.run();
         } catch (IllegalArgumentException exception) {
-            notifier.show(R.string.clipboard_theme_invalid);
+            notifier.accept(R.string.clipboard_theme_invalid);
         }
     }
 
-    private static final class AndroidClipboardTextReader implements ClipboardTextReader {
+    private static final class AndroidClipboardTextReader implements Supplier<String> {
         private final Context context;
 
         AndroidClipboardTextReader(Context context) {
@@ -85,7 +91,7 @@ final class ThemeClipboardImportController {
         }
 
         @Override
-        public String read() {
+        public String get() {
             ClipboardManager clipboard =
                     (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
             if (clipboard == null || !clipboard.hasPrimaryClip()) {
@@ -96,7 +102,7 @@ final class ThemeClipboardImportController {
                 return "";
             }
             CharSequence text = clip.getItemAt(0).coerceToText(context);
-            return text == null ? "" : text.toString().trim();
+            return RuntimeDefaults.trimmedStringOrEmpty(text);
         }
     }
 }

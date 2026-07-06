@@ -20,11 +20,13 @@ final class AccentPlacementPolicy {
     final SpaceRole spaceRole;
     final QuestionRole questionRole;
 
-    enum SpaceRole {
+    enum SpaceRole implements SettingsLabelOption {
         DEFAULT("", R.string.accent_role_theme_default),
         ALPHA("space:alpha", R.string.accent_role_space_alpha),
         MOD("space:mod", R.string.accent_role_space_mod),
         ACCENT("space:accent", R.string.accent_role_space_accent);
+
+        private static final SpaceRole[] DISPLAY_ORDER = values();
 
         final String preferenceValue;
         final int labelResId;
@@ -34,13 +36,38 @@ final class AccentPlacementPolicy {
             this.labelResId = labelResId;
         }
 
+        @Override
+        public int labelResId() {
+            return labelResId;
+        }
+
         static SpaceRole fromPreference(String value) {
-            for (SpaceRole role : values()) {
+            for (SpaceRole role : DISPLAY_ORDER) {
                 if (!role.preferenceValue.isEmpty() && role.preferenceValue.equals(value)) {
                     return role;
                 }
             }
             return null;
+        }
+
+        static SpaceRole[] displayOrder() {
+            return DISPLAY_ORDER.clone();
+        }
+
+        static SpaceRole at(int index) {
+            if (index >= 0 && index < DISPLAY_ORDER.length) {
+                return DISPLAY_ORDER[index];
+            }
+            return DEFAULT;
+        }
+
+        static int indexOf(SpaceRole selected) {
+            for (int i = 0; i < DISPLAY_ORDER.length; i++) {
+                if (DISPLAY_ORDER[i] == selected) {
+                    return i;
+                }
+            }
+            return 0;
         }
 
         @Override
@@ -49,11 +76,13 @@ final class AccentPlacementPolicy {
         }
     }
 
-    enum QuestionRole {
+    enum QuestionRole implements SettingsLabelOption {
         DEFAULT("", R.string.accent_role_theme_default),
         ALPHA("question:alpha", R.string.accent_role_question_alpha),
         MOD("question:mod", R.string.accent_role_question_mod),
         ACCENT("question:accent", R.string.accent_role_question_accent);
+
+        private static final QuestionRole[] DISPLAY_ORDER = values();
 
         final String preferenceValue;
         final int labelResId;
@@ -63,13 +92,38 @@ final class AccentPlacementPolicy {
             this.labelResId = labelResId;
         }
 
+        @Override
+        public int labelResId() {
+            return labelResId;
+        }
+
         static QuestionRole fromPreference(String value) {
-            for (QuestionRole role : values()) {
+            for (QuestionRole role : DISPLAY_ORDER) {
                 if (!role.preferenceValue.isEmpty() && role.preferenceValue.equals(value)) {
                     return role;
                 }
             }
             return null;
+        }
+
+        static QuestionRole[] displayOrder() {
+            return DISPLAY_ORDER.clone();
+        }
+
+        static QuestionRole at(int index) {
+            if (index >= 0 && index < DISPLAY_ORDER.length) {
+                return DISPLAY_ORDER[index];
+            }
+            return DEFAULT;
+        }
+
+        static int indexOf(QuestionRole selected) {
+            for (int i = 0; i < DISPLAY_ORDER.length; i++) {
+                if (DISPLAY_ORDER[i] == selected) {
+                    return i;
+                }
+            }
+            return 0;
         }
 
         @Override
@@ -219,7 +273,7 @@ final class AccentPlacementPolicy {
     }
 
     KeyboardSettings applyTo(KeyboardSettings settings) {
-        KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings base = RuntimeDefaults.keyboardSettings(settings);
         if (themeDefault) {
             return base;
         }
@@ -245,7 +299,7 @@ final class AccentPlacementPolicy {
     static KeyboardSettings applyThemeDefaultTo(
             KeyboardSettings settings,
             KeyboardSettings themeDefault) {
-        KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings base = RuntimeDefaults.keyboardSettings(settings);
         if (themeDefault == null) {
             return base;
         }

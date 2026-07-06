@@ -37,9 +37,9 @@ final class DingulInputDiagnostics {
         this.patternEvents = patternEvents;
         this.journalEvents = journalEvents;
         this.dingulProfileEntries = dingulProfileEntries;
-        this.latestKeyCodePoints = latestKeyCodePoints == null ? "" : latestKeyCodePoints;
-        this.latestAction = latestAction == null ? "" : latestAction;
-        this.latestType = latestType == null ? "" : latestType;
+        this.latestKeyCodePoints = RuntimeDefaults.stringOrDefault(latestKeyCodePoints, "");
+        this.latestAction = RuntimeDefaults.stringOrDefault(latestAction, "");
+        this.latestType = RuntimeDefaults.stringOrDefault(latestType, "");
         this.inputSamples = Math.max(0, inputSamples);
         this.correctionSamples = Math.max(0, correctionSamples);
         this.correctionRatePermille = Math.max(0, Math.min(1000, correctionRatePermille));

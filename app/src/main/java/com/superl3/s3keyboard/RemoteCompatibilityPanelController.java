@@ -5,105 +5,66 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.view.Gravity;
-import android.view.View;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.function.IntBinaryOperator;
+import java.util.function.Supplier;
+
 final class RemoteCompatibilityPanelController {
     static final int SEND_SKIPPED = -1;
-
-    interface Host {
-        String currentPackageName();
-
-        int sendCompatibilityKey(int keyCode, int metaState);
-    }
+    private static final IntBinaryOperator SKIPPED_KEY_SENDER =
+            (keyCode, metaState) -> SEND_SKIPPED;
 
     private final Context context;
-    private final Host host;
+    private final Supplier<String> currentPackageName;
+    private final IntBinaryOperator keySender;
     private TextView historyView;
     private String lastLabel = "";
 
-    RemoteCompatibilityPanelController(Context context, Host host) {
+    RemoteCompatibilityPanelController(
+            Context context,
+            Supplier<String> currentPackageName,
+            IntBinaryOperator keySender) {
         this.context = context;
-        this.host = host;
+        this.currentPackageName = RuntimeDefaults.emptyStringSupplier(currentPackageName);
+        this.keySender = keySender == null ? SKIPPED_KEY_SENDER : keySender;
     }
 
     void addTo(LinearLayout panel) {
         if (panel == null) {
             return;
         }
-        SettingsUiPalette ui = SettingsUiPalette.from(context);
-        TextView label = new TextView(context);
-        label.setText(R.string.remote_key_test_title);
-        label.setTextColor(ui.textSecondary);
-        label.setTextSize(13);
-        panel.addView(label, topWrap(10));
+        QuickPanelUi.addWithTop(
+                context,
+                panel,
+                QuickPanelUi.sectionLabel(context, R.string.remote_key_test_title),
+                10);
 
-        LinearLayout row1 = row();
-        addCaseButton(row1, RemoteCompatibilityMatrix.ESC, 4);
-        addCaseButton(row1, RemoteCompatibilityMatrix.TAB, 4);
-        addCaseButton(row1, RemoteCompatibilityMatrix.SHIFT_TAB, 4);
-        addCaseButton(row1, RemoteCompatibilityMatrix.CTRL_TAB, 4);
-        addCaseButton(row1, RemoteCompatibilityMatrix.ALT_TAB, 0);
-        panel.addView(row1, topWrap(4));
+        addCaseRow(
+                panel,
+                RemoteCompatibilityMatrix.ESC,
+                RemoteCompatibilityMatrix.TAB,
+                RemoteCompatibilityMatrix.SHIFT_TAB,
+                RemoteCompatibilityMatrix.CTRL_TAB,
+                RemoteCompatibilityMatrix.ALT_TAB);
+        addCaseRow(
+                panel,
+                RemoteCompatibilityMatrix.CTRL_A,
+                RemoteCompatibilityMatrix.ALT_SHIFT,
+                RemoteCompatibilityMatrix.CTRL_SPACE,
+                RemoteCompatibilityMatrix.WIN_SPACE,
+                RemoteCompatibilityMatrix.LANGUAGE_SWITCH);
+        addFunctionCaseRow(panel, 0, 4);
+        addFunctionCaseRow(panel, 4, 8);
+        addFunctionCaseRow(panel, 8, 12);
+        addResultRow(panel);
+        addReportRow(panel);
 
-        LinearLayout row2 = row();
-        addCaseButton(row2, RemoteCompatibilityMatrix.CTRL_A, 4);
-        addCaseButton(row2, RemoteCompatibilityMatrix.ALT_SHIFT, 4);
-        addCaseButton(row2, RemoteCompatibilityMatrix.CTRL_SPACE, 4);
-        addCaseButton(row2, RemoteCompatibilityMatrix.WIN_SPACE, 4);
-        addCaseButton(row2, RemoteCompatibilityMatrix.LANGUAGE_SWITCH, 0);
-        panel.addView(row2, topWrap(4));
-
-        LinearLayout row3 = row();
-        addCaseRange(row3, 0, 4);
-        panel.addView(row3, topWrap(4));
-
-        LinearLayout row4 = row();
-        addCaseRange(row4, 4, 8);
-        panel.addView(row4, topWrap(4));
-
-        LinearLayout row5 = row();
-        addCaseRange(row5, 8, 12);
-        panel.addView(row5, topWrap(4));
-
-        LinearLayout resultRow = row();
-        resultRow.addView(button(
-                        context.getString(R.string.mark_remote_test_pass),
-                        v -> markResult(RemoteCompatibilityLog.RESULT_PASS)),
-                weightedParams(0, 4));
-        resultRow.addView(button(
-                        context.getString(R.string.mark_remote_test_fail),
-                        v -> markResult(RemoteCompatibilityLog.RESULT_FAIL)),
-                weightedParams(0, 0));
-        panel.addView(resultRow, topWrap(4));
-
-        LinearLayout reportRow = row();
-        reportRow.addView(button(
-                        context.getString(R.string.copy_remote_compatibility_report),
-                        v -> copyReportToClipboard()),
-                weightedParams(0, 4));
-        reportRow.addView(button(context.getString(R.string.clear_remote_compatibility_log), v -> {
-            RemoteCompatibilityLog.clear(context);
-            reset();
-        }), weightedParams(0, 0));
-        panel.addView(reportRow, topWrap(4));
-
-        historyView = new TextView(context);
-        historyView.setTextColor(ui.textSecondary);
-        historyView.setTextSize(11);
-        historyView.setTypeface(Typeface.MONOSPACE);
-        historyView.setPadding(dp(8), dp(6), dp(8), dp(6));
-        GradientDrawable historyBackground = new GradientDrawable();
-        historyBackground.setColor(ui.controlFill);
-        historyBackground.setCornerRadius(dp(8));
-        historyBackground.setStroke(Math.max(1, dp(1)), ui.border);
-        historyView.setBackground(historyBackground);
+        historyView = createHistoryView();
         refreshHistory();
-        panel.addView(historyView, topWrap(6));
+        QuickPanelUi.addWithTop(context, panel, historyView, 6);
     }
 
     void reset() {
@@ -111,12 +72,81 @@ final class RemoteCompatibilityPanelController {
         refreshHistory();
     }
 
-    private void addCaseRange(LinearLayout row, int startInclusive, int endExclusive) {
+    private void addCaseRow(
+            LinearLayout panel,
+            RemoteCompatibilityMatrix.Case... testCases) {
+        LinearLayout row = QuickPanelUi.row(context);
+        for (int i = 0; i < testCases.length; i++) {
+            addCaseButton(row, testCases[i], i == testCases.length - 1 ? 0 : 4);
+        }
+        QuickPanelUi.addWithTop(context, panel, row, 4);
+    }
+
+    private void addFunctionCaseRow(LinearLayout panel, int startInclusive, int endExclusive) {
+        LinearLayout row = QuickPanelUi.row(context);
         RemoteCompatibilityMatrix.Case[] functionCases =
                 RemoteCompatibilityMatrix.group(RemoteCompatibilityMatrix.Group.FUNCTION);
         for (int i = startInclusive; i < endExclusive && i < functionCases.length; i++) {
             addCaseButton(row, functionCases[i], i == endExclusive - 1 ? 0 : 4);
         }
+        QuickPanelUi.addWithTop(context, panel, row, 4);
+    }
+
+    private void addResultRow(LinearLayout panel) {
+        LinearLayout row = QuickPanelUi.row(context);
+        QuickPanelUi.addCompactButton(
+                context,
+                row,
+                context.getString(R.string.mark_remote_test_pass),
+                v -> markResult(RemoteCompatibilityLog.RESULT_PASS),
+                4);
+        QuickPanelUi.addCompactButton(
+                context,
+                row,
+                context.getString(R.string.mark_remote_test_fail),
+                v -> markResult(RemoteCompatibilityLog.RESULT_FAIL),
+                0);
+        QuickPanelUi.addWithTop(context, panel, row, 4);
+    }
+
+    private void addReportRow(LinearLayout panel) {
+        LinearLayout row = QuickPanelUi.row(context);
+        QuickPanelUi.addCompactButton(
+                context,
+                row,
+                context.getString(R.string.copy_remote_compatibility_report),
+                v -> copyReportToClipboard(),
+                4);
+        QuickPanelUi.addCompactButton(
+                context,
+                row,
+                context.getString(R.string.clear_remote_compatibility_log),
+                v -> clearReportLog(),
+                0);
+        QuickPanelUi.addWithTop(context, panel, row, 4);
+    }
+
+    private TextView createHistoryView() {
+        SettingsUiPalette ui = SettingsUiPalette.from(context);
+        TextView view = SettingsRowBuilder.secondaryLabel(context, "");
+        view.setTextSize(11);
+        view.setTypeface(Typeface.MONOSPACE);
+        view.setPadding(
+                QuickPanelUi.dp(context, 8),
+                QuickPanelUi.dp(context, 6),
+                QuickPanelUi.dp(context, 8),
+                QuickPanelUi.dp(context, 6));
+        GradientDrawable historyBackground = new GradientDrawable();
+        historyBackground.setColor(ui.controlFill);
+        historyBackground.setCornerRadius(QuickPanelUi.dp(context, 8));
+        historyBackground.setStroke(Math.max(1, QuickPanelUi.dp(context, 1)), ui.border);
+        view.setBackground(historyBackground);
+        return view;
+    }
+
+    private void clearReportLog() {
+        RemoteCompatibilityLog.clear(context);
+        reset();
     }
 
     private void addCaseButton(
@@ -126,20 +156,23 @@ final class RemoteCompatibilityPanelController {
         if (row == null || testCase == null) {
             return;
         }
-        row.addView(
-                button(testCase.label, v -> sendCase(testCase)),
-                weightedParams(0, rightMarginDp));
+        QuickPanelUi.addCompactButton(
+                context,
+                row,
+                testCase.label,
+                v -> sendCase(testCase),
+                rightMarginDp);
     }
 
     private void sendCase(RemoteCompatibilityMatrix.Case testCase) {
-        if (testCase == null || host == null) {
+        if (testCase == null) {
             return;
         }
-        int eventCount = host.sendCompatibilityKey(testCase.keyCode, testCase.metaState);
+        int eventCount = keySender.applyAsInt(testCase.keyCode, testCase.metaState);
         if (eventCount == SEND_SKIPPED) {
             return;
         }
-        lastLabel = testCase.label == null ? "" : testCase.label;
+        lastLabel = RuntimeDefaults.stringOrDefault(testCase.label, "");
         RemoteCompatibilityLog.record(
                 context,
                 currentPackageName(),
@@ -192,57 +225,7 @@ final class RemoteCompatibilityPanelController {
     }
 
     private String currentPackageName() {
-        if (host == null) {
-            return "";
-        }
-        String packageName = host.currentPackageName();
-        return packageName == null ? "" : packageName;
+        return AppPackageCatalog.normalizePackageName(currentPackageName.get());
     }
 
-    private LinearLayout row() {
-        LinearLayout row = new LinearLayout(context);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        return row;
-    }
-
-    private Button button(String text, View.OnClickListener listener) {
-        Button button = new Button(context);
-        button.setText(text);
-        button.setAllCaps(false);
-        button.setTextSize(11);
-        button.setGravity(Gravity.CENTER);
-        button.setMinHeight(dp(38));
-        button.setPadding(dp(8), 0, dp(8), 0);
-        SettingsUiPalette ui = SettingsUiPalette.from(context);
-        button.setTextColor(ui.controlText);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(ui.controlFill);
-        background.setCornerRadius(dp(8));
-        background.setStroke(Math.max(1, dp(1)), ui.border);
-        button.setBackground(background);
-        button.setOnClickListener(listener);
-        return button;
-    }
-
-    private LinearLayout.LayoutParams topWrap(int topMarginDp) {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.topMargin = dp(topMarginDp);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams weightedParams(int leftMarginDp, int rightMarginDp) {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f);
-        params.leftMargin = dp(leftMarginDp);
-        params.rightMargin = dp(rightMarginDp);
-        return params;
-    }
-
-    private int dp(int value) {
-        return Math.round(value * context.getResources().getDisplayMetrics().density);
-    }
 }

@@ -20,7 +20,7 @@ final class ThemeOption {
         this.userThemeId = userThemeId;
         this.userThemeJson = userThemeJson;
         this.externalTheme = externalTheme;
-        this.sourcePath = sourcePath == null ? "" : sourcePath;
+        this.sourcePath = RuntimeDefaults.stringOrDefault(sourcePath, "");
     }
 
     static ThemeOption[] buildOptions(
@@ -62,7 +62,7 @@ final class ThemeOption {
     }
 
     KeyboardSettings applyTo(KeyboardSettings settings) {
-        KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings base = RuntimeDefaults.keyboardSettings(settings);
         KeyboardSettings appearance = appearanceSettings();
         return appearance == null ? base : base.withAppearanceFrom(appearance);
     }
@@ -85,7 +85,7 @@ final class ThemeOption {
     }
 
     static KeyboardSettings resetToDefaultAppearance(KeyboardSettings settings) {
-        KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings base = RuntimeDefaults.keyboardSettings(settings);
         return base.withFullAppearanceFrom(KeyboardSettings.defaults());
     }
 
@@ -93,19 +93,30 @@ final class ThemeOption {
         if (preset != null) {
             return preset.id;
         }
-        return userThemeId == null ? "" : userThemeId;
+        return RuntimeDefaults.stringOrDefault(userThemeId, "");
     }
 
     static int indexOfStableId(ThemeOption[] options, String stableId) {
+        return indexOfStableId(options, stableId, 0);
+    }
+
+    static int indexOfStableId(ThemeOption[] options, String stableId, int missingIndex) {
         if (options == null || options.length == 0 || stableId == null || stableId.isEmpty()) {
-            return 0;
+            return missingIndex;
         }
         for (int i = 0; i < options.length; i++) {
             if (options[i] != null && stableId.equals(options[i].stableId())) {
                 return i;
             }
         }
-        return 0;
+        return missingIndex;
+    }
+
+    static ThemeOption at(ThemeOption[] options, int position) {
+        if (options == null || position < 0 || position >= options.length) {
+            return null;
+        }
+        return options[position];
     }
 
     boolean isDeletableUserTheme() {

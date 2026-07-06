@@ -3,11 +3,9 @@ package com.superl3.s3keyboard;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputConnection;
 
-final class ImeConnectionDispatcher {
-    interface KeySender {
-        int send(int keyCode, int metaState);
-    }
+import java.util.function.IntBinaryOperator;
 
+final class ImeConnectionDispatcher {
     private ImeConnectionDispatcher() {
     }
 
@@ -16,8 +14,8 @@ final class ImeConnectionDispatcher {
             ResolvedImeAction enterAction,
             boolean rawKeyInput,
             boolean remoteModeEnabled,
-            KeySender softKeySender,
-            KeySender remoteKeySender) {
+            IntBinaryOperator softKeySender,
+            IntBinaryOperator remoteKeySender) {
         if (inputConnection == null) {
             return;
         }
@@ -50,7 +48,10 @@ final class ImeConnectionDispatcher {
         }
     }
 
-    static void sendRawText(InputConnection inputConnection, String text, KeySender softKeySender) {
+    static void sendRawText(
+            InputConnection inputConnection,
+            String text,
+            IntBinaryOperator softKeySender) {
         if (inputConnection == null || text == null || text.isEmpty()) {
             return;
         }
@@ -77,7 +78,7 @@ final class ImeConnectionDispatcher {
     static boolean moveCursor(
             InputConnection inputConnection,
             boolean right,
-            KeySender softKeySender) {
+            IntBinaryOperator softKeySender) {
         if (inputConnection == null
                 || InputConnectionTextOperator.isCursorAtBoundary(inputConnection, right)) {
             return false;
@@ -127,14 +128,17 @@ final class ImeConnectionDispatcher {
         return sent;
     }
 
-    private static int send(KeySender sender, int keyCode, int metaState) {
+    private static int send(IntBinaryOperator sender, int keyCode, int metaState) {
         if (sender != null) {
-            return sender.send(keyCode, metaState);
+            return sender.applyAsInt(keyCode, metaState);
         }
         return 0;
     }
 
-    private static boolean sendCompleteSoftKey(KeySender sender, int keyCode, int metaState) {
+    private static boolean sendCompleteSoftKey(
+            IntBinaryOperator sender,
+            int keyCode,
+            int metaState) {
         int expectedEvents = RemoteKeyEventSequence.eventCount(keyCode, metaState);
         return expectedEvents > 0 && send(sender, keyCode, metaState) >= expectedEvents;
     }

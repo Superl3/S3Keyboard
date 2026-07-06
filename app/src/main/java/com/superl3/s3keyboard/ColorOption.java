@@ -1,6 +1,6 @@
 package com.superl3.s3keyboard;
 
-final class ColorOption {
+final class ColorOption implements SettingsLabelOption {
     static final ColorOption[] BASIC_OPTIONS = {
             new ColorOption(R.string.color_option_default_button, KeyboardSettings.DEFAULT_KEY_IDLE_COLOR),
             new ColorOption(R.string.color_option_keyboard_background, KeyboardSettings.DEFAULT_KEYBOARD_BACKGROUND_COLOR),
@@ -43,6 +43,44 @@ final class ColorOption {
     ColorOption(int labelResId, int color) {
         this.labelResId = labelResId;
         this.color = 0xFF000000 | (color & 0x00FFFFFF);
+    }
+
+    static int indexOf(ColorOption[] options, int color) {
+        return indexOf(options, Integer.valueOf(color), 0);
+    }
+
+    static int indexOf(ColorOption[] options, Integer color) {
+        return indexOf(options, color, 0);
+    }
+
+    static int indexOf(ColorOption[] options, Integer color, int missingIndex) {
+        if (color == null) {
+            return 0;
+        }
+        int opaqueColor = 0xFF000000 | (color & 0x00FFFFFF);
+        for (int i = 0; i < options.length; i++) {
+            if (options[i].color == opaqueColor) {
+                return i;
+            }
+        }
+        return missingIndex;
+    }
+
+    static int basicIndexOf(int color) {
+        return indexOf(BASIC_OPTIONS, color);
+    }
+
+    static int basicIndexOf(Integer color) {
+        return indexOf(BASIC_OPTIONS, color);
+    }
+
+    static int editorIndexOf(Integer color) {
+        return indexOf(EDITOR_OPTIONS, color, -1);
+    }
+
+    @Override
+    public int labelResId() {
+        return labelResId;
     }
 
     @Override

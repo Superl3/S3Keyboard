@@ -5,25 +5,29 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.widget.Toast;
 
+import java.util.function.Supplier;
+
 final class InputIssueReportClipboardController {
-    interface Host {
-        void prepareIssueReport();
-
-        String currentPackageName();
-
-        AppInputProfile inputProfile();
-
-        KeyboardSettings currentSettings();
-
-        EditorInputPolicy currentEditorPolicy();
-    }
-
     private final Context context;
-    private final Host host;
+    private final Runnable prepareIssueReport;
+    private final Supplier<String> currentPackageName;
+    private final Supplier<AppInputProfile> inputProfile;
+    private final Supplier<KeyboardSettings> currentSettings;
+    private final Supplier<EditorInputPolicy> currentEditorPolicy;
 
-    InputIssueReportClipboardController(Context context, Host host) {
+    InputIssueReportClipboardController(
+            Context context,
+            Runnable prepareIssueReport,
+            Supplier<String> currentPackageName,
+            Supplier<AppInputProfile> inputProfile,
+            Supplier<KeyboardSettings> currentSettings,
+            Supplier<EditorInputPolicy> currentEditorPolicy) {
         this.context = context;
-        this.host = host;
+        this.prepareIssueReport = RuntimeDefaults.runnable(prepareIssueReport);
+        this.currentPackageName = RuntimeDefaults.emptyStringSupplier(currentPackageName);
+        this.inputProfile = RuntimeDefaults.appInputProfileSupplier(inputProfile);
+        this.currentSettings = RuntimeDefaults.keyboardSettingsSupplier(currentSettings);
+        this.currentEditorPolicy = RuntimeDefaults.editorInputPolicySupplier(currentEditorPolicy);
     }
 
     void copyToClipboard() {
@@ -33,15 +37,13 @@ final class InputIssueReportClipboardController {
             Toast.makeText(context, R.string.clipboard_unavailable, Toast.LENGTH_SHORT).show();
             return;
         }
-        if (host != null) {
-            host.prepareIssueReport();
-        }
+        prepareIssueReport.run();
         String report = InputIssueReport.build(
                 context,
-                host == null ? "" : host.currentPackageName(),
-                host == null ? AppInputProfile.STANDARD : host.inputProfile(),
-                host == null ? KeyboardSettings.defaults() : host.currentSettings(),
-                host == null ? EditorInputPolicy.DEFAULT : host.currentEditorPolicy());
+                currentPackageName.get(),
+                inputProfile.get(),
+                currentSettings.get(),
+                currentEditorPolicy.get());
         clipboard.setPrimaryClip(ClipData.newPlainText(
                 context.getString(R.string.input_issue_report_clip_label),
                 report));

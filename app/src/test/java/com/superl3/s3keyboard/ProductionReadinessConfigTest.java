@@ -72,9 +72,8 @@ public final class ProductionReadinessConfigTest {
                 .newDocumentBuilder()
                 .parse(new InputSource(new StringReader(strings)));
         assertFalse(strings.matches("(?s).*[^<]/string>.*"));
-        assertFalse(strings.contains("?뚮"));
-        assertFalse(strings.contains("?먭"));
-        assertFalse(strings.contains("?ㅼ"));
+        assertFalse(strings.contains("\uFFFD"));
+        assertFalse(strings.contains("\u5360"));
         assertTrue(strings.contains("name=\"theme_key_display_override_pack\""));
         assertTrue(strings.contains("name=\"accent_placement_title\""));
     }
@@ -181,6 +180,8 @@ public final class ProductionReadinessConfigTest {
                 "app/src/main/java/com/superl3/s3keyboard/KeyboardKeyAccessibilityLabel.java");
         String labels = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/SettingsDisplayLabels.java");
+        String labelOption = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/SettingsLabelOption.java");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
 
         assertFalse(containsHangul(inputAssistance));
@@ -198,6 +199,35 @@ public final class ProductionReadinessConfigTest {
         assertFalse(motionEffect.contains("\\u"));
         assertFalse(accentPlacementMode.contains("\\u"));
         assertTrue(labels.contains("SettingsDisplayLabels"));
+        assertTrue(labelOption.contains("interface SettingsLabelOption"));
+        assertTrue(labelOption.contains("int labelResId()"));
+        assertTrue(labels.contains("static <T extends SettingsLabelOption> String[] labels("));
+        assertTrue(labels.contains("static String label(Context context, SettingsLabelOption value)"));
+        assertTrue(inputAssistance.contains("implements SettingsLabelOption"));
+        assertTrue(colorOption.contains("implements SettingsLabelOption"));
+        assertTrue(fontOption.contains("implements SettingsLabelOption"));
+        assertTrue(ergonomicsPreset.contains("implements SettingsLabelOption"));
+        assertTrue(visualConsistency.contains("implements SettingsLabelOption"));
+        assertTrue(motionEffect.contains("implements SettingsLabelOption"));
+        assertTrue(accentPlacementMode.contains("implements SettingsLabelOption"));
+        assertEquals(1, countOccurrences(labels, "new String["));
+        assertEquals(1, countOccurrences(labels, "for (int i = 0; i < values.length; i++)"));
+        assertEquals(1, countOccurrences(
+                labels,
+                "value == null ? \"\" : label(context, value.labelResId())"));
+        assertEquals(1, countOccurrences(
+                labels,
+                "static String label(Context context, SettingsLabelOption value)"));
+        assertFalse(labels.contains("values.length, index ->"));
+        assertFalse(labels.contains("for (int i = 0; i < count; i++)"));
+        assertFalse(labels.contains("Function<"));
+        assertFalse(labels.contains("ToIntFunction"));
+        assertFalse(labels.contains("static String[] labels(Context context, HandednessMode[]"));
+        assertFalse(labels.contains("static String[] labels(Context context, ColorOption[]"));
+        assertFalse(labels.contains("label(Context context, HandednessMode value)"));
+        assertFalse(labels.contains("label(Context context, KeyboardMode value)"));
+        assertFalse(labels.contains("label(Context context, FontOption value)"));
+        assertFalse(labels.contains("fallbackLabelResId"));
         assertTrue(strings.contains("name=\"input_assistance_clean_mode\""));
         assertTrue(strings.contains("name=\"color_option_default_button\""));
         assertTrue(strings.contains("name=\"font_option_default\""));
@@ -220,17 +250,23 @@ public final class ProductionReadinessConfigTest {
 
     @Test
     public void demoIntentOverridesAreDebugGated() throws Exception {
-        String mainActivity = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
+        String mainActivity = javaSource("MainActivity");
+        String overrides = javaSource("DemoSettingsIntentOverrides");
+        String fieldProfile = javaSource("DemoFieldProfile");
 
-        assertTrue(mainActivity.contains("EXTRA_DEMO_SETTINGS"));
-        assertTrue(mainActivity.contains("EXTRA_DEMO_FIELD_PROFILE"));
-        assertTrue(mainActivity.contains("applyDemoFieldProfile("));
-        assertTrue(mainActivity.contains("TYPE_TEXT_VARIATION_WEB_PASSWORD"));
-        assertTrue(mainActivity.contains("TYPE_TEXT_VARIATION_WEB_EDIT_TEXT"));
-        assertTrue(mainActivity.contains("EditorInfo.IME_ACTION_SEARCH"));
-        assertTrue(mainActivity.contains("isDebuggable()"));
-        assertTrue(mainActivity.contains("debugDemoIntent"));
+        assertTrue(overrides.contains("EXTRA_DEMO_SETTINGS"));
+        assertTrue(overrides.contains("EXTRA_DEMO_FIELD_PROFILE"));
+        assertTrue(mainActivity.contains("DemoSettingsIntentOverrides.apply("));
+        assertTrue(fieldProfile.contains("TYPE_TEXT_VARIATION_WEB_PASSWORD"));
+        assertTrue(fieldProfile.contains("TYPE_TEXT_VARIATION_WEB_EDIT_TEXT"));
+        assertTrue(fieldProfile.contains("EditorInfo.IME_ACTION_SEARCH"));
+        assertTrue(mainActivity.contains("isDebuggableBuild()"));
+        assertTrue(overrides.contains("debugDemoIntent"));
+        assertTrue(overrides.contains("RuntimeDefaults.keyboardSettings(settings)"));
+        assertTrue(overrides.contains("RuntimeDefaults.keyboardSettings(settings);"));
+        assertTrue(overrides.contains("RuntimeDefaults.stringOrDefault("));
+        assertFalse(overrides.contains("settings == null ? KeyboardSettings.defaults() : settings"));
+        assertFalse(overrides.contains("private static String stringExtra("));
     }
 
     @Test
@@ -268,10 +304,8 @@ public final class ProductionReadinessConfigTest {
 
     @Test
     public void textConnectionEditingStaysBehindOperatorHelper() throws Exception {
-        String service = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
-        String operator = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/InputConnectionTextOperator.java");
+        String service = javaSource("S3KeyboardService");
+        String operator = javaSource("InputConnectionTextOperator");
 
         assertTrue(service.contains("InputConnectionTextOperator"));
         assertFalse(service.contains("deleteSurroundingTextInCodePoints("));
@@ -288,47 +322,233 @@ public final class ProductionReadinessConfigTest {
         assertTrue(operator.contains("setComposingText("));
         assertTrue(operator.contains("finishComposingText()"));
         assertTrue(operator.contains("commitText("));
+        assertTrue(operator.contains("private static final class CommitOnlySink"));
+        assertTrue(operator.contains("return new CommitOnlySink(inputConnection)"));
+        assertFalse(operator.contains("new HangulCommitOnlyEditor.Sink()"));
+        assertFalse(service.contains("private HangulCommitOnlyEditor.Sink commitOnlySink("));
+        assertTrue(service.contains("pendingOwnComposingSelectionUpdates"));
+        assertTrue(service.contains("pendingOwnComposingSelectionUpdates--"));
+        assertTrue(service.contains("Math.min(pendingOwnComposingSelectionUpdates + 2, 4)"));
     }
 
     @Test
     public void previewOverlayTransportStaysDecoupledFromKeyboardViewInternals() throws Exception {
-        String service = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/PreviewOverlayController.java");
-        String view = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/HangulKeyboardView.java");
-        String spec = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/PreviewOverlaySpec.java");
+        String service = javaSource("S3KeyboardService");
+        String controller = javaSource("PreviewOverlayController");
+        String view = javaSource("HangulKeyboardView");
+        String spec = javaSource("PreviewOverlaySpec");
 
-        assertFalse(service.contains("HangulKeyboardView.PreviewOverlaySpec"));
-        assertFalse(controller.contains("HangulKeyboardView.PreviewOverlaySpec"));
-        assertFalse(view.contains("static final class PreviewOverlaySpec"));
-        assertTrue(service.contains("onPreviewOverlayChanged(PreviewOverlaySpec spec)"));
-        assertTrue(controller.contains("void show(View anchor, PreviewOverlaySpec spec)"));
-        assertTrue(spec.contains("final class PreviewOverlaySpec"));
+        assertContainsNone(
+                service,
+                "HangulKeyboardView.PreviewOverlaySpec",
+                "HangulKeyboardView.OnPreviewOverlayListener");
+        assertContainsNone(
+                view,
+                "static final class PreviewOverlaySpec",
+                "interface OnPreviewOverlayListener",
+                "private PreviewOverlaySpec previewBubbleSpec(PreviewBubbleAnimation bubble)",
+                "private void pruneReleasedPreviewBubbles()");
+        assertContainsNone(
+                controller,
+                "HangulKeyboardView.PreviewOverlaySpec",
+                "void show(View anchor, PreviewOverlaySpec spec)",
+                "Collections.singletonList(",
+                "private int dp(",
+                "private float dpFloat(",
+                "Typeface.create(",
+                "settings == null ? KeyboardSettings.defaults() : settings");
+        assertContainsAll(
+                view,
+                "Consumer<List<PreviewOverlaySpec>> previewOverlayListener",
+                "previewOverlayListener.accept(specs)",
+                "previewOverlayListener.accept(Collections.emptyList())",
+                "pruneReleasedPreviewBubbles(nowMs)",
+                "previewBubbleSpec(bubble, nowMs)",
+                "private PreviewOverlaySpec previewBubbleSpec(PreviewBubbleAnimation bubble, long nowMs)",
+                "private void pruneReleasedPreviewBubbles(long nowMs)");
+        assertContainsAll(
+                service,
+                "inputView.setOnPreviewOverlayListener(this::showPreviewOverlays)",
+                "private void showPreviewOverlays(List<PreviewOverlaySpec> specs)");
+        assertContainsAll(
+                controller,
+                "SettingsRowBuilder.dp(context,",
+                "private void applyTextStyle(",
+                "private void applyTransform(",
+                "private void applyBackground(",
+                "private float shadowRadiusDp(PreviewOverlaySpec spec)",
+                "private float shadowDyDp(PreviewOverlaySpec spec)",
+                "private float translationYDp(PreviewOverlaySpec spec)",
+                "private float elevationDp(PreviewOverlaySpec spec)",
+                "private float translationZDp(PreviewOverlaySpec spec)",
+                "private float textPop(PreviewOverlaySpec spec)",
+                "overlay.setElevation(SettingsRowBuilder.dp(context, ELEVATION_BASE_DP))",
+                "overlay.setTranslationZ(SettingsRowBuilder.dp(context, TRANSLATION_Z_BASE_DP))",
+                "KeyboardTypefaceCatalog.typefaceFor(",
+                "private int requiredTopPad(",
+                "private int maxBottom(",
+                "private void applyOverlaySpecs(",
+                "private void showOrUpdatePopup(",
+                "private GradientDrawable roundedBackground(",
+                "RuntimeDefaults.keyboardSettings(",
+                "overlay.setVisibility(View.GONE);",
+                "overlay.setVisibility(View.VISIBLE);");
+        assertContainsAll(spec, "final class PreviewOverlaySpec");
+    }
+
+    @Test
+    public void previewBubbleAnimationKeepsMotionGateAtPublicBoundary() throws Exception {
+        String animation = javaSource("PreviewBubbleAnimation");
+        String layout = javaSource("PreviewBubbleLayout");
+
+        assertContainsAll(
+                animation,
+                "private float popProgress(long nowMs, float durationScale)",
+                "private float releaseProgress(long nowMs, float durationScale)",
+                "private float supersededProgress(long nowMs, float durationScale)",
+                "float inputImpactAlpha(long nowMs, boolean motionEnabled, float durationScale)",
+                "private static float positiveOnly(float value)",
+                "private static final float RELEASE_IMPULSE_END",
+                "private static final float COMMIT_GLOW_AFTERGLOW_END",
+                "private static final float INPUT_IMPACT_ATTACK_END",
+                "private static final float COMMIT_LIFT_RISE_END",
+                "private static final float RELEASE_FLOAT_RISE_END",
+                "private static final float CONFIRMATION_ATTACK_END");
+        assertContainsNone(
+                animation,
+                "ACTIVE_FADE_IN_MS",
+                "final long sequence",
+                "anchorBottom",
+                "popProgress(long nowMs, boolean motionEnabled",
+                "releaseProgress(long nowMs, boolean motionEnabled",
+                "supersededProgress(long nowMs, boolean motionEnabled",
+                "scale(nowMs, true",
+                "popProgress(nowMs, true",
+                "releaseProgress(nowMs, true",
+                "supersededProgress(nowMs, true",
+                "Math.max(0f, rise * settle)",
+                "Math.max(0f, rise - RELEASE_FLOAT_SETTLE_AMOUNT * settle)",
+                "Math.max(0f, attack * release)");
+        assertContainsAll(
+                layout,
+                "private static final float LIFT_RISE_END = 0.34f;",
+                "private static final float LIFT_HOLD_END = 0.70f;",
+                "1f - LIFT_HOLD_END");
+    }
+
+    @Test
+    public void previewBubbleDrawableKeepsEffectsOnSharedPaintPath() throws Exception {
+        String drawable = javaSource("PreviewBubbleDrawable");
+
+        assertContainsAll(
+                drawable,
+                "private final Paint effectPaint",
+                "private final RectF scratchRect",
+                "private void setVerticalGradient(",
+                "private void setHorizontalGradient(",
+                "private void setTwoStopVerticalGradient(",
+                "private void setCenteredHorizontalGradient(",
+                "private void drawTwoStopVerticalRoundRect(",
+                "private void drawAdaptiveTwoStopVerticalRoundRect(",
+                "private void drawAdaptiveVerticalGradientRoundRect(",
+                "private void drawPressedInset(",
+                "private void drawInputCore(",
+                "private void drawInputImpact(",
+                "private static float clampUnit(float value)",
+                "private static int clampByte(int value)",
+                "TWO_STOP_POSITIONS",
+                "CENTERED_HORIZONTAL_POSITIONS",
+                "COMMIT_GLOW_POSITIONS",
+                "INPUT_IMPACT_POSITIONS",
+                "COMMIT_HALO_POSITIONS",
+                "SHADOW_LUMINANCE_THRESHOLD",
+                "HIGHLIGHT_LUMINANCE_THRESHOLD",
+                "COMMIT_LUMINANCE_THRESHOLD",
+                "RIM_LUMINANCE_THRESHOLD");
+        assertContainsNone(
+                drawable,
+                "haloPaint",
+                "highlightPaint",
+                "commitGlowPaint",
+                "commitSheenPaint",
+                "rimPaint",
+                "tailShadowPaint",
+                "tailContactPaint",
+                "lowerLipPaint",
+                "lightAdaptiveColor(96)",
+                "lightAdaptiveColor(110)",
+                "lightAdaptiveColor(118)",
+                "lightAdaptiveColor(126)",
+                "adaptiveAlpha(96",
+                "adaptiveAlpha(110",
+                "adaptiveAlpha(118",
+                "adaptiveAlpha(126",
+                "private int adaptiveAlpha(int threshold, float darkAmount, float lightAmount)",
+                "Math.max(0f, Math.min(1f",
+                "Math.max(0, Math.min(255");
     }
 
     @Test
     public void nonInteractiveKeyboardPreviewsUseDedicatedFactory() throws Exception {
-        String factory = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/KeyboardPreviewFactory.java");
-        String main = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
-        String selector = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/ThemeSelectorActivity.java");
-        String accent = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/AccentPlacementActivity.java");
+        String factory = javaSource("KeyboardPreviewFactory");
+        String selector = javaSource("ThemeSelectorActivity");
+        String accent = javaSource("AccentPlacementActivity");
 
         assertTrue(factory.contains("new HangulKeyboardView(context)"));
         assertTrue(factory.contains("setCompactPreviewRendering(true)"));
+        assertTrue(factory.contains("RuntimeDefaults.keyboardSettings("));
         assertTrue(factory.contains("IMPORTANT_FOR_ACCESSIBILITY_NO"));
-        assertTrue(main.contains("KeyboardPreviewFactory.nonInteractive("));
         assertTrue(selector.contains("KeyboardPreviewFactory.nonInteractive("));
         assertTrue(accent.contains("KeyboardPreviewFactory.nonInteractive("));
-        assertFalse(main.contains("new HangulKeyboardView(this)"));
         assertFalse(selector.contains("new HangulKeyboardView(this)"));
         assertFalse(accent.contains("new HangulKeyboardView(this)"));
+        assertFalse(factory.contains("settings == null ? KeyboardSettings.defaults() : settings"));
+    }
+
+    @Test
+    public void layoutFactoryUsesSharedRuntimeFallbacks() throws Exception {
+        String factory = javaSource("KeyboardLayoutFactory");
+        String view = javaSource("HangulKeyboardView");
+        String layoutController = javaSource("LayoutSettingsController");
+        String defaults = javaSource("RuntimeDefaults");
+
+        assertContainsAll(
+                factory,
+                "RuntimeDefaults.keyboardSettings(settings)",
+                "RuntimeDefaults.keyboardLayoutProfiles(layoutProfiles)",
+                "RuntimeDefaults.keyboardSurface(surface)");
+        assertContainsAll(
+                view,
+                "RuntimeDefaults.keyboardLayoutProfiles(profiles)");
+        assertContainsAll(
+                layoutController,
+                "RuntimeDefaults.keyboardLayoutProfiles(layoutProfiles)");
+        assertContainsAll(
+                defaults,
+                "static KeyboardLayoutProfiles keyboardLayoutProfiles(",
+                "static KeyboardLayoutProfiles keyboardLayoutProfilesFrom(");
+        assertContainsNone(
+                factory + "\n" + view + "\n" + layoutController,
+                "settings == null ? KeyboardSettings.defaults() : settings",
+                "layoutProfiles == null",
+                "profiles == null ? KeyboardLayoutProfiles.defaults() : profiles",
+                "surface == null ? KeyboardSurface.NORMAL : surface");
+    }
+
+    @Test
+    public void accentPlacementPolicyUsesSharedSettingsFallbacks() throws Exception {
+        String policy = javaSource("AccentPlacementPolicy");
+        String target = javaSource("AccentPlacementTarget");
+        String editorInputPolicy = javaSource("EditorInputPolicy");
+
+        assertTrue(policy.contains("RuntimeDefaults.keyboardSettings(settings)"));
+        assertFalse(policy.contains("settings == null ? KeyboardSettings.defaults() : settings"));
+        assertTrue(target.contains("RuntimeDefaults.keyboardSettings(settings)"));
+        assertContainsNone(
+                target,
+                "settings == null ? KeyboardMode.HANGUL",
+                "settings != null && settings.showNumberRow");
+        assertTrue(editorInputPolicy.contains("this.surface = surface == null ? KeyboardSurface.NORMAL : surface;"));
     }
 
     @Test
@@ -339,23 +559,45 @@ public final class ProductionReadinessConfigTest {
                 "app/src/main/java/com/superl3/s3keyboard/RemoteCompatibilityPanelController.java");
         String report = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/RemoteCompatibilityReport.java");
+        String log = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/RemoteCompatibilityLog.java");
+        String remoteCatalog = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/RemoteAppCatalog.java");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
 
         assertTrue(service.contains("RemoteCompatibilityPanelController"));
         assertFalse(service.contains("RemoteCompatibilityLog.record("));
         assertFalse(service.contains("RemoteCompatibilityReport.describe("));
         assertFalse(service.contains("RemoteCompatibilityReport.toJson("));
+        assertFalse(service.contains("RemoteCompatibilityPanelController.Host"));
+        assertTrue(service.contains("() -> currentEditorPackageName"));
+        assertTrue(service.contains("this::sendCompatibilityKey"));
+        assertFalse(service.contains("private String currentPackageName()"));
         assertTrue(panel.contains("RemoteCompatibilityLog.record("));
         assertTrue(panel.contains("RemoteCompatibilityReport.describe("));
         assertTrue(panel.contains("RemoteCompatibilityReport.describe(\n                context,"));
         assertTrue(panel.contains("RemoteCompatibilityReport.toJson("));
+        assertFalse(panel.contains("interface Host"));
+        assertTrue(panel.contains("private final Supplier<String> currentPackageName"));
+        assertTrue(panel.contains("private final IntBinaryOperator keySender"));
+        assertTrue(panel.contains("keySender.applyAsInt("));
         assertTrue(report.contains("R.string.remote_compatibility_summary_header"));
         assertTrue(report.contains("R.string.remote_compatibility_summary_counts"));
         assertTrue(report.contains("R.string.remote_compatibility_missing_cases"));
         assertTrue(report.contains("R.string.remote_compatibility_manual_required"));
-        assertFalse(report.contains("\"원격 호환성: \""));
-        assertFalse(report.contains("\"성공 \""));
-        assertFalse(report.contains("\"실제 원격 세션"));
+        assertFalse(report.contains("\"?�격 ?�환?? \""));
+        assertFalse(report.contains("\"?�공 \""));
+        assertFalse(report.contains("\"?�제 ?�격 ?�션"));
+        assertTrue(report.contains("AppPackageCatalog.normalizePackageName("));
+        assertTrue(log.contains("AppPackageCatalog.normalizePackageName("));
+        assertTrue(log.contains("RuntimeDefaults.stringOrDefault(label, \"\")"));
+        assertTrue(log.contains("RuntimeDefaults.stringOrDefault(packageName, \"\")"));
+        assertTrue(remoteCatalog.contains("AppPackageCatalog.normalizePackageName("));
+        assertFalse(report.contains("private static String normalizePackage("));
+        assertFalse(log.contains("private static String normalizePackage("));
+        assertFalse(remoteCatalog.contains("private static String normalizePackage("));
+        assertFalse(log.contains("label == null ? \"\" : label"));
+        assertFalse(log.contains("packageName == null ? \"\" : packageName"));
         assertTrue(strings.contains("name=\"remote_compatibility_summary_header\""));
         assertTrue(strings.contains("name=\"remote_compatibility_manual_required\""));
     }
@@ -372,7 +614,14 @@ public final class ProductionReadinessConfigTest {
                 "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
         String sessionResolver = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/InputSessionSettingsResolver.java");
-        String main = readWorkspaceFile("app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
+        String sessionSettings = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/InputSessionSettings.java");
+        String appProfile = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/AppInputProfile.java");
+        String appProfileOverrides = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/AppInputProfileOverrides.java");
+        String remoteController = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/RemoteWindowsSettingsController.java");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
 
         assertTrue(resolver.contains("AppPackageCatalog.isBrowserPackage("));
@@ -395,11 +644,41 @@ public final class ProductionReadinessConfigTest {
         assertTrue(sessionResolver.contains("AppInputProfileResolver.resolve("));
         assertTrue(sessionResolver.contains("EditorInputPolicy.from(info)"));
         assertTrue(sessionResolver.contains("withRuntimeNumberRowForced("));
-        assertTrue(main.contains("settings_app_profile_overrides_help"));
-        assertTrue(main.contains("saveAppProfileAsciiPackages"));
-        assertTrue(main.contains("saveAppProfileNumberRowPackages"));
-        assertTrue(main.contains("saveAppProfileNoComposingPackages"));
-        assertTrue(main.contains("saveAppProfileNoTextConveniencesPackages"));
+        assertTrue(catalog.contains("static String normalizePackageName("));
+        assertTrue(resolver.contains("AppPackageCatalog.normalizePackageName(packageName)"));
+        assertTrue(sessionResolver.contains("AppPackageCatalog.normalizePackageName("));
+        assertTrue(sessionResolver.contains("RuntimeDefaults.stringOrDefault(enterActionLabel, \"\")"));
+        assertTrue(sessionSettings.contains("RuntimeDefaults.stringOrDefault(packageName, \"\")"));
+        assertFalse(resolver.contains("packageName == null ? \"\" : packageName.trim()"));
+        assertFalse(sessionResolver.contains("info == null || info.packageName == null ? \"\" : info.packageName"));
+        String profileSources = resolver
+                + "\n" + sessionResolver
+                + "\n" + sessionSettings
+                + "\n" + appProfile
+                + "\n" + appProfileOverrides;
+        assertContainsAll(
+                profileSources,
+                "RuntimeDefaults.editorInputPolicy(",
+                "RuntimeDefaults.keyboardSettings(",
+                "RuntimeDefaults.appInputProfile(",
+                "RuntimeDefaults.appInputProfileOverrides(",
+                "RuntimeDefaults.stringOrDefault(");
+        assertContainsNone(
+                profileSources,
+                "basePolicy == null ? EditorInputPolicy.DEFAULT : basePolicy",
+                "policy == null ? EditorInputPolicy.DEFAULT : policy",
+                "editorPolicy == null ? EditorInputPolicy.DEFAULT : editorPolicy",
+                "appInputProfile == null ? AppInputProfile.STANDARD : appInputProfile",
+                "runtimeSettings == null ? KeyboardSettings.defaults() : runtimeSettings",
+                "storedSettings == null",
+                "private static String safe(String value)",
+                "private static String safeLabel(",
+                "packageName == null ? \"\" : packageName");
+        assertTrue(remoteController.contains("settings_app_profile_overrides_help"));
+        assertTrue(remoteController.contains("saveAppProfileAsciiPackages"));
+        assertTrue(remoteController.contains("saveAppProfileNumberRowPackages"));
+        assertTrue(remoteController.contains("saveAppProfileNoComposingPackages"));
+        assertTrue(remoteController.contains("saveAppProfileNoTextConveniencesPackages"));
         assertTrue(strings.contains("name=\"settings_app_profile_ascii_packages\""));
         assertTrue(strings.contains("name=\"settings_app_profile_no_composing_packages\""));
     }
@@ -410,6 +689,7 @@ public final class ProductionReadinessConfigTest {
                 "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
         String report = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/InputIssueReport.java");
+        String defaults = javaSource("RuntimeDefaults");
         String controller = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/InputIssueReportClipboardController.java");
         String quickSettings = readWorkspaceFile(
@@ -418,7 +698,36 @@ public final class ProductionReadinessConfigTest {
 
         assertTrue(service.contains("InputIssueReportClipboardController"));
         assertFalse(service.contains("InputIssueReport.build("));
+        assertFalse(service.contains("InputIssueReportClipboardController.Host"));
         assertTrue(controller.contains("InputIssueReport.build("));
+        assertFalse(controller.contains("interface Host"));
+        assertTrue(controller.contains("private final Runnable prepareIssueReport"));
+        assertTrue(controller.contains("private final Supplier<String> currentPackageName"));
+        assertTrue(controller.contains("private final Supplier<AppInputProfile> inputProfile"));
+        assertTrue(controller.contains("private final Supplier<KeyboardSettings> currentSettings"));
+        assertTrue(controller.contains("private final Supplier<EditorInputPolicy> currentEditorPolicy"));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertTrue(controller.contains("RuntimeDefaults.emptyStringSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.appInputProfileSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.editorInputPolicySupplier("));
+        assertEquals("Input issue report fallbacks should come from RuntimeDefaults.",
+                0,
+                countOccurrences(controller, "() -> { }"));
+        assertTrue(service.contains("this::prepareIssueReport"));
+        assertTrue(service.contains("() -> currentEditorPackageName"));
+        assertTrue(service.contains("() -> appInputProfile"));
+        assertTrue(service.contains("() -> settings"));
+        assertTrue(service.contains("() -> editorPolicy"));
+        assertFalse(service.contains("public void prepareIssueReport()"));
+        assertFalse(service.contains("public String currentPackageName()"));
+        assertFalse(service.contains("private String currentPackageName()"));
+        assertFalse(service.contains("public AppInputProfile inputProfile()"));
+        assertFalse(service.contains("public KeyboardSettings currentSettings()"));
+        assertFalse(service.contains("public EditorInputPolicy currentEditorPolicy()"));
+        assertFalse(service.contains("private AppInputProfile inputProfile()"));
+        assertFalse(service.contains("private KeyboardSettings currentSettings()"));
+        assertFalse(service.contains("private EditorInputPolicy currentEditorPolicy()"));
         assertTrue(report.contains("\"layoutAccessibility\""));
         assertTrue(report.contains("\"localDataSummary\""));
         assertTrue(report.contains("\"clipboardEntriesIncluded\""));
@@ -429,9 +738,32 @@ public final class ProductionReadinessConfigTest {
         assertTrue(report.contains("\"recommendedErgonomicsPreset\""));
         assertTrue(report.contains("\"currentErgonomicsPreset\""));
         assertTrue(report.contains("\"appliesErgonomicsPreset\""));
+        assertContainsAll(
+                report,
+                "RuntimeDefaults.keyboardSettings(",
+                "RuntimeDefaults.keyboardErgonomics(",
+                "RuntimeDefaults.appInputProfile(",
+                "RuntimeDefaults.appInputProfileOverrides(",
+                "RuntimeDefaults.keyboardSurface(",
+                "RuntimeDefaults.stringOrDefault(packageName, \"\")");
+        assertContainsAll(
+                defaults,
+                "static KeyboardErgonomicsOptions keyboardErgonomics(",
+                "static AppInputProfile appInputProfile(",
+                "static AppInputProfileOverrides appInputProfileOverrides(",
+                "static KeyboardSurface keyboardSurface(");
+        assertContainsNone(
+                report,
+                "settings == null ? KeyboardSettings.defaults() : settings",
+                "profile == null ? AppInputProfile.STANDARD : profile",
+                "context == null\n                ? KeyboardErgonomicsOptions.DEFAULT",
+                "ergonomicsOptions == null ? KeyboardErgonomicsOptions.DEFAULT : ergonomicsOptions",
+                "surface == null ? KeyboardSurface.NORMAL : surface",
+                "packageName == null ? \"\" : packageName");
         assertTrue(quickSettings.contains("R.string.copy_input_issue_report"));
         assertTrue(strings.contains("name=\"copy_input_issue_report\""));
-        assertTrue(strings.contains("이 입력이 이상해요"));
+        assertTrue(strings.contains(text(0xC774, 0x20, 0xC785, 0xB825, 0xC774,
+                0x20, 0xC774, 0xC0C1, 0xD574, 0xC694)));
     }
 
     @Test
@@ -479,9 +811,17 @@ public final class ProductionReadinessConfigTest {
         assertTrue(summary.contains("R.string.keyboard_accessibility_mode_qwerty"));
         assertTrue(summary.contains("R.string.keyboard_accessibility_mode_dingul"));
         assertTrue(summary.contains("R.string.keyboard_surface_password"));
-        assertFalse(summary.contains("\"한글"));
-        assertFalse(summary.contains("\"영문"));
-        assertFalse(summary.contains("\"비밀번호"));
+        assertTrue(summary.contains("RuntimeDefaults.keyboardSettings("));
+        assertTrue(summary.contains("RuntimeDefaults.keyboardSurface("));
+        assertFalse(summary.contains("settings == null ? KeyboardSettings.defaults() : settings"));
+        assertFalse(summary.contains("surface == null ? KeyboardSurface.NORMAL : surface"));
+        assertTrue(provider.contains("RuntimeDefaults.keyboardSettings("));
+        assertTrue(provider.contains("RuntimeDefaults.keyboardSurface("));
+        assertFalse(provider.contains("? KeyboardSettings.defaults()"));
+        assertFalse(provider.contains("? KeyboardSurface.NORMAL"));
+        assertFalse(summary.contains("\"?��?"));
+        assertFalse(summary.contains("\"?�문"));
+        assertFalse(summary.contains("\"비�?번호"));
         assertTrue(view.contains("KeyboardAccessibilitySummary.describe(\n                getContext(),"));
         assertTrue(provider.contains("KeyboardAccessibilitySummary.describe(\n                view.getContext(),"));
         assertTrue(strings.contains("name=\"keyboard_accessibility_name\""));
@@ -489,11 +829,28 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void gestureThresholdPolicyUsesSharedSettingsFallback() throws Exception {
+        String policy = javaSource("GestureThresholdPolicy");
+
+        assertTrue(policy.contains("RuntimeDefaults.keyboardSettings("));
+        assertFalse(policy.contains("settings == null ? KeyboardSettings.defaults() : settings"));
+    }
+
+    @Test
+    public void layoutCalculatorUsesSharedErgonomicsFallback() throws Exception {
+        String calculator = javaSource("KeyboardLayoutCalculator");
+
+        assertTrue(calculator.contains("RuntimeDefaults.keyboardErgonomics(ergonomicsOptions)"));
+        assertFalse(calculator.contains("ergonomicsOptions == null"));
+        assertFalse(calculator.contains("? KeyboardErgonomicsOptions.DEFAULT"));
+        assertFalse(calculator.contains("layout(rows, settings, KeyboardErgonomicsOptions.DEFAULT"));
+    }
+
+    @Test
     public void debugKeyBoundsOverlayRenderingStaysOutOfCanvasViewBody() throws Exception {
-        String view = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/HangulKeyboardView.java");
-        String renderer = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/KeyboardDebugOverlayRenderer.java");
+        String view = javaSource("HangulKeyboardView");
+        String renderer = javaSource("KeyboardDebugOverlayRenderer");
+        String score = javaSource("GestureCandidateScore");
 
         assertTrue(view.contains("KeyboardDebugOverlayRenderer"));
         assertTrue(view.contains("debugOverlayRenderer.draw("));
@@ -505,34 +862,147 @@ public final class ProductionReadinessConfigTest {
         assertTrue(renderer.contains("keySlot.visualBounds()"));
         assertTrue(renderer.contains("keySlot.gestureOriginX"));
         assertTrue(renderer.contains("keySlot.gestureOriginY"));
+        assertTrue(renderer.contains("RuntimeDefaults.stringOrDefault(lastKeyId, \"\")"));
+        assertFalse(renderer.contains("lastKeyId == null ? \"\" : lastKeyId"));
+        assertTrue(score.contains("RuntimeDefaults.stringOrDefault(keyId, \"\")"));
+        assertFalse(score.contains("keyId == null ? \"\" : keyId"));
+    }
+
+    @Test
+    public void keyboardViewRepeaterUsesMethodReferenceCallback() throws Exception {
+        String view = javaSource("HangulKeyboardView");
+
+        assertTrue(view.contains("new RepeatController(this, this::emitValue)"));
+        assertFalse(view.contains("implements RepeatController.Callback"));
+        assertFalse(view.contains("public void onRepeat(String value)"));
+        assertFalse(view.contains("new RepeatController.Callback()"));
+    }
+
+    @Test
+    public void repeatControllerUsesDirectRunnableImplementation() throws Exception {
+        String controller = javaSource("RepeatController");
+
+        assertTrue(controller.contains("final class RepeatController implements Runnable"));
+        assertTrue(controller.contains("private final Consumer<String> callback"));
+        assertTrue(controller.contains("RuntimeDefaults.stringConsumer(callback)"));
+        assertTrue(controller.contains("callback.accept(activeValue)"));
+        assertTrue(controller.contains("public void run()"));
+        assertTrue(controller.contains("host.postDelayed(this,"));
+        assertTrue(controller.contains("host.removeCallbacks(this)"));
+        assertFalse(controller.contains("interface Callback"));
+        assertFalse(controller.contains("onRepeat("));
+        assertFalse(controller.contains("new Runnable()"));
+        assertFalse(controller.contains("repeatRunnable"));
+        assertFalse(controller.contains("this.callback = callback;"));
+    }
+
+    @Test
+    public void keyboardViewUsesDirectDeferredWorkCallbacks() throws Exception {
+        String view = javaSource("HangulKeyboardView");
+
+        assertTrue(view.contains("state.longPressRunnable = () -> {"));
+        assertTrue(view.contains("post(this::logTypingProbePlan)"));
+        assertFalse(view.contains("new Runnable()"));
+    }
+
+    @Test
+    public void keyboardViewPreviewKeySelectionUsesStandardConsumer() throws Exception {
+        String view = javaSource("HangulKeyboardView");
+        String editor = javaSource("ThemeEditorActivity");
+
+        assertTrue(view.contains("import java.util.function.Consumer;"));
+        assertTrue(view.contains("private Consumer<GestureKey> previewKeySelectionListener"));
+        assertTrue(view.contains("void setOnPreviewKeySelectionListener(Consumer<GestureKey> listener)"));
+        assertTrue(view.contains("previewKeySelectionListener.accept(state.keySlot.key)"));
+        assertTrue(editor.contains("preview.setOnPreviewKeySelectionListener(key -> {"));
+        assertFalse(view.contains("interface OnPreviewKeySelectionListener"));
+        assertFalse(view.contains("onPreviewKeySelected("));
+    }
+
+    @Test
+    public void keyboardViewKeyGestureUsesStandardConsumer() throws Exception {
+        String view = javaSource("HangulKeyboardView");
+        String service = javaSource("S3KeyboardService");
+
+        assertTrue(view.contains("private Consumer<String> listener"));
+        assertTrue(view.contains("public void setOnKeyGestureListener(Consumer<String> listener)"));
+        assertTrue(view.contains("listener.accept(value)"));
+        assertTrue(service.contains("inputView.setOnKeyGestureListener(this::onKeyGesture)"));
+        assertTrue(service.contains("this::acceptEnglishSuggestion"));
+        assertFalse(service.contains("HangulKeyboardView.OnKeyGestureListener"));
+        assertFalse(service.contains("suggestion -> acceptEnglishSuggestion(suggestion)"));
+        assertFalse(view.contains("interface OnKeyGestureListener"));
+        assertFalse(view.contains("listener.onKeyGesture("));
+    }
+
+    @Test
+    public void keyboardViewAccessibilityProviderUsesDirectHostImplementation() throws Exception {
+        String view = javaSource("HangulKeyboardView");
+
+        assertTrue(view.contains("KeyboardVirtualKeyAccessibilityProvider.Host"));
+        assertTrue(view.contains("new KeyboardVirtualKeyAccessibilityProvider(this, this)"));
+        assertTrue(view.contains("public List<KeySlot> accessibilityKeySlots()"));
+        assertTrue(view.contains("public boolean performKeyAccessibilityClick("
+                + "int virtualViewId, GestureKey key)"));
+        assertFalse(view.contains("new KeyboardVirtualKeyAccessibilityProvider.Host()"));
+    }
+
+    @Test
+    public void keyboardViewDingulSlidePolicyUsesDirectImplementation() throws Exception {
+        String view = javaSource("HangulKeyboardView");
+
+        assertTrue(view.contains("DingulSlideIntentResolver.Policy"));
+        assertTrue(view.contains("DingulSlideIntentResolver.resolve("));
+        assertTrue(view.contains("public GestureAction actionFor(GestureKey key, float dx, float dy)"));
+        assertTrue(view.contains("public boolean isDingulTypingKey(GestureKey key)"));
+        assertFalse(view.contains("new DingulSlideIntentResolver.Policy()"));
+        assertFalse(view.contains("dingulSlideIntentPolicy"));
     }
 
     @Test
     public void debugOverlaySettingsPersistenceStaysBehindController() throws Exception {
-        String activity = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/DebugOverlaySettingsController.java");
+        String activity = javaSource("MainActivity");
+        String androidImeController = javaSource("AndroidImeSettingsController");
+        String controller = javaSource("DebugOverlaySettingsController");
 
-        assertTrue(activity.contains("DebugOverlaySettingsController"));
-        assertTrue(activity.contains("debugOverlaySettingsController.addTo("));
+        assertTrue(activity.contains("AndroidImeSettingsController"));
+        assertTrue(activity.contains("LinearLayout root = SettingsRowBuilder.vertical(this);"));
+        assertTrue(activity.contains(
+                "new AndroidImeSettingsController(this, this::isDebuggableBuild, this::syncControls)"));
+        assertTrue(androidImeController.contains("DebugOverlaySettingsController"));
+        assertTrue(androidImeController.contains("debugOverlaySettingsController.addTo("));
+        assertTrue(androidImeController.contains("private final BooleanSupplier debuggableBuild"));
+        assertTrue(androidImeController.contains("private final Runnable onChanged"));
+        assertTrue(androidImeController.contains("RuntimeDefaults.booleanSupplier("));
+        assertTrue(androidImeController.contains("RuntimeDefaults.runnable("));
+        assertFalse(activity.contains("AndroidImeSettingsController.Host"));
+        assertFalse(androidImeController.contains("interface Host"));
+        assertFalse(androidImeController.contains("this.onChanged = onChanged"));
+        assertFalse(androidImeController.contains("this.debuggableBuild = debuggableBuild"));
         assertFalse(activity.contains("debugKeyBoundsOverlayCheckBox"));
         assertFalse(activity.contains("debugShowResolverScoresCheckBox"));
+        assertFalse(activity.contains("new LinearLayout(this)"));
+        assertFalse(activity.contains("setOrientation(LinearLayout.VERTICAL)"));
         assertFalse(activity.contains("saveDebugShowResolverScores("));
         assertFalse(activity.contains("loadDebugShowResolverScores("));
         assertTrue(controller.contains("saveDebugOverlay("));
         assertTrue(controller.contains("saveDebugShowResolverScores("));
         assertTrue(controller.contains("loadDebugShowResolverScores("));
         assertTrue(controller.contains("setEnabled(overlayEnabled)"));
-        assertTrue(controller.contains("SettingsViewStyler.compoundButton("));
+        assertTrue(controller.contains("SettingsRowBuilder.checkBoxRow("));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertTrue(controller.contains("onChanged.run()"));
+        assertFalse(controller.contains("onChanged != null"));
+        assertFalse(controller.contains("private void notifyChanged()"));
+        assertFalse(controller.contains("notifyChanged();"));
+        assertFalse(controller.contains("private CheckBox addCheckBox("));
+        assertEquals(0, countOccurrences(controller, "UserInputListeners.checked("));
     }
 
     @Test
     public void inputAssistanceModePersistenceStaysOutOfMainActivityBody() throws Exception {
-        String activity = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/InputAssistanceSettingsController.java");
+        String activity = javaSource("MainActivity");
+        String controller = javaSource("InputAssistanceSettingsController");
 
         assertTrue(activity.contains("InputAssistanceSettingsController"));
         assertFalse(activity.contains("saveShowHangulConsonantSlideHints("));
@@ -541,17 +1011,47 @@ public final class ProductionReadinessConfigTest {
         assertTrue(controller.contains("saveShowHangulConsonantSlideHints("));
         assertTrue(controller.contains("saveShowHangulVowelSlideHints("));
         assertTrue(controller.contains("saveShowSpacebarSlideHints("));
+        assertFalse(activity.contains("implements InputAssistanceSettingsController.Host"));
+        assertFalse(controller.contains("interface Host"));
+        assertTrue(controller.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(controller.contains("private final Supplier<KeyboardErgonomicsOptions> ergonomicsOptions"));
+        assertTrue(controller.contains("private final BooleanSupplier debuggableBuild"));
+        assertTrue(controller.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(controller.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(controller.contains(
+                "private final BiConsumer<KeyboardSettings, KeyboardErgonomicsOptions>"));
+        assertTrue(controller.contains("private final Runnable controlsSyncer"));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardErgonomicsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.booleanSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsAndErgonomicsConsumer("));
+        assertTrue(controller.contains("InputAssistanceMode.displayOrder("));
+        assertTrue(controller.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(controller.contains("InputAssistanceMode.indexOf("));
+        assertFalse(controller.contains("SettingsDisplayLabels.labels(context, modes)"));
+        assertFalse(controller.contains("InputAssistanceMode.values()"));
+        assertFalse(controller.contains("modes[position]"));
+        assertFalse(controller.contains("static InputAssistanceMode[] availableModes("));
+        assertFalse(controller.contains("static int indexOf(InputAssistanceMode[] modes"));
+        assertFalse(controller.contains("this.debuggableBuild = debuggableBuild"));
+        assertFalse(controller.contains("this.settingsAndErgonomicsSaver = settingsAndErgonomicsSaver"));
+
+        String mode = javaSource("InputAssistanceMode");
+        assertTrue(mode.contains("static InputAssistanceMode[] displayOrder(boolean debuggableBuild)"));
+        assertTrue(mode.contains("static int indexOf(InputAssistanceMode[] modes, InputAssistanceMode mode)"));
     }
 
     @Test
     public void hapticSettingsPersistenceStaysBehindController() throws Exception {
-        String activity = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/HapticSettingsController.java");
+        String activity = javaSource("MainActivity");
+        String inputFeelController = javaSource("InputFeelSettingsController");
+        String controller = javaSource("HapticSettingsController");
 
-        assertTrue(activity.contains("HapticSettingsController"));
-        assertTrue(activity.contains("hapticSettingsController.addTo("));
+        assertTrue(activity.contains("InputFeelSettingsController"));
+        assertTrue(inputFeelController.contains("HapticSettingsController"));
+        assertTrue(inputFeelController.contains("hapticSettingsController.addTo("));
         assertFalse(activity.contains("hapticCheckBox"));
         assertFalse(activity.contains("differentiatedHapticCheckBox"));
         assertFalse(activity.contains("hapticDurationSeekBar"));
@@ -565,17 +1065,24 @@ public final class ProductionReadinessConfigTest {
         assertTrue(controller.contains("saveDifferentiatedHapticEnabled("));
         assertTrue(controller.contains("SettingsValueFormatter.hapticDuration("));
         assertTrue(controller.contains("setEnabled(safe.hapticFeedbackEnabled)"));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertFalse(controller.contains("settings == null ? null"));
+        assertFalse(controller.contains("settingsSaver != null"));
+        assertFalse(controller.contains("controlsSyncer != null"));
+        assertFalse(controller.contains("new LocalDataControlsController(context)"));
     }
 
     @Test
     public void repeatSettingsPersistenceStaysBehindController() throws Exception {
-        String activity = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/RepeatSettingsController.java");
+        String activity = javaSource("MainActivity");
+        String inputFeelController = javaSource("InputFeelSettingsController");
+        String controller = javaSource("RepeatSettingsController");
 
-        assertTrue(activity.contains("RepeatSettingsController"));
-        assertTrue(activity.contains("repeatSettingsController.addTo("));
+        assertTrue(activity.contains("InputFeelSettingsController"));
+        assertTrue(inputFeelController.contains("RepeatSettingsController"));
+        assertTrue(inputFeelController.contains("repeatSettingsController.addTo("));
         assertFalse(activity.contains("repeatStartDelaySeekBar"));
         assertFalse(activity.contains("repeatIntervalSeekBar"));
         assertFalse(activity.contains("repeatStartDelayValue"));
@@ -584,17 +1091,22 @@ public final class ProductionReadinessConfigTest {
         assertTrue(controller.contains("withRepeatTiming("));
         assertTrue(controller.contains("SettingsValueFormatter.repeatStartDelay("));
         assertTrue(controller.contains("SettingsValueFormatter.repeatInterval("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertFalse(controller.contains("settings == null ? null"));
+        assertFalse(controller.contains("settingsSaver != null"));
     }
 
     @Test
     public void gestureTouchSettingsPersistenceStaysBehindController() throws Exception {
-        String activity = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/GestureTouchSettingsController.java");
+        String activity = javaSource("MainActivity");
+        String inputFeelController = javaSource("InputFeelSettingsController");
+        String controller = javaSource("GestureTouchSettingsController");
+        String rowBuilder = javaSource("SettingsRowBuilder");
 
-        assertTrue(activity.contains("GestureTouchSettingsController"));
-        assertTrue(activity.contains("gestureTouchSettingsController.addTo("));
+        assertTrue(activity.contains("InputFeelSettingsController"));
+        assertTrue(inputFeelController.contains("GestureTouchSettingsController"));
+        assertTrue(inputFeelController.contains("gestureTouchSettingsController.addTo("));
         assertFalse(activity.contains("gestureThresholdSeekBar"));
         assertFalse(activity.contains("touchYOffsetSeekBar"));
         assertFalse(activity.contains("spacebarCursorDeadZoneSeekBar"));
@@ -610,59 +1122,121 @@ public final class ProductionReadinessConfigTest {
         assertTrue(controller.contains("SettingsValueFormatter.gestureThreshold("));
         assertTrue(controller.contains("SettingsValueFormatter.spacebarCursorDeadZone("));
         assertTrue(controller.contains("SettingsValueFormatter.touchYOffset("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertTrue(controller.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(controller.contains("DingulVowelGestureProfile.displayOrder()"));
+        assertTrue(controller.contains("DingulVowelGestureProfile.indexOf("));
+        assertFalse(controller.contains("DingulVowelGestureProfile.fromPosition"));
+        assertFalse(controller.contains("SettingsDisplayLabels.labels(context, VOWEL_PROFILE_ORDER)"));
+        assertFalse(controller.contains("DingulVowelGestureProfile.values()"));
+        assertFalse(controller.contains("loadDingulVowelGestureProfile(context).ordinal()"));
+        assertFalse(controller.contains("settings == null ? null"));
+        assertFalse(controller.contains("settingsSaver != null"));
+        assertFalse(controller.contains("controlsSyncer != null"));
+        assertTrue(rowBuilder.contains(
+                "static <T extends SettingsLabelOption> Spinner optionSpinner("));
+        assertTrue(rowBuilder.contains("SettingsDisplayLabels.labels(context, options)"));
+        assertTrue(rowBuilder.contains("safeConsumer.accept(options[position])"));
+
+        String vowelProfile = javaSource("DingulVowelGestureProfile");
+        assertTrue(vowelProfile.contains("private static final DingulVowelGestureProfile[] DISPLAY_ORDER"));
+        assertTrue(vowelProfile.contains("static DingulVowelGestureProfile[] displayOrder()"));
+        assertTrue(vowelProfile.contains("static int indexOf(DingulVowelGestureProfile selected)"));
+        assertFalse(vowelProfile.contains("fromPosition("));
+    }
+
+    @Test
+    public void inputConvenienceSettingsPersistenceStaysBehindController() throws Exception {
+        String activity = javaSource("MainActivity");
+        String inputFeelController = javaSource("InputFeelSettingsController");
+        String controller = javaSource("InputConvenienceSettingsController");
+
+        assertTrue(activity.contains("InputFeelSettingsController"));
+        assertTrue(inputFeelController.contains("InputConvenienceSettingsController"));
+        assertTrue(inputFeelController.contains("inputConvenienceSettingsController.addTo("));
+        assertFalse(activity.contains("touchBiasAutoCorrectionCheckBox"));
+        assertFalse(activity.contains("palmRejectionCheckBox"));
+        assertFalse(activity.contains("clipboardHistoryCheckBox"));
+        assertFalse(activity.contains("doubleSpacePeriodCheckBox"));
+        assertFalse(activity.contains("saveTouchBiasAutoCorrectionEnabled("));
+        assertFalse(activity.contains("savePalmRejectionEnabled("));
+        assertTrue(controller.contains("saveTouchBiasAutoCorrectionEnabled("));
+        assertTrue(controller.contains("savePalmRejectionEnabled("));
+        assertTrue(controller.contains("withEnglishDoubleSpacePeriod("));
+        assertTrue(controller.contains("localDataControls.get().setClipboardHistoryEnabled("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertTrue(controller.contains("RuntimeDefaults.localDataControlsSupplier("));
+        assertFalse(controller.contains("settings == null ? null"));
+        assertFalse(controller.contains("settingsSaver != null"));
+        assertFalse(controller.contains("controlsSyncer != null"));
+        assertFalse(controller.contains("new LocalDataControlsController(context)"));
     }
 
     @Test
     public void localDataDeletionStaysBehindSettingsController() throws Exception {
-        String activity = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/LocalDataControlsController.java");
+        String activity = javaSource("MainActivity");
+        String inputFeelController = javaSource("InputFeelSettingsController");
+        String settingsController = javaSource("LocalDataSettingsController");
+        String controlsController = javaSource("LocalDataControlsController");
 
-        assertTrue(activity.contains("LocalDataControlsController"));
+        assertTrue(activity.contains("InputFeelSettingsController"));
+        assertTrue(inputFeelController.contains("LocalDataSettingsController"));
+        assertTrue(inputFeelController.contains("new LocalDataControlsController("));
         assertFalse(activity.contains("new ClipboardStore("));
         assertFalse(activity.contains("TouchBiasStore.reset("));
         assertFalse(activity.contains("RemoteCompatibilityLog.clear("));
         assertFalse(activity.contains("saveClipboardHistoryEnabled("));
         assertFalse(activity.contains("loadClipboardHistoryEnabled("));
-        assertTrue(controller.contains("new ClipboardStore("));
-        assertTrue(controller.contains("TouchBiasStore.reset("));
-        assertTrue(controller.contains("RemoteCompatibilityLog.clear("));
-        assertTrue(controller.contains("saveClipboardHistoryEnabled("));
-        assertTrue(controller.contains("loadClipboardHistoryEnabled("));
-        assertTrue(controller.contains("void clearAllLocalData()"));
-        assertTrue(controller.contains("clearClipboardHistory();"));
-        assertTrue(controller.contains("resetTouchCorrectionAndInputLogs();"));
-        assertTrue(controller.contains("clearRemoteCompatibilityLog();"));
+        assertFalse(settingsController.contains("interface Host"));
+        assertTrue(settingsController.contains("Supplier<LocalDataControlsController> localDataControls"));
+        assertTrue(settingsController.contains("RuntimeDefaults.localDataControlsSupplier("));
+        assertTrue(settingsController.contains("localDataControls.get().clearAllLocalData()"));
+        assertTrue(settingsController.contains("localDataControls.get().resetTouchCorrectionAndInputLogs()"));
+        assertTrue(settingsController.contains("localDataControls.get().clearClipboardHistory()"));
+        assertFalse(settingsController.contains("private LocalDataControlsController localDataControls()"));
+        assertFalse(settingsController.contains("new LocalDataControlsController(context)"));
+        assertTrue(controlsController.contains("new ClipboardStore("));
+        assertTrue(controlsController.contains("TouchBiasStore.reset("));
+        assertTrue(controlsController.contains("RemoteCompatibilityLog.clear("));
+        assertTrue(controlsController.contains("saveClipboardHistoryEnabled("));
+        assertTrue(controlsController.contains("loadClipboardHistoryEnabled("));
+        assertTrue(controlsController.contains("void clearAllLocalData()"));
+        assertTrue(controlsController.contains("clearClipboardHistory();"));
+        assertTrue(controlsController.contains("resetTouchCorrectionAndInputLogs();"));
+        assertTrue(controlsController.contains("clearRemoteCompatibilityLog();"));
     }
 
     @Test
     public void localDataSummaryUsesStringResources() throws Exception {
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/LocalDataControlsController.java");
+        String controller = javaSource("LocalDataControlsController");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
 
-        assertFalse(controller.contains("\"로컬 데이터:"));
-        assertFalse(controller.contains("\"입력 로그 "));
-        assertFalse(controller.contains("\"원격 테스트 "));
+        assertFalse(controller.contains("\"로컬 ?�이??"));
+        assertFalse(controller.contains("\"?�력 로그 "));
+        assertFalse(controller.contains("\"?�격 ?�스??"));
         assertTrue(controller.contains("R.string.local_data_summary_format"));
         assertTrue(strings.contains("name=\"local_data_summary_format\""));
     }
 
     @Test
     public void mainSettingsLocalDataAndReservedPhraseCopyUseStringResources() throws Exception {
-        String activity = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
+        String activity = javaSource("MainActivity");
+        String localDataSettings = javaSource("LocalDataSettingsController");
+        String reservedPhraseSettings = javaSource("ReservedPhraseSettingsController");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
 
         assertFalse(activity.contains("\\uB85C\\uCEEC \\uC785\\uB825 \\uB85C\\uADF8"));
         assertFalse(activity.contains("\\uD130\\uCE58 \\uBCF4\\uC815/\\uC785\\uB825 \\uB85C\\uADF8"));
         assertFalse(activity.contains("\\uBE44\\uC6B0\\uBA74 \\uC785\\uB825\\uD558\\uC9C0"));
-        assertTrue(activity.contains("R.string.local_data_disclosure"));
-        assertTrue(activity.contains("R.string.clear_all_local_data"));
-        assertTrue(activity.contains("localDataControlsController.clearAllLocalData()"));
-        assertTrue(activity.contains("R.string.clear_touch_correction_and_input_logs"));
-        assertTrue(activity.contains("R.string.reserved_phrase_empty_hint"));
+        assertTrue(localDataSettings.contains("R.string.local_data_disclosure"));
+        assertTrue(localDataSettings.contains("R.string.clear_all_local_data"));
+        assertTrue(localDataSettings.contains("localDataControls.get().clearAllLocalData()"));
+        assertTrue(localDataSettings.contains("R.string.clear_touch_correction_and_input_logs"));
+        assertTrue(reservedPhraseSettings.contains("R.string.reserved_phrase_empty_hint"));
         assertTrue(strings.contains("name=\"local_data_disclosure\""));
         assertTrue(strings.contains("name=\"clear_all_local_data\""));
         assertTrue(strings.contains("name=\"reserved_phrase_empty_hint\""));
@@ -670,14 +1244,44 @@ public final class ProductionReadinessConfigTest {
 
     @Test
     public void mainSettingsDynamicValueFormattingStaysInDedicatedFormatter() throws Exception {
-        String activity = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/MainActivity.java");
-        String gestureTouchController = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/GestureTouchSettingsController.java");
-        String formatter = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/SettingsValueFormatter.java");
+        String activity = javaSource("MainActivity");
+        String layoutController = javaSource("LayoutSettingsController");
+        String gestureTouchController = javaSource("GestureTouchSettingsController");
+        String motionEffectController = javaSource("MotionEffectSettingsController");
+        String formatter = javaSource("SettingsValueFormatter");
 
-        assertTrue(activity.contains("SettingsValueFormatter.hangulHeight("));
+        assertTrue(activity.contains("LayoutSettingsController"));
+        assertTrue(activity.contains("initializeHiddenAppearanceControls()"));
+        assertTrue(activity.contains("appearanceSettingsController.initializeHiddenControls()"));
+        assertTrue(activity.contains("SettingsRowBuilder.label(this, R.string.app_name)"));
+        assertTrue(activity.contains("SettingsRowBuilder.matchWrap("));
+        assertTrue(activity.contains("SettingsRowBuilder.matchWrapWithTop("));
+        assertTrue(activity.contains("SettingsRowBuilder.dp("));
+        assertFalse(activity.contains("addVisualControls("));
+        assertFalse(activity.contains("unusedRoot"));
+        assertFalse(activity.contains("new TextView("));
+        assertFalse(activity.contains("new LinearLayout.LayoutParams("));
+        assertFalse(activity.contains("MotionEffectSettingsController.Host"));
+        assertTrue(activity.contains("new MotionEffectSettingsController(this, this::syncControls)"));
+        assertTrue(motionEffectController.contains("private final Runnable onChanged"));
+        assertTrue(motionEffectController.contains("RuntimeDefaults.runnable("));
+        assertTrue(motionEffectController.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(motionEffectController.contains("MotionEffectLevel.displayOrder()"));
+        assertTrue(motionEffectController.contains("MotionEffectLevel.indexOf("));
+        assertFalse(motionEffectController.contains("MotionEffectLevel.fromPosition"));
+        assertFalse(motionEffectController.contains("SettingsDisplayLabels.labels(activity, MOTION_EFFECT_ORDER)"));
+        assertFalse(motionEffectController.contains("MotionEffectLevel.values()"));
+        assertFalse(motionEffectController.contains("loadMotionEffectLevel(activity).ordinal()"));
+        assertFalse(motionEffectController.contains("onChanged != null"));
+        assertFalse(motionEffectController.contains("this.onChanged = onChanged"));
+        assertFalse(motionEffectController.contains("interface Host"));
+
+        String motionEffect = javaSource("MotionEffectLevel");
+        assertTrue(motionEffect.contains("private static final MotionEffectLevel[] DISPLAY_ORDER"));
+        assertTrue(motionEffect.contains("static MotionEffectLevel[] displayOrder()"));
+        assertTrue(motionEffect.contains("static int indexOf(MotionEffectLevel selected)"));
+        assertFalse(motionEffect.contains("fromPosition("));
+        assertTrue(layoutController.contains("SettingsValueFormatter.hangulHeight("));
         assertTrue(gestureTouchController.contains("SettingsValueFormatter.gestureThreshold("));
         assertFalse(activity.contains("settings_hangul_height_format"));
         assertFalse(activity.contains("settings_gesture_threshold_format"));
@@ -696,12 +1300,12 @@ public final class ProductionReadinessConfigTest {
                 "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
 
-        assertFalse(resolver.contains("\"전송\""));
-        assertFalse(resolver.contains("\"검색\""));
-        assertFalse(resolver.contains("\"완료\""));
-        assertFalse(resolver.contains("\"다음\""));
-        assertFalse(resolver.contains("\"이동\""));
-        assertFalse(resolver.contains("\"줄바꿈\""));
+        assertFalse(resolver.contains(quotedText(0xC804, 0xC1A1)));
+        assertFalse(resolver.contains(quotedText(0xAC80, 0xC0C9)));
+        assertFalse(resolver.contains(quotedText(0xC644, 0xB8CC)));
+        assertFalse(resolver.contains(quotedText(0xB2E4, 0xC74C)));
+        assertFalse(resolver.contains(quotedText(0xC774, 0xB3D9)));
+        assertFalse(resolver.contains(quotedText(0xC904, 0xBC14, 0xAFC8)));
         assertTrue(resolver.contains("R.string.ime_action_send"));
         assertTrue(resolver.contains("R.string.ime_action_search"));
         assertTrue(resolver.contains("R.string.ime_action_done"));
@@ -735,11 +1339,11 @@ public final class ProductionReadinessConfigTest {
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
 
         assertFalse(commands.contains("labelFor("));
-        assertFalse(commands.contains("\"삭제\""));
-        assertFalse(commands.contains("\"스페이스\""));
-        assertFalse(commands.contains("\"전송\""));
-        assertFalse(commands.contains("\"한/영\""));
-        assertFalse(commands.contains("\"빠른 설정\""));
+        assertFalse(commands.contains(quotedText(0xC0AD, 0xC81C)));
+        assertFalse(commands.contains(quotedText(0xC2A4, 0xD398, 0xC774, 0xC2A4)));
+        assertFalse(commands.contains(quotedText(0xC804, 0xC1A1)));
+        assertFalse(commands.contains(quotedText(0xD55C, 0xC601)));
+        assertFalse(commands.contains(quotedText(0xBE60, 0xB978, 0x20, 0xC124, 0xC815)));
         assertTrue(labels.contains("labelResIdFor("));
         assertTrue(labels.contains("R.string.command_delete"));
         assertTrue(labels.contains("R.string.command_space"));
@@ -772,10 +1376,18 @@ public final class ProductionReadinessConfigTest {
 
         assertTrue(settingsSectionCard.contains("R.string.expandable_section_title_expanded"));
         assertTrue(settingsSectionCard.contains("R.string.expandable_section_title_collapsed"));
-        assertTrue(themeEditor.contains("R.string.expandable_section_title_expanded"));
-        assertTrue(themeEditor.contains("R.string.expandable_section_title_collapsed"));
-        assertFalse(settingsSectionCard.contains("\"▼ "));
-        assertFalse(settingsSectionCard.contains("\"▶ "));
+        assertTrue(settingsSectionCard.contains("SettingsRowBuilder.dp(context,"));
+        assertTrue(settingsSectionCard.contains("SettingsRowBuilder.vertical(context)"));
+        assertTrue(settingsSectionCard.contains("SettingsRowBuilder.matchWrap()"));
+        assertTrue(settingsSectionCard.contains("SettingsRowBuilder.matchWrapWithTop("));
+        assertFalse(settingsSectionCard.contains("setOrientation(LinearLayout.VERTICAL)"));
+        assertFalse(settingsSectionCard.contains("new LinearLayout.LayoutParams("));
+        assertFalse(settingsSectionCard.contains("private static int dp("));
+        assertTrue(themeEditor.contains("SettingsSectionCard.create(this, text, expandedByDefault)"));
+        assertFalse(themeEditor.contains("private void setExpandableTitle("));
+        assertFalse(themeEditor.contains("content.setVisibility(expandedByDefault"));
+        assertFalse(settingsSectionCard.contains("\"??"));
+        assertFalse(settingsSectionCard.contains("\"??"));
         assertFalse(themeEditor.contains("\"- \""));
         assertFalse(themeEditor.contains("\"+ \""));
         assertTrue(strings.contains("name=\"expandable_section_title_expanded\""));
@@ -788,48 +1400,353 @@ public final class ProductionReadinessConfigTest {
                 "app/src/main/java/com/superl3/s3keyboard/RemoteCompatibilityLog.java");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
 
-        assertFalse(log.contains("\"아직 원격 테스트 이력이 없습니다."));
+        assertFalse(log.contains("\"?�직 ?�격 ?�스???�력???�습?�다."));
         assertTrue(log.contains("R.string.remote_test_history_empty"));
         assertTrue(strings.contains("name=\"remote_test_history_empty\""));
     }
 
     @Test
     public void quickThemeSelectionStaysOutOfImeServiceBody() throws Exception {
-        String service = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/QuickThemePanelController.java");
+        String service = javaSource("S3KeyboardService");
+        String controller = javaSource("QuickThemePanelController");
 
         assertTrue(service.contains("QuickThemePanelController"));
         assertFalse(service.contains("ThemeOption.buildOptions("));
         assertFalse(service.contains("option.applyTo("));
+        assertFalse(service.contains("QuickThemePanelController.Host"));
+        assertTrue(service.contains("() -> settings.keyboardMode"));
+        assertTrue(service.contains("this::enterActionLabel"));
+        assertTrue(service.contains("() -> editorPolicy.forceNumberRow"));
+        assertTrue(service.contains("this::applyRuntimeSettings"));
+        assertTrue(service.contains("this::dismissQuickSettings"));
+        assertFalse(service.contains("public KeyboardMode currentKeyboardMode()"));
+        assertFalse(service.contains("public String enterKeyLabel()"));
+        assertFalse(service.contains("public boolean forceNumberRow()"));
+        assertFalse(service.contains("private KeyboardMode currentKeyboardMode()"));
+        assertFalse(service.contains("private String enterKeyLabel()"));
+        assertFalse(service.contains("private boolean forceNumberRow()"));
+        assertFalse(service.contains("public void applyRuntimeSettings("));
         assertTrue(controller.contains("ThemeOption.buildOptions("));
         assertTrue(controller.contains("option.applyTo("));
+        assertFalse(controller.contains("interface Host"));
+        assertTrue(controller.contains("private final Supplier<KeyboardMode> currentKeyboardMode"));
+        assertTrue(controller.contains("private final Supplier<String> enterKeyLabel"));
+        assertTrue(controller.contains("private final BooleanSupplier forceNumberRow"));
+        assertTrue(controller.contains("private final Consumer<KeyboardSettings> runtimeSettingsApplier"));
+        assertTrue(controller.contains("private final Runnable dismissQuickSettings"));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardModeSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.nullStringSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.booleanSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertTrue(controller.contains("RuntimeDefaults.withRuntimeImeState("));
+        assertTrue(javaSource("RuntimeDefaults").contains("static KeyboardSettings withRuntimeImeState("));
+        assertTrue(controller.contains("ThemeOption.at(options, position)"));
+        assertEquals("Quick theme fallbacks should come from RuntimeDefaults.",
+                0,
+                countOccurrences(controller, "() -> { }"));
+        assertEquals("Quick theme settings fallback should come from RuntimeDefaults.",
+                0,
+                countOccurrences(controller, "settings -> { }"));
+        assertFalse(controller.contains("return mode == null ? fallback.keyboardMode : mode"));
+        assertFalse(controller.contains("return label == null ? fallback.enterKeyLabel : label"));
+        assertFalse(controller.contains(".withRuntimeNumberRowForced(forceNumberRow.getAsBoolean())"));
+        assertContainsNone(
+                service + "\n" + controller,
+                "private KeyboardMode currentKeyboardMode(",
+                "private String enterKeyLabel(",
+                "private boolean forceNumberRow(");
+        assertTrue(controller.contains("UserInputListeners.itemSelectedAfterInitialSelection("));
+        assertTrue(controller.contains("QuickPanelUi.sectionLabel("));
+        assertTrue(controller.contains("QuickPanelUi.addWithTop("));
+        assertTrue(controller.contains("SettingsRowBuilder.spinner(context, options)"));
+        assertFalse(controller.contains("SettingsViewStyler.spinner(spinner, context)"));
+        assertFalse(controller.contains("options[position]"));
+        assertFalse(controller.contains("new AdapterView.OnItemSelectedListener"));
+        assertFalse(controller.contains("new Spinner("));
+        assertFalse(controller.contains("new GradientDrawable("));
+    }
+
+    @Test
+    public void themeApplyAndPreviewUseSharedSettingsFallback() throws Exception {
+        String themeOption = javaSource("ThemeOption");
+        String userThemeStore = javaSource("UserThemeStore");
+        String preview = javaSource("ThemePreviewSettings");
+        String json = javaSource("KeyboardThemeJson");
+
+        assertContainsAll(
+                themeOption,
+                "RuntimeDefaults.keyboardSettings(",
+                "RuntimeDefaults.stringOrDefault(sourcePath, \"\")",
+                "RuntimeDefaults.stringOrDefault(userThemeId, \"\")",
+                "static ThemeOption at(",
+                "base.withAppearanceFrom(appearance)",
+                "base.withFullAppearanceFrom(KeyboardSettings.defaults())");
+        assertContainsAll(
+                userThemeStore,
+                "RuntimeDefaults.stringOrDefault(id, \"\")",
+                "RuntimeDefaults.stringOrDefault(json, \"\")",
+                "RuntimeDefaults.stringOrDefault(sourcePath, \"\")");
+        assertContainsAll(
+                preview,
+                "RuntimeDefaults.keyboardSettings(",
+                "base.withFullAppearanceFrom(appearance)");
+        assertContainsAll(
+                json,
+                "RuntimeDefaults.keyboardSettings(settings)",
+                "RuntimeDefaults.keyboardSettings(baseSettings)",
+                "RuntimeDefaults.keyboardSettings(settings);",
+                "fallback == null ? KeyboardVisualEffects.DEFAULT : fallback",
+                "object.optBoolean(\"blurEnabled\", safeFallback.blurEnabled)");
+        assertContainsNone(
+                themeOption + "\n" + userThemeStore + "\n" + preview + "\n" + json,
+                "settings == null ? KeyboardSettings.defaults() : settings",
+                "sourcePath == null ? \"\" : sourcePath",
+                "userThemeId == null ? \"\" : userThemeId",
+                "id == null ? \"\" : id",
+                "json == null ? \"\" : json");
     }
 
     @Test
     public void quickSettingsPanelStaysOutOfImeServiceBody() throws Exception {
-        String service = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/QuickSettingsPanelController.java");
+        String service = javaSource("S3KeyboardService");
+        String normalizedService = service.replace("\r\n", "\n");
+        String controller = javaSource("QuickSettingsPanelController");
+        String remote = javaSource("RemoteCompatibilityPanelController");
+        String quickPanelUi = javaSource("QuickPanelUi");
 
         assertTrue(service.contains("QuickSettingsPanelController"));
+        assertTrue(service.contains("initializePanelControllers()"));
         assertTrue(service.contains("quickSettingsPanelController.createPanel()"));
+        assertFalse(service.contains("QuickSettingsPanelController.Host"));
+        assertTrue(service.contains("this::remoteModeToggleLabel"));
+        assertTrue(service.contains("this::toggleRemoteMode"));
+        assertTrue(service.contains("this::numberRowToggleLabel"));
+        assertTrue(service.contains("this::activeNumberRowVisible"));
+        assertTrue(service.contains("this::toggleActiveNumberRow"));
+        assertTrue(service.contains("this::setHandedness"));
+        assertTrue(service.contains("this::importThemeFromClipboard"));
+        assertTrue(service.contains("this::copyInputIssueReport"));
+        assertTrue(service.contains("this::dismissQuickSettings"));
+        assertFalse(service.contains("public void importThemeFromClipboard()"));
+        assertFalse(service.contains("public void copyInputIssueReport()"));
+        assertFalse(service.contains("public void setHandedness("));
+        assertFalse(service.contains("public void dismissQuickSettings()"));
+        assertFalse(service.contains("public boolean activeNumberRowVisible()"));
+        assertFalse(service.contains("public String numberRowToggleLabel()"));
+        assertFalse(service.contains("public String remoteModeToggleLabel()"));
+        assertFalse(service.contains("public void toggleRemoteMode()"));
+        assertFalse(service.contains("public void toggleActiveNumberRow()"));
+        assertTrue(service.contains("SettingsRowBuilder.dp(this,"));
+        assertTrue(service.contains("SettingsRowBuilder.matchWrap()"));
+        assertTrue(service.contains("SettingsRowBuilder.frameMatchWrap()"));
+        assertTrue(service.contains("LinearLayout mainContainer = SettingsRowBuilder.vertical(this);"));
+        assertTrue(service.contains("floatingModeController.setOnPositionChangedListener(this::applyFloatingMode)"));
+        assertTrue(service.contains(
+                "floatingModeController.setOnFloatingModeChangedListener(this::onFloatingModeChanged)"));
+        assertFalse(service.contains("FloatingModeController.OnPositionChangedListener"));
+        assertFalse(service.contains("public void onPositionChanged("));
+        assertFalse(service.contains("new FloatingModeController.OnPositionChangedListener()"));
+        assertFalse(normalizedService.contains("new LinearLayout.LayoutParams(\n"
+                + "                LinearLayout.LayoutParams.MATCH_PARENT,\n"
+                + "                LinearLayout.LayoutParams.WRAP_CONTENT)"));
+        assertFalse(normalizedService.contains("new FrameLayout.LayoutParams(\n"
+                + "                FrameLayout.LayoutParams.MATCH_PARENT,\n"
+                + "                FrameLayout.LayoutParams.WRAP_CONTENT)"));
+        assertFalse(service.contains("new LinearLayout(this)"));
+        assertFalse(service.contains("setOrientation(LinearLayout.VERTICAL)"));
+        assertFalse(service.contains("private int dp("));
         assertFalse(service.contains("handednessButton("));
         assertFalse(service.contains("styleQuickButton("));
+        assertTrue(controller.contains("QuickPanelUi.titleLabel("));
+        assertTrue(controller.contains("QuickPanelUi.addWithTop("));
+        assertTrue(controller.contains("QuickPanelUi.quickButton("));
+        assertTrue(controller.contains("SettingsRowBuilder.vertical(context)"));
+        assertTrue(controller.contains("LinearLayout handRow = QuickPanelUi.row(context);"));
+        assertTrue(controller.contains("QuickPanelUi.weightedParams("));
+        assertTrue(controller.contains(
+                "KeyboardSettings currentSettings = RuntimeDefaults.keyboardSettingsFrom(settings)"));
+        assertFalse(controller.contains("interface Host"));
+        assertFalse(controller.contains("private KeyboardSettings settings()"));
+        assertTrue(controller.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(controller.contains("private final Supplier<String> remoteModeToggleLabel"));
+        assertTrue(controller.contains("private final Runnable remoteModeToggler"));
+        assertTrue(controller.contains("private final Supplier<String> numberRowToggleLabel"));
+        assertTrue(controller.contains("private final BooleanSupplier activeNumberRowVisible"));
+        assertTrue(controller.contains("private final Runnable activeNumberRowToggler"));
+        assertTrue(controller.contains("private final Consumer<HandednessMode> handednessApplier"));
+        assertTrue(controller.contains("private final Runnable themeClipboardImporter"));
+        assertTrue(controller.contains("private final Runnable inputIssueReportCopier"));
+        assertTrue(controller.contains("private final Runnable dismissQuickSettings"));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.emptyStringSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.booleanSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertTrue(controller.contains("RuntimeDefaults.handednessConsumer("));
+        assertEquals("Quick settings fallbacks should come from RuntimeDefaults.",
+                0,
+                countOccurrences(controller, "() -> { }"));
+        assertEquals("Quick settings handedness fallback should come from RuntimeDefaults.",
+                0,
+                countOccurrences(controller, "mode -> { }"));
+        assertFalse(controller.contains("styleQuickButton("));
+        assertFalse(controller.contains("private View quickButton("));
+        assertFalse(controller.contains("button.setAllCaps(false)"));
+        assertFalse(controller.contains("new TextView("));
+        assertFalse(controller.contains("new LinearLayout(context)"));
+        assertFalse(controller.contains("setOrientation(LinearLayout."));
+        assertFalse(controller.contains("private LinearLayout.LayoutParams topWrap("));
+        assertFalse(controller.contains("private LinearLayout.LayoutParams weightedParams("));
+        assertFalse(controller.contains("QuickPanelUi.add(panel,"));
         assertFalse(service.contains("quickButton("));
         assertTrue(controller.contains("remoteCompatibilityPanelController.addTo("));
         assertTrue(controller.contains("quickThemePanelController.addTo("));
         assertTrue(controller.contains("handednessButton("));
+        assertTrue(remote.contains("QuickPanelUi.addCompactButton("));
+        assertTrue(remote.contains("QuickPanelUi.addWithTop("));
+        assertTrue(remote.contains("QuickPanelUi.sectionLabel("));
+        assertTrue(remote.contains("QuickPanelUi.row("));
+        assertTrue(remote.contains("RuntimeDefaults.emptyStringSupplier("));
+        assertTrue(remote.contains("RuntimeDefaults.stringOrDefault(testCase.label, \"\")"));
+        assertTrue(remote.contains("AppPackageCatalog.normalizePackageName(currentPackageName.get())"));
+        assertTrue(remote.contains("SKIPPED_KEY_SENDER"));
+        assertEquals("Remote package fallback should come from RuntimeDefaults.",
+                0,
+                countOccurrences(remote, "() -> \"\""));
+        assertFalse(remote.contains("testCase.label == null ? \"\" : testCase.label"));
+        assertFalse(remote.contains("packageName == null ? \"\" : packageName"));
+        assertEquals("Remote skipped sender fallback should use one named callback.",
+                1,
+                countOccurrences(remote, "(keyCode, metaState) -> SEND_SKIPPED"));
+        assertTrue(remote.contains("private void addCaseRow("));
+        assertTrue(remote.contains("private void addFunctionCaseRow("));
+        assertTrue(remote.contains("private TextView createHistoryView()"));
+        assertTrue(remote.contains("SettingsRowBuilder.secondaryLabel(context, \"\")"));
+        assertFalse(remote.contains("addCaseRange("));
+        assertFalse(remote.contains("new TextView("));
+        assertFalse(remote.contains("private void addActionButton("));
+        assertFalse(remote.contains("private View button("));
+        assertFalse(remote.contains("private LinearLayout.LayoutParams topWrap("));
+        assertFalse(remote.contains("private LinearLayout.LayoutParams weightedParams("));
+        assertFalse(remote.contains("QuickPanelUi.compactButton("));
+        assertFalse(remote.contains("QuickPanelUi.weightedParams("));
+        assertTrue(quickPanelUi.contains("static TextView titleLabel("));
+        assertTrue(quickPanelUi.contains("static Button addCompactButton("));
+        assertTrue(quickPanelUi.contains("static <T extends View> T addWithTop("));
+        assertTrue(quickPanelUi.contains("return SettingsRowBuilder.horizontal(context);"));
+        assertFalse(quickPanelUi.contains("static <T extends View> T add("));
+        assertFalse(quickPanelUi.contains("static LinearLayout.LayoutParams matchWrapWithTop("));
+        assertFalse(quickPanelUi.contains("new LinearLayout(context)"));
+        assertFalse(quickPanelUi.contains("setOrientation(LinearLayout."));
+        assertTrue(quickPanelUi.contains("SettingsRowBuilder.button(context, text, selected, listener)"));
+        assertTrue(quickPanelUi.contains("SettingsRowBuilder.button(context, text, false, listener)"));
+        assertTrue(quickPanelUi.contains("button.setTextSize(11)"));
+        assertFalse(quickPanelUi.contains("button.setOnClickListener(listener)"));
+        assertFalse(quickPanelUi.contains("new Button("));
+    }
+
+    @Test
+    public void floatingModeCallbacksUseStandardFunctionalTypes() throws Exception {
+        String controller = javaSource("FloatingModeController");
+        String defaults = javaSource("RuntimeDefaults");
+
+        assertTrue(controller.contains("Runnable onPositionChanged"));
+        assertTrue(controller.contains("Consumer<Boolean> onFloatingModeChanged"));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertTrue(controller.contains("RuntimeDefaults.booleanConsumer("));
+        assertTrue(controller.contains("void setOnPositionChangedListener(Runnable listener)"));
+        assertTrue(controller.contains("void setOnFloatingModeChangedListener(Consumer<Boolean> listener)"));
+        assertEquals("Floating-mode fallbacks should come from RuntimeDefaults.",
+                0,
+                countOccurrences(controller, "() -> { }"));
+        assertEquals("Floating-mode boolean fallback should come from RuntimeDefaults.",
+                0,
+                countOccurrences(controller, "enabled -> { }"));
+        assertTrue(defaults.contains("static final Runnable NO_OP_RUNNABLE"));
+        assertTrue(defaults.contains("static final Consumer<Boolean> NO_OP_BOOLEAN_CONSUMER"));
+        assertTrue(defaults.contains("static KeyboardSettings keyboardSettings("));
+        assertTrue(defaults.contains("static EditorInputPolicy editorInputPolicy("));
+        assertFalse(controller.contains("interface OnPositionChangedListener"));
+        assertFalse(controller.contains("onPositionChanged(int offsetX, int offsetY)"));
+        assertFalse(controller.contains("private OnPositionChangedListener listener"));
+    }
+
+    @Test
+    public void runtimeDefaultsOwnsRuntimeFallbackNaming() throws Exception {
+        Path root = findWorkspaceRoot();
+        List<Path> files = new ArrayList<>();
+        collectTextFiles(root.resolve("app/src/main/java/com/superl3/s3keyboard"), files);
+        String oldName = "Callback" + "Defaults";
+
+        for (Path file : files) {
+            String source = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+            assertFalse("Runtime fallback helpers should use RuntimeDefaults: " + file,
+                    source.contains(oldName));
+        }
+        assertTrue(javaSource("RuntimeDefaults").contains("final class RuntimeDefaults"));
+    }
+
+    @Test
+    public void runtimeFallbacksUseTypedDefaultHelpersInsteadOfInlineTernaries() throws Exception {
+        Path root = findWorkspaceRoot();
+        List<Path> files = new ArrayList<>();
+        collectTextFiles(root.resolve("app/src/main/java/com/superl3/s3keyboard"), files);
+        String defaults = javaSource("RuntimeDefaults");
+        String typingJournal = javaSource("TypingEventJournal");
+
+        assertContainsAll(
+                defaults,
+                "static Runnable runnable(",
+                "static BooleanSupplier booleanSupplier(",
+                "static Supplier<String> emptyStringSupplier(",
+                "static Supplier<String> nullStringSupplier(",
+                "static Supplier<KeyboardMode> keyboardModeSupplier(",
+                "static Supplier<KeyboardSettings> keyboardSettingsSupplier(",
+                "static Supplier<EditorInputPolicy> editorInputPolicySupplier(",
+                "static Supplier<AppInputProfile> appInputProfileSupplier(",
+                "static Supplier<LocalDataControlsController> localDataControlsSupplier(",
+                "static BooleanSupplier trueBooleanSupplier(",
+                "static <T> Consumer<T> consumer(",
+                "static Consumer<String> stringConsumer(",
+                "static Consumer<Boolean> booleanConsumer(",
+                "static IntConsumer intConsumer(",
+                "static Consumer<HandednessMode> handednessConsumer(",
+                "static Consumer<KeyboardSettings> keyboardSettingsConsumer(",
+                "static BiConsumer<KeyboardSettings, KeyboardErgonomicsOptions> "
+                        + "keyboardSettingsAndErgonomicsConsumer(");
+        assertContainsAll(
+                defaults,
+                "static LocalDataControlsController localDataControls(",
+                "static KeyboardSettings keyboardSettingsFrom(",
+                "static KeyboardErgonomicsOptions keyboardErgonomicsFrom(",
+                "static AppInputProfileOverrides appInputProfileOverrides(",
+                "static EnglishQwertyCorrectionEngine englishQwertyCorrectionEngine(",
+                "static EditorInputPolicy editorInputPolicyFrom(",
+                "static RemoteImeShortcut remoteImeShortcut(",
+                "static KeyboardMode keyboardMode(",
+                "static String stringOrDefault(",
+                "static String stringOrEmpty(CharSequence value)",
+                "static String trimmedStringOrEmpty(CharSequence value)",
+                "static String trimmedStringOrEmptyFrom(");
+        assertTrue(typingJournal.contains("RuntimeDefaults.stringOrDefault("));
+        assertFalse(typingJournal.contains("private static String safe(String value)"));
+        assertFalse(typingJournal.contains("value == null ? \"\" : value"));
+        for (Path file : files) {
+            if ("RuntimeDefaults.java".equals(file.getFileName().toString())) {
+                continue;
+            }
+            String source = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+            assertFalse("Runtime fallback ternary should use typed RuntimeDefaults helpers: " + file,
+                    source.contains("== null ? RuntimeDefaults."));
+            assertFalse("Runtime fallback ternary should not directly branch to RuntimeDefaults: " + file,
+                    source.contains("? RuntimeDefaults."));
+        }
     }
 
     @Test
     public void clipboardThemeImportStaysOutOfImeServiceBody() throws Exception {
-        String service = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/ThemeClipboardImportController.java");
+        String service = javaSource("S3KeyboardService");
+        String controller = javaSource("ThemeClipboardImportController");
 
         assertTrue(service.contains("ThemeClipboardImportController"));
         assertFalse(service.contains("KeyboardThemeJson.importTheme("));
@@ -838,49 +1755,132 @@ public final class ProductionReadinessConfigTest {
         assertTrue(controller.contains("KeyboardThemeJson.importTheme("));
         assertTrue(controller.contains("KeyboardPreferences.saveSelectedThemeId("));
         assertTrue(controller.contains("getPrimaryClip()"));
+        assertTrue(controller.contains("java.util.function.Supplier"));
+        assertTrue(controller.contains("java.util.function.BooleanSupplier"));
+        assertTrue(controller.contains("java.util.function.Consumer"));
+        assertTrue(controller.contains("java.util.function.IntConsumer"));
+        assertTrue(controller.contains("private final Supplier<KeyboardSettings> currentSettings"));
+        assertTrue(controller.contains("private final Supplier<String> enterKeyLabel"));
+        assertTrue(controller.contains("private final BooleanSupplier forceNumberRow"));
+        assertTrue(controller.contains("private final Consumer<KeyboardSettings> runtimeSettingsApplier"));
+        assertTrue(controller.contains("private final Runnable dismissQuickSettings"));
+        assertTrue(controller.contains("private final Supplier<String> clipboardTextReader"));
+        assertTrue(controller.contains("private final Consumer<KeyboardSettings> settingsStore"));
+        assertTrue(controller.contains("private final IntConsumer notifier"));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.nullStringSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.booleanSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(controller.contains("RuntimeDefaults.runnable("));
+        assertTrue(controller.contains("RuntimeDefaults.emptyStringSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.intConsumer("));
+        assertTrue(controller.contains("RuntimeDefaults.withRuntimeImeState("));
+        assertTrue(controller.contains("RuntimeDefaults.trimmedStringOrEmpty("));
+        assertTrue(controller.contains("RuntimeDefaults.trimmedStringOrEmptyFrom("));
+        assertFalse(service.contains("ThemeClipboardImportController.Host"));
+        assertFalse(controller.contains("interface Host"));
+        assertFalse(controller.contains("interface ClipboardTextReader"));
+        assertFalse(controller.contains("interface SettingsStore"));
+        assertFalse(controller.contains("interface Notifier"));
+        assertFalse(controller.contains("RuntimeDefaults.trimmedStringOrEmpty(clipboardTextReader.get())"));
+        assertFalse(controller.contains(".withRuntimeNumberRowForced(forceNumberRow.getAsBoolean())"));
+        assertFalse(controller.contains("text == null ? \"\" : text.trim()"));
+        assertFalse(controller.contains("text == null ? \"\" : text.toString().trim()"));
     }
 
     @Test
     public void clipboardHistoryPanelStaysOutOfImeServiceBody() throws Exception {
-        String service = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/ClipboardPanelController.java");
+        String service = javaSource("S3KeyboardService");
+        String controller = javaSource("ClipboardPanelController");
 
         assertTrue(service.contains("ClipboardPanelController"));
+        assertFalse(service.contains("ClipboardPanelController.Host"));
+        assertTrue(service.contains("() -> settings"));
+        assertTrue(service.contains("() -> editorPolicy"));
+        assertTrue(service.contains("this::commitClipboardText"));
+        assertFalse(service.contains("public KeyboardSettings settings()"));
+        assertFalse(service.contains("public EditorInputPolicy editorPolicy()"));
+        assertFalse(service.contains("private KeyboardSettings settings()"));
+        assertFalse(service.contains("private EditorInputPolicy editorPolicy()"));
+        assertFalse(service.contains("public void commitClipboardText("));
         assertFalse(service.contains("capturePrimaryClipboard("));
         assertFalse(service.contains("addPrimaryClipChangedListener("));
         assertFalse(service.contains("new ClipboardView("));
         assertFalse(service.contains("new ClipboardStore("));
+        assertFalse(controller.contains("interface Host"));
+        assertTrue(controller.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(controller.contains("private final Supplier<EditorInputPolicy> editorPolicy"));
+        assertTrue(controller.contains("private final Consumer<String> clipboardTextCommitter"));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.editorInputPolicySupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.stringConsumer("));
+        assertTrue(controller.contains("RuntimeDefaults.keyboardSettingsFrom("));
+        assertTrue(controller.contains("RuntimeDefaults.editorInputPolicyFrom("));
+        assertTrue(controller.contains("clipboardTextCommitter);"));
+        assertFalse(controller.contains("RuntimeDefaults.editorInputPolicy(editorPolicy.get())"));
+        assertFalse(controller.contains("settings == null ? null"));
+        assertFalse(controller.contains("editorPolicy == null ? null"));
+        assertFalse(controller.contains("return current == null ? KeyboardSettings.defaults() : current"));
+        assertFalse(controller.contains("return policy == null ? EditorInputPolicy.DEFAULT : policy"));
+        assertFalse(controller.contains("clipboardTextCommitter != null"));
         assertTrue(controller.contains("capturePrimaryClipboard("));
         assertTrue(controller.contains("addPrimaryClipChangedListener("));
         assertTrue(controller.contains("new ClipboardView("));
         assertTrue(controller.contains("new ClipboardStore("));
+        assertTrue(controller.contains("createDragHandle()"));
+        assertTrue(controller.contains("createClipboardButton()"));
+        assertTrue(controller.contains("createRemoteIndicator()"));
+        assertFalse(controller.contains("TypedValue.applyDimension("));
     }
 
     @Test
     public void remoteInputExecutionStaysOutOfImeServiceBody() throws Exception {
-        String service = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
-        String controller = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/RemoteInputController.java");
+        String service = javaSource("S3KeyboardService");
+        String controller = javaSource("RemoteInputController");
 
         assertTrue(service.contains("RemoteInputController"));
+        assertFalse(service.contains("implements RemoteInputController.Host"));
+        assertTrue(service.contains("() -> settings.remoteImeShortcut"));
+        assertTrue(service.contains("(pendingMetaState, lockedMetaState) -> updateShiftStateView()"));
+        assertFalse(service.contains("public RemoteImeShortcut remoteImeShortcut()"));
+        assertFalse(service.contains("private RemoteImeShortcut remoteImeShortcut()"));
+        assertFalse(service.contains("public void onRemoteMetaStateChanged("));
+        assertFalse(service.contains("private void onRemoteMetaStateChanged("));
         assertFalse(service.contains("RemoteCommandResolver.resolve("));
         assertFalse(service.contains("RemoteCommandAction action"));
         assertFalse(service.contains("RemoteKeySession"));
         assertFalse(service.contains("sendRemoteImeToggle("));
+        assertFalse(controller.contains("interface Host"));
+        assertTrue(controller.contains("java.util.function.BiConsumer"));
+        assertTrue(controller.contains("java.util.function.Supplier"));
+        assertTrue(controller.contains("private final Supplier<RemoteImeShortcut> remoteImeShortcut"));
+        assertTrue(controller.contains("private final BiConsumer<Integer, Integer> metaStateListener"));
+        assertTrue(controller.contains("metaStateListener.accept("));
         assertTrue(controller.contains("RemoteCommandResolver.resolve("));
         assertTrue(controller.contains("RemoteKeySession"));
         assertTrue(controller.contains("sendImeToggle("));
+        assertTrue(controller.contains("RuntimeDefaults.remoteImeShortcutSupplier("));
+        assertTrue(controller.contains("RuntimeDefaults.remoteImeShortcut("));
+        assertTrue(controller.contains("RuntimeDefaults.integerPairConsumer("));
+        assertTrue(controller.contains("RuntimeDefaults.longSupplier("));
+        assertTrue(controller.contains("java.util.function.LongSupplier"));
+        assertTrue(controller.contains("private final LongSupplier clock"));
+        assertTrue(controller.contains("clock.getAsLong()"));
+        assertFalse(controller.contains("interface Clock"));
+        assertFalse(controller.contains("eventTimeMs()"));
+        assertContainsNone(
+                controller,
+                "remoteImeShortcut == null ? null : remoteImeShortcut.get()",
+                "shortcut == null ? RemoteImeShortcut.ALT_SHIFT : shortcut",
+                "clock == null ? SystemClock::uptimeMillis : clock",
+                "if (metaStateListener != null)",
+                "private RemoteImeShortcut remoteImeShortcut()");
     }
 
     @Test
     public void keyboardCommandTargetStaysOutOfImeServiceBody() throws Exception {
-        String service = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
-        String target = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardCommandTarget.java");
+        String service = javaSource("S3KeyboardService");
+        String target = javaSource("S3KeyboardCommandTarget");
 
         assertTrue(service.contains("new S3KeyboardCommandTarget(this)"));
         assertFalse(service.contains("new KeyboardCommandDispatcher.Target()"));
@@ -892,10 +1892,8 @@ public final class ProductionReadinessConfigTest {
 
     @Test
     public void assistRailCommandsHaveVisibleOrConventionalFallbacks() throws Exception {
-        String service = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
-        String dispatcher = readWorkspaceFile(
-                "app/src/main/java/com/superl3/s3keyboard/ImeConnectionDispatcher.java");
+        String service = javaSource("S3KeyboardService");
+        String dispatcher = javaSource("ImeConnectionDispatcher");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
         String development = readWorkspaceFile("docs/development.md");
 
@@ -903,6 +1901,10 @@ public final class ProductionReadinessConfigTest {
         assertTrue(service.contains("R.string.voice_input_unavailable"));
         assertTrue(service.contains("ImeConnectionDispatcher.performUndo(inputConnection)"));
         assertTrue(dispatcher.contains("performContextMenuAction(android.R.id.undo)"));
+        assertTrue(dispatcher.contains("java.util.function.IntBinaryOperator"));
+        assertTrue(dispatcher.contains("IntBinaryOperator softKeySender"));
+        assertTrue(dispatcher.contains("sender.applyAsInt(keyCode, metaState)"));
+        assertFalse(dispatcher.contains("interface KeySender"));
         assertTrue(strings.contains("name=\"voice_input_unavailable\""));
         assertFalse(development.contains("safe stubs"));
         assertTrue(development.contains("voice should show the explicit"));
@@ -1045,6 +2047,1126 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void settingsSelectionRowsUseSharedUserInputListeners() throws Exception {
+        String listener = javaSource("UserInputListeners");
+        assertTrue(listener.contains("new AdapterView.OnItemSelectedListener"));
+        assertTrue(listener.contains("onNothingSelected(AdapterView<?> parent)"));
+        assertTrue(listener.contains("static AdapterView.OnItemSelectedListener itemSelected("));
+        assertTrue(listener.contains("static AdapterView.OnItemSelectedListener itemSelectedAfterInitialSelection("));
+        String rowBuilder = javaSource("SettingsRowBuilder");
+        assertTrue(rowBuilder.contains("UserInputListeners.itemSelected("));
+        assertTrue(rowBuilder.contains("static Spinner spinnerAfterInitialSelection("));
+        assertTrue(rowBuilder.contains("shouldHandleAfterInitialSelection("));
+
+        String[] sharedSelectionSources = {
+                "AccentPlacementActivity",
+                "AppearanceSettingsController",
+                "DisplayStyleSettingsController",
+                "ErgonomicsSettingsController",
+                "GestureTouchSettingsController",
+                "InputAssistanceSettingsController",
+                "LayoutSettingsController",
+                "MotionEffectSettingsController",
+                "RemoteWindowsSettingsController",
+                "ThemeEditorActivity",
+                "TypographySettingsController"
+        };
+        for (String className : sharedSelectionSources) {
+            String source = javaSource(className);
+            assertTrue(className + " should use shared spinner selection filtering",
+                    source.contains("SettingsRowBuilder.spinner(")
+                            || source.contains("SettingsRowBuilder.optionSpinner(")
+                            || source.contains("SettingsRowBuilder.spinnerAfterInitialSelection("));
+            assertFalse(className + " should not wire simple spinner listeners directly",
+                    source.contains("UserInputListeners.itemSelected("));
+            assertFalse(className + " should not duplicate raw spinner listener shells",
+                    source.contains("new AdapterView.OnItemSelectedListener"));
+        }
+    }
+
+    @Test
+    public void simpleSettingsListenersUseFactoryHelpers() throws Exception {
+        String rowBuilder = javaSource("SettingsRowBuilder");
+        String viewStyler = javaSource("SettingsViewStyler");
+        String userInputListeners = javaSource("UserInputListeners");
+
+        assertContainsAll(
+                rowBuilder,
+                "static CheckBox checkBoxRow(",
+                "static Spinner spinner(",
+                "private static Spinner spinner(Context context)",
+                "SettingsViewStyler.spinner(spinner, context)");
+        assertEquals(1, countOccurrences(rowBuilder, "new Spinner(context)"));
+        assertEquals(1, countOccurrences(rowBuilder, "SettingsViewStyler.spinner(spinner, context)"));
+        assertContainsAll(
+                rowBuilder,
+                "static SeekBar seekBar(",
+                "static EditText editText(",
+                "static Button buttonRow(",
+                "String label,",
+                "static Button weightedButton(",
+                "static Button button(Context context, int labelResId, View.OnClickListener listener)",
+                "static Button button(Context context, String label, View.OnClickListener listener)",
+                "boolean selected,",
+                "static Button iconButtonRow(",
+                "static Button button(Context context, String label, boolean selected)",
+                "static TextView labelRow(",
+                "static TextView secondaryLabelRow(",
+                "static TextView sectionLabel(",
+                "static TextView sectionLabelRow(",
+                "static TextView bodyLabelRow(",
+                "static TextView valueLabel(",
+                "static TextView valueLabelRow(",
+                "static <T extends View> T labeledControl(",
+                "static LinearLayout vertical(Context context)",
+                "static LinearLayout horizontal(Context context)",
+                "static <T extends View> T addView(",
+                "static <T extends View> T addViewWithTop(",
+                "static LinearLayout.LayoutParams wrapContentWithLeft(",
+                "static LinearLayout.LayoutParams fixedSizeWithLeft(",
+                "static LinearLayout.LayoutParams fixedWidthWrapWithLeft(",
+                "static LinearLayout.LayoutParams weightedWrap(",
+                "SettingsViewStyler.editText(input, context)",
+                "UserInputListeners.checked(",
+                "UserInputListeners.itemSelected(",
+                "UserInputListeners.seekBar(",
+                "UserInputListeners.text(",
+                "Consumer<Boolean> onUserCheckedChanged",
+                "Consumer<String> onUserTextChanged",
+                "IntConsumer onUserItemSelected",
+                "IntConsumer onUserProgressChanged");
+        assertContainsAll(viewStyler, "SettingsRowBuilder.dp(context,");
+        assertContainsNone(viewStyler, "private static int dp(", "getDisplayMetrics().density");
+        assertContainsAll(
+                userInputListeners,
+                "final class UserInputListeners",
+                "static CompoundButton.OnCheckedChangeListener checked(",
+                "static AdapterView.OnItemSelectedListener itemSelected(",
+                "static SeekBar.OnSeekBarChangeListener seekBar(",
+                "static TextWatcher text(",
+                "static AdapterView.OnItemSelectedListener itemSelectedAfterInitialSelection(",
+                "Consumer<Boolean> onUserCheckedChanged",
+                "IntConsumer onUserItemSelected",
+                "IntConsumer onUserProgressChanged",
+                "Consumer<String> onUserTextChanged",
+                "RuntimeDefaults.trueBooleanSupplier(",
+                "RuntimeDefaults.booleanConsumer(",
+                "RuntimeDefaults.intConsumer(",
+                "RuntimeDefaults.stringConsumer(",
+                "RuntimeDefaults.stringOrEmpty(");
+        assertEquals(4, countOccurrences(userInputListeners, "RuntimeDefaults.trueBooleanSupplier("));
+        assertEquals(1, countOccurrences(userInputListeners, "RuntimeDefaults.booleanConsumer("));
+        assertEquals(2, countOccurrences(userInputListeners, "RuntimeDefaults.intConsumer("));
+        assertContainsNone(
+                userInputListeners,
+                "abstract void",
+                "canHandleUserChange != null",
+                "listener != null",
+                "onUserCheckedChanged.accept(isChecked)",
+                "onUserItemSelected.accept(position)",
+                "onUserProgressChanged.accept(progress)",
+                "onUserTextChanged != null",
+                "private static String textOrEmpty(");
+        assertTrue(rowBuilder.contains("RuntimeDefaults.stringOrDefault(initialValue, \"\")"));
+        assertFalse(rowBuilder.contains("initialValue == null ? \"\" : initialValue"));
+
+        String themeHub = javaSource("ThemeHubSettingsController");
+        String settingsHubController = javaSource("SettingsHubController");
+        String mainActivity = javaSource("MainActivity");
+        String androidIme = javaSource("AndroidImeSettingsController");
+        String appearanceController = javaSource("AppearanceSettingsController");
+        String displayStyle = javaSource("DisplayStyleSettingsController");
+        String inputAssistanceController = javaSource("InputAssistanceSettingsController");
+        String inputFeelController = javaSource("InputFeelSettingsController");
+        String layoutController = javaSource("LayoutSettingsController");
+        String remoteWindowsController = javaSource("RemoteWindowsSettingsController");
+        String typographyController = javaSource("TypographySettingsController");
+        String localDataSettings = javaSource("LocalDataSettingsController");
+        String extractedSettingsControllers = String.join(
+                "\n",
+                appearanceController,
+                displayStyle,
+                inputAssistanceController,
+                inputFeelController,
+                layoutController,
+                remoteWindowsController,
+                themeHub,
+                typographyController);
+        assertTrue(extractedSettingsControllers.contains("RuntimeDefaults.keyboardSettings("));
+        assertContainsNone(
+                extractedSettingsControllers,
+                "settings == null ? KeyboardSettings.defaults() : settings",
+                "current == null ? KeyboardSettings.defaults() : current",
+                "currentSettings == null ? KeyboardSettings.defaults() : currentSettings",
+                "KeyboardSettings current = settings.get();",
+                "KeyboardSettings currentSettings = settings.get();",
+                "return RuntimeDefaults.keyboardSettings(current);",
+                "return RuntimeDefaults.keyboardSettings(currentSettings);",
+                "private KeyboardErgonomicsOptions ergonomicsOptions()");
+        assertTrue(themeHub.contains("SettingsRowBuilder.iconButtonRow("));
+        assertFalse(themeHub.contains("interface Host"));
+        assertTrue(themeHub.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(themeHub.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(themeHub.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(themeHub.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(themeHub.contains("RuntimeDefaults.runnable("));
+        assertTrue(themeHub.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(themeHub.contains("RuntimeDefaults.keyboardSettingsFrom(settings)"));
+        assertFalse(themeHub.contains("settings == null ? null"));
+        assertFalse(themeHub.contains("currentThemeCustomMarker != null"));
+        assertFalse(themeHub.contains("settingsSaver != null"));
+        assertFalse(themeHub.contains("private KeyboardSettings settings()"));
+        assertFalse(settingsHubController.contains("interface Host"));
+        assertTrue(settingsHubController.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(settingsHubController.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(settingsHubController.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(settingsHubController.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(settingsHubController.contains("RuntimeDefaults.runnable("));
+        assertTrue(settingsHubController.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertFalse(settingsHubController.contains("implements ThemeHubSettingsController.Host"));
+        assertFalse(settingsHubController.contains("public KeyboardSettings settings()"));
+        assertFalse(settingsHubController.contains("public void markCurrentThemeCustom()"));
+        assertFalse(mainActivity.contains("implements SettingsHubController.Host"));
+        assertFalse(mainActivity.contains("implements AppearanceSettingsController.Host"));
+        assertFalse(mainActivity.contains("implements DisplayStyleSettingsController.Host"));
+        assertFalse(mainActivity.contains("implements InputAssistanceSettingsController.Host"));
+        assertFalse(mainActivity.contains("implements InputFeelSettingsController.Host"));
+        assertFalse(mainActivity.contains("implements LayoutSettingsController.Host"));
+        assertFalse(mainActivity.contains("implements RemoteWindowsSettingsController.Host"));
+        assertFalse(mainActivity.contains("implements TypographySettingsController.Host"));
+        assertTrue(displayStyle.contains("private Spinner packSpinner("));
+        assertTrue(displayStyle.contains("IntFunction<KeyboardSettings> change"));
+        assertTrue(displayStyle.contains("ModifierIconCatalog.selectablePackIdAt("));
+        assertTrue(displayStyle.contains("KeyDisplayOverridePackCatalog.selectablePackIdAt("));
+        assertFalse(displayStyle.contains("ModifierIconCatalog.selectablePackIds(true)"));
+        assertFalse(displayStyle.contains("KeyDisplayOverridePackCatalog.selectablePackIds(true)"));
+        assertFalse(displayStyle.contains("ids[position]"));
+        assertFalse(mainActivity.contains("public KeyboardSettings settings()"));
+        assertFalse(mainActivity.contains("public KeyboardErgonomicsOptions ergonomicsOptions()"));
+        assertFalse(mainActivity.contains("public void saveSettings("));
+        assertFalse(mainActivity.contains("public void saveSettingsAndErgonomics("));
+        assertFalse(mainActivity.contains("public void saveHangulLayoutProfile("));
+        assertFalse(mainActivity.contains("public void saveEnglishLayoutProfile("));
+        assertFalse(mainActivity.contains("public void saveErgonomicsOptions("));
+        assertFalse(mainActivity.contains("public void syncControls()"));
+        assertFalse(mainActivity.contains("public boolean isDebuggableBuild()"));
+        assertFalse(mainActivity.contains("public void markCurrentThemeCustom()"));
+        assertTrue(mainActivity.contains("private void loadCurrentPreferences()"));
+        assertEquals(2, countOccurrences(mainActivity, "loadCurrentPreferences();"));
+        assertEquals(1, countOccurrences(mainActivity, "KeyboardPreferences.load(this)"));
+        assertEquals(1, countOccurrences(mainActivity, "KeyboardPreferences.loadLayoutProfiles(this)"));
+        assertEquals(1, countOccurrences(mainActivity, "KeyboardPreferences.loadErgonomicsOptions(this)"));
+        assertEquals(1, countOccurrences(mainActivity, "KeyboardPreferences.saveFloatingModeEnabled(this, false)"));
+        assertTrue(mainActivity.contains("private KeyboardSettings settings()"));
+        assertTrue(mainActivity.contains("private KeyboardErgonomicsOptions ergonomicsOptions()"));
+        assertTrue(mainActivity.contains("private void saveSettings("));
+        assertTrue(mainActivity.contains("private void syncControls()"));
+        assertTrue(mainActivity.contains("this::settings"));
+        assertTrue(mainActivity.contains("this::markCurrentThemeCustom"));
+        assertTrue(mainActivity.contains("this::saveSettings"));
+        assertTrue(androidIme.contains("SettingsRowBuilder.iconButtonRow("));
+        assertFalse(appearanceController.contains("interface Host"));
+        assertTrue(appearanceController.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(appearanceController.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(appearanceController.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(appearanceController.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(appearanceController.contains("RuntimeDefaults.runnable("));
+        assertTrue(appearanceController.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertFalse(appearanceController.contains("this.settings = settings;"));
+        assertFalse(appearanceController.contains("this.currentThemeCustomMarker = currentThemeCustomMarker;"));
+        assertFalse(appearanceController.contains("this.settingsSaver = settingsSaver;"));
+        String visualThemeControllers = String.join(
+                "\n",
+                appearanceController,
+                displayStyle,
+                themeHub,
+                typographyController);
+        assertContainsNone(
+                visualThemeControllers,
+                "private void markCurrentThemeCustom()",
+                "private void saveSettings(KeyboardSettings settings)",
+                "private KeyboardSettings settings()",
+                "markCurrentThemeCustom();",
+                "saveSettings(settings");
+        assertTrue(appearanceController.contains("RuntimeDefaults.keyboardSettingsFrom(settings)"));
+        assertTrue(displayStyle.contains("SettingsRowBuilder.buttonRow("));
+        assertFalse(displayStyle.contains("interface Host"));
+        assertTrue(displayStyle.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(displayStyle.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(displayStyle.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(displayStyle.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(displayStyle.contains("RuntimeDefaults.runnable("));
+        assertTrue(displayStyle.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertFalse(displayStyle.contains("settings == null ? null"));
+        assertFalse(displayStyle.contains("currentThemeCustomMarker != null"));
+        assertFalse(displayStyle.contains("settingsSaver != null"));
+        assertFalse(displayStyle.contains("private KeyboardSettings settings()"));
+        assertTrue(displayStyle.contains("RuntimeDefaults.keyboardSettingsFrom(settings)"));
+        assertFalse(inputAssistanceController.contains("interface Host"));
+        assertTrue(inputAssistanceController.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(inputAssistanceController.contains(
+                "private final Supplier<KeyboardErgonomicsOptions> ergonomicsOptions"));
+        assertTrue(inputAssistanceController.contains("private final BooleanSupplier debuggableBuild"));
+        assertTrue(inputAssistanceController.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(inputAssistanceController.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(inputAssistanceController.contains(
+                "private final BiConsumer<KeyboardSettings, KeyboardErgonomicsOptions>"));
+        assertTrue(inputAssistanceController.contains("private final Runnable controlsSyncer"));
+        assertTrue(inputAssistanceController.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(inputAssistanceController.contains("RuntimeDefaults.keyboardErgonomicsSupplier("));
+        assertTrue(inputAssistanceController.contains("RuntimeDefaults.booleanSupplier("));
+        assertTrue(inputAssistanceController.contains("RuntimeDefaults.runnable("));
+        assertTrue(inputAssistanceController.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(inputAssistanceController.contains("RuntimeDefaults.keyboardSettingsAndErgonomicsConsumer("));
+        assertTrue(inputAssistanceController.contains("RuntimeDefaults.keyboardErgonomics("));
+        assertContainsNone(
+                inputAssistanceController,
+                "current == null\n                ? KeyboardErgonomicsOptions.DEFAULT",
+                "currentOptions == null ? KeyboardErgonomicsOptions.DEFAULT : currentOptions",
+                "private void markCurrentThemeCustom()",
+                "private void saveSettings(KeyboardSettings settings)",
+                "private void syncControls()",
+                "private KeyboardSettings settings()",
+                "markCurrentThemeCustom();",
+                "saveSettings(settings",
+                "syncControls();");
+        assertFalse(inputFeelController.contains("interface Host"));
+        assertTrue(inputFeelController.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(inputFeelController.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(inputFeelController.contains("private final Runnable controlsSyncer"));
+        assertTrue(inputFeelController.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(inputFeelController.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(inputFeelController.contains("RuntimeDefaults.runnable("));
+        assertFalse(inputFeelController.contains("this::settings"));
+        assertFalse(inputFeelController.contains("private KeyboardSettings settings()"));
+        String inputFeelControllers = String.join(
+                "\n",
+                inputFeelController,
+                javaSource("GestureTouchSettingsController"),
+                javaSource("HapticSettingsController"),
+                javaSource("InputConvenienceSettingsController"),
+                javaSource("RepeatSettingsController"));
+        assertContainsNone(
+                inputFeelControllers,
+                "private void saveSettings(KeyboardSettings settings)",
+                "private void syncControls()",
+                "this::saveSettings",
+                "this::syncControls",
+                "saveSettings(settings().",
+                "syncControls();",
+                "private KeyboardSettings settings()");
+        assertTrue(inputFeelControllers.contains("RuntimeDefaults.keyboardSettingsFrom(settings)"));
+        assertFalse(layoutController.contains("interface Host"));
+        assertTrue(layoutController.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(layoutController.contains("private final Supplier<KeyboardErgonomicsOptions> ergonomicsOptions"));
+        assertTrue(layoutController.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(layoutController.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(layoutController.contains(
+                "private final Consumer<KeyboardLayoutProfile> hangulLayoutProfileSaver"));
+        assertTrue(layoutController.contains(
+                "private final Consumer<KeyboardLayoutProfile> englishLayoutProfileSaver"));
+        assertTrue(layoutController.contains(
+                "private final Consumer<KeyboardErgonomicsOptions> ergonomicsOptionsSaver"));
+        assertTrue(layoutController.contains("private final Runnable controlsSyncer"));
+        assertTrue(layoutController.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(layoutController.contains("RuntimeDefaults.keyboardErgonomicsSupplier("));
+        assertTrue(layoutController.contains("RuntimeDefaults.runnable("));
+        assertTrue(layoutController.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(layoutController.contains("RuntimeDefaults.keyboardLayoutProfileConsumer("));
+        assertTrue(layoutController.contains("RuntimeDefaults.keyboardErgonomicsConsumer("));
+        assertTrue(layoutController.contains("RuntimeDefaults.keyboardErgonomicsFrom("));
+        assertTrue(layoutController.contains("RuntimeDefaults.keyboardSettingsFrom(settings)"));
+        assertFalse(layoutController.contains("private KeyboardSettings settings()"));
+        assertFalse(layoutController.contains("private KeyboardErgonomicsOptions ergonomicsOptions()"));
+        assertTrue(layoutController.contains("private static final KeyboardLayoutProfile[] LAYOUT_PROFILE_ORDER"));
+        assertTrue(layoutController.contains("HandednessMode.displayOrder()"));
+        assertTrue(layoutController.contains("KeyboardLayoutProfile.displayOrder()"));
+        assertTrue(layoutController.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(layoutController.contains("HandednessMode.indexOf("));
+        assertTrue(layoutController.contains("KeyboardLayoutProfile.indexOf("));
+        assertFalse(layoutController.contains(".ordinal()"));
+        assertFalse(layoutController.contains("KeyboardLayoutProfile.values()[position]"));
+        assertFalse(layoutController.contains("SettingsDisplayLabels.labels(context, LAYOUT_PROFILE_ORDER)"));
+        assertFalse(layoutController.contains("SettingsDisplayLabels.labels(context, HANDEDNESS_ORDER)"));
+        assertFalse(layoutController.contains("RuntimeDefaults.keyboardSettings(settings.get())"));
+        assertFalse(layoutController.contains("RuntimeDefaults.keyboardErgonomics(ergonomicsOptions.get())"));
+        assertFalse(layoutController.contains("this.settings = settings;"));
+        assertFalse(layoutController.contains("this.ergonomicsOptions = ergonomicsOptions;"));
+        assertFalse(layoutController.contains("this.currentThemeCustomMarker = currentThemeCustomMarker;"));
+        assertFalse(layoutController.contains("this.settingsSaver = settingsSaver;"));
+        assertFalse(layoutController.contains("this.hangulLayoutProfileSaver = hangulLayoutProfileSaver;"));
+        assertFalse(layoutController.contains("this.englishLayoutProfileSaver = englishLayoutProfileSaver;"));
+        assertFalse(layoutController.contains("this.ergonomicsOptionsSaver = ergonomicsOptionsSaver;"));
+        assertFalse(layoutController.contains("this.controlsSyncer = controlsSyncer;"));
+        assertFalse(layoutController.contains("currentOptions == null ? KeyboardErgonomicsOptions.DEFAULT"));
+        String layoutSettingsControllers = layoutController + "\n" + javaSource("ErgonomicsSettingsController");
+        assertContainsNone(
+                layoutSettingsControllers,
+                "private void saveSettings(KeyboardSettings settings)",
+                "private void markCurrentThemeCustom()",
+                "private void syncControls()",
+                "private void saveHangulLayoutProfile(",
+                "private void saveEnglishLayoutProfile(",
+                "private void saveErgonomicsOptions(",
+                "private KeyboardSettings safe(",
+                "private KeyboardSettings settings()",
+                "this::saveSettings",
+                "this::markCurrentThemeCustom",
+                "this::syncControls",
+                "this::saveErgonomicsOptions",
+                "saveSettings(settings().",
+                "markCurrentThemeCustom();",
+                "syncControls();");
+        assertFalse(remoteWindowsController.contains("interface Host"));
+        assertTrue(remoteWindowsController.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(remoteWindowsController.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(remoteWindowsController.contains("private final Runnable controlsSyncer"));
+        assertContainsNone(
+                remoteWindowsController,
+                "private void saveSettings(KeyboardSettings settings)",
+                "private void syncControls()",
+                "private KeyboardSettings settings()",
+                "saveSettings(settings",
+                "syncControls();");
+        assertTrue(remoteWindowsController.contains("RuntimeDefaults.keyboardSettingsFrom(settings)"));
+        assertFalse(typographyController.contains("interface Host"));
+        assertTrue(typographyController.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(typographyController.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(typographyController.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(typographyController.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(typographyController.contains("RuntimeDefaults.runnable("));
+        assertTrue(typographyController.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertFalse(typographyController.contains("settings == null ? null"));
+        assertFalse(typographyController.contains("currentThemeCustomMarker != null"));
+        assertFalse(typographyController.contains("settingsSaver != null"));
+        assertFalse(typographyController.contains("private KeyboardSettings settings()"));
+        assertTrue(typographyController.contains("RuntimeDefaults.keyboardSettingsFrom(settings)"));
+        assertTrue(localDataSettings.contains("SettingsRowBuilder.iconButtonRow("));
+        assertTrue(localDataSettings.contains("RuntimeDefaults.runnable("));
+        assertFalse(localDataSettings.contains("controlsSyncer != null"));
+        assertContainsNone(
+                localDataSettings,
+                "private void syncControls()",
+                "syncControls();");
+        assertFalse(themeHub.contains("private Button systemButton("));
+        assertFalse(androidIme.contains("private Button systemButton("));
+        assertFalse(localDataSettings.contains("private Button button("));
+        assertFalse(themeHub.contains("private LinearLayout.LayoutParams buttonParams("));
+        assertFalse(androidIme.contains("private LinearLayout.LayoutParams buttonParams("));
+        assertFalse(displayStyle.contains("private LinearLayout.LayoutParams buttonParams("));
+        assertFalse(localDataSettings.contains("private LinearLayout.LayoutParams buttonParams("));
+
+        for (String className : new String[] {
+                "AccentPlacementActivity",
+                "QuickPanelUi",
+                "ThemeEditorActivity",
+                "ThemeSelectorActivity"
+        }) {
+            String source = javaSource(className);
+            assertTrue(className + " should use shared weighted row helpers",
+                    source.contains("SettingsRowBuilder.weightedWrap(")
+                            || source.contains("SettingsRowBuilder.weightedButton("));
+            assertFalse(className + " should not keep local weighted button params",
+                    source.contains("weightedButtonParams("));
+            assertFalse(className + " should not duplicate weighted layout allocation",
+                    source.contains("new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)"));
+        }
+
+        String[] factoryBackedSources = {
+                "AccentPlacementActivity",
+                "AppearanceSettingsController",
+                "DebugOverlaySettingsController",
+                "DisplayStyleSettingsController",
+                "ErgonomicsSettingsController",
+                "GestureTouchSettingsController",
+                "HapticSettingsController",
+                "InputAssistanceSettingsController",
+                "InputConvenienceSettingsController",
+                "LayoutSettingsController",
+                "MotionEffectSettingsController",
+                "RepeatSettingsController",
+                "RemoteWindowsSettingsController",
+                "ThemeEditorActivity",
+                "TypographySettingsController"
+        };
+        for (String className : factoryBackedSources) {
+            String source = javaSource(className);
+            assertFalse(className + " should not duplicate spinner listener shells",
+                    source.contains("new AdapterView.OnItemSelectedListener"));
+            assertFalse(className + " should not duplicate seekbar listener shells",
+                    source.contains("new SeekBar.OnSeekBarChangeListener"));
+            assertFalse(className + " should not duplicate text listener shells",
+                    source.contains("new TextWatcher"));
+        }
+
+        for (String className : new String[] {
+                "AccentPlacementActivity",
+                "AppearanceSettingsController",
+                "DebugOverlaySettingsController",
+                "DisplayStyleSettingsController",
+                "ErgonomicsSettingsController",
+                "HapticSettingsController",
+                "InputAssistanceSettingsController",
+                "InputConvenienceSettingsController",
+                "LayoutSettingsController",
+                "RemoteWindowsSettingsController",
+                "ThemeEditorActivity",
+                "TypographySettingsController"
+        }) {
+            String source = javaSource(className);
+            assertTrue(className + " should use shared checkbox wiring",
+                    source.contains("SettingsRowBuilder.checkBoxRow(")
+                            || source.contains("SettingsRowBuilder.checkBox("));
+            assertFalse(className + " should not wire simple checkbox listeners directly",
+                    source.contains("UserInputListeners.checked("));
+            assertFalse(className + " should not keep local checkbox wrappers",
+                    source.contains("private CheckBox checkBox("));
+        }
+
+        String sharedCheckboxSource = javaSource("SettingsRowBuilder");
+        assertTrue(sharedCheckboxSource.contains("static CheckBox checkBoxRow(\n"
+                + "            Context context,\n"
+                + "            LinearLayout root,\n"
+                + "            String label,"));
+
+        for (String className : new String[] {
+                "AccentPlacementActivity",
+                "AppearanceSettingsController",
+                "DisplayStyleSettingsController",
+                "ErgonomicsSettingsController",
+                "GestureTouchSettingsController",
+                "InputAssistanceSettingsController",
+                "LayoutSettingsController",
+                "MotionEffectSettingsController",
+                "RemoteWindowsSettingsController",
+                "TypographySettingsController"
+        }) {
+            String source = javaSource(className);
+            assertTrue(className + " should use shared spinner wiring",
+                    source.contains("SettingsRowBuilder.spinner(")
+                            || source.contains("SettingsRowBuilder.optionSpinner(")
+                            || source.contains("SettingsRowBuilder.spinnerAfterInitialSelection("));
+            assertFalse(className + " should not wire simple spinner listeners directly",
+                    source.contains("UserInputListeners.itemSelected("));
+        }
+
+        for (String className : new String[] {
+                "AppearanceSettingsController",
+                "GestureTouchSettingsController",
+                "HapticSettingsController",
+                "LayoutSettingsController",
+                "RepeatSettingsController",
+                "ThemeEditorActivity",
+                "TypographySettingsController"
+        }) {
+            String source = javaSource(className);
+            assertTrue(className + " should use shared seekbar wiring",
+                    source.contains("SettingsRowBuilder.seekBar(")
+                            || source.contains("SettingsRowBuilder.seekBarRow("));
+            assertFalse(className + " should not create raw seekbars directly",
+                    source.contains("new SeekBar("));
+            assertFalse(className + " should not wire simple seekbar listeners directly",
+                    source.contains("UserInputListeners.seekBar("));
+        }
+
+        for (String className : new String[] {
+                "GesturePracticeInputController",
+                "NumericStepperRow",
+                "RemoteWindowsSettingsController",
+                "ReservedPhraseSettingsController",
+                "ThemeEditorActivity",
+                "ThemeSelectorActivity"
+        }) {
+            String source = javaSource(className);
+            assertTrue(className + " should use shared text input wiring",
+                    source.contains("SettingsRowBuilder.editText("));
+            assertFalse(className + " should not create standard text inputs directly",
+                    source.contains("new EditText("));
+            assertFalse(className + " should not style standard text inputs directly",
+                    source.contains("SettingsViewStyler.editText("));
+        }
+
+        for (String className : new String[] {
+                "RemoteWindowsSettingsController",
+                "ReservedPhraseSettingsController"
+        }) {
+            String source = javaSource(className);
+            assertFalse(className + " should not wire saved settings text watchers directly",
+                    source.contains("addTextChangedListener("));
+            assertFalse(className + " should not wire text listener helpers directly",
+                    source.contains("UserInputListeners.text("));
+        }
+
+        String remoteWindows = javaSource("RemoteWindowsSettingsController");
+        assertTrue(remoteWindows.contains("Consumer<String> saver"));
+        assertFalse(remoteWindows.contains("interface Host"));
+        assertTrue(remoteWindows.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(remoteWindows.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(remoteWindows.contains("private final Runnable controlsSyncer"));
+        assertTrue(remoteWindows.contains("SettingsRowBuilder.bodyLabelRow("));
+        assertTrue(remoteWindows.contains("SettingsRowBuilder.secondaryLabelRow("));
+        assertTrue(remoteWindows.contains("private String currentAppProfileSummary()"));
+        assertTrue(remoteWindows.contains("SettingsRowBuilder.labeledControl("));
+        assertTrue(remoteWindows.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(remoteWindows.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(remoteWindows.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(remoteWindows.contains("RuntimeDefaults.stringConsumer("));
+        assertTrue(remoteWindows.contains("RuntimeDefaults.trimmedStringOrEmpty(value)"));
+        assertTrue(remoteWindows.contains("RuntimeDefaults.stringOrDefault(value, \"\")"));
+        assertTrue(remoteWindows.contains("RemoteKeyPreset.displayOrder()"));
+        assertTrue(remoteWindows.contains("RemoteImeShortcut.displayOrder()"));
+        assertTrue(remoteWindows.contains("RemoteKeyPreset.indexOf("));
+        assertTrue(remoteWindows.contains("RemoteImeShortcut.indexOf("));
+        assertFalse(remoteWindows.contains("PackageListSaver"));
+        assertFalse(remoteWindows.contains("remoteOptionSpinner("));
+        assertFalse(remoteWindows.contains("RemoteKeyPreset.values()"));
+        assertFalse(remoteWindows.contains("RemoteImeShortcut.values()"));
+        assertFalse(remoteWindows.contains("RemoteKeyPreset.values()[position]"));
+        assertFalse(remoteWindows.contains("RemoteImeShortcut.values()[position]"));
+        assertFalse(remoteWindows.contains("remoteKeyPreset.ordinal()"));
+        assertFalse(remoteWindows.contains("remoteImeShortcut.ordinal()"));
+        assertFalse(remoteWindows.contains("SettingsDisplayLabels.labels(context, values)"));
+        assertFalse(remoteWindows.contains("safeSaver.accept(values[position])"));
+        assertFalse(remoteWindows.contains("value == null || value.trim().isEmpty()"));
+        assertFalse(remoteWindows.contains("value == null ? \"\" : value"));
+        assertFalse(remoteWindows.contains("private void addBodyText"));
+        assertFalse(remoteWindows.contains("private interface"));
+        assertFalse(remoteWindows.contains("private LinearLayout.LayoutParams matchWrap"));
+        assertFalse("Current app profile summary should stay inside the remote settings section.",
+                Files.exists(findWorkspaceRoot().resolve(
+                        "app/src/main/java/com/superl3/s3keyboard/CurrentAppProfilePanelController.java")));
+
+        String remoteKeyPreset = javaSource("RemoteKeyPreset");
+        assertTrue(remoteKeyPreset.contains("private static final RemoteKeyPreset[] DISPLAY_ORDER"));
+        assertTrue(remoteKeyPreset.contains("static RemoteKeyPreset[] displayOrder()"));
+        assertTrue(remoteKeyPreset.contains("static int indexOf(RemoteKeyPreset selected)"));
+
+        String remoteImeShortcut = javaSource("RemoteImeShortcut");
+        assertTrue(remoteImeShortcut.contains("private static final RemoteImeShortcut[] DISPLAY_ORDER"));
+        assertTrue(remoteImeShortcut.contains("static RemoteImeShortcut[] displayOrder()"));
+        assertTrue(remoteImeShortcut.contains("static int indexOf(RemoteImeShortcut selected)"));
+
+        String layout = javaSource("LayoutSettingsController");
+        assertTrue(layout.contains("Consumer<KeyboardLayoutProfile>"));
+        assertTrue(layout.contains("IntConsumer listener"));
+        assertFalse(layout.contains("interface Host"));
+        assertTrue(layout.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(layout.contains("private final Supplier<KeyboardErgonomicsOptions> ergonomicsOptions"));
+        assertTrue(layout.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(layout.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(layout.contains("private final Consumer<KeyboardLayoutProfile> hangulLayoutProfileSaver"));
+        assertTrue(layout.contains("private final Consumer<KeyboardLayoutProfile> englishLayoutProfileSaver"));
+        assertTrue(layout.contains("private final Consumer<KeyboardErgonomicsOptions> ergonomicsOptionsSaver"));
+        assertTrue(layout.contains("private final Runnable controlsSyncer"));
+        assertTrue(layout.contains("SettingsRowBuilder.labeledControl("));
+        assertTrue(layout.contains("SettingsRowBuilder.valueLabelRow("));
+        assertTrue(layout.contains("SettingsRowBuilder.seekBarRow("));
+        assertFalse(layout.contains("implements ErgonomicsSettingsController.Host"));
+        assertFalse(layout.contains("public KeyboardErgonomicsOptions ergonomicsOptions()"));
+        assertFalse(layout.contains("public void saveErgonomicsOptions("));
+        assertFalse(layout.contains("LayoutProfileChangeListener"));
+        assertFalse(layout.contains("IntSettingListener"));
+        assertFalse(layout.contains("private TextView addValueLabel("));
+        assertFalse(layout.contains("private LinearLayout.LayoutParams matchWrap("));
+        assertFalse(layout.contains("private LinearLayout.LayoutParams matchWrapWithTop("));
+
+        String appearance = javaSource("AppearanceSettingsController");
+        assertTrue(appearance.contains("IntConsumer listener"));
+        assertTrue(appearance.contains("SettingsRowBuilder.valueLabel("));
+        assertTrue(appearance.contains("SettingsRowBuilder.seekBar(context,"));
+        assertFalse(appearance.contains("interface Host"));
+        assertTrue(appearance.contains("private final Supplier<KeyboardSettings> settings"));
+        assertTrue(appearance.contains("private final Runnable currentThemeCustomMarker"));
+        assertTrue(appearance.contains("private final Consumer<KeyboardSettings> settingsSaver"));
+        assertTrue(appearance.contains("private Spinner themeColorSpinner(ThemeColorSlot slot)"));
+        assertTrue(appearance.contains("private Spinner extendedThemeColorSpinner(ExtendedThemeColorSlot slot)"));
+        assertTrue(appearance.contains("private KeyboardSettings withThemeColor("));
+        assertTrue(appearance.contains("private KeyboardSettings withExtendedThemeColor("));
+        assertTrue(appearance.contains("private enum ThemeColorSlot"));
+        assertTrue(appearance.contains("private enum ExtendedThemeColorSlot"));
+        assertFalse(appearance.contains("private void saveThemeColor("));
+        assertFalse(appearance.contains("private void saveExtendedThemeColor("));
+        assertFalse(appearance.contains("private void updateExtendedThemeColors("));
+        assertFalse(appearance.contains("private SeekBar seekBar("));
+        assertTrue(appearance.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(appearance.contains("ColorOption.basicIndexOf("));
+        assertTrue(appearance.contains("AdditionalNumberRowColorMode.displayOrder()"));
+        assertTrue(appearance.contains("AdditionalNumberRowColorMode.indexOf("));
+        assertFalse(appearance.contains("SettingsDisplayLabels.labels(context, NUMBER_ROW_COLOR_MODE_ORDER)"));
+        assertFalse(appearance.contains("SettingsDisplayLabels.labels(context, ColorOption.BASIC_OPTIONS)"));
+        assertFalse(appearance.contains("additionalNumberRowColorMode.ordinal()"));
+        assertFalse(appearance.contains("AdditionalNumberRowColorMode.values()[position]"));
+        assertFalse(appearance.contains("ColorOption.BASIC_OPTIONS[position]"));
+        assertFalse(appearance.contains("private int indexOfColor("));
+        assertFalse(appearance.contains("private int indexOfBasicColor("));
+        assertFalse(appearance.contains("ColorChangeListener"));
+        assertFalse(appearance.contains("private void updateThemeColors("));
+        assertFalse(appearance.contains("private TextView label("));
+
+        String colorOption = javaSource("ColorOption");
+        assertTrue(colorOption.contains("static int indexOf(ColorOption[] options, int color)"));
+        assertTrue(colorOption.contains("static int indexOf(ColorOption[] options, Integer color, int missingIndex)"));
+        assertTrue(colorOption.contains("static int basicIndexOf("));
+
+        String numberRowMode = javaSource("AdditionalNumberRowColorMode");
+        assertTrue(numberRowMode.contains("private static final AdditionalNumberRowColorMode[] DISPLAY_ORDER"));
+        assertTrue(numberRowMode.contains("static AdditionalNumberRowColorMode[] displayOrder()"));
+        assertTrue(numberRowMode.contains("static int indexOf("));
+        assertTrue(numberRowMode.contains("for (AdditionalNumberRowColorMode mode : DISPLAY_ORDER)"));
+
+        String numericStepper = javaSource("NumericStepperRow");
+        assertTrue(numericStepper.contains("IntConsumer listener"));
+        assertTrue(numericStepper.contains("RuntimeDefaults.intConsumer(listener)"));
+        assertTrue(numericStepper.contains("SettingsRowBuilder.weightedWrap("));
+        assertFalse(numericStepper.contains("interface Listener"));
+        assertFalse(numericStepper.contains("onValueChanged"));
+        assertFalse(numericStepper.contains("listener != null"));
+        assertFalse(numericStepper.contains("private static LayoutParams buttonParams("));
+        assertFalse(numericStepper.contains("private static LayoutParams inputParams("));
+        assertFalse(numericStepper.contains("new LayoutParams("));
+        assertFalse(numericStepper.contains("private static int dp("));
+
+        String accentPlacement = javaSource("AccentPlacementActivity");
+        assertTrue(accentPlacement.contains("SettingsRowBuilder.sectionLabelRow("));
+        assertTrue(accentPlacement.contains("SettingsRowBuilder.addViewWithTop("));
+        assertTrue(accentPlacement.contains("SettingsRowBuilder.matchHeightWithTop("));
+        assertTrue(accentPlacement.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(accentPlacement.contains("AccentPlacementPolicy.SpaceRole.displayOrder()"));
+        assertTrue(accentPlacement.contains("AccentPlacementPolicy.QuestionRole.displayOrder()"));
+        assertTrue(accentPlacement.contains("AccentPlacementPolicy.SpaceRole.indexOf("));
+        assertTrue(accentPlacement.contains("AccentPlacementPolicy.QuestionRole.indexOf("));
+        assertTrue(accentPlacement.contains("AccentPlacementPolicy.SpaceRole.at("));
+        assertTrue(accentPlacement.contains("AccentPlacementPolicy.QuestionRole.at("));
+        assertTrue(accentPlacement.contains("AdditionalNumberRowColorMode.displayOrder()"));
+        assertTrue(accentPlacement.contains("AdditionalNumberRowColorMode.indexOf("));
+        assertTrue(accentPlacement.contains("AccentPlacementTarget.displayOrder()"));
+        assertTrue(accentPlacement.contains("AccentPlacementTarget.allDisplayTargets()"));
+        assertTrue(accentPlacement.contains("SettingsRowBuilder.vertical(this)"));
+        assertTrue(accentPlacement.contains("SettingsRowBuilder.horizontal(this)"));
+        assertTrue(accentPlacement.contains("SettingsRowBuilder.weightedButton("));
+        assertTrue(accentPlacement.contains("SettingsRowBuilder.buttonRow(this, root, R.string.action_close"));
+        assertFalse(accentPlacement.contains("IntConsumer listener"));
+        assertFalse(accentPlacement.contains("selectionSpinner("));
+        assertFalse(accentPlacement.contains("AccentPlacementTarget.values()"));
+        assertFalse(accentPlacement.contains("EnumSet.allOf(AccentPlacementTarget.class)"));
+        assertFalse(accentPlacement.contains("SettingsDisplayLabels.labels(this, NUMBER_ROW_COLOR_MODE_ORDER)"));
+        assertFalse(accentPlacement.contains("SettingsDisplayLabels.labels(this, SPACE_ROLE_ORDER)"));
+        assertFalse(accentPlacement.contains("SettingsDisplayLabels.labels(this, QUESTION_ROLE_ORDER)"));
+        assertFalse(accentPlacement.contains("spaceRole.ordinal()"));
+        assertFalse(accentPlacement.contains("questionRole.ordinal()"));
+        assertFalse(accentPlacement.contains("SpaceRole.values()["));
+        assertFalse(accentPlacement.contains("QuestionRole.values()["));
+        assertFalse(accentPlacement.contains("additionalNumberRowColorMode.ordinal()"));
+        assertFalse(accentPlacement.contains("AdditionalNumberRowColorMode.values()[position]"));
+        assertFalse(accentPlacement.contains("NUMBER_ROW_COLOR_MODE_ORDER[position]"));
+        assertFalse(accentPlacement.contains("SelectionChangeListener"));
+        assertFalse(accentPlacement.contains("private TextView label("));
+        assertFalse(accentPlacement.contains("private TextView sectionLabel("));
+        assertFalse(accentPlacement.contains("private Button actionButton("));
+        assertFalse(accentPlacement.contains("SettingsRowBuilder.button(this, R.string.accent_placement_none)"));
+        assertFalse(accentPlacement.contains("SettingsRowBuilder.button(this, R.string.accent_placement_select_all)"));
+        assertFalse(accentPlacement.contains("SettingsRowBuilder.button(this, R.string.action_close)"));
+        assertFalse(accentPlacement.contains("setOrientation(LinearLayout.HORIZONTAL)"));
+        assertFalse(accentPlacement.contains("setOrientation(LinearLayout.VERTICAL)"));
+        assertFalse(accentPlacement.contains("private LinearLayout.LayoutParams previewParams("));
+        assertFalse(accentPlacement.contains("private LinearLayout.LayoutParams matchWrap("));
+        assertFalse(accentPlacement.contains("private LinearLayout.LayoutParams topParams("));
+        assertFalse(accentPlacement.contains("private int dp("));
+
+        String accentPolicy = javaSource("AccentPlacementPolicy");
+        assertTrue(accentPolicy.contains("private static final SpaceRole[] DISPLAY_ORDER"));
+        assertTrue(accentPolicy.contains("static SpaceRole[] displayOrder()"));
+        assertTrue(accentPolicy.contains("static SpaceRole at(int index)"));
+        assertTrue(accentPolicy.contains("static int indexOf(SpaceRole selected)"));
+        assertTrue(accentPolicy.contains("private static final QuestionRole[] DISPLAY_ORDER"));
+        assertTrue(accentPolicy.contains("static QuestionRole[] displayOrder()"));
+        assertTrue(accentPolicy.contains("static QuestionRole at(int index)"));
+        assertTrue(accentPolicy.contains("static int indexOf(QuestionRole selected)"));
+
+        String accentTarget = javaSource("AccentPlacementTarget");
+        assertTrue(accentTarget.contains("private static final AccentPlacementTarget[] DISPLAY_ORDER"));
+        assertTrue(accentTarget.contains("static AccentPlacementTarget[] displayOrder()"));
+        assertTrue(accentTarget.contains("static EnumSet<AccentPlacementTarget> allDisplayTargets()"));
+
+        String themeEditor = javaSource("ThemeEditorActivity");
+        assertTrue(themeEditor.contains("IntConsumer selectedKeyTextListener"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.checkBoxRow("));
+        assertFalse(themeEditor.contains("Consumer<Boolean> listener"));
+        assertFalse(themeEditor.contains("private CheckBox checkBox("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.buttonRow("));
+        assertFalse(themeEditor.contains("private Button addActionButton("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.valueLabel(this)"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.addViewWithTop("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.dp(this,"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.vertical(this)"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.horizontal(this)"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.label(this,"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.label(this, \"?\")"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.fixedSizeWithLeft(this, 42, 28, 8)"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.fixedWidthWrapWithLeft(this, 86, 8)"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.fixedSizeWithLeft(this, 30, 30, 8)"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.matchWeightedFill()"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.matchHeightWithVerticalMargins(this, 18, 4)"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.weightedHeight(this, 40,"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.setSelectionIfValid("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.setProgressIfPresent("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.setCheckedIfPresent("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.setTextIfPresent("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.setEnabledIfPresent("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.spinnerAfterInitialSelection("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.radioButton("));
+        assertTrue(themeEditor.contains("RuntimeDefaults.stringOrEmpty(text)"));
+        assertTrue(themeEditor.contains("ColorOption.editorIndexOf("));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(themeEditor.contains("private CheckBox addTypographyCheckBox("));
+        assertTrue(themeEditor.contains("ColorOption.EDITOR_OPTIONS"));
+        assertTrue(themeEditor.contains("FontOption.editorIndexOf("));
+        assertTrue(themeEditor.contains("FontOption.EDITOR_OPTIONS"));
+        assertTrue(themeEditor.contains("private static final class ColorControl"));
+        assertTrue(themeEditor.contains("private ColorControl addColorSetting("));
+        assertEquals("ThemeEditorActivity should keep standard color row creation behind one helper.",
+                2,
+                countOccurrences(themeEditor, "addColorSpinnerControl("));
+        assertEquals("ThemeEditorActivity should not keep pass-through empty labels.",
+                0,
+                countOccurrences(themeEditor, "label(\"\")"));
+        assertFalse(themeEditor.contains("ColorChangeListener"));
+        assertFalse(themeEditor.contains("BooleanChangeListener"));
+        assertFalse(themeEditor.contains("IntChangeListener"));
+        assertFalse(themeEditor.contains("SpinnerSelectionListener"));
+        assertFalse(themeEditor.contains("private int indexOfColor("));
+        assertFalse(themeEditor.contains("private int indexOfEditorColor("));
+        assertFalse(themeEditor.contains("private void setProgress("));
+        assertFalse(themeEditor.contains("private void setChecked("));
+        assertFalse(themeEditor.contains("private void setText("));
+        assertFalse(themeEditor.contains("private void setEnabled("));
+        assertFalse(themeEditor.contains("ColorOption.EDITOR_OPTIONS[position]"));
+        assertFalse(themeEditor.contains("FontOption.EDITOR_OPTIONS[position]"));
+        assertFalse(themeEditor.contains("ColorOption.editorColorAt(position)"));
+        assertFalse(themeEditor.contains("FontOption.editorValueAt(position)"));
+        assertFalse(themeEditor.contains("setOrientation(LinearLayout.HORIZONTAL)"));
+        assertFalse(themeEditor.contains("setOrientation(LinearLayout.VERTICAL)"));
+        assertTrue(themeEditor.contains("ModifierIconCatalog.selectablePackLabels(false"));
+        assertTrue(themeEditor.contains("ModifierIconCatalog.selectablePackIndexOf("));
+        assertTrue(themeEditor.contains("ModifierIconCatalog.selectablePackIdAt(position, false)"));
+        assertTrue(themeEditor.contains("KeyDisplayOverridePackCatalog.selectablePackLabels(false"));
+        assertTrue(themeEditor.contains("KeyDisplayOverridePackCatalog.selectablePackIndexOf("));
+        assertTrue(themeEditor.contains("KeyDisplayOverridePackCatalog.selectablePackIdAt(position, false)"));
+        assertTrue(themeEditor.contains("private Spinner themePackSpinner("));
+        assertTrue(themeEditor.contains("IntFunction<String> packIdAt"));
+        assertTrue(themeEditor.contains("Supplier<String> currentPackId"));
+        assertTrue(themeEditor.contains("KeyboardVisualEffects.keyFaceGradientCurveLabels()"));
+        assertTrue(themeEditor.contains("KeyboardVisualEffects.keyFaceGradientCurveIndexOf("));
+        assertTrue(themeEditor.contains("KeyboardVisualEffects.keyFaceGradientCurveAt(position)"));
+        assertFalse(themeEditor.contains("private int indexOfModifierIconPack("));
+        assertFalse(themeEditor.contains("private int indexOfKeyDisplayPack("));
+        assertFalse(themeEditor.contains("private int indexOfKeyFaceGradientCurve("));
+        assertFalse(themeEditor.contains("private void setSelection(Spinner spinner"));
+        assertTrue(themeEditor.contains("SettingsRowBuilder.button("));
+        assertTrue(themeEditor.contains("SettingsDisplayLabels.label(this, option)"));
+        assertFalse(themeEditor.contains("new Button("));
+        assertFalse(themeEditor.contains("new RadioButton("));
+        assertFalse(themeEditor.contains("ModifierIconCatalog.selectablePackIds(false)"));
+        assertFalse(themeEditor.contains("KeyDisplayOverridePackCatalog.selectablePackIds(false)"));
+        assertFalse(themeEditor.contains("KeyboardVisualEffects.keyFaceGradientCurveOrder()"));
+        assertFalse(themeEditor.contains("ids[position]"));
+        assertFalse(themeEditor.contains("private String[] keyFaceGradientCurveIds("));
+        assertFalse(themeEditor.contains("private Button addActionButton("));
+        assertFalse(themeEditor.contains("private Button actionButton("));
+        assertFalse(themeEditor.contains("private Button actionButton(int labelResId"));
+        assertFalse(themeEditor.contains("private LinearLayout.LayoutParams buttonParams("));
+        assertFalse(themeEditor.contains("private Spinner selectionSpinner("));
+        assertFalse(themeEditor.contains("private RadioButton radio("));
+        assertFalse(themeEditor.contains("shouldHandleSpinnerSelection("));
+        assertFalse(themeEditor.contains("UserInputListeners.itemSelected("));
+        assertFalse(themeEditor.contains("private LinearLayout.LayoutParams matchWrap("));
+        assertFalse(themeEditor.contains("private LinearLayout.LayoutParams matchWrapWithTop("));
+        assertFalse(themeEditor.contains("LinearLayout.LayoutParams swatchParams"));
+
+        assertFalse(themeEditor.contains("LinearLayout.LayoutParams codeParams"));
+        assertFalse(themeEditor.contains("LinearLayout.LayoutParams infoParams"));
+        assertFalse(themeEditor.contains("new LinearLayout.LayoutParams("));
+        assertFalse(themeEditor.contains("private TextView label("));
+        assertFalse(themeEditor.contains("new TextView("));
+        assertFalse(themeEditor.contains("private int dp("));
+        assertFalse(themeEditor.contains("private interface"));
+        assertFalse(themeEditor.contains("text == null ? \"\" : text.toString()"));
+
+        String ergonomics = javaSource("ErgonomicsSettingsController");
+        assertTrue(ergonomics.contains(
+                "BiFunction<KeyboardErgonomicsOptions, Boolean, KeyboardErgonomicsOptions>"));
+        assertTrue(ergonomics.contains("Supplier<KeyboardErgonomicsOptions>"));
+        assertTrue(ergonomics.contains("Consumer<KeyboardErgonomicsOptions>"));
+        assertTrue(ergonomics.contains("SettingsRowBuilder.labelRow("));
+        assertTrue(ergonomics.contains("RuntimeDefaults.keyboardErgonomicsSupplier("));
+        assertTrue(ergonomics.contains("RuntimeDefaults.keyboardErgonomicsConsumer("));
+        assertTrue(ergonomics.contains("RuntimeDefaults.keyboardErgonomicsFrom("));
+        assertTrue(ergonomics.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(ergonomics.contains("KeyboardErgonomicsPreset.displayOrder()"));
+        assertTrue(ergonomics.contains("VisualConsistencyLevel.displayOrder()"));
+        assertTrue(ergonomics.contains("KeyboardErgonomicsPreset.indexOf("));
+        assertTrue(ergonomics.contains("VisualConsistencyLevel.indexOf("));
+        assertFalse(ergonomics.contains("KeyboardErgonomicsPreset.fromPosition"));
+        assertFalse(ergonomics.contains("VisualConsistencyLevel.fromPosition"));
+        assertFalse(ergonomics.contains("SettingsDisplayLabels.labels(context, PRESET_ORDER)"));
+        assertFalse(ergonomics.contains("SettingsDisplayLabels.labels(context, VISUAL_CONSISTENCY_ORDER)"));
+        assertFalse(ergonomics.contains("KeyboardErgonomicsPreset.values()[position]"));
+        assertFalse(ergonomics.contains("VisualConsistencyLevel.values()[position]"));
+        assertFalse(ergonomics.contains("matchingPreset.ordinal()"));
+        assertFalse(ergonomics.contains("visualConsistencyLevel.ordinal()"));
+        assertFalse(ergonomics.contains("private KeyboardErgonomicsOptions options()"));
+
+        String ergonomicsPreset = javaSource("KeyboardErgonomicsPreset");
+        assertTrue(ergonomicsPreset.contains("private static final KeyboardErgonomicsPreset[] DISPLAY_ORDER"));
+        assertTrue(ergonomicsPreset.contains("static KeyboardErgonomicsPreset[] displayOrder()"));
+        assertTrue(ergonomicsPreset.contains("static int indexOf(KeyboardErgonomicsPreset selected)"));
+        assertFalse(ergonomicsPreset.contains("fromPosition("));
+
+        String visualConsistency = javaSource("VisualConsistencyLevel");
+        assertTrue(visualConsistency.contains("private static final VisualConsistencyLevel[] DISPLAY_ORDER"));
+        assertTrue(visualConsistency.contains("static VisualConsistencyLevel[] displayOrder()"));
+        assertTrue(visualConsistency.contains("static int indexOf(VisualConsistencyLevel selected)"));
+        assertFalse(visualConsistency.contains("fromPosition("));
+        assertFalse(ergonomics.contains("interface Host"));
+        assertFalse(ergonomics.contains("ErgonomicOptionChange"));
+        assertFalse(ergonomics.contains("ergonomicsOptions == null ? null"));
+        assertFalse(ergonomics.contains("options == null ? KeyboardErgonomicsOptions.DEFAULT : options"));
+        assertFalse(ergonomics.contains("ergonomicsOptionsSaver != null"));
+        assertFalse(ergonomics.contains("private TextView label("));
+        assertFalse(ergonomics.contains("private LinearLayout.LayoutParams matchWrap"));
+
+        String typography = javaSource("TypographySettingsController");
+        assertTrue(typography.contains("BiFunction<KeyboardSettings, Boolean, KeyboardSettings>"));
+        assertTrue(typography.contains("RuntimeDefaults.keyboardSettingsSupplier("));
+        assertTrue(typography.contains("RuntimeDefaults.runnable("));
+        assertTrue(typography.contains("RuntimeDefaults.keyboardSettingsConsumer("));
+        assertTrue(typography.contains("SettingsRowBuilder.optionSpinner("));
+        assertTrue(typography.contains("private SeekBar addTypographySizeSeekBar("));
+        assertTrue(typography.contains("private CheckBox addTypographyCheckBox("));
+        assertTrue(typography.contains("FontOption.basicIndexOf("));
+        assertFalse(typography.contains("TypographyOptionChange"));
+        assertFalse(typography.contains("settings == null ? null"));
+        assertFalse(typography.contains("currentThemeCustomMarker != null"));
+        assertFalse(typography.contains("settingsSaver != null"));
+        assertFalse(typography.contains("SettingsDisplayLabels.labels(context, FontOption.BASIC_OPTIONS)"));
+        assertFalse(typography.contains("FontOption.BASIC_OPTIONS[position]"));
+        assertFalse(typography.contains("private int indexOfFont("));
+
+        String fontOption = javaSource("FontOption");
+        assertTrue(fontOption.contains("static int indexOf(FontOption[] options, String fontFamily)"));
+        assertTrue(fontOption.contains("static int basicIndexOf("));
+
+        String modifierIconCatalog = javaSource("ModifierIconCatalog");
+        assertTrue(modifierIconCatalog.contains("static String[] selectablePackLabels("));
+        assertTrue(modifierIconCatalog.contains("static String selectablePackIdAt("));
+        assertTrue(modifierIconCatalog.contains("static int selectablePackIndexOf("));
+
+        String keyDisplayPackCatalog = javaSource("KeyDisplayOverridePackCatalog");
+        assertTrue(keyDisplayPackCatalog.contains("static String[] selectablePackLabels("));
+        assertTrue(keyDisplayPackCatalog.contains("static String selectablePackIdAt("));
+        assertTrue(keyDisplayPackCatalog.contains("static int selectablePackIndexOf("));
+
+        String visualEffects = javaSource("KeyboardVisualEffects");
+        assertTrue(visualEffects.contains("private static final String[] KEY_FACE_GRADIENT_CURVE_ORDER"));
+        assertTrue(visualEffects.contains("static String[] keyFaceGradientCurveOrder()"));
+        assertTrue(visualEffects.contains("static String[] keyFaceGradientCurveLabels()"));
+        assertTrue(visualEffects.contains("static String keyFaceGradientCurveAt("));
+        assertTrue(visualEffects.contains("static int keyFaceGradientCurveIndexOf(String curve)"));
+
+        String themeSelector = javaSource("ThemeSelectorActivity");
+        assertTrue(themeSelector.contains("SettingsRowBuilder.iconButtonRow("));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.weightedButton("));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.button("));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.vertical(this)"));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.horizontal(this)"));
+        assertTrue(themeSelector.contains("previewMode == mode,"));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.label(this, R.string.theme_selector_title)"));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.valueLabel(this)"));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.matchWrapWithTop("));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.matchHeightWithTop("));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.wrapContentWithLeft(this, 8)"));
+        assertTrue(themeSelector.contains("SettingsRowBuilder.dp("));
+        assertTrue(themeSelector.contains("ThemeOption.indexOfStableId("));
+        assertFalse(themeSelector.contains("new Button("));
+        assertFalse(themeSelector.contains("button.setOnClickListener(v ->"));
+        assertFalse(themeSelector.contains("SettingsRowBuilder.button(this, R.string.external_theme_folder_setting)"));
+        assertFalse(themeSelector.contains("SettingsRowBuilder.button(this, R.string.action_refresh)"));
+        assertFalse(themeSelector.contains("setOrientation(LinearLayout.HORIZONTAL)"));
+        assertFalse(themeSelector.contains("setOrientation(LinearLayout.VERTICAL)"));
+        assertFalse(themeSelector.contains("new LinearLayout(this)"));
+        assertFalse(themeSelector.contains("new LinearLayout.LayoutParams("));
+        assertFalse(themeSelector.contains("private TextView label("));
+        assertFalse(themeSelector.contains("private int indexOfSelectedTheme("));
+        assertFalse(themeSelector.contains("private LinearLayout.LayoutParams previewParams("));
+        assertFalse(themeSelector.contains("private LinearLayout.LayoutParams topParams("));
+        assertFalse(themeSelector.contains("private LinearLayout.LayoutParams matchWrap("));
+        assertFalse(themeSelector.contains("private int dp("));
+
+        String clipboardView = javaSource("ClipboardView");
+        String clipboardPanel = javaSource("ClipboardPanelController");
+        String englishSuggestions = javaSource("EnglishSuggestionStripController");
+        String englishAssistant = javaSource("EnglishQwertyInputAssistant");
+        String settingsRowBuilder = javaSource("SettingsRowBuilder");
+        assertTrue(settingsRowBuilder.contains("static void setSelectionIfValid(Spinner spinner, int position)"));
+        assertTrue(settingsRowBuilder.contains("static void setProgressIfPresent(SeekBar seekBar, int progress)"));
+        assertTrue(settingsRowBuilder.contains("static void setCheckedIfPresent(CheckBox checkBox, boolean checked)"));
+        assertTrue(settingsRowBuilder.contains("static void setTextIfPresent(TextView view, CharSequence text)"));
+        assertTrue(settingsRowBuilder.contains("static void setEnabledIfPresent(View view, boolean enabled)"));
+        assertTrue(settingsRowBuilder.contains("static Button button(Context context, int labelResId, View.OnClickListener listener)"));
+        assertTrue(settingsRowBuilder.contains("static FrameLayout.LayoutParams frameMatchWrap()"));
+        assertTrue(settingsRowBuilder.contains("static FrameLayout.LayoutParams frameMatchMatch()"));
+        assertTrue(settingsRowBuilder.contains("static RadioButton radioButton(Context context, int id, int labelResId)"));
+        assertTrue(clipboardView.contains("Consumer<String> onTextSelected"));
+        assertTrue(clipboardView.contains("SettingsRowBuilder.button(context, R.string.action_close,"));
+        assertTrue(clipboardView.contains("SettingsRowBuilder.label("));
+        assertTrue(clipboardView.contains("SettingsRowBuilder.secondaryLabel("));
+        assertTrue(clipboardView.contains("SettingsRowBuilder.dp("));
+        assertTrue(clipboardView.contains("SettingsRowBuilder.vertical(context)"));
+        assertTrue(clipboardView.contains("SettingsRowBuilder.horizontal(context)"));
+        assertTrue(clipboardView.contains("private LinearLayout createHeader("));
+        assertTrue(clipboardView.contains("private TextView createEmptyText()"));
+        assertTrue(clipboardView.contains("private TextView createEntryItem("));
+        assertFalse(clipboardView.contains("OnTextSelectedListener"));
+        assertFalse(clipboardView.contains("private LinearLayout createHeader(Context context)"));
+        assertFalse(clipboardView.contains("new Button("));
+        assertFalse(clipboardView.contains("new LinearLayout(context)"));
+        assertFalse(clipboardView.contains("closeBtn.setOnClickListener("));
+        assertFalse(clipboardView.contains("new TextView("));
+        assertFalse(clipboardView.contains("private LayoutParams entryItemParams("));
+        assertFalse(clipboardView.contains("private int dp("));
+        assertFalse(clipboardView.contains("Math.round(value *"));
+        assertTrue(clipboardPanel.contains("SettingsRowBuilder.dp("));
+        assertTrue(clipboardPanel.contains("SettingsRowBuilder.button("));
+        assertTrue(clipboardPanel.contains(
+                "SettingsRowBuilder.button(\n"
+                        + "                context,\n"
+                        + "                R.string.clipboard_toolbar_button,\n"
+                        + "                v -> toggle())"));
+        assertTrue(clipboardPanel.contains("SettingsRowBuilder.label(context, \"\")"));
+        assertTrue(clipboardPanel.contains("SettingsRowBuilder.horizontal(context)"));
+        assertTrue(clipboardPanel.contains("SettingsRowBuilder.wrapContent("));
+        assertTrue(clipboardPanel.contains("SettingsRowBuilder.weightedSpacer("));
+        assertTrue(clipboardPanel.contains("SettingsRowBuilder.frameMatchMatch()"));
+        assertTrue(clipboardPanel.contains("private int toolbarTextColor("));
+        assertEquals("Clipboard toolbar contrast should stay behind one helper.",
+                1,
+                countOccurrences(clipboardPanel, "KeyboardColorMath.contrastTextColor("));
+        assertFalse(clipboardPanel.contains("new Button("));
+        assertFalse(clipboardPanel.contains("new LinearLayout(context)"));
+        assertFalse(clipboardPanel.contains("setOrientation(LinearLayout."));
+        assertFalse(clipboardPanel.contains("button.setOnClickListener(v -> toggle())"));
+        assertFalse(clipboardPanel.contains("new TextView("));
+        assertFalse(clipboardPanel.contains("new LinearLayout.LayoutParams("));
+        assertFalse(clipboardPanel.contains("new FrameLayout.LayoutParams("));
+        assertFalse(clipboardPanel.contains("private LinearLayout.LayoutParams dragHandleParams("));
+        assertFalse(clipboardPanel.contains("private KeyboardSettings settings()"));
+        assertFalse(clipboardPanel.contains("private EditorInputPolicy editorPolicy()"));
+        assertFalse(clipboardPanel.contains("private int dp("));
+        assertFalse(clipboardPanel.contains("Math.round(value *"));
+        assertTrue(englishSuggestions.contains("Consumer<String> onSuggestionAccepted"));
+        assertTrue(englishSuggestions.contains("RuntimeDefaults.stringConsumer("));
+        assertTrue(englishSuggestions.contains("RuntimeDefaults.keyboardSettings("));
+        assertTrue(englishSuggestions.contains("SettingsRowBuilder.dp("));
+        assertTrue(englishSuggestions.contains("SettingsRowBuilder.horizontal(context)"));
+        assertTrue(englishSuggestions.contains("SettingsRowBuilder.weightedHeight("));
+        assertTrue(englishSuggestions.contains("SettingsRowBuilder.label(context, \"\")"));
+        assertTrue(englishSuggestions.contains("private TextView createSlot()"));
+        assertTrue(englishSuggestions.contains("private void resetSlot(TextView slot)"));
+        assertTrue(englishSuggestions.contains("private void applySuggestion("));
+        assertFalse(englishSuggestions.contains("interface Host"));
+        assertFalse(englishSuggestions.contains("void acceptSuggestion("));
+        assertFalse(englishSuggestions.contains("new TextView("));
+        assertFalse(englishSuggestions.contains("new LinearLayout(context)"));
+        assertFalse(englishSuggestions.contains("setOrientation(LinearLayout.HORIZONTAL)"));
+        assertFalse(englishSuggestions.contains("new LinearLayout.LayoutParams("));
+        assertFalse(englishSuggestions.contains("final TextView slot = new TextView(context);"));
+        assertFalse(englishSuggestions.contains("if (onSuggestionAccepted != null)"));
+        assertFalse(englishSuggestions.contains("settings == null ? KeyboardSettings.defaults() : settings"));
+        assertFalse(settingsRowBuilder.contains("wrapWrap("));
+        assertFalse(englishSuggestions.contains("private int dp("));
+        assertFalse(englishSuggestions.contains("Math.round(value *"));
+        assertTrue(englishAssistant.contains("RuntimeDefaults.englishQwertyCorrectionEngine("));
+        assertFalse(englishAssistant.contains("correctionEngine == null"));
+        assertFalse(englishAssistant.contains("? EnglishQwertyCorrectionEngine.DEFAULT"));
+
+        String practiceMode = javaSource("PracticeModeController");
+        assertTrue(practiceMode.contains("SettingsRowBuilder.vertical(context)"));
+        assertTrue(practiceMode.contains("SettingsRowBuilder.horizontal(context)"));
+        assertTrue(practiceMode.contains("SettingsRowBuilder.button("));
+        assertTrue(practiceMode.contains("SettingsRowBuilder.labelRow("));
+        assertTrue(practiceMode.contains("SettingsRowBuilder.bodyLabelRow("));
+        assertTrue(practiceMode.contains("SettingsRowBuilder.matchWrapWithTop("));
+        assertTrue(practiceMode.contains("SettingsRowBuilder.weightedWrap("));
+        assertFalse(practiceMode.contains("new Button("));
+        assertFalse(practiceMode.contains("button.setOnClickListener("));
+        assertFalse(practiceMode.contains("new LinearLayout(context)"));
+        assertFalse(practiceMode.contains("setOrientation(LinearLayout."));
+        assertFalse(practiceMode.contains("new LinearLayout.LayoutParams("));
+        assertFalse(practiceMode.contains("private static LinearLayout.LayoutParams matchWrap"));
+        assertFalse(practiceMode.contains("private static int dp("));
+
+        String reservedPhrase = javaSource("ReservedPhraseSettingsController");
+        assertTrue(reservedPhrase.contains("SettingsRowBuilder.labeledControl("));
+        assertFalse(reservedPhrase.contains("private LinearLayout.LayoutParams matchWrap"));
+
+        String localData = javaSource("LocalDataSettingsController");
+        assertTrue(localData.contains("SettingsRowBuilder.labelRow("));
+        assertTrue(localData.contains("SettingsRowBuilder.bodyLabelRow("));
+        assertTrue(localData.contains("SettingsRowBuilder.matchWrapWithTop("));
+        assertFalse(localData.contains("private void addBodyText"));
+        assertFalse(localData.contains("private TextView label("));
+        assertFalse(localData.contains("private LinearLayout.LayoutParams matchWrap"));
+
+        String diagnostics = javaSource("DingulInputDiagnostics");
+        assertTrue(diagnostics.contains("RuntimeDefaults.stringOrDefault(latestKeyCodePoints, \"\")"));
+        assertTrue(diagnostics.contains("RuntimeDefaults.stringOrDefault(latestAction, \"\")"));
+        assertTrue(diagnostics.contains("RuntimeDefaults.stringOrDefault(latestType, \"\")"));
+        assertFalse(diagnostics.contains("latestKeyCodePoints == null ? \"\" : latestKeyCodePoints"));
+        assertFalse(diagnostics.contains("latestAction == null ? \"\" : latestAction"));
+        assertFalse(diagnostics.contains("latestType == null ? \"\" : latestType"));
+
+        String settingsHub = javaSource("SettingsHubController");
+        assertTrue(settingsHub.contains("SettingsRowBuilder.bodyLabelRow("));
+        assertTrue(settingsHub.contains("SettingsRowBuilder.matchWrapWithTop("));
+        assertFalse(settingsHub.contains("private void addBodyText"));
+        assertFalse(settingsHub.contains("private LinearLayout.LayoutParams matchWrap"));
+        assertFalse(settingsHub.contains("private int dp("));
+
+        String colorMath = javaSource("KeyboardColorMath");
+        assertTrue(colorMath.contains("contrastTextColor("));
+        for (String className : new String[] {
+                "ClipboardPanelController",
+                "HangulKeyboardView",
+                "ThemeEditorActivity"
+        }) {
+            String source = javaSource(className);
+            assertTrue(className + " should use shared contrast color math",
+                    source.contains("KeyboardColorMath.contrastTextColor(")
+                            || source.contains("perceivedLuminance("));
+            assertFalse(className + " should not carry a local contrast helper",
+                    source.contains("private int contrastColor("));
+            assertFalse(className + " should not duplicate fractional luminance math",
+                    source.contains("0.299 *"));
+            assertFalse(className + " should not duplicate integer RGB luminance math",
+                    source.contains("r * 299 + g * 587 + b * 114"));
+            assertFalse(className + " should not duplicate integer RGB luminance math",
+                    source.contains("red * 299 + green * 587 + blue * 114"));
+        }
+    }
+
+    @Test
+    public void englishCorrectionOrderingUsesNamedComparatorChain() throws Exception {
+        String engine = javaSource("EnglishQwertyCorrectionEngine");
+
+        assertTrue(engine.contains("private static final Comparator<Candidate> CANDIDATE_ORDER"));
+        assertTrue(engine.contains("thenComparingInt(candidate -> candidate.text.length())"));
+        assertTrue(engine.contains("candidates.sort(CANDIDATE_ORDER)"));
+        assertFalse(engine.contains("new Comparator<Candidate>()"));
+        assertFalse(engine.contains("Boolean.compare(second.exactCorrection, first.exactCorrection)"));
+        assertFalse(engine.contains("Float.compare(second.score, first.score)"));
+    }
+
+    @Test
     public void keyboardSettingsFieldsStayRepresentedInTypedSections() throws Exception {
         String settings = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/KeyboardSettings.java");
@@ -1053,6 +3175,20 @@ public final class ProductionReadinessConfigTest {
         String model = readWorkspaceFile(
                 "app/src/main/java/com/superl3/s3keyboard/KeyboardSettingsModel.java");
         String representedSettings = sections + "\n" + model;
+
+        assertContainsAll(
+                model,
+                "RuntimeDefaults.keyboardSettings(",
+                "RuntimeDefaults.keyboardErgonomics(");
+        assertTrue(sections.contains("RuntimeDefaults.keyboardErgonomics(options)"));
+        assertTrue(sections.contains("RuntimeDefaults.keyboardVisualEffects(effects)"));
+        assertContainsNone(
+                model + "\n" + sections,
+                "settings == null ? KeyboardSettings.defaults() : settings",
+                "ergonomics == null ? KeyboardErgonomicsOptions.DEFAULT : ergonomics",
+                "effects == null ? KeyboardVisualEffects.DEFAULT : effects",
+                "options == null\n                    ? KeyboardErgonomicsOptions.DEFAULT",
+                "return from(settings, KeyboardErgonomicsOptions.DEFAULT);");
 
         for (String field : keyboardSettingsFieldNames(settings)) {
             assertTrue(
@@ -1064,6 +3200,22 @@ public final class ProductionReadinessConfigTest {
     private String readWorkspaceFile(String relativePath) throws IOException {
         Path root = findWorkspaceRoot();
         return new String(Files.readAllBytes(root.resolve(relativePath)), StandardCharsets.UTF_8);
+    }
+
+    private String javaSource(String className) throws IOException {
+        return readWorkspaceFile("app/src/main/java/com/superl3/s3keyboard/" + className + ".java");
+    }
+
+    private static void assertContainsAll(String source, String... needles) {
+        for (String needle : needles) {
+            assertTrue("Expected source to contain: " + needle, source.contains(needle));
+        }
+    }
+
+    private static void assertContainsNone(String source, String... needles) {
+        for (String needle : needles) {
+            assertFalse("Expected source not to contain: " + needle, source.contains(needle));
+        }
     }
 
     private static List<String> keyboardSettingsFieldNames(String source) {
@@ -1080,6 +3232,22 @@ public final class ProductionReadinessConfigTest {
             fields.add(withoutSemicolon.substring(withoutSemicolon.lastIndexOf(' ') + 1));
         }
         return fields;
+    }
+
+    private static int countOccurrences(String text, String needle) {
+        if (text == null || needle == null || needle.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        int index = 0;
+        while (true) {
+            index = text.indexOf(needle, index);
+            if (index < 0) {
+                return count;
+            }
+            count++;
+            index += needle.length();
+        }
     }
 
     private static Map<String, ScriptRemoteCase> parseExportScriptMatrix(String exportScript) {
@@ -1142,6 +3310,14 @@ public final class ProductionReadinessConfigTest {
             builder.append("U+").append(Integer.toHexString(value.charAt(i)).toUpperCase(java.util.Locale.ROOT));
         }
         return builder.toString();
+    }
+
+    private static String quotedText(int... codePoints) {
+        return "\"" + text(codePoints) + "\"";
+    }
+
+    private static String text(int... codePoints) {
+        return new String(codePoints, 0, codePoints.length);
     }
 
     private static boolean containsHangul(String text) {

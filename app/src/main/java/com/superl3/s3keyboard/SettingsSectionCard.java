@@ -22,30 +22,28 @@ final class SettingsSectionCard {
         this.context = context;
         this.title = title;
         SettingsUiPalette ui = SettingsUiPalette.from(context);
-        container = new LinearLayout(context);
-        container.setOrientation(LinearLayout.VERTICAL);
-        container.setPadding(dp(context, 16), dp(context, 12), dp(context, 16), dp(context, 14));
+        container = SettingsRowBuilder.vertical(context);
+        container.setPadding(
+                SettingsRowBuilder.dp(context, 16),
+                SettingsRowBuilder.dp(context, 12),
+                SettingsRowBuilder.dp(context, 16),
+                SettingsRowBuilder.dp(context, 14));
         GradientDrawable background = new GradientDrawable();
         background.setColor(ui.surface);
-        background.setCornerRadius(dp(context, 14));
-        background.setStroke(Math.max(1, dp(context, 1)), ui.border);
+        background.setCornerRadius(SettingsRowBuilder.dp(context, 14));
+        background.setStroke(Math.max(1, SettingsRowBuilder.dp(context, 1)), ui.border);
         container.setBackground(background);
 
         header = SettingsRowBuilder.label(context, "");
         header.setTextSize(16);
         header.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
-        container.addView(header, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        container.addView(header, SettingsRowBuilder.matchWrap());
 
-        content = new LinearLayout(context);
-        content.setOrientation(LinearLayout.VERTICAL);
+        content = SettingsRowBuilder.vertical(context);
         content.setVisibility(expandedByDefault ? View.VISIBLE : View.GONE);
-        LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        contentParams.topMargin = dp(context, expandedByDefault ? 10 : 0);
-        container.addView(content, contentParams);
+        container.addView(
+                content,
+                SettingsRowBuilder.matchWrapWithTop(context, expandedByDefault ? 10 : 0));
 
         setExpanded(expandedByDefault);
         header.setOnClickListener(v -> setExpanded(content.getVisibility() != View.VISIBLE));
@@ -64,7 +62,4 @@ final class SettingsSectionCard {
                 title));
     }
 
-    private static int dp(Context context, int value) {
-        return Math.round(value * context.getResources().getDisplayMetrics().density);
-    }
 }

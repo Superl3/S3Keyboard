@@ -15,8 +15,8 @@ final class KeyboardAccessibilitySummary {
         if (context == null) {
             return describe(settings, surface, keyCount, debugKeyBoundsOverlayEnabled);
         }
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
-        KeyboardSurface safeSurface = surface == null ? KeyboardSurface.NORMAL : surface;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
+        KeyboardSurface safeSurface = RuntimeDefaults.keyboardSurface(surface);
         StringBuilder builder = new StringBuilder(context.getString(R.string.keyboard_accessibility_name));
         builder.append(", ");
         if (safeSurface != KeyboardSurface.NORMAL) {
@@ -50,8 +50,8 @@ final class KeyboardAccessibilitySummary {
             KeyboardSurface surface,
             int keyCount,
             boolean debugKeyBoundsOverlayEnabled) {
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
-        KeyboardSurface safeSurface = surface == null ? KeyboardSurface.NORMAL : surface;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
+        KeyboardSurface safeSurface = RuntimeDefaults.keyboardSurface(surface);
         StringBuilder builder = new StringBuilder("New Dingul keyboard");
         builder.append(", ");
         if (safeSurface != KeyboardSurface.NORMAL) {

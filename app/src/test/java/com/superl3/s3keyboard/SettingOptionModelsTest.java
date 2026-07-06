@@ -11,6 +11,8 @@ public final class SettingOptionModelsTest {
         assertEquals(R.string.color_option_default_button, ColorOption.BASIC_OPTIONS[0].labelResId);
         assertEquals(R.string.color_option_default_key, ColorOption.EDITOR_OPTIONS[0].labelResId);
         assertTrue(ColorOption.EDITOR_OPTIONS.length > ColorOption.BASIC_OPTIONS.length);
+        assertEquals(0, ColorOption.basicIndexOf(ColorOption.BASIC_OPTIONS[0].color));
+        assertEquals(0, ColorOption.editorIndexOf(ColorOption.EDITOR_OPTIONS[0].color));
     }
 
     @Test
@@ -19,6 +21,27 @@ public final class SettingOptionModelsTest {
         assertEquals(FontOption.BASIC_OPTIONS[0].labelResId, FontOption.EDITOR_OPTIONS[0].labelResId);
         assertEquals(KeyboardSettings.FONT_DEFAULT, FontOption.BASIC_OPTIONS[0].value);
         assertEquals(FontOption.BASIC_OPTIONS[0].value, FontOption.EDITOR_OPTIONS[0].value);
+        assertEquals(0, FontOption.basicIndexOf(FontOption.BASIC_OPTIONS[0].value));
+        assertEquals(0, FontOption.editorIndexOf(FontOption.EDITOR_OPTIONS[0].value));
+    }
+
+    @Test
+    public void themePackModelsOwnPositionSelection() {
+        assertEquals(
+                ModifierIconCatalog.PACK_THEME_DEFAULT,
+                ModifierIconCatalog.selectablePackIdAt(0, true));
+        assertEquals(
+                ModifierIconCatalog.PACK_LINE_MONO,
+                ModifierIconCatalog.selectablePackIdAt(-1, false));
+        assertEquals(
+                KeyDisplayOverridePackCatalog.PACK_THEME_DEFAULT,
+                KeyDisplayOverridePackCatalog.selectablePackIdAt(0, true));
+        assertEquals(
+                KeyDisplayOverridePackCatalog.PACK_NONE,
+                KeyDisplayOverridePackCatalog.selectablePackIdAt(99, false));
+        assertEquals(
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_SOFT,
+                KeyboardVisualEffects.keyFaceGradientCurveAt(-1));
     }
 
     @Test
@@ -28,5 +51,14 @@ public final class SettingOptionModelsTest {
         assertEquals(R.string.remote_key_preset_pc_keyboard, RemoteKeyPreset.PC_KEYBOARD.labelResId);
         assertEquals(R.string.remote_ime_shortcut_alt_shift, RemoteImeShortcut.ALT_SHIFT.labelResId);
         assertEquals(R.string.remote_ime_shortcut_language_switch, RemoteImeShortcut.LANGUAGE_SWITCH.labelResId);
+    }
+
+    @Test
+    public void accentPlacementTargetsOwnDisplayOrder() {
+        AccentPlacementTarget[] order = AccentPlacementTarget.displayOrder();
+
+        assertEquals(AccentPlacementTarget.SETTINGS_ENTER, order[0]);
+        assertEquals(order.length, AccentPlacementTarget.allDisplayTargets().size());
+        assertTrue(AccentPlacementTarget.allDisplayTargets().contains(AccentPlacementTarget.ESC_POINT));
     }
 }

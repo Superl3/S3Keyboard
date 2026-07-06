@@ -29,7 +29,7 @@ final class ThemePreviewSettings {
     }
 
     private static KeyboardSettings applyPreviewAppearance(ThemeOption option, KeyboardSettings settings) {
-        KeyboardSettings base = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings base = RuntimeDefaults.keyboardSettings(settings);
         KeyboardSettings appearance = option == null ? null : option.appearanceSettings();
         return appearance == null ? base : base.withFullAppearanceFrom(appearance);
     }

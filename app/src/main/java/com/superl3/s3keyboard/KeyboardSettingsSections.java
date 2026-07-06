@@ -24,7 +24,7 @@ final class KeyboardSettingsSections {
     }
 
     static KeyboardSettingsSections from(KeyboardSettings settings) {
-        return from(settings, KeyboardErgonomicsOptions.DEFAULT);
+        return from(settings, null);
     }
 
     static KeyboardSettingsSections from(
@@ -319,9 +319,7 @@ final class KeyboardSettingsSections {
         final VisualConsistencyLevel visualConsistencyLevel;
 
         private Ergonomics(KeyboardErgonomicsOptions options) {
-            KeyboardErgonomicsOptions safe = options == null
-                    ? KeyboardErgonomicsOptions.DEFAULT
-                    : options;
+            KeyboardErgonomicsOptions safe = RuntimeDefaults.keyboardErgonomics(options);
             mainKeyCenteringEnabled = safe.mainKeyCenteringEnabled;
             compactFunctionRailEnabled = safe.compactFunctionRailEnabled;
             ergonomicHitboxEnabled = safe.ergonomicHitboxEnabled;
@@ -357,7 +355,7 @@ final class KeyboardSettingsSections {
     }
 
     private static JSONObject visualEffectsToJson(KeyboardVisualEffects effects) {
-        KeyboardVisualEffects safe = effects == null ? KeyboardVisualEffects.DEFAULT : effects;
+        KeyboardVisualEffects safe = RuntimeDefaults.keyboardVisualEffects(effects);
         JSONObject object = new JSONObject();
         put(object, "blurEnabled", safe.blurEnabled);
         put(object, "blurRadiusDp", safe.blurRadiusDp);

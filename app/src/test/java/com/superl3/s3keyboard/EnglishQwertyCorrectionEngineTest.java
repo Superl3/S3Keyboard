@@ -38,6 +38,18 @@ public final class EnglishQwertyCorrectionEngineTest {
     }
 
     @Test
+    public void sameScoreSuggestionsPreferShorterCandidate() {
+        EnglishQwertyCorrectionEngine engine =
+                new EnglishQwertyCorrectionEngine(new String[] {"tests", "tent"});
+
+        List<EnglishQwertyCorrectionEngine.Candidate> candidates = engine.suggest("test", 2);
+
+        assertEquals(2, candidates.size());
+        assertEquals("tent", candidates.get(0).text);
+        assertEquals("tests", candidates.get(1).text);
+    }
+
+    @Test
     public void keepsUnrelatedInputWithoutSuggestions() {
         List<EnglishQwertyCorrectionEngine.Candidate> candidates =
                 EnglishQwertyCorrectionEngine.DEFAULT.suggest("zxq", 3);

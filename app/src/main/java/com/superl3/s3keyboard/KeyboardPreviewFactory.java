@@ -10,7 +10,7 @@ final class KeyboardPreviewFactory {
     static HangulKeyboardView nonInteractive(Context context, KeyboardSettings settings) {
         HangulKeyboardView preview = new HangulKeyboardView(context);
         preview.setCompactPreviewRendering(true);
-        preview.setSettings(settings == null ? KeyboardSettings.defaults() : settings);
+        preview.setSettings(RuntimeDefaults.keyboardSettings(settings));
         preview.setClickable(true);
         preview.setFocusable(false);
         preview.setOnTouchListener((v, event) -> true);

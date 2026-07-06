@@ -7,6 +7,18 @@ final class KeyboardVisualEffects {
     static final String KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE = "bottom_shade";
     static final int DEFAULT_KEY_FACE_GRADIENT_START_COLOR = 0xFFFFFFFF;
     static final int DEFAULT_KEY_FACE_GRADIENT_END_COLOR = 0xFF000000;
+    private static final String[] KEY_FACE_GRADIENT_CURVE_ORDER = {
+            KEY_FACE_GRADIENT_CURVE_SOFT,
+            KEY_FACE_GRADIENT_CURVE_LINEAR,
+            KEY_FACE_GRADIENT_CURVE_TOP_GLOW,
+            KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE
+    };
+    private static final String[] KEY_FACE_GRADIENT_CURVE_LABELS = {
+            "Soft",
+            "Linear",
+            "Top glow",
+            "Bottom shade"
+    };
 
     static final KeyboardVisualEffects DEFAULT = new KeyboardVisualEffects(
             false,
@@ -219,5 +231,30 @@ final class KeyboardVisualEffects {
             return curve;
         }
         return KEY_FACE_GRADIENT_CURVE_SOFT;
+    }
+
+    static String[] keyFaceGradientCurveOrder() {
+        return KEY_FACE_GRADIENT_CURVE_ORDER.clone();
+    }
+
+    static String[] keyFaceGradientCurveLabels() {
+        return KEY_FACE_GRADIENT_CURVE_LABELS.clone();
+    }
+
+    static String keyFaceGradientCurveAt(int position) {
+        if (position < 0 || position >= KEY_FACE_GRADIENT_CURVE_ORDER.length) {
+            return KEY_FACE_GRADIENT_CURVE_ORDER[0];
+        }
+        return KEY_FACE_GRADIENT_CURVE_ORDER[position];
+    }
+
+    static int keyFaceGradientCurveIndexOf(String curve) {
+        String normalized = normalizeKeyFaceGradientCurve(curve);
+        for (int i = 0; i < KEY_FACE_GRADIENT_CURVE_ORDER.length; i++) {
+            if (KEY_FACE_GRADIENT_CURVE_ORDER[i].equals(normalized)) {
+                return i;
+            }
+        }
+        return 0;
     }
 }

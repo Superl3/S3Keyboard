@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -29,18 +30,57 @@ public final class PreviewBubbleLayoutTest {
     public void liftRisesThenSettles() {
         assertEquals(0, PreviewBubbleLayout.liftPx(false, 1f, 14, 8));
         assertEquals(0, PreviewBubbleLayout.liftPx(true, 0f, 14, 8));
-        assertEquals(14, PreviewBubbleLayout.liftPx(true, 0.34f, 14, 8));
-        int descending = PreviewBubbleLayout.liftPx(true, 0.50f, 14, 8);
+        assertTrue(PreviewBubbleLayout.liftPx(true, 0.30f, 14, 8) > 8);
+        assertTrue(PreviewBubbleLayout.liftPx(true, 0.40f, 14, 8) > 12);
+        assertEquals(14, PreviewBubbleLayout.liftPx(true, 0.50f, 14, 8));
+        assertEquals(14, PreviewBubbleLayout.liftPx(true, 0.70f, 14, 8));
+        int descending = PreviewBubbleLayout.liftPx(true, 0.88f, 14, 8);
         assertTrue(descending > 8);
         assertTrue(descending < 14);
-        assertEquals(8, PreviewBubbleLayout.liftPx(true, 0.62f, 14, 8));
+        assertEquals(8, PreviewBubbleLayout.liftPx(true, 1f, 14, 8));
     }
 
     @Test
     public void cornerRadiusFollowsKeyRadiusWithinStyleLimits() {
-        assertEquals(2, PreviewBubbleLayout.cornerRadiusPx(0, true, 2, 6, 18));
-        assertEquals(6, PreviewBubbleLayout.cornerRadiusPx(12, true, 2, 6, 18));
-        assertEquals(12, PreviewBubbleLayout.cornerRadiusPx(12, false, 2, 6, 18));
-        assertEquals(18, PreviewBubbleLayout.cornerRadiusPx(24, false, 2, 6, 18));
+        assertEquals(3, PreviewBubbleLayout.cornerRadiusPx(0, true, 3, 10, 22));
+        assertEquals(10, PreviewBubbleLayout.cornerRadiusPx(12, true, 3, 10, 22));
+        assertEquals(12, PreviewBubbleLayout.cornerRadiusPx(12, false, 3, 10, 22));
+        assertEquals(22, PreviewBubbleLayout.cornerRadiusPx(24, false, 3, 10, 22));
+    }
+
+    @Test
+    public void nearAnchorUsesKeyRelativeThresholdForReleasedBubbleDedupe() {
+        assertTrue(PreviewBubbleLayout.nearAnchor(
+                118f,
+                84f,
+                100f,
+                80f,
+                48f,
+                42f,
+                32));
+        assertTrue(PreviewBubbleLayout.nearAnchor(
+                31f,
+                80f,
+                100f,
+                80f,
+                56f,
+                42f,
+                32));
+        assertFalse(PreviewBubbleLayout.nearAnchor(
+                29f,
+                80f,
+                100f,
+                80f,
+                56f,
+                42f,
+                32));
+        assertFalse(PreviewBubbleLayout.nearAnchor(
+                100f,
+                26f,
+                100f,
+                80f,
+                48f,
+                42f,
+                32));
     }
 }

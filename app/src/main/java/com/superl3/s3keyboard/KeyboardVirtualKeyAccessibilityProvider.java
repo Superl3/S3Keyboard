@@ -144,12 +144,10 @@ final class KeyboardVirtualKeyAccessibilityProvider extends AccessibilityNodePro
     }
 
     private String summary() {
-        KeyboardSettings settings = host == null
-                ? KeyboardSettings.defaults()
-                : host.accessibilitySettings();
-        KeyboardSurface surface = host == null
-                ? KeyboardSurface.NORMAL
-                : host.accessibilityKeyboardSurface();
+        KeyboardSettings settings = RuntimeDefaults.keyboardSettings(
+                host == null ? null : host.accessibilitySettings());
+        KeyboardSurface surface = RuntimeDefaults.keyboardSurface(
+                host == null ? null : host.accessibilityKeyboardSurface());
         boolean debugOverlay = host != null && host.accessibilityDebugKeyBoundsOverlayEnabled();
         return KeyboardAccessibilitySummary.describe(
                 view.getContext(),

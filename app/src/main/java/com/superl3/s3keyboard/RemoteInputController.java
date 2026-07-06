@@ -4,37 +4,42 @@ import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputConnection;
 
+import java.util.function.BiConsumer;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
+
 final class RemoteInputController {
-    interface Host {
-        RemoteImeShortcut remoteImeShortcut();
-
-        void onRemoteMetaStateChanged(int pendingMetaState, int lockedMetaState);
-    }
-
-    interface Clock {
-        long eventTimeMs();
-    }
-
     interface KeySender {
         int send(InputConnection inputConnection, int keyCode, int metaState, long eventTimeMs);
     }
 
     private final RemoteKeySession session = new RemoteKeySession();
-    private final Host host;
-    private final Clock clock;
+    private final Supplier<RemoteImeShortcut> remoteImeShortcut;
+    private final BiConsumer<Integer, Integer> metaStateListener;
+    private final LongSupplier clock;
     private final KeySender keySender;
 
-    RemoteInputController(Host host) {
-        this(host, SystemClock::uptimeMillis);
+    RemoteInputController(
+            Supplier<RemoteImeShortcut> remoteImeShortcut,
+            BiConsumer<Integer, Integer> metaStateListener) {
+        this(remoteImeShortcut, metaStateListener, SystemClock::uptimeMillis);
     }
 
-    RemoteInputController(Host host, Clock clock) {
-        this(host, clock, ImeConnectionDispatcher::sendSoftKeyAt);
+    RemoteInputController(
+            Supplier<RemoteImeShortcut> remoteImeShortcut,
+            BiConsumer<Integer, Integer> metaStateListener,
+            LongSupplier clock) {
+        this(remoteImeShortcut, metaStateListener, clock, ImeConnectionDispatcher::sendSoftKeyAt);
     }
 
-    RemoteInputController(Host host, Clock clock, KeySender keySender) {
-        this.host = host;
-        this.clock = clock == null ? SystemClock::uptimeMillis : clock;
+    RemoteInputController(
+            Supplier<RemoteImeShortcut> remoteImeShortcut,
+            BiConsumer<Integer, Integer> metaStateListener,
+            LongSupplier clock,
+            KeySender keySender) {
+        this.remoteImeShortcut = RuntimeDefaults.remoteImeShortcutSupplier(remoteImeShortcut);
+        this.metaStateListener = RuntimeDefaults.integerPairConsumer(metaStateListener);
+        this.clock = RuntimeDefaults.longSupplier(clock);
         this.keySender = keySender == null ? ImeConnectionDispatcher::sendSoftKeyAt : keySender;
     }
 
@@ -80,7 +85,7 @@ final class RemoteInputController {
                 inputConnection,
                 keyCode,
                 combinedMetaState,
-                clock.eventTimeMs());
+                clock.getAsLong());
     }
 
     int sendCompatibilityKey(InputConnection inputConnection, int keyCode, int metaState) {
@@ -90,7 +95,7 @@ final class RemoteInputController {
 
     private void sendImeToggle(InputConnection inputConnection) {
         reset();
-        switch (remoteImeShortcut()) {
+        switch (RuntimeDefaults.remoteImeShortcut(remoteImeShortcut.get())) {
             case CTRL_SPACE:
                 sendKey(inputConnection, KeyEvent.KEYCODE_SPACE, KeyEvent.META_CTRL_ON);
                 return;
@@ -109,14 +114,7 @@ final class RemoteInputController {
         }
     }
 
-    private RemoteImeShortcut remoteImeShortcut() {
-        RemoteImeShortcut shortcut = host == null ? null : host.remoteImeShortcut();
-        return shortcut == null ? RemoteImeShortcut.ALT_SHIFT : shortcut;
-    }
-
     private void notifyMetaStateChanged() {
-        if (host != null) {
-            host.onRemoteMetaStateChanged(session.pendingMetaState(), session.lockedMetaState());
-        }
+        metaStateListener.accept(session.pendingMetaState(), session.lockedMetaState());
     }
 }

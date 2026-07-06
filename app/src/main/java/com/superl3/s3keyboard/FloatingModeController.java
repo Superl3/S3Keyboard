@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.function.Consumer;
+
 /**
  * Controls floating keyboard mode where the keyboard can be dragged freely on screen.
  *
@@ -36,12 +38,8 @@ final class FloatingModeController {
     // Double-tap detection
     private long lastTapTime;
 
-    interface OnPositionChangedListener {
-        void onPositionChanged(int offsetX, int offsetY);
-        void onFloatingModeChanged(boolean enabled);
-    }
-
-    private OnPositionChangedListener listener;
+    private Runnable onPositionChanged = RuntimeDefaults.NO_OP_RUNNABLE;
+    private Consumer<Boolean> onFloatingModeChanged = RuntimeDefaults.NO_OP_BOOLEAN_CONSUMER;
 
     FloatingModeController(Context context) {
         preferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
@@ -61,9 +59,7 @@ final class FloatingModeController {
         if (!enabled) {
             resetPosition();
         }
-        if (listener != null) {
-            listener.onFloatingModeChanged(enabled);
-        }
+        onFloatingModeChanged.accept(enabled);
     }
 
     int getOffsetX() {
@@ -74,8 +70,12 @@ final class FloatingModeController {
         return offsetY;
     }
 
-    void setOnPositionChangedListener(OnPositionChangedListener listener) {
-        this.listener = listener;
+    void setOnPositionChangedListener(Runnable listener) {
+        onPositionChanged = RuntimeDefaults.runnable(listener);
+    }
+
+    void setOnFloatingModeChangedListener(Consumer<Boolean> listener) {
+        onFloatingModeChanged = RuntimeDefaults.booleanConsumer(listener);
     }
 
     /**
@@ -105,9 +105,7 @@ final class FloatingModeController {
                 if (dragging) {
                     offsetX = dragStartOffsetX + Math.round(dx);
                     offsetY = dragStartOffsetY + Math.round(dy);
-                    if (listener != null) {
-                        listener.onPositionChanged(offsetX, offsetY);
-                    }
+                    onPositionChanged.run();
                 }
                 return true;
 
@@ -130,9 +128,7 @@ final class FloatingModeController {
                 dragging = false;
                 offsetX = dragStartOffsetX;
                 offsetY = dragStartOffsetY;
-                if (listener != null) {
-                    listener.onPositionChanged(offsetX, offsetY);
-                }
+                onPositionChanged.run();
                 return true;
         }
         return false;
@@ -142,9 +138,7 @@ final class FloatingModeController {
         offsetX = 0;
         offsetY = 0;
         savePosition();
-        if (listener != null) {
-            listener.onPositionChanged(offsetX, offsetY);
-        }
+        onPositionChanged.run();
     }
 
     private void savePosition() {

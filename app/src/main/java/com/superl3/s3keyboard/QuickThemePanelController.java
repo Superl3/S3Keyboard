@@ -1,33 +1,35 @@
 package com.superl3.s3keyboard;
 
 import android.content.Context;
-import android.graphics.drawable.GradientDrawable;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 final class QuickThemePanelController {
-    interface Host {
-        KeyboardMode currentKeyboardMode();
-
-        String enterKeyLabel();
-
-        boolean forceNumberRow();
-
-        void applyRuntimeSettings(KeyboardSettings settings);
-
-        void dismissQuickSettings();
-    }
-
     private final Context context;
-    private final Host host;
+    private final Supplier<KeyboardMode> currentKeyboardMode;
+    private final Supplier<String> enterKeyLabel;
+    private final BooleanSupplier forceNumberRow;
+    private final Consumer<KeyboardSettings> runtimeSettingsApplier;
+    private final Runnable dismissQuickSettings;
 
-    QuickThemePanelController(Context context, Host host) {
+    QuickThemePanelController(
+            Context context,
+            Supplier<KeyboardMode> currentKeyboardMode,
+            Supplier<String> enterKeyLabel,
+            BooleanSupplier forceNumberRow,
+            Consumer<KeyboardSettings> runtimeSettingsApplier,
+            Runnable dismissQuickSettings) {
         this.context = context;
-        this.host = host;
+        this.currentKeyboardMode = RuntimeDefaults.keyboardModeSupplier(currentKeyboardMode);
+        this.enterKeyLabel = RuntimeDefaults.nullStringSupplier(enterKeyLabel);
+        this.forceNumberRow = RuntimeDefaults.booleanSupplier(forceNumberRow);
+        this.runtimeSettingsApplier = RuntimeDefaults.keyboardSettingsConsumer(runtimeSettingsApplier);
+        this.dismissQuickSettings = RuntimeDefaults.runnable(dismissQuickSettings);
     }
 
     void addTo(LinearLayout panel) {
@@ -42,45 +44,21 @@ final class QuickThemePanelController {
             return;
         }
 
-        SettingsUiPalette ui = SettingsUiPalette.from(context);
-        TextView label = new TextView(context);
-        label.setText(R.string.quick_theme_label);
-        label.setTextColor(ui.textSecondary);
-        label.setTextSize(13);
-        panel.addView(label, topWrap(10));
+        QuickPanelUi.addWithTop(
+                context,
+                panel,
+                QuickPanelUi.sectionLabel(context, R.string.quick_theme_label),
+                10);
 
-        Spinner spinner = new Spinner(context);
-        spinner.setAdapter(new SettingsArrayAdapter<>(context, options));
-        spinner.setMinimumHeight(dp(44));
-        spinner.setPadding(dp(8), 0, dp(8), 0);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(ui.controlFill);
-        background.setCornerRadius(dp(8));
-        background.setStroke(Math.max(1, dp(1)), ui.border);
-        spinner.setBackground(background);
+        Spinner spinner = SettingsRowBuilder.spinner(context, options);
         int selectedIndex = ThemeOption.indexOfStableId(
                 options,
                 KeyboardPreferences.loadSelectedThemeId(context));
         spinner.setSelection(selectedIndex, false);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            private boolean initialized;
-
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!initialized) {
-                    initialized = true;
-                    return;
-                }
-                if (position >= 0 && position < options.length) {
-                    apply(options[position]);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        panel.addView(spinner, topWrap(4));
+        spinner.setOnItemSelectedListener(UserInputListeners.itemSelectedAfterInitialSelection(position -> {
+            apply(ThemeOption.at(options, position));
+        }));
+        QuickPanelUi.addWithTop(context, panel, spinner, 4);
     }
 
     private void apply(ThemeOption option) {
@@ -93,28 +71,17 @@ final class QuickThemePanelController {
             KeyboardPreferences.saveSelectedThemeId(context, option.stableId());
             savedSettings = KeyboardPreferences.applyAccentPlacementPolicy(context, savedSettings);
             KeyboardPreferences.saveSettings(context, savedSettings);
-            KeyboardSettings runtimeSettings = savedSettings
-                    .withKeyboardMode(host == null ? savedSettings.keyboardMode : host.currentKeyboardMode())
-                    .withEnterKeyLabel(host == null ? savedSettings.enterKeyLabel : host.enterKeyLabel())
-                    .withRuntimeNumberRowForced(host != null && host.forceNumberRow());
-            if (host != null) {
-                host.applyRuntimeSettings(runtimeSettings);
-                host.dismissQuickSettings();
-            }
+            KeyboardSettings runtimeSettings = RuntimeDefaults.withRuntimeImeState(
+                    savedSettings,
+                    currentKeyboardMode.get(),
+                    enterKeyLabel.get(),
+                    savedSettings.enterKeyLabel,
+                    forceNumberRow.getAsBoolean());
+            runtimeSettingsApplier.accept(runtimeSettings);
+            dismissQuickSettings.run();
         } catch (IllegalArgumentException exception) {
             Toast.makeText(context, R.string.quick_theme_apply_failed, Toast.LENGTH_SHORT).show();
         }
     }
 
-    private LinearLayout.LayoutParams topWrap(int topMarginDp) {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.topMargin = dp(topMarginDp);
-        return params;
-    }
-
-    private int dp(int value) {
-        return Math.round(value * context.getResources().getDisplayMetrics().density);
-    }
 }

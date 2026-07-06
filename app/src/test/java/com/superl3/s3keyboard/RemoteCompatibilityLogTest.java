@@ -147,6 +147,27 @@ public final class RemoteCompatibilityLogTest {
     }
 
     @Test
+    public void markLatestResultNormalizesPackageNamesBeforeMatching() {
+        List<RemoteCompatibilityLog.Entry> entries = new java.util.ArrayList<>(Arrays.asList(
+                new RemoteCompatibilityLog.Entry(
+                        456L,
+                        " com.limelight ",
+                        "Esc",
+                        KeyEvent.KEYCODE_ESCAPE,
+                        0,
+                        2)));
+
+        boolean marked = RemoteCompatibilityLog.markLatestResult(
+                entries,
+                "com.limelight",
+                "Esc",
+                RemoteCompatibilityLog.RESULT_PASS);
+
+        assertEquals(true, marked);
+        assertEquals(RemoteCompatibilityLog.RESULT_PASS, entries.get(0).manualResult);
+    }
+
+    @Test
     public void invalidPayloadDecodesAsEmptyList() {
         assertEquals(0, RemoteCompatibilityLog.decode("not-json").size());
     }

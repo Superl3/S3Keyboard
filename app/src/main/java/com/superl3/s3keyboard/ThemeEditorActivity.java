@@ -11,14 +11,10 @@ import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
@@ -29,6 +25,10 @@ import android.widget.Toast;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.IntConsumer;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 public final class ThemeEditorActivity extends Activity {
     private static final int MODE_HANGUL_ID = 101;
@@ -106,6 +106,16 @@ public final class ThemeEditorActivity extends Activity {
     private View selectedKeyBackgroundColorSwatch;
     private final Map<View, TextView> swatchCodeLabels = new HashMap<>();
 
+    private static final class ColorControl {
+        final Spinner spinner;
+        final View swatch;
+
+        ColorControl(Spinner spinner, View swatch) {
+            this.spinner = spinner;
+            this.swatch = swatch;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -126,22 +136,27 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private View createContentView() {
-        int padding = dp(16);
+        int padding = SettingsRowBuilder.dp(this, 16);
         SettingsUiPalette ui = SettingsUiPalette.from(this);
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout root = SettingsRowBuilder.vertical(this);
         root.setPadding(padding, padding, padding, padding);
         root.setBackgroundColor(ui.background);
 
-        TextView title = label(getString(R.string.theme_editor_title));
+        TextView title = SettingsRowBuilder.label(this, getString(R.string.theme_editor_title));
         title.setTextSize(22);
         title.setGravity(Gravity.CENTER_VERTICAL);
-        root.addView(title, matchWrap());
+        SettingsRowBuilder.addView(root, title);
 
         modeGroup = new RadioGroup(this);
         modeGroup.setOrientation(RadioGroup.HORIZONTAL);
-        modeGroup.addView(radio(MODE_HANGUL_ID, getString(R.string.theme_mode_dingul)));
-        modeGroup.addView(radio(MODE_ENGLISH_ID, getString(R.string.theme_mode_qwerty)));
+        modeGroup.addView(SettingsRowBuilder.radioButton(
+                this,
+                MODE_HANGUL_ID,
+                R.string.theme_mode_dingul));
+        modeGroup.addView(SettingsRowBuilder.radioButton(
+                this,
+                MODE_ENGLISH_ID,
+                R.string.theme_mode_qwerty));
         modeGroup.setOnCheckedChangeListener((group, checkedId) -> {
             if (syncing) {
                 return;
@@ -152,10 +167,10 @@ public final class ThemeEditorActivity extends Activity {
                     ? KeyboardMode.ENGLISH
                     : KeyboardMode.HANGUL));
         });
-        root.addView(modeGroup, matchWrapWithTop(8));
+        SettingsRowBuilder.addViewWithTop(this, root, modeGroup, 8);
 
-        previewMeta = label("");
-        root.addView(previewMeta, matchWrapWithTop(6));
+        previewMeta = SettingsRowBuilder.valueLabel(this);
+        SettingsRowBuilder.addViewWithTop(this, root, previewMeta, 6);
 
         preview = new HangulKeyboardView(this);
         preview.setOnPreviewKeySelectionListener(key -> {
@@ -164,17 +179,13 @@ public final class ThemeEditorActivity extends Activity {
             editScopeGroup.check(EDIT_KEY_TEXT_ID);
             syncSelectedKeyInspector();
         });
-        root.addView(preview, matchWrapWithTop(8));
+        SettingsRowBuilder.addViewWithTop(this, root, preview, 8);
 
         ScrollView scrollView = new ScrollView(this);
         scrollView.setBackgroundColor(ui.background);
-        LinearLayout editorRoot = new LinearLayout(this);
-        editorRoot.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout editorRoot = SettingsRowBuilder.vertical(this);
         scrollView.addView(editorRoot);
-        root.addView(scrollView, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f));
+        root.addView(scrollView, SettingsRowBuilder.matchWeightedFill());
 
         addThemeSaveControls(editorRoot);
         addThemePromptControls(editorRoot);
@@ -203,65 +214,66 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private void addThemeSaveControls(LinearLayout root) {
-        Button saveThemeButton = new Button(this);
-        saveThemeButton.setText(R.string.theme_save_current);
-        styleSystemButton(saveThemeButton);
-        saveThemeButton.setOnClickListener(v -> {
+        SettingsRowBuilder.buttonRow(this, root, R.string.theme_save_current, 10, v -> {
             UserThemeStore.UserTheme saved = UserThemeStore.saveCurrent(this, settings);
             KeyboardPreferences.saveSelectedThemeId(this, saved.id);
             Toast.makeText(this, getString(R.string.theme_saved_format, saved.name), Toast.LENGTH_SHORT).show();
         });
-        root.addView(saveThemeButton, buttonParams());
 
-        Button exportJsonButton = new Button(this);
-        exportJsonButton.setText(R.string.theme_json_copy);
-        styleSystemButton(exportJsonButton);
-        exportJsonButton.setOnClickListener(v -> copyThemeJsonToClipboard());
-        root.addView(exportJsonButton, buttonParams());
+        SettingsRowBuilder.buttonRow(this, root, R.string.theme_json_copy, 10, v -> copyThemeJsonToClipboard());
 
-        Button importJsonButton = new Button(this);
-        importJsonButton.setText(R.string.theme_json_import_title);
-        styleSystemButton(importJsonButton);
-        importJsonButton.setOnClickListener(v -> showThemeJsonImportDialog());
-        root.addView(importJsonButton, buttonParams());
+        SettingsRowBuilder.buttonRow(this, root, R.string.theme_json_import_title, 10,
+                v -> showThemeJsonImportDialog());
     }
 
     private void addThemePromptControls(LinearLayout root) {
         LinearLayout section = addExpandableSection(root, getString(R.string.theme_ai_prompt_section), false);
-        TextView description = label(getString(R.string.theme_ai_prompt_description));
-        section.addView(description, matchWrapWithTop(6));
+        TextView description = SettingsRowBuilder.label(
+                this,
+                getString(R.string.theme_ai_prompt_description));
+        SettingsRowBuilder.addViewWithTop(this, section, description, 6);
 
-        Button keyboardPromptButton = actionButton(
+        SettingsRowBuilder.buttonRow(
+                this,
+                section,
                 getString(R.string.theme_keyboard_image_prompt_copy),
+                10,
                 v -> copyPromptToClipboard(
                         getString(R.string.theme_keyboard_image_prompt_clip_label),
                         ThemePromptTemplates.keyboardImagePrompt(currentThemeJson()),
                         getString(R.string.theme_keyboard_image_prompt_copied)));
-        section.addView(keyboardPromptButton, buttonParams());
 
-        Button palettePromptButton = actionButton(
+        SettingsRowBuilder.buttonRow(
+                this,
+                section,
                 getString(R.string.theme_palette_image_prompt_copy),
+                10,
                 v -> copyPromptToClipboard(
                         getString(R.string.theme_palette_image_prompt_clip_label),
                         ThemePromptTemplates.paletteImagePrompt(currentThemeJson()),
                         getString(R.string.theme_palette_image_prompt_copied)));
-        section.addView(palettePromptButton, buttonParams());
     }
 
     private void addSelectedKeyInspector(LinearLayout root) {
         LinearLayout section = addExpandableSection(root, getString(R.string.theme_per_key_override_section), true);
-        selectedKeyLabel = label(getString(R.string.theme_no_key_selected));
-        section.addView(selectedKeyLabel, matchWrapWithTop(8));
+        selectedKeyLabel = SettingsRowBuilder.label(this, getString(R.string.theme_no_key_selected));
+        SettingsRowBuilder.addViewWithTop(this, section, selectedKeyLabel, 8);
 
         editScopeGroup = new RadioGroup(this);
         editScopeGroup.setOrientation(RadioGroup.HORIZONTAL);
-        editScopeGroup.addView(radio(EDIT_GLOBAL_ID, getString(R.string.theme_global_style)));
-        editScopeGroup.addView(radio(EDIT_KEY_TEXT_ID, getString(R.string.theme_selected_key)));
+        editScopeGroup.addView(SettingsRowBuilder.radioButton(
+                this,
+                EDIT_GLOBAL_ID,
+                R.string.theme_global_style));
+        editScopeGroup.addView(SettingsRowBuilder.radioButton(
+                this,
+                EDIT_KEY_TEXT_ID,
+                R.string.theme_selected_key));
         editScopeGroup.check(EDIT_GLOBAL_ID);
         editScopeGroup.setOnCheckedChangeListener((group, checkedId) -> syncSelectedKeyInspector());
-        section.addView(editScopeGroup, matchWrapWithTop(8));
+        SettingsRowBuilder.addViewWithTop(this, section, editScopeGroup, 8);
 
-        ColorChangeListener selectedKeyTextListener = color -> {
+        IntConsumer selectedKeyTextListener = color -> {
             if (selectedOverrideKey.isEmpty() || editScopeGroup.getCheckedRadioButtonId() != EDIT_KEY_TEXT_ID) {
                 return;
             }
@@ -270,16 +282,20 @@ public final class ThemeEditorActivity extends Activity {
             updateSettings(settings.withKeyColorOverrides(overrides));
         };
         selectedKeyColorSpinner = colorSpinner(selectedKeyTextListener);
-        section.addView(label(getString(R.string.theme_selected_key_text_color)), matchWrapWithTop(8));
+        SettingsRowBuilder.addViewWithTop(
+                this,
+                section,
+                SettingsRowBuilder.label(this, getString(R.string.theme_selected_key_text_color)),
+                8);
         selectedKeyColorSwatch = addInlineSwatch(section, settings.accentColor);
         selectedKeyColorSwatch.setOnClickListener(v ->
                 showColorEditDialog(
                         getString(R.string.theme_selected_key_text_color),
                         colorTag(selectedKeyColorSwatch),
                         selectedKeyTextListener));
-        section.addView(selectedKeyColorSpinner, matchWrap());
+        SettingsRowBuilder.addView(section, selectedKeyColorSpinner);
 
-        ColorChangeListener selectedKeyBackgroundListener = color -> {
+        IntConsumer selectedKeyBackgroundListener = color -> {
             if (selectedOverrideKey.isEmpty() || editScopeGroup.getCheckedRadioButtonId() != EDIT_KEY_TEXT_ID) {
                 return;
             }
@@ -288,19 +304,25 @@ public final class ThemeEditorActivity extends Activity {
             updateSettings(settings.withKeyColorOverrides(overrides));
         };
         selectedKeyBackgroundColorSpinner = colorSpinner(selectedKeyBackgroundListener);
-        section.addView(label(getString(R.string.theme_selected_key_background_color)), matchWrapWithTop(8));
+        SettingsRowBuilder.addViewWithTop(
+                this,
+                section,
+                SettingsRowBuilder.label(this, getString(R.string.theme_selected_key_background_color)),
+                8);
         selectedKeyBackgroundColorSwatch = addInlineSwatch(section, settings.keyIdleColor);
         selectedKeyBackgroundColorSwatch.setOnClickListener(v ->
                 showColorEditDialog(
                         getString(R.string.theme_selected_key_background_color),
                         colorTag(selectedKeyBackgroundColorSwatch),
                         selectedKeyBackgroundListener));
-        section.addView(selectedKeyBackgroundColorSpinner, matchWrap());
+        SettingsRowBuilder.addView(section, selectedKeyBackgroundColorSpinner);
 
-        addSelectedKeyOverrideButton = new Button(this);
-        addSelectedKeyOverrideButton.setText(R.string.theme_add_selected_key_override);
-        styleSystemButton(addSelectedKeyOverrideButton);
-        addSelectedKeyOverrideButton.setOnClickListener(v -> {
+        addSelectedKeyOverrideButton = SettingsRowBuilder.buttonRow(
+                this,
+                section,
+                R.string.theme_add_selected_key_override,
+                10,
+                v -> {
             if (selectedOverrideKey.isEmpty()) {
                 return;
             }
@@ -313,12 +335,13 @@ public final class ThemeEditorActivity extends Activity {
                     KeyboardKeyVisualClassifier.colorFor(settings, selectedKey));
             updateSettings(settings.withKeyColorOverrides(overrides));
         });
-        section.addView(addSelectedKeyOverrideButton, buttonParams());
 
-        resetSelectedKeyButton = new Button(this);
-        resetSelectedKeyButton.setText(R.string.theme_reset_selected_key_override);
-        styleSystemButton(resetSelectedKeyButton);
-        resetSelectedKeyButton.setOnClickListener(v -> {
+        resetSelectedKeyButton = SettingsRowBuilder.buttonRow(
+                this,
+                section,
+                R.string.theme_reset_selected_key_override,
+                10,
+                v -> {
             if (selectedOverrideKey.isEmpty()) {
                 return;
             }
@@ -327,26 +350,24 @@ public final class ThemeEditorActivity extends Activity {
             overrides.remove(KeyboardSettings.normalizeKeyOverrideName(backgroundOverrideKey(selectedOverrideKey)));
             updateSettings(settings.withKeyColorOverrides(overrides));
         });
-        section.addView(resetSelectedKeyButton, buttonParams());
     }
 
     private void addColorControls(LinearLayout root) {
-        ColorChangeListener keyIdleListener = color -> updateSettings(settings.withThemeColors(
+        IntConsumer keyIdleListener = color -> updateSettings(settings.withThemeColors(
                 color,
                 settings.keyPressedColor,
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 settings.secondaryColor));
-        keyIdleColorSpinner = colorSpinner(keyIdleListener);
-        keyIdleColorSwatch = addColorControl(
+        ColorControl keyIdleControl = addColorSetting(
                 root,
-                getString(R.string.theme_color_alpha_title),
-                getString(R.string.theme_color_alpha_description),
-                keyIdleColorSpinner,
+                R.string.theme_color_alpha_title,
+                R.string.theme_color_alpha_description,
                 keyIdleListener);
-        root.addView(keyIdleColorSpinner, matchWrap());
+        keyIdleColorSpinner = keyIdleControl.spinner;
+        keyIdleColorSwatch = keyIdleControl.swatch;
 
-        ColorChangeListener functionKeyListener = color -> updateSettings(settings.withExtendedThemeColors(
+        IntConsumer functionKeyListener = color -> updateSettings(settings.withExtendedThemeColors(
                 settings.keyIdleColor,
                 settings.keyPressedColor,
                 settings.keyboardBackgroundColor,
@@ -357,116 +378,121 @@ public final class ThemeEditorActivity extends Activity {
                 settings.borderColor,
                 settings.customDepthColorEnabled,
                 settings.depthColor));
-        functionKeyColorSpinner = colorSpinner(functionKeyListener);
-        functionKeyColorSwatch = addColorControl(
+        ColorControl functionKeyControl = addColorSetting(
                 root,
-                getString(R.string.theme_color_modifier_title),
-                getString(R.string.theme_color_modifier_description),
-                functionKeyColorSpinner,
+                R.string.theme_color_modifier_title,
+                R.string.theme_color_modifier_description,
                 functionKeyListener);
-        root.addView(functionKeyColorSpinner, matchWrap());
-        root.addView(actionButton(
+        functionKeyColorSpinner = functionKeyControl.spinner;
+        functionKeyColorSwatch = functionKeyControl.swatch;
+        SettingsRowBuilder.buttonRow(
+                this,
+                root,
                 getString(R.string.theme_color_modifier_from_alpha),
-                v -> functionKeyListener.onColorChanged(dimColor(settings.keyIdleColor, 0.90f))),
-                buttonParams());
-        ColorChangeListener accentKeyListener = color -> updateSettings(settings.withExtendedThemeColors(
+                10,
+                v -> functionKeyListener.accept(dimColor(settings.keyIdleColor, 0.90f)));
+        IntConsumer accentKeyListener = color -> updateSettings(settings.withExtendedThemeColors(
                 settings.keyIdleColor,
                 settings.keyPressedColor,
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 settings.secondaryColor,
-                settings.functionKeyColor,                color,
+                settings.functionKeyColor,
+                color,
                 settings.borderColor,
                 settings.customDepthColorEnabled,
                 settings.depthColor));
-        accentKeyColorSpinner = colorSpinner(accentKeyListener);
-        accentKeyColorSwatch = addColorControl(
+        ColorControl accentKeyControl = addColorSetting(
                 root,
-                getString(R.string.theme_color_accent_title),
-                getString(R.string.theme_color_accent_description),
-                accentKeyColorSpinner,
+                R.string.theme_color_accent_title,
+                R.string.theme_color_accent_description,
                 accentKeyListener);
-        root.addView(accentKeyColorSpinner, matchWrap());
-        root.addView(actionButton(
+        accentKeyColorSpinner = accentKeyControl.spinner;
+        accentKeyColorSwatch = accentKeyControl.swatch;
+        SettingsRowBuilder.buttonRow(
+                this,
+                root,
                 getString(R.string.theme_color_accent_from_modifier_inverse),
+                10,
                 v -> updateSettings(settings.withExtendedThemeColors(
                         settings.keyIdleColor,
                         settings.keyPressedColor,
                         settings.keyboardBackgroundColor,
                         settings.accentColor,
                         settings.functionKeyColor,
-                        settings.functionKeyColor,                        settings.secondaryColor,
+                        settings.functionKeyColor,
+                        settings.secondaryColor,
                         settings.borderColor,
                         settings.customDepthColorEnabled,
-                        settings.depthColor))),
-                buttonParams());
+                        settings.depthColor)));
 
-        ColorChangeListener keyPressedListener = color -> updateSettings(settings.withThemeColors(
+        IntConsumer keyPressedListener = color -> updateSettings(settings.withThemeColors(
                 settings.keyIdleColor,
                 color,
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 settings.secondaryColor));
-        keyPressedColorSpinner = colorSpinner(keyPressedListener);
-        keyPressedColorSwatch = addColorControl(
+        ColorControl keyPressedControl = addColorSetting(
                 root,
-                getString(R.string.theme_color_pressed_title),
-                getString(R.string.theme_color_pressed_description),
-                keyPressedColorSpinner,
+                R.string.theme_color_pressed_title,
+                R.string.theme_color_pressed_description,
                 keyPressedListener);
-        root.addView(keyPressedColorSpinner, matchWrap());
+        keyPressedColorSpinner = keyPressedControl.spinner;
+        keyPressedColorSwatch = keyPressedControl.swatch;
 
-        ColorChangeListener keyboardBackgroundListener = color -> updateSettings(settings.withThemeColors(
+        IntConsumer keyboardBackgroundListener = color -> updateSettings(settings.withThemeColors(
                 settings.keyIdleColor,
                 settings.keyPressedColor,
                 color,
                 settings.accentColor,
                 settings.secondaryColor));
-        keyboardBackgroundColorSpinner = colorSpinner(keyboardBackgroundListener);
-        keyboardBackgroundColorSwatch = addColorControl(
+        ColorControl keyboardBackgroundControl = addColorSetting(
                 root,
-                getString(R.string.theme_color_keyboard_background_title),
-                getString(R.string.theme_color_keyboard_background_description),
-                keyboardBackgroundColorSpinner,
+                R.string.theme_color_keyboard_background_title,
+                R.string.theme_color_keyboard_background_description,
                 keyboardBackgroundListener);
-        root.addView(keyboardBackgroundColorSpinner, matchWrap());
+        keyboardBackgroundColorSpinner = keyboardBackgroundControl.spinner;
+        keyboardBackgroundColorSwatch = keyboardBackgroundControl.swatch;
 
-        panelGradientCheckBox = checkBox(getString(R.string.theme_panel_gradient_enabled), checked ->
-                updateSettings(settings.withVisualEffects(settings.visualEffects.withPanelGradient(
-                        checked,
-                        settings.visualEffects.panelGradientStartColor,
-                        settings.visualEffects.panelGradientEndColor))));
-        root.addView(panelGradientCheckBox, matchWrapWithTop(12));
+        panelGradientCheckBox = SettingsRowBuilder.checkBoxRow(
+                this,
+                root,
+                R.string.theme_panel_gradient_enabled,
+                12,
+                () -> !syncing,
+                checked ->
+                        updateSettings(settings.withVisualEffects(settings.visualEffects.withPanelGradient(
+                                checked,
+                                settings.visualEffects.panelGradientStartColor,
+                                settings.visualEffects.panelGradientEndColor))));
 
-        ColorChangeListener panelGradientStartListener = color -> updateSettings(settings.withVisualEffects(
+        IntConsumer panelGradientStartListener = color -> updateSettings(settings.withVisualEffects(
                 settings.visualEffects.withPanelGradient(
                         true,
                         color,
                         settings.visualEffects.panelGradientEndColor)));
-        panelGradientStartColorSpinner = colorSpinner(panelGradientStartListener);
-        panelGradientStartColorSwatch = addColorControl(
+        ColorControl panelGradientStartControl = addColorSetting(
                 root,
-                getString(R.string.theme_panel_gradient_start_title),
-                getString(R.string.theme_panel_gradient_start_description),
-                panelGradientStartColorSpinner,
+                R.string.theme_panel_gradient_start_title,
+                R.string.theme_panel_gradient_start_description,
                 panelGradientStartListener);
-        root.addView(panelGradientStartColorSpinner, matchWrap());
+        panelGradientStartColorSpinner = panelGradientStartControl.spinner;
+        panelGradientStartColorSwatch = panelGradientStartControl.swatch;
 
-        ColorChangeListener panelGradientEndListener = color -> updateSettings(settings.withVisualEffects(
+        IntConsumer panelGradientEndListener = color -> updateSettings(settings.withVisualEffects(
                 settings.visualEffects.withPanelGradient(
                         true,
                         settings.visualEffects.panelGradientStartColor,
                         color)));
-        panelGradientEndColorSpinner = colorSpinner(panelGradientEndListener);
-        panelGradientEndColorSwatch = addColorControl(
+        ColorControl panelGradientEndControl = addColorSetting(
                 root,
-                getString(R.string.theme_panel_gradient_end_title),
-                getString(R.string.theme_panel_gradient_end_description),
-                panelGradientEndColorSpinner,
+                R.string.theme_panel_gradient_end_title,
+                R.string.theme_panel_gradient_end_description,
                 panelGradientEndListener);
-        root.addView(panelGradientEndColorSpinner, matchWrap());
+        panelGradientEndColorSpinner = panelGradientEndControl.spinner;
+        panelGradientEndColorSwatch = panelGradientEndControl.swatch;
 
-        ColorChangeListener borderListener = color -> updateSettings(settings.withExtendedThemeColors(
+        IntConsumer borderListener = color -> updateSettings(settings.withExtendedThemeColors(
                 settings.keyIdleColor,
                 settings.keyPressedColor,
                 settings.keyboardBackgroundColor,
@@ -477,217 +503,267 @@ public final class ThemeEditorActivity extends Activity {
                 color,
                 settings.customDepthColorEnabled,
                 settings.depthColor));
-        borderColorSpinner = colorSpinner(borderListener);
-        borderColorSwatch = addColorControl(
+        ColorControl borderControl = addColorSetting(
                 root,
-                getString(R.string.theme_color_border_title),
-                getString(R.string.theme_color_border_description),
-                borderColorSpinner,
+                R.string.theme_color_border_title,
+                R.string.theme_color_border_description,
                 borderListener);
-        root.addView(borderColorSpinner, matchWrap());
+        borderColorSpinner = borderControl.spinner;
+        borderColorSwatch = borderControl.swatch;
 
-        customDepthColorCheckBox = checkBox(getString(R.string.theme_custom_depth_color_enabled), checked ->
-                updateSettings(settings.withDepthColor(checked, settings.depthColor)));
-        root.addView(customDepthColorCheckBox, matchWrapWithTop(12));
-
-        ColorChangeListener depthListener = color -> updateSettings(settings.withDepthColor(true, color));
-        depthColorSpinner = colorSpinner(depthListener);
-        depthColorSwatch = addColorControl(
+        customDepthColorCheckBox = SettingsRowBuilder.checkBoxRow(
+                this,
                 root,
-                getString(R.string.theme_color_depth_title),
-                getString(R.string.theme_color_depth_description),
-                depthColorSpinner,
-                depthListener);
-        root.addView(depthColorSpinner, matchWrap());
+                R.string.theme_custom_depth_color_enabled,
+                12,
+                () -> !syncing,
+                checked ->
+                        updateSettings(settings.withDepthColor(checked, settings.depthColor)));
 
-        ColorChangeListener accentListener = color -> updateSettings(settings.withThemeColors(
+        IntConsumer depthListener = color -> updateSettings(settings.withDepthColor(true, color));
+        ColorControl depthControl = addColorSetting(
+                root,
+                R.string.theme_color_depth_title,
+                R.string.theme_color_depth_description,
+                depthListener);
+        depthColorSpinner = depthControl.spinner;
+        depthColorSwatch = depthControl.swatch;
+
+        IntConsumer accentListener = color -> updateSettings(settings.withThemeColors(
                 settings.keyIdleColor,
                 settings.keyPressedColor,
                 settings.keyboardBackgroundColor,
                 color,
                 settings.secondaryColor));
-        accentColorSpinner = colorSpinner(accentListener);
-        accentColorSwatch = addColorControl(
+        ColorControl accentControl = addColorSetting(
                 root,
-                getString(R.string.theme_color_primary_text_title),
-                getString(R.string.theme_color_primary_text_description),
-                accentColorSpinner,
+                R.string.theme_color_primary_text_title,
+                R.string.theme_color_primary_text_description,
                 accentListener);
-        root.addView(accentColorSpinner, matchWrap());
+        accentColorSpinner = accentControl.spinner;
+        accentColorSwatch = accentControl.swatch;
 
-        ColorChangeListener secondaryListener = color -> updateSettings(settings.withThemeColors(
+        IntConsumer secondaryListener = color -> updateSettings(settings.withThemeColors(
                 settings.keyIdleColor,
                 settings.keyPressedColor,
                 settings.keyboardBackgroundColor,
                 settings.accentColor,
                 color));
-        secondaryColorSpinner = colorSpinner(secondaryListener);
-        secondaryColorSwatch = addColorControl(
+        ColorControl secondaryControl = addColorSetting(
                 root,
-                getString(R.string.theme_color_secondary_text_title),
-                getString(R.string.theme_color_secondary_text_description),
-                secondaryColorSpinner,
+                R.string.theme_color_secondary_text_title,
+                R.string.theme_color_secondary_text_description,
                 secondaryListener);
-        root.addView(secondaryColorSpinner, matchWrap());
+        secondaryColorSpinner = secondaryControl.spinner;
+        secondaryColorSwatch = secondaryControl.swatch;
     }
 
     private void addShapeControls(LinearLayout root) {
-        roundnessValue = label("");
-        roundnessSeekBar = seekBar(KeyboardSettings.MAX_KEY_ROUNDNESS_DP, progress ->
+        roundnessValue = SettingsRowBuilder.valueLabel(this);
+        roundnessSeekBar = SettingsRowBuilder.seekBarRow(this, root, roundnessValue,
+                KeyboardSettings.MAX_KEY_ROUNDNESS_DP, 8, () -> !syncing, progress ->
                 updateSettings(settings.withKeyRoundness(progress)));
-        root.addView(roundnessValue, matchWrapWithTop(8));
-        root.addView(roundnessSeekBar, matchWrap());
 
-        keyBorderWidthValue = label("");
-        keyBorderWidthSeekBar = seekBar(KeyboardSettings.MAX_KEY_BORDER_WIDTH_DP, progress ->
+        keyBorderWidthValue = SettingsRowBuilder.valueLabel(this);
+        keyBorderWidthSeekBar = SettingsRowBuilder.seekBarRow(this, root, keyBorderWidthValue,
+                KeyboardSettings.MAX_KEY_BORDER_WIDTH_DP, 8, () -> !syncing, progress ->
                 updateSettings(settings.withKeyBorderWidth(progress)));
-        root.addView(keyBorderWidthValue, matchWrapWithTop(8));
-        root.addView(keyBorderWidthSeekBar, matchWrap());
 
-        keyGapValue = label("");
-        keyGapSeekBar = seekBar(KeyboardSettings.MAX_KEY_GAP_DP, progress ->
+        keyGapValue = SettingsRowBuilder.valueLabel(this);
+        keyGapSeekBar = SettingsRowBuilder.seekBarRow(this, root, keyGapValue,
+                KeyboardSettings.MAX_KEY_GAP_DP, 8, () -> !syncing, progress ->
                 updateSettings(settings.withKeyGap(progress)));
-        root.addView(keyGapValue, matchWrapWithTop(8));
-        root.addView(keyGapSeekBar, matchWrap());
 
-        keyDepthCheckBox = checkBox(getString(R.string.theme_key_depth_enabled), checked ->
-                updateSettings(settings.withKeyDepth(checked, settings.keyDepthDp)));
-        root.addView(keyDepthCheckBox, matchWrapWithTop(12));
+        keyDepthCheckBox = SettingsRowBuilder.checkBoxRow(
+                this,
+                root,
+                R.string.theme_key_depth_enabled,
+                12,
+                () -> !syncing,
+                checked ->
+                        updateSettings(settings.withKeyDepth(checked, settings.keyDepthDp)));
 
-        keyDepthValue = label("");
-        keyDepthSeekBar = seekBar(KeyboardSettings.MAX_KEY_DEPTH_DP, progress ->
+        keyDepthValue = SettingsRowBuilder.valueLabel(this);
+        keyDepthSeekBar = SettingsRowBuilder.seekBarRow(this, root, keyDepthValue,
+                KeyboardSettings.MAX_KEY_DEPTH_DP, 8, () -> !syncing, progress ->
                 updateSettings(settings.withKeyDepth(settings.keyDepthEnabled, progress)));
-        root.addView(keyDepthValue, matchWrapWithTop(8));
-        root.addView(keyDepthSeekBar, matchWrap());
 
-        keyFaceGradientCheckBox = checkBox(getString(R.string.theme_key_face_gradient), checked ->
-                updateSettings(settings.withVisualEffects(
-                        settings.visualEffects.withKeyFaceGradient(
-                                checked,
-                                settings.visualEffects.keyFaceGradientStrengthPercent))));
-        root.addView(keyFaceGradientCheckBox, matchWrapWithTop(12));
+        keyFaceGradientCheckBox = SettingsRowBuilder.checkBoxRow(
+                this,
+                root,
+                R.string.theme_key_face_gradient,
+                12,
+                () -> !syncing,
+                checked ->
+                        updateSettings(settings.withVisualEffects(
+                                settings.visualEffects.withKeyFaceGradient(
+                                        checked,
+                                        settings.visualEffects.keyFaceGradientStrengthPercent))));
 
-        keyFaceGradientStrengthValue = label("");
-        keyFaceGradientStrengthSeekBar = seekBar(100, progress ->
+        keyFaceGradientStrengthValue = SettingsRowBuilder.valueLabel(this);
+        keyFaceGradientStrengthSeekBar = SettingsRowBuilder.seekBarRow(this, root, keyFaceGradientStrengthValue,
+                100, 8, () -> !syncing, progress ->
                 updateSettings(settings.withVisualEffects(
                         settings.visualEffects.withKeyFaceGradient(
                                 settings.visualEffects.keyFaceGradientEnabled,
                                 progress))));
-        root.addView(keyFaceGradientStrengthValue, matchWrapWithTop(8));
-        root.addView(keyFaceGradientStrengthSeekBar, matchWrap());
 
-        ColorChangeListener keyFaceGradientStartListener = color -> updateSettings(settings.withVisualEffects(
+        IntConsumer keyFaceGradientStartListener = color -> updateSettings(settings.withVisualEffects(
                 settings.visualEffects.withKeyFaceGradient(
                         true,
                         settings.visualEffects.keyFaceGradientStrengthPercent,
                         color,
                         settings.visualEffects.keyFaceGradientEndColor,
                         settings.visualEffects.keyFaceGradientCurve)));
-        keyFaceGradientStartColorSpinner = colorSpinner(keyFaceGradientStartListener);
-        keyFaceGradientStartColorSwatch = addColorControl(
+        ColorControl keyFaceGradientStartControl = addColorSetting(
                 root,
                 "Key face gradient highlight",
                 "Top blend color for the key face gradient.",
-                keyFaceGradientStartColorSpinner,
                 keyFaceGradientStartListener);
-        root.addView(keyFaceGradientStartColorSpinner, matchWrap());
+        keyFaceGradientStartColorSpinner = keyFaceGradientStartControl.spinner;
+        keyFaceGradientStartColorSwatch = keyFaceGradientStartControl.swatch;
 
-        ColorChangeListener keyFaceGradientEndListener = color -> updateSettings(settings.withVisualEffects(
+        IntConsumer keyFaceGradientEndListener = color -> updateSettings(settings.withVisualEffects(
                 settings.visualEffects.withKeyFaceGradient(
                         true,
                         settings.visualEffects.keyFaceGradientStrengthPercent,
                         settings.visualEffects.keyFaceGradientStartColor,
                         color,
                         settings.visualEffects.keyFaceGradientCurve)));
-        keyFaceGradientEndColorSpinner = colorSpinner(keyFaceGradientEndListener);
-        keyFaceGradientEndColorSwatch = addColorControl(
+        ColorControl keyFaceGradientEndControl = addColorSetting(
                 root,
                 "Key face gradient shade",
                 "Bottom blend color for the key face gradient.",
-                keyFaceGradientEndColorSpinner,
                 keyFaceGradientEndListener);
-        root.addView(keyFaceGradientEndColorSpinner, matchWrap());
+        keyFaceGradientEndColorSpinner = keyFaceGradientEndControl.spinner;
+        keyFaceGradientEndColorSwatch = keyFaceGradientEndControl.swatch;
 
-        root.addView(label(getString(R.string.theme_key_face_gradient_curve)), matchWrapWithTop(8));
         keyFaceGradientCurveSpinner = createKeyFaceGradientCurveSpinner();
-        root.addView(keyFaceGradientCurveSpinner, matchWrap());
+        SettingsRowBuilder.labeledControl(
+                this,
+                root,
+                R.string.theme_key_face_gradient_curve,
+                keyFaceGradientCurveSpinner,
+                8);
     }
 
     private void addTypographyControls(LinearLayout root) {
         fontFamilySpinner = fontSpinner();
-        root.addView(label(getString(R.string.theme_font_label)), matchWrapWithTop(8));
-        root.addView(fontFamilySpinner, matchWrap());
+        SettingsRowBuilder.labeledControl(
+                this,
+                root,
+                R.string.theme_font_label,
+                fontFamilySpinner,
+                8);
 
-        primaryTextSizeValue = label("");
-        primaryTextSizeSeekBar = textSizeSeekBar(progress -> updateSettings(settings.withTypography(
-                settings.fontFamily,
-                KeyboardSettings.MIN_TEXT_SIZE_PERCENT + progress,
-                settings.secondaryTextSizePercent,
-                settings.primaryTextBold,
-                settings.primaryTextItalic,
-                settings.secondaryTextBold,
-                settings.secondaryTextItalic)));
-        root.addView(primaryTextSizeValue, matchWrapWithTop(8));
-        root.addView(primaryTextSizeSeekBar, matchWrap());
+        primaryTextSizeValue = SettingsRowBuilder.valueLabel(this);
+        primaryTextSizeSeekBar = SettingsRowBuilder.seekBarRow(this, root, primaryTextSizeValue,
+                KeyboardSettings.MAX_TEXT_SIZE_PERCENT - KeyboardSettings.MIN_TEXT_SIZE_PERCENT,
+                8,
+                () -> !syncing,
+                progress -> updateSettings(settings.withTypography(
+                        settings.fontFamily,
+                        KeyboardSettings.MIN_TEXT_SIZE_PERCENT + progress,
+                        settings.secondaryTextSizePercent,
+                        settings.primaryTextBold,
+                        settings.primaryTextItalic,
+                        settings.secondaryTextBold,
+                        settings.secondaryTextItalic)));
 
-        secondaryTextSizeValue = label("");
-        secondaryTextSizeSeekBar = textSizeSeekBar(progress -> updateSettings(settings.withTypography(
-                settings.fontFamily,
-                settings.primaryTextSizePercent,
-                KeyboardSettings.MIN_TEXT_SIZE_PERCENT + progress,
-                settings.primaryTextBold,
-                settings.primaryTextItalic,
-                settings.secondaryTextBold,
-                settings.secondaryTextItalic)));
-        root.addView(secondaryTextSizeValue, matchWrapWithTop(8));
-        root.addView(secondaryTextSizeSeekBar, matchWrap());
+        secondaryTextSizeValue = SettingsRowBuilder.valueLabel(this);
+        secondaryTextSizeSeekBar = SettingsRowBuilder.seekBarRow(this, root, secondaryTextSizeValue,
+                KeyboardSettings.MAX_TEXT_SIZE_PERCENT - KeyboardSettings.MIN_TEXT_SIZE_PERCENT,
+                8,
+                () -> !syncing,
+                progress -> updateSettings(settings.withTypography(
+                        settings.fontFamily,
+                        settings.primaryTextSizePercent,
+                        KeyboardSettings.MIN_TEXT_SIZE_PERCENT + progress,
+                        settings.primaryTextBold,
+                        settings.primaryTextItalic,
+                        settings.secondaryTextBold,
+                        settings.secondaryTextItalic)));
 
-        primaryTextBoldCheckBox = checkBox(getString(R.string.theme_primary_text_bold), checked -> updateSettings(settings.withTypography(
-                settings.fontFamily,
-                settings.primaryTextSizePercent,
-                settings.secondaryTextSizePercent,
-                checked,
-                settings.primaryTextItalic,
-                settings.secondaryTextBold,
-                settings.secondaryTextItalic)));
-        primaryTextItalicCheckBox = checkBox(getString(R.string.theme_primary_text_italic), checked -> updateSettings(settings.withTypography(
-                settings.fontFamily,
-                settings.primaryTextSizePercent,
-                settings.secondaryTextSizePercent,
-                settings.primaryTextBold,
-                checked,
-                settings.secondaryTextBold,
-                settings.secondaryTextItalic)));
-        secondaryTextBoldCheckBox = checkBox(getString(R.string.theme_secondary_text_bold), checked -> updateSettings(settings.withTypography(
-                settings.fontFamily,
-                settings.primaryTextSizePercent,
-                settings.secondaryTextSizePercent,
-                settings.primaryTextBold,
-                settings.primaryTextItalic,
-                checked,
-                settings.secondaryTextItalic)));
-        secondaryTextItalicCheckBox = checkBox(getString(R.string.theme_secondary_text_italic), checked -> updateSettings(settings.withTypography(
-                settings.fontFamily,
-                settings.primaryTextSizePercent,
-                settings.secondaryTextSizePercent,
-                settings.primaryTextBold,
-                settings.primaryTextItalic,
-                settings.secondaryTextBold,
-                checked)));
-        root.addView(primaryTextBoldCheckBox, matchWrapWithTop(12));
-        root.addView(primaryTextItalicCheckBox, matchWrapWithTop(4));
-        root.addView(secondaryTextBoldCheckBox, matchWrapWithTop(8));
-        root.addView(secondaryTextItalicCheckBox, matchWrapWithTop(4));
+        primaryTextBoldCheckBox = addTypographyCheckBox(
+                root,
+                R.string.theme_primary_text_bold,
+                12,
+                checked -> settings.withTypography(
+                        settings.fontFamily,
+                        settings.primaryTextSizePercent,
+                        settings.secondaryTextSizePercent,
+                        checked,
+                        settings.primaryTextItalic,
+                        settings.secondaryTextBold,
+                        settings.secondaryTextItalic));
+        primaryTextItalicCheckBox = addTypographyCheckBox(
+                root,
+                R.string.theme_primary_text_italic,
+                4,
+                checked -> settings.withTypography(
+                        settings.fontFamily,
+                        settings.primaryTextSizePercent,
+                        settings.secondaryTextSizePercent,
+                        settings.primaryTextBold,
+                        checked,
+                        settings.secondaryTextBold,
+                        settings.secondaryTextItalic));
+        secondaryTextBoldCheckBox = addTypographyCheckBox(
+                root,
+                R.string.theme_secondary_text_bold,
+                8,
+                checked -> settings.withTypography(
+                        settings.fontFamily,
+                        settings.primaryTextSizePercent,
+                        settings.secondaryTextSizePercent,
+                        settings.primaryTextBold,
+                        settings.primaryTextItalic,
+                        checked,
+                        settings.secondaryTextItalic));
+        secondaryTextItalicCheckBox = addTypographyCheckBox(
+                root,
+                R.string.theme_secondary_text_italic,
+                4,
+                checked -> settings.withTypography(
+                        settings.fontFamily,
+                        settings.primaryTextSizePercent,
+                        settings.secondaryTextSizePercent,
+                        settings.primaryTextBold,
+                        settings.primaryTextItalic,
+                        settings.secondaryTextBold,
+                        checked));
+    }
+
+    private CheckBox addTypographyCheckBox(
+            LinearLayout root,
+            int labelResId,
+            int topMarginDp,
+            Function<Boolean, KeyboardSettings> change) {
+        return SettingsRowBuilder.checkBoxRow(
+                this,
+                root,
+                labelResId,
+                topMarginDp,
+                () -> !syncing,
+                checked -> updateSettings(change.apply(checked)));
     }
 
     private void addIconPackControls(LinearLayout root) {
         modifierIconPackSpinner = modifierIconPackSpinner();
-        root.addView(label(getString(R.string.theme_modifier_icons)), matchWrapWithTop(8));
-        root.addView(modifierIconPackSpinner, matchWrap());
+        SettingsRowBuilder.labeledControl(
+                this,
+                root,
+                R.string.theme_modifier_icons,
+                modifierIconPackSpinner,
+                8);
 
         keyDisplayPackSpinner = keyDisplayPackSpinner();
-        root.addView(label(getString(R.string.theme_key_display_override_pack)), matchWrapWithTop(8));
-        root.addView(keyDisplayPackSpinner, matchWrap());
+        SettingsRowBuilder.labeledControl(
+                this,
+                root,
+                R.string.theme_key_display_override_pack,
+                keyDisplayPackSpinner,
+                8);
     }
 
     private void updateSettings(KeyboardSettings next) {
@@ -697,69 +773,105 @@ public final class ThemeEditorActivity extends Activity {
         syncControls();
     }
 
-    private boolean shouldHandleSpinnerSelection(Spinner spinner) {
-        if (Boolean.FALSE.equals(spinner.getTag())) {
-            spinner.setTag(Boolean.TRUE);
-            return false;
-        }
-        return !syncing;
-    }
-
     private void syncControls() {
         if (preview == null) {
             return;
         }
         syncing = true;
         modeGroup.check(settings.keyboardMode == KeyboardMode.ENGLISH ? MODE_ENGLISH_ID : MODE_HANGUL_ID);
-        setProgress(roundnessSeekBar, settings.keyRoundnessDp);
-        setProgress(keyBorderWidthSeekBar, settings.keyBorderWidthDp);
-        setProgress(keyGapSeekBar, settings.keyGapDp);
-        setProgress(keyDepthSeekBar, settings.keyDepthDp);
-        setProgress(
+        SettingsRowBuilder.setProgressIfPresent(roundnessSeekBar, settings.keyRoundnessDp);
+        SettingsRowBuilder.setProgressIfPresent(keyBorderWidthSeekBar, settings.keyBorderWidthDp);
+        SettingsRowBuilder.setProgressIfPresent(keyGapSeekBar, settings.keyGapDp);
+        SettingsRowBuilder.setProgressIfPresent(keyDepthSeekBar, settings.keyDepthDp);
+        SettingsRowBuilder.setProgressIfPresent(
                 keyFaceGradientStrengthSeekBar,
                 settings.visualEffects.keyFaceGradientStrengthPercent);
-        setProgress(primaryTextSizeSeekBar, settings.primaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
-        setProgress(secondaryTextSizeSeekBar, settings.secondaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
-        setSelection(keyIdleColorSpinner, indexOfColor(settings.keyIdleColor));
-        setSelection(functionKeyColorSpinner, indexOfColor(settings.functionKeyColor));
-        setSelection(accentKeyColorSpinner, indexOfColor(settings.accentKeyColor));
-        setSelection(keyPressedColorSpinner, indexOfColor(settings.keyPressedColor));
-        setSelection(keyboardBackgroundColorSpinner, indexOfColor(settings.keyboardBackgroundColor));
-        setSelection(keyFaceGradientStartColorSpinner, indexOfColor(settings.visualEffects.keyFaceGradientStartColor));
-        setSelection(keyFaceGradientEndColorSpinner, indexOfColor(settings.visualEffects.keyFaceGradientEndColor));
-        setSelection(keyFaceGradientCurveSpinner, indexOfKeyFaceGradientCurve(settings.visualEffects.keyFaceGradientCurve));
-        setSelection(panelGradientStartColorSpinner, indexOfColor(settings.visualEffects.panelGradientStartColor));
-        setSelection(panelGradientEndColorSpinner, indexOfColor(settings.visualEffects.panelGradientEndColor));
-        setSelection(accentColorSpinner, indexOfColor(settings.accentColor));
-        setSelection(secondaryColorSpinner, indexOfColor(settings.secondaryColor));
-        setSelection(borderColorSpinner, indexOfColor(settings.borderColor));
-        setSelection(depthColorSpinner, indexOfColor(settings.depthColor));
-        setSelection(fontFamilySpinner, indexOfFont(settings.fontFamily));
-        setSelection(modifierIconPackSpinner, indexOfModifierIconPack(settings.modifierIconThemePackId));
-        setSelection(keyDisplayPackSpinner, indexOfKeyDisplayPack(settings.keyDisplayThemePackId));
-        setChecked(keyDepthCheckBox, settings.keyDepthEnabled);
-        setChecked(customDepthColorCheckBox, settings.customDepthColorEnabled);
-        setChecked(keyFaceGradientCheckBox, settings.visualEffects.keyFaceGradientEnabled);
-        setChecked(panelGradientCheckBox, settings.visualEffects.panelGradientEnabled);
-        setChecked(primaryTextBoldCheckBox, settings.primaryTextBold);
-        setChecked(primaryTextItalicCheckBox, settings.primaryTextItalic);
-        setChecked(secondaryTextBoldCheckBox, settings.secondaryTextBold);
-        setChecked(secondaryTextItalicCheckBox, settings.secondaryTextItalic);
-        setEnabled(depthColorSpinner, settings.customDepthColorEnabled);
-        setEnabled(panelGradientStartColorSpinner, settings.visualEffects.panelGradientEnabled);
-        setEnabled(panelGradientEndColorSpinner, settings.visualEffects.panelGradientEnabled);
-        setEnabled(keyDepthSeekBar, settings.keyDepthEnabled);
-        setEnabled(keyFaceGradientCheckBox, settings.keyDepthEnabled);
-        setEnabled(
+        SettingsRowBuilder.setProgressIfPresent(
+                primaryTextSizeSeekBar,
+                settings.primaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
+        SettingsRowBuilder.setProgressIfPresent(
+                secondaryTextSizeSeekBar,
+                settings.secondaryTextSizePercent - KeyboardSettings.MIN_TEXT_SIZE_PERCENT);
+        SettingsRowBuilder.setSelectionIfValid(
+                keyIdleColorSpinner,
+                ColorOption.editorIndexOf(settings.keyIdleColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                functionKeyColorSpinner,
+                ColorOption.editorIndexOf(settings.functionKeyColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                accentKeyColorSpinner,
+                ColorOption.editorIndexOf(settings.accentKeyColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                keyPressedColorSpinner,
+                ColorOption.editorIndexOf(settings.keyPressedColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                keyboardBackgroundColorSpinner,
+                ColorOption.editorIndexOf(settings.keyboardBackgroundColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                keyFaceGradientStartColorSpinner,
+                ColorOption.editorIndexOf(settings.visualEffects.keyFaceGradientStartColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                keyFaceGradientEndColorSpinner,
+                ColorOption.editorIndexOf(settings.visualEffects.keyFaceGradientEndColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                keyFaceGradientCurveSpinner,
+                KeyboardVisualEffects.keyFaceGradientCurveIndexOf(settings.visualEffects.keyFaceGradientCurve));
+        SettingsRowBuilder.setSelectionIfValid(
+                panelGradientStartColorSpinner,
+                ColorOption.editorIndexOf(settings.visualEffects.panelGradientStartColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                panelGradientEndColorSpinner,
+                ColorOption.editorIndexOf(settings.visualEffects.panelGradientEndColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                accentColorSpinner,
+                ColorOption.editorIndexOf(settings.accentColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                secondaryColorSpinner,
+                ColorOption.editorIndexOf(settings.secondaryColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                borderColorSpinner,
+                ColorOption.editorIndexOf(settings.borderColor));
+        SettingsRowBuilder.setSelectionIfValid(
+                depthColorSpinner,
+                ColorOption.editorIndexOf(settings.depthColor));
+        SettingsRowBuilder.setSelectionIfValid(fontFamilySpinner, FontOption.editorIndexOf(settings.fontFamily));
+        SettingsRowBuilder.setSelectionIfValid(
+                modifierIconPackSpinner,
+                ModifierIconCatalog.selectablePackIndexOf(settings.modifierIconThemePackId, false));
+        SettingsRowBuilder.setSelectionIfValid(
+                keyDisplayPackSpinner,
+                KeyDisplayOverridePackCatalog.selectablePackIndexOf(settings.keyDisplayThemePackId, false));
+        SettingsRowBuilder.setCheckedIfPresent(keyDepthCheckBox, settings.keyDepthEnabled);
+        SettingsRowBuilder.setCheckedIfPresent(customDepthColorCheckBox, settings.customDepthColorEnabled);
+        SettingsRowBuilder.setCheckedIfPresent(
+                keyFaceGradientCheckBox,
+                settings.visualEffects.keyFaceGradientEnabled);
+        SettingsRowBuilder.setCheckedIfPresent(
+                panelGradientCheckBox,
+                settings.visualEffects.panelGradientEnabled);
+        SettingsRowBuilder.setCheckedIfPresent(primaryTextBoldCheckBox, settings.primaryTextBold);
+        SettingsRowBuilder.setCheckedIfPresent(primaryTextItalicCheckBox, settings.primaryTextItalic);
+        SettingsRowBuilder.setCheckedIfPresent(secondaryTextBoldCheckBox, settings.secondaryTextBold);
+        SettingsRowBuilder.setCheckedIfPresent(secondaryTextItalicCheckBox, settings.secondaryTextItalic);
+        SettingsRowBuilder.setEnabledIfPresent(depthColorSpinner, settings.customDepthColorEnabled);
+        SettingsRowBuilder.setEnabledIfPresent(
+                panelGradientStartColorSpinner,
+                settings.visualEffects.panelGradientEnabled);
+        SettingsRowBuilder.setEnabledIfPresent(
+                panelGradientEndColorSpinner,
+                settings.visualEffects.panelGradientEnabled);
+        SettingsRowBuilder.setEnabledIfPresent(keyDepthSeekBar, settings.keyDepthEnabled);
+        SettingsRowBuilder.setEnabledIfPresent(keyFaceGradientCheckBox, settings.keyDepthEnabled);
+        SettingsRowBuilder.setEnabledIfPresent(
                 keyFaceGradientStrengthSeekBar,
                 settings.keyDepthEnabled && settings.visualEffects.keyFaceGradientEnabled);
-        setEnabled(
+        SettingsRowBuilder.setEnabledIfPresent(
                 keyFaceGradientStartColorSpinner,
                 settings.keyDepthEnabled && settings.visualEffects.keyFaceGradientEnabled);
-        setEnabled(
+        SettingsRowBuilder.setEnabledIfPresent(
                 keyFaceGradientEndColorSpinner,
                 settings.keyDepthEnabled && settings.visualEffects.keyFaceGradientEnabled);
-        setEnabled(
+        SettingsRowBuilder.setEnabledIfPresent(
                 keyFaceGradientCurveSpinner,
                 settings.keyDepthEnabled && settings.visualEffects.keyFaceGradientEnabled);
         setSwatch(keyIdleColorSwatch, settings.keyIdleColor);
@@ -776,22 +888,28 @@ public final class ThemeEditorActivity extends Activity {
         setSwatch(accentColorSwatch, settings.accentColor);
         setSwatch(secondaryColorSwatch, settings.secondaryColor);
 
-        setText(roundnessValue, getString(R.string.theme_roundness_format, settings.keyRoundnessDp));
-        setText(keyBorderWidthValue, getString(R.string.theme_border_width_format, settings.keyBorderWidthDp));
-        setText(keyGapValue, getString(R.string.theme_key_gap_format, settings.keyGapDp));
-        setText(keyDepthValue, getString(
+        SettingsRowBuilder.setTextIfPresent(
+                roundnessValue,
+                getString(R.string.theme_roundness_format, settings.keyRoundnessDp));
+        SettingsRowBuilder.setTextIfPresent(
+                keyBorderWidthValue,
+                getString(R.string.theme_border_width_format, settings.keyBorderWidthDp));
+        SettingsRowBuilder.setTextIfPresent(
+                keyGapValue,
+                getString(R.string.theme_key_gap_format, settings.keyGapDp));
+        SettingsRowBuilder.setTextIfPresent(keyDepthValue, getString(
                 R.string.theme_depth_format,
                 settings.keyDepthDp,
                 settings.keyDepthEnabled ? "" : " (flat)"));
-        setText(
+        SettingsRowBuilder.setTextIfPresent(
                 keyFaceGradientStrengthValue,
                 getString(
                         R.string.theme_surface_gradient_strength_format,
                         settings.visualEffects.keyFaceGradientStrengthPercent));
-        setText(primaryTextSizeValue, getString(
+        SettingsRowBuilder.setTextIfPresent(primaryTextSizeValue, getString(
                 R.string.theme_primary_text_size_format,
                 settings.primaryTextSizePercent));
-        setText(secondaryTextSizeValue, getString(
+        SettingsRowBuilder.setTextIfPresent(secondaryTextSizeValue, getString(
                 R.string.theme_secondary_text_size_format,
                 settings.secondaryTextSizePercent));
         previewMeta.setText(getString(
@@ -836,11 +954,13 @@ public final class ThemeEditorActivity extends Activity {
                 : null;
         boolean wasSyncing = syncing;
         syncing = true;
-        setSelection(selectedKeyColorSpinner, indexOfColor(override == null ? settings.accentColor : override));
+        SettingsRowBuilder.setSelectionIfValid(
+                selectedKeyColorSpinner,
+                ColorOption.editorIndexOf(override == null ? settings.accentColor : override));
         setSwatch(selectedKeyColorSwatch, override == null ? settings.accentColor : override);
-        setSelection(
+        SettingsRowBuilder.setSelectionIfValid(
                 selectedKeyBackgroundColorSpinner,
-                indexOfColor(backgroundOverride == null
+                ColorOption.editorIndexOf(backgroundOverride == null
                         ? KeyboardKeyVisualClassifier.colorFor(settings, selectedKey)
                         : backgroundOverride));
         setSwatch(
@@ -857,7 +977,7 @@ public final class ThemeEditorActivity extends Activity {
 
     private void updatePreviewHeight() {
         LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) preview.getLayoutParams();
-        params.height = dp(settings.measuredHeightDp());
+        params.height = SettingsRowBuilder.dp(this, settings.measuredHeightDp());
         preview.setLayoutParams(params);
     }
 
@@ -912,29 +1032,42 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private LinearLayout addExpandableSection(LinearLayout root, String text, boolean expandedByDefault) {
-        TextView title = label("");
-        title.setTextSize(17);
-        title.setGravity(Gravity.START);
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setVisibility(expandedByDefault ? View.VISIBLE : View.GONE);
-        setExpandableTitle(title, text, expandedByDefault);
-        title.setOnClickListener(v -> {
-            boolean expanded = content.getVisibility() != View.VISIBLE;
-            content.setVisibility(expanded ? View.VISIBLE : View.GONE);
-            setExpandableTitle(title, text, expanded);
-        });
-        root.addView(title, matchWrapWithTop(18));
-        root.addView(content, matchWrap());
-        return content;
+        SettingsSectionCard section = SettingsSectionCard.create(this, text, expandedByDefault);
+        SettingsRowBuilder.addViewWithTop(this, root, section.container, 18);
+        return section.content;
     }
 
-    private void setExpandableTitle(TextView title, String text, boolean expanded) {
-        title.setText(getString(
-                expanded
-                        ? R.string.expandable_section_title_expanded
-                        : R.string.expandable_section_title_collapsed,
-                text));
+    private ColorControl addColorSetting(
+            LinearLayout root,
+            int titleResId,
+            int descriptionResId,
+            IntConsumer listener) {
+        return addColorSetting(
+                root,
+                getString(titleResId),
+                getString(descriptionResId),
+                listener);
+    }
+
+    private ColorControl addColorSetting(
+            LinearLayout root,
+            String title,
+            String description,
+            IntConsumer listener) {
+        Spinner spinner = colorSpinner(listener);
+        View swatch = addColorSpinnerControl(root, title, description, spinner, listener);
+        return new ColorControl(spinner, swatch);
+    }
+
+    private View addColorSpinnerControl(
+            LinearLayout root,
+            String title,
+            String description,
+            Spinner spinner,
+            IntConsumer listener) {
+        View swatch = addColorControl(root, title, description, spinner, listener);
+        SettingsRowBuilder.addView(root, spinner);
+        return swatch;
     }
 
     private View addColorControl(
@@ -942,23 +1075,17 @@ public final class ThemeEditorActivity extends Activity {
             String title,
             String description,
             Spinner spinner,
-            ColorChangeListener listener) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        TextView label = label(title);
-        row.addView(label, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            IntConsumer listener) {
+        LinearLayout row = SettingsRowBuilder.horizontal(this);
+        TextView label = SettingsRowBuilder.label(this, title);
+        row.addView(label, SettingsRowBuilder.weightedWrap(this, 0, 0));
 
         View swatch = colorSwatch();
-        LinearLayout.LayoutParams swatchParams = new LinearLayout.LayoutParams(dp(42), dp(28));
-        swatchParams.leftMargin = dp(8);
-        row.addView(swatch, swatchParams);
+        row.addView(swatch, SettingsRowBuilder.fixedSizeWithLeft(this, 42, 28, 8));
 
-        TextView code = label("");
+        TextView code = SettingsRowBuilder.valueLabel(this);
         code.setTextSize(12);
-        LinearLayout.LayoutParams codeParams = new LinearLayout.LayoutParams(dp(86), LinearLayout.LayoutParams.WRAP_CONTENT);
-        codeParams.leftMargin = dp(8);
-        row.addView(code, codeParams);
+        row.addView(code, SettingsRowBuilder.fixedWidthWrapWithLeft(this, 86, 8));
         swatchCodeLabels.put(swatch, code);
 
         TextView info = infoButton();
@@ -967,12 +1094,10 @@ public final class ThemeEditorActivity extends Activity {
                 .setMessage(description)
                 .setPositiveButton(R.string.action_ok, null)
                 .show());
-        LinearLayout.LayoutParams infoParams = new LinearLayout.LayoutParams(dp(30), dp(30));
-        infoParams.leftMargin = dp(8);
-        row.addView(info, infoParams);
+        row.addView(info, SettingsRowBuilder.fixedSizeWithLeft(this, 30, 30, 8));
         swatch.setOnClickListener(v -> showColorEditDialog(title, colorTag(swatch), listener));
         code.setOnClickListener(v -> showColorEditDialog(title, colorTag(swatch), listener));
-        root.addView(row, matchWrapWithTop(8));
+        SettingsRowBuilder.addViewWithTop(this, root, row, 8);
         if (spinner != null) {
             spinner.setContentDescription(title);
         }
@@ -980,8 +1105,7 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private TextView infoButton() {
-        TextView info = new TextView(this);
-        info.setText("?");
+        TextView info = SettingsRowBuilder.label(this, "?");
         info.setGravity(Gravity.CENTER);
         info.setTextSize(13);
         info.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
@@ -990,7 +1114,7 @@ public final class ThemeEditorActivity extends Activity {
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.OVAL);
         background.setColor(ui.controlFill);
-        background.setStroke(Math.max(1, dp(1)), ui.border);
+        background.setStroke(Math.max(1, SettingsRowBuilder.dp(this, 1)), ui.border);
         info.setBackground(background);
         return info;
     }
@@ -998,18 +1122,13 @@ public final class ThemeEditorActivity extends Activity {
     private View addInlineSwatch(LinearLayout root, int color) {
         View swatch = colorSwatch();
         setSwatch(swatch, color);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(18));
-        params.topMargin = dp(4);
-        params.bottomMargin = dp(4);
-        root.addView(swatch, params);
+        root.addView(swatch, SettingsRowBuilder.matchHeightWithVerticalMargins(this, 18, 4));
         return swatch;
     }
 
     private View colorSwatch() {
         View swatch = new View(this);
-        swatch.setMinimumHeight(dp(18));
+        swatch.setMinimumHeight(SettingsRowBuilder.dp(this, 18));
         return swatch;
     }
 
@@ -1020,8 +1139,8 @@ public final class ThemeEditorActivity extends Activity {
         int opaqueColor = 0xFF000000 | (color & 0x00FFFFFF);
         GradientDrawable background = new GradientDrawable();
         background.setColor(opaqueColor);
-        background.setCornerRadius(dp(6));
-        background.setStroke(Math.max(1, dp(1)), SettingsUiPalette.from(this).border);
+        background.setCornerRadius(SettingsRowBuilder.dp(this, 6));
+        background.setStroke(Math.max(1, SettingsRowBuilder.dp(this, 1)), SettingsUiPalette.from(this).border);
         swatch.setBackground(background);
         swatch.setTag(opaqueColor);
         TextView code = swatchCodeLabels.get(swatch);
@@ -1035,25 +1154,28 @@ public final class ThemeEditorActivity extends Activity {
         return tag instanceof Integer ? (Integer) tag : 0xFF000000;
     }
 
-    private void showColorEditDialog(String title, int currentColor, ColorChangeListener listener) {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(dp(12), dp(8), dp(12), dp(4));
+    private void showColorEditDialog(String title, int currentColor, IntConsumer listener) {
+        LinearLayout layout = SettingsRowBuilder.vertical(this);
+        layout.setPadding(
+                SettingsRowBuilder.dp(this, 12),
+                SettingsRowBuilder.dp(this, 8),
+                SettingsRowBuilder.dp(this, 12),
+                SettingsRowBuilder.dp(this, 4));
 
-        TextView description = label(getString(R.string.theme_color_edit_description));
-        layout.addView(description, matchWrap());
+        TextView description = SettingsRowBuilder.label(
+                this,
+                getString(R.string.theme_color_edit_description));
+        SettingsRowBuilder.addView(layout, description);
 
-        EditText editor = new EditText(this);
+        EditText editor = SettingsRowBuilder.editText(this);
         editor.setSingleLine(true);
         editor.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         editor.setText(colorHex(currentColor).substring(1));
         editor.setSelectAllOnFocus(true);
-        SettingsViewStyler.editText(editor, this);
-        layout.addView(editor, matchWrapWithTop(8));
+        SettingsRowBuilder.addViewWithTop(this, layout, editor, 8);
 
-        LinearLayout presetGrid = new LinearLayout(this);
-        presetGrid.setOrientation(LinearLayout.VERTICAL);
-        layout.addView(presetGrid, matchWrapWithTop(10));
+        LinearLayout presetGrid = SettingsRowBuilder.vertical(this);
+        SettingsRowBuilder.addViewWithTop(this, layout, presetGrid, 10);
         addPresetColorRows(presetGrid, listener);
 
         new AlertDialog.Builder(this)
@@ -1063,35 +1185,33 @@ public final class ThemeEditorActivity extends Activity {
                 .setPositiveButton(R.string.action_apply, (dialog, which) -> {
                     Integer parsed = parseHexColor(editor.getText().toString());
                     if (parsed != null) {
-                        listener.onColorChanged(parsed);
+                        listener.accept(parsed);
                     }
                 })
                 .show();
     }
 
-    private void addPresetColorRows(LinearLayout root, ColorChangeListener listener) {
+    private void addPresetColorRows(LinearLayout root, IntConsumer listener) {
         LinearLayout row = null;
         for (int i = 0; i < ColorOption.EDITOR_OPTIONS.length; i++) {
             if (i % 3 == 0) {
-                row = new LinearLayout(this);
-                row.setOrientation(LinearLayout.HORIZONTAL);
-                root.addView(row, matchWrapWithTop(i == 0 ? 0 : 6));
+                row = SettingsRowBuilder.horizontal(this);
+                SettingsRowBuilder.addViewWithTop(this, root, row, i == 0 ? 0 : 6);
             }
             ColorOption option = ColorOption.EDITOR_OPTIONS[i];
-            Button button = new Button(this);
-            button.setText(SettingsDisplayLabels.label(this, option));
-            button.setAllCaps(false);
+            Button button = SettingsRowBuilder.button(
+                    this,
+                    SettingsDisplayLabels.label(this, option),
+                    false,
+                    v -> listener.accept(option.color));
             button.setTextSize(11);
-            button.setTextColor(contrastColor(option.color));
+            button.setTextColor(KeyboardColorMath.contrastTextColor(option.color, 150));
             GradientDrawable background = new GradientDrawable();
             background.setColor(option.color);
-            background.setCornerRadius(dp(7));
-            background.setStroke(Math.max(1, dp(1)), SettingsUiPalette.from(this).border);
+            background.setCornerRadius(SettingsRowBuilder.dp(this, 7));
+            background.setStroke(Math.max(1, SettingsRowBuilder.dp(this, 1)), SettingsUiPalette.from(this).border);
             button.setBackground(background);
-            button.setOnClickListener(v -> listener.onColorChanged(option.color));
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(40), 1f);
-            params.leftMargin = dp(i % 3 == 0 ? 0 : 6);
-            row.addView(button, params);
+            row.addView(button, SettingsRowBuilder.weightedHeight(this, 40, i % 3 == 0 ? 0 : 6));
         }
     }
 
@@ -1128,22 +1248,6 @@ public final class ThemeEditorActivity extends Activity {
         return 0xFF000000 | (red << 16) | (green << 8) | blue;
     }
 
-    private int contrastColor(int color) {
-        int red = (color >> 16) & 0xFF;
-        int green = (color >> 8) & 0xFF;
-        int blue = color & 0xFF;
-        return red * 299 + green * 587 + blue * 114 > 150000 ? 0xFF111827 : 0xFFFFFFFF;
-    }
-
-    private Button actionButton(String text, View.OnClickListener listener) {
-        Button button = new Button(this);
-        button.setText(text);
-        button.setAllCaps(false);
-        styleSystemButton(button);
-        button.setOnClickListener(listener);
-        return button;
-    }
-
     private void copyThemeJsonToClipboard() {
         String json = currentThemeJson();
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -1166,13 +1270,12 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private void showThemeJsonImportDialog() {
-        EditText editor = new EditText(this);
+        EditText editor = SettingsRowBuilder.editText(this);
         editor.setMinLines(8);
         editor.setGravity(Gravity.TOP | Gravity.START);
         editor.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_FLAG_MULTI_LINE
                 | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        SettingsViewStyler.editText(editor, this);
         String clipboardText = currentClipboardText();
         if (!clipboardText.isEmpty()) {
             editor.setText(clipboardText);
@@ -1193,7 +1296,7 @@ public final class ThemeEditorActivity extends Activity {
             return "";
         }
         CharSequence text = clipboard.getPrimaryClip().getItemAt(0).coerceToText(this);
-        return text == null ? "" : text.toString();
+        return RuntimeDefaults.stringOrEmpty(text);
     }
 
     private void importThemeJson(String json) {
@@ -1214,332 +1317,72 @@ public final class ThemeEditorActivity extends Activity {
         }
     }
 
-    private Spinner colorSpinner(final ColorChangeListener listener) {
-        Spinner spinner = new Spinner(this);
-        spinner.setTag(Boolean.FALSE);
-        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
+    private Spinner colorSpinner(IntConsumer listener) {
+        return SettingsRowBuilder.optionSpinner(
                 this,
-                SettingsDisplayLabels.labels(this, ColorOption.EDITOR_OPTIONS));
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (shouldHandleSpinnerSelection(spinner)) {
-                    listener.onColorChanged(ColorOption.EDITOR_OPTIONS[position].color);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        return spinner;
+                ColorOption.EDITOR_OPTIONS,
+                () -> !syncing,
+                option -> listener.accept(option.color));
     }
 
     private Spinner fontSpinner() {
-        Spinner spinner = new Spinner(this);
-        spinner.setTag(Boolean.FALSE);
-        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
+        return SettingsRowBuilder.optionSpinner(
                 this,
-                SettingsDisplayLabels.labels(this, FontOption.EDITOR_OPTIONS));
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String fontFamily = FontOption.EDITOR_OPTIONS[position].value;
-                if (shouldHandleSpinnerSelection(spinner)
-                        && !Objects.equals(settings.fontFamily, fontFamily)) {
-                    updateSettings(settings.withFontFamily(fontFamily));
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        return spinner;
+                FontOption.EDITOR_OPTIONS,
+                () -> !syncing,
+                option -> {
+                    if (!Objects.equals(settings.fontFamily, option.value)) {
+                        updateSettings(settings.withFontFamily(option.value));
+                    }
+                });
     }
 
     private Spinner modifierIconPackSpinner() {
-        Spinner spinner = new Spinner(this);
-        spinner.setTag(Boolean.FALSE);
-        String[] ids = ModifierIconCatalog.selectablePackIds(false);
-        String[] labels = new String[ids.length];
-        for (int i = 0; i < ids.length; i++) {
-            labels[i] = ModifierIconCatalog.displayName(ids[i]);
-        }
-        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(this, labels);
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String packId = ids[position];
-                if (shouldHandleSpinnerSelection(spinner)
-                        && !Objects.equals(settings.modifierIconThemePackId, packId)) {
-                    updateSettings(settings.withModifierIconThemePack(packId));
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        return spinner;
+        return themePackSpinner(
+                ModifierIconCatalog.selectablePackLabels(false, ""),
+                position -> ModifierIconCatalog.selectablePackIdAt(position, false),
+                () -> settings.modifierIconThemePackId,
+                packId -> settings.withModifierIconThemePack(packId));
     }
 
     private Spinner keyDisplayPackSpinner() {
-        Spinner spinner = new Spinner(this);
-        spinner.setTag(Boolean.FALSE);
-        String[] ids = KeyDisplayOverridePackCatalog.selectablePackIds(false);
-        String[] labels = new String[ids.length];
-        for (int i = 0; i < ids.length; i++) {
-            labels[i] = KeyDisplayOverridePackCatalog.displayName(ids[i]);
-        }
-        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(this, labels);
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String packId = ids[position];
-                if (shouldHandleSpinnerSelection(spinner)
-                        && !Objects.equals(settings.keyDisplayThemePackId, packId)) {
-                    updateSettings(settings.withKeyDisplayThemePack(packId));
-                }
-            }
+        return themePackSpinner(
+                KeyDisplayOverridePackCatalog.selectablePackLabels(false, ""),
+                position -> KeyDisplayOverridePackCatalog.selectablePackIdAt(position, false),
+                () -> settings.keyDisplayThemePackId,
+                packId -> settings.withKeyDisplayThemePack(packId));
+    }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
+    private Spinner themePackSpinner(
+            String[] labels,
+            IntFunction<String> packIdAt,
+            Supplier<String> currentPackId,
+            Function<String, KeyboardSettings> change) {
+        return SettingsRowBuilder.spinnerAfterInitialSelection(this, labels, () -> !syncing, position -> {
+            String packId = packIdAt.apply(position);
+            if (!Objects.equals(currentPackId.get(), packId)) {
+                updateSettings(change.apply(packId));
             }
         });
-        return spinner;
     }
 
     private Spinner createKeyFaceGradientCurveSpinner() {
-        Spinner spinner = new Spinner(this);
-        spinner.setTag(Boolean.FALSE);
-        String[] ids = keyFaceGradientCurveIds();
-        String[] labels = {
-                "Soft",
-                "Linear",
-                "Top glow",
-                "Bottom shade"
-        };
-        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(this, labels);
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String curve = ids[position];
-                if (shouldHandleSpinnerSelection(spinner)
-                        && !Objects.equals(settings.visualEffects.keyFaceGradientCurve, curve)) {
-                    updateSettings(settings.withVisualEffects(
-                            settings.visualEffects.withKeyFaceGradient(
-                                    settings.visualEffects.keyFaceGradientEnabled,
-                                    settings.visualEffects.keyFaceGradientStrengthPercent,
-                                    settings.visualEffects.keyFaceGradientStartColor,
-                                    settings.visualEffects.keyFaceGradientEndColor,
-                                    curve)));
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        return spinner;
-    }
-
-    private String[] keyFaceGradientCurveIds() {
-        return new String[] {
-                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_SOFT,
-                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_LINEAR,
-                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_TOP_GLOW,
-                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE
-        };
-    }
-
-    private CheckBox checkBox(String label, BooleanChangeListener listener) {
-        CheckBox checkBox = new CheckBox(this);
-        checkBox.setText(label);
-        SettingsViewStyler.compoundButton(checkBox, this);
-        checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (!syncing) {
-                    listener.onChanged(isChecked);
-                }
-            }
-        });
-        return checkBox;
-    }
-
-    private SeekBar seekBar(int max, IntChangeListener listener) {
-        SeekBar seekBar = new SeekBar(this);
-        seekBar.setMax(max);
-        seekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && !syncing) {
-                    listener.onChanged(progress);
-                }
-            }
-        });
-        return seekBar;
-    }
-
-    private SeekBar textSizeSeekBar(IntChangeListener listener) {
-        return seekBar(KeyboardSettings.MAX_TEXT_SIZE_PERCENT - KeyboardSettings.MIN_TEXT_SIZE_PERCENT, listener);
-    }
-
-    private RadioButton radio(int id, String label) {
-        RadioButton button = new RadioButton(this);
-        button.setId(id);
-        button.setText(label);
-        SettingsViewStyler.compoundButton(button, this);
-        return button;
-    }
-
-    private TextView label(String text) {
-        TextView label = new TextView(this);
-        label.setText(text);
-        label.setTextColor(SettingsUiPalette.from(this).textPrimary);
-        label.setTextSize(14);
-        label.setGravity(Gravity.START);
-        return label;
-    }
-
-    private void styleSystemButton(Button button) {
-        SettingsViewStyler.button(button, this, false);
-    }
-
-    private LinearLayout.LayoutParams buttonParams() {
-        LinearLayout.LayoutParams params = matchWrap();
-        params.topMargin = dp(10);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
-
-    private LinearLayout.LayoutParams matchWrapWithTop(int topMarginDp) {
-        LinearLayout.LayoutParams params = matchWrap();
-        params.topMargin = dp(topMarginDp);
-        return params;
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
-    }
-
-    private void setProgress(SeekBar seekBar, int progress) {
-        if (seekBar != null) {
-            seekBar.setProgress(progress);
-        }
-    }
-
-    private void setSelection(Spinner spinner, int position) {
-        if (spinner != null && position >= 0) {
-            spinner.setSelection(position, false);
-        }
-    }
-
-    private void setChecked(CheckBox checkBox, boolean checked) {
-        if (checkBox != null) {
-            checkBox.setChecked(checked);
-        }
-    }
-
-    private void setText(TextView view, String text) {
-        if (view != null) {
-            view.setText(text);
-        }
-    }
-
-    private void setEnabled(View view, boolean enabled) {
-        if (view != null) {
-            view.setEnabled(enabled);
-        }
-    }
-
-    private int indexOfColor(Integer color) {
-        if (color == null) {
-            return 0;
-        }
-        int opaqueColor = 0xFF000000 | (color & 0x00FFFFFF);
-        for (int i = 0; i < ColorOption.EDITOR_OPTIONS.length; i++) {
-            if (ColorOption.EDITOR_OPTIONS[i].color == opaqueColor) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private int indexOfFont(String fontFamily) {
-        String normalized = KeyboardSettings.normalizeFontFamily(fontFamily);
-        for (int i = 0; i < FontOption.EDITOR_OPTIONS.length; i++) {
-            if (FontOption.EDITOR_OPTIONS[i].value.equals(normalized)) {
-                return i;
-            }
-        }
-        return 0;
-    }
-
-    private int indexOfModifierIconPack(String packId) {
-        String[] ids = ModifierIconCatalog.selectablePackIds(false);
-        String normalized = ModifierIconCatalog.normalizePackId(packId);
-        for (int i = 0; i < ids.length; i++) {
-            if (ids[i].equals(normalized)) {
-                return i;
-            }
-        }
-        return 0;
-    }
-
-    private int indexOfKeyDisplayPack(String packId) {
-        String[] ids = KeyDisplayOverridePackCatalog.selectablePackIds(false);
-        String normalized = KeyDisplayOverridePackCatalog.normalizePackId(packId);
-        for (int i = 0; i < ids.length; i++) {
-            if (ids[i].equals(normalized)) {
-                return i;
-            }
-        }
-        return 0;
-    }
-
-    private int indexOfKeyFaceGradientCurve(String curve) {
-        String normalized = KeyboardVisualEffects.normalizeKeyFaceGradientCurve(curve);
-        String[] ids = keyFaceGradientCurveIds();
-        for (int i = 0; i < ids.length; i++) {
-            if (ids[i].equals(normalized)) {
-                return i;
-            }
-        }
-        return 0;
-    }
-
-    private interface ColorChangeListener {
-        void onColorChanged(int color);
-    }
-
-    private interface BooleanChangeListener {
-        void onChanged(boolean checked);
-    }
-
-    private interface IntChangeListener {
-        void onChanged(int value);
-    }
-
-    private abstract static class SimpleSeekListener implements SeekBar.OnSeekBarChangeListener {
-        @Override
-        public void onStartTrackingTouch(SeekBar seekBar) {
-        }
-
-        @Override
-        public void onStopTrackingTouch(SeekBar seekBar) {
-        }
+        return SettingsRowBuilder.spinnerAfterInitialSelection(
+                this,
+                KeyboardVisualEffects.keyFaceGradientCurveLabels(),
+                () -> !syncing,
+                position -> {
+                    String curve = KeyboardVisualEffects.keyFaceGradientCurveAt(position);
+                    if (!Objects.equals(settings.visualEffects.keyFaceGradientCurve, curve)) {
+                        updateSettings(settings.withVisualEffects(
+                                settings.visualEffects.withKeyFaceGradient(
+                                        settings.visualEffects.keyFaceGradientEnabled,
+                                        settings.visualEffects.keyFaceGradientStrengthPercent,
+                                        settings.visualEffects.keyFaceGradientStartColor,
+                                        settings.visualEffects.keyFaceGradientEndColor,
+                                        curve)));
+                    }
+                });
     }
 
 }

@@ -8,17 +8,25 @@ final class InputConnectionTextOperator {
     }
 
     static HangulCommitOnlyEditor.Sink commitOnlySink(InputConnection inputConnection) {
-        return new HangulCommitOnlyEditor.Sink() {
-            @Override
-            public void deleteBeforeCursorCodePoints(int count) {
-                InputConnectionTextOperator.deleteBeforeCursorCodePoints(inputConnection, count);
-            }
+        return new CommitOnlySink(inputConnection);
+    }
 
-            @Override
-            public void commitText(String text) {
-                InputConnectionTextOperator.commitText(inputConnection, text);
-            }
-        };
+    private static final class CommitOnlySink implements HangulCommitOnlyEditor.Sink {
+        private final InputConnection inputConnection;
+
+        CommitOnlySink(InputConnection inputConnection) {
+            this.inputConnection = inputConnection;
+        }
+
+        @Override
+        public void deleteBeforeCursorCodePoints(int count) {
+            InputConnectionTextOperator.deleteBeforeCursorCodePoints(inputConnection, count);
+        }
+
+        @Override
+        public void commitText(String text) {
+            InputConnectionTextOperator.commitText(inputConnection, text);
+        }
     }
 
     static void deleteBeforeCursorCodePoints(InputConnection inputConnection, int count) {

@@ -1,6 +1,6 @@
 package com.superl3.s3keyboard;
 
-enum RemoteImeShortcut {
+enum RemoteImeShortcut implements SettingsLabelOption {
     ALT_SHIFT("alt_shift", R.string.remote_ime_shortcut_alt_shift),
     CTRL_SPACE("ctrl_space", R.string.remote_ime_shortcut_ctrl_space),
     WIN_SPACE("win_space", R.string.remote_ime_shortcut_win_space),
@@ -8,18 +8,37 @@ enum RemoteImeShortcut {
 
     final String preferenceValue;
     final int labelResId;
+    private static final RemoteImeShortcut[] DISPLAY_ORDER = values();
 
     RemoteImeShortcut(String preferenceValue, int labelResId) {
         this.preferenceValue = preferenceValue;
         this.labelResId = labelResId;
     }
 
+    @Override
+    public int labelResId() {
+        return labelResId;
+    }
+
     static RemoteImeShortcut fromPreference(String value) {
-        for (RemoteImeShortcut shortcut : values()) {
+        for (RemoteImeShortcut shortcut : DISPLAY_ORDER) {
             if (shortcut.preferenceValue.equals(value)) {
                 return shortcut;
             }
         }
         return ALT_SHIFT;
+    }
+
+    static RemoteImeShortcut[] displayOrder() {
+        return DISPLAY_ORDER.clone();
+    }
+
+    static int indexOf(RemoteImeShortcut selected) {
+        for (int i = 0; i < DISPLAY_ORDER.length; i++) {
+            if (DISPLAY_ORDER[i] == selected) {
+                return i;
+            }
+        }
+        return 0;
     }
 }

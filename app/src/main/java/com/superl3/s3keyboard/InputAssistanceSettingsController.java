@@ -1,39 +1,133 @@
 package com.superl3.s3keyboard;
 
 import android.content.Context;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+
+import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 final class InputAssistanceSettingsController {
-    private static final InputAssistanceMode[] DEBUGGABLE_MODES = InputAssistanceMode.values();
-    private static final InputAssistanceMode[] RELEASE_MODES = {
-            InputAssistanceMode.CUSTOM,
-            InputAssistanceMode.CLEAN,
-            InputAssistanceMode.LEARNING
-    };
+    private final Context context;
+    private final Supplier<KeyboardSettings> settings;
+    private final Supplier<KeyboardErgonomicsOptions> ergonomicsOptions;
+    private final BooleanSupplier debuggableBuild;
+    private final Runnable currentThemeCustomMarker;
+    private final Consumer<KeyboardSettings> settingsSaver;
+    private final BiConsumer<KeyboardSettings, KeyboardErgonomicsOptions> settingsAndErgonomicsSaver;
+    private final Runnable controlsSyncer;
+    private InputAssistanceMode[] modes;
+    private Spinner modeSpinner;
+    private CheckBox hangulConsonantSlideHintsCheckBox;
+    private CheckBox hangulVowelSlideHintsCheckBox;
+    private CheckBox englishSlideHintsCheckBox;
+    private CheckBox spacebarSlideHintsCheckBox;
+    private CheckBox beginnerTooltipPreviewCheckBox;
+    private boolean syncing = true;
 
-    private InputAssistanceSettingsController() {
+    InputAssistanceSettingsController(
+            Context context,
+            Supplier<KeyboardSettings> settings,
+            Supplier<KeyboardErgonomicsOptions> ergonomicsOptions,
+            BooleanSupplier debuggableBuild,
+            Runnable currentThemeCustomMarker,
+            Consumer<KeyboardSettings> settingsSaver,
+            BiConsumer<KeyboardSettings, KeyboardErgonomicsOptions> settingsAndErgonomicsSaver,
+            Runnable controlsSyncer) {
+        this.context = context;
+        this.settings = RuntimeDefaults.keyboardSettingsSupplier(settings);
+        this.ergonomicsOptions = RuntimeDefaults.keyboardErgonomicsSupplier(ergonomicsOptions);
+        this.debuggableBuild = RuntimeDefaults.booleanSupplier(debuggableBuild);
+        this.currentThemeCustomMarker = RuntimeDefaults.runnable(currentThemeCustomMarker);
+        this.settingsSaver = RuntimeDefaults.keyboardSettingsConsumer(settingsSaver);
+        this.settingsAndErgonomicsSaver =
+                RuntimeDefaults.keyboardSettingsAndErgonomicsConsumer(settingsAndErgonomicsSaver);
+        this.controlsSyncer = RuntimeDefaults.runnable(controlsSyncer);
+        modes = InputAssistanceMode.displayOrder(isDebuggableBuild());
     }
 
-    static InputAssistanceMode[] availableModes(boolean debuggableBuild) {
-        return debuggableBuild ? DEBUGGABLE_MODES.clone() : RELEASE_MODES.clone();
+    void addTo(LinearLayout root) {
+        modes = InputAssistanceMode.displayOrder(isDebuggableBuild());
+        modeSpinner = SettingsRowBuilder.labeledControl(
+                context,
+                root,
+                R.string.settings_input_assistance_mode,
+                SettingsRowBuilder.optionSpinner(
+                        context,
+                        modes,
+                        () -> !syncing,
+                        mode -> {
+                            if (mode.isPreset()) {
+                                applyMode(mode);
+                            }
+                        }),
+                12);
+
+        hangulConsonantSlideHintsCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                root,
+                R.string.settings_hangul_consonant_slide_hints,
+                12,
+                () -> !syncing,
+                this::saveHangulConsonantSlideHints);
+        hangulVowelSlideHintsCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                root,
+                R.string.settings_hangul_vowel_slide_hints,
+                8,
+                () -> !syncing,
+                this::saveHangulVowelSlideHints);
+        englishSlideHintsCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                root,
+                R.string.settings_english_slide_hints,
+                8,
+                () -> !syncing,
+                this::saveEnglishSlideHints);
+        spacebarSlideHintsCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                root,
+                R.string.settings_spacebar_slide_hints,
+                8,
+                () -> !syncing,
+                this::saveSpacebarSlideHints);
+        beginnerTooltipPreviewCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                root,
+                R.string.settings_beginner_preview,
+                8,
+                () -> !syncing,
+                this::saveBeginnerTooltipPreview);
     }
 
-    static int indexOf(InputAssistanceMode[] modes, InputAssistanceMode mode) {
-        if (modes == null || modes.length == 0) {
-            return 0;
+    void sync(KeyboardSettings settings) {
+        if (modeSpinner == null) {
+            return;
         }
-        for (int i = 0; i < modes.length; i++) {
-            if (modes[i] == mode) {
-                return i;
-            }
-        }
-        return 0;
+        KeyboardSettings safe = RuntimeDefaults.keyboardSettings(settings);
+
+        syncing = true;
+        modeSpinner.setSelection(InputAssistanceMode.indexOf(
+                modes,
+                currentMode(context, safe, isDebuggableBuild())));
+        hangulConsonantSlideHintsCheckBox.setChecked(
+                KeyboardPreferences.loadShowHangulConsonantSlideHints(context));
+        hangulVowelSlideHintsCheckBox.setChecked(
+                KeyboardPreferences.loadShowHangulVowelSlideHints(context));
+        englishSlideHintsCheckBox.setChecked(safe.showEnglishSlideHints);
+        spacebarSlideHintsCheckBox.setChecked(KeyboardPreferences.loadShowSpacebarSlideHints(context));
+        beginnerTooltipPreviewCheckBox.setChecked(safe.showBeginnerTooltipPreview);
+        syncing = false;
     }
 
     static InputAssistanceMode currentMode(
             Context context,
             KeyboardSettings settings,
             boolean debuggableBuild) {
-        KeyboardSettings safe = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings safe = RuntimeDefaults.keyboardSettings(settings);
         return InputAssistanceMode.match(
                 KeyboardPreferences.loadShowHangulConsonantSlideHints(context),
                 KeyboardPreferences.loadShowHangulVowelSlideHints(context),
@@ -49,7 +143,7 @@ final class InputAssistanceSettingsController {
             InputAssistanceMode mode,
             boolean debuggableBuild) {
         if (mode == null || !mode.isPreset()) {
-            return settings == null ? KeyboardSettings.defaults() : settings;
+            return RuntimeDefaults.keyboardSettings(settings);
         }
         KeyboardPreferences.saveInputAssistanceMode(context, mode);
         InputAssistanceMode.Profile profile = mode.profile;
@@ -65,9 +159,7 @@ final class InputAssistanceSettingsController {
     static KeyboardErgonomicsOptions ergonomicsForMode(
             KeyboardErgonomicsOptions current,
             InputAssistanceMode mode) {
-        KeyboardErgonomicsOptions safe = current == null
-                ? KeyboardErgonomicsOptions.DEFAULT
-                : current;
+        KeyboardErgonomicsOptions safe = RuntimeDefaults.keyboardErgonomics(current);
         if (mode == null || !mode.isPreset()) {
             return safe;
         }
@@ -93,7 +185,7 @@ final class InputAssistanceSettingsController {
     static KeyboardSettings settingsForProfile(
             KeyboardSettings settings,
             InputAssistanceMode.Profile profile) {
-        KeyboardSettings safe = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings safe = RuntimeDefaults.keyboardSettings(settings);
         if (profile == null) {
             return safe;
         }
@@ -102,4 +194,54 @@ final class InputAssistanceSettingsController {
                 profile.showEnglishHints,
                 profile.showPreview);
     }
+
+    private boolean isDebuggableBuild() {
+        return debuggableBuild.getAsBoolean();
+    }
+
+    private void applyMode(InputAssistanceMode mode) {
+        KeyboardSettings nextSettings = applyPreset(
+                context,
+                RuntimeDefaults.keyboardSettingsFrom(settings),
+                mode,
+                isDebuggableBuild());
+        KeyboardErgonomicsOptions nextErgonomics = ergonomicsForMode(
+                RuntimeDefaults.keyboardErgonomicsFrom(ergonomicsOptions),
+                mode);
+        settingsAndErgonomicsSaver.accept(nextSettings, nextErgonomics);
+    }
+
+    private void saveHangulConsonantSlideHints(boolean enabled) {
+        saveHangulConsonantHints(context, enabled);
+        controlsSyncer.run();
+    }
+
+    private void saveHangulVowelSlideHints(boolean enabled) {
+        saveHangulVowelHints(context, enabled);
+        controlsSyncer.run();
+    }
+
+    private void saveEnglishSlideHints(boolean enabled) {
+        KeyboardSettings settings = RuntimeDefaults.keyboardSettingsFrom(this.settings);
+        currentThemeCustomMarker.run();
+        settingsSaver.accept(settings.withHintVisibility(
+                settings.showHangulSlideHints,
+                enabled,
+                settings.showBeginnerTooltipPreview));
+    }
+
+    private void saveSpacebarSlideHints(boolean enabled) {
+        saveSpacebarHints(context, enabled);
+        controlsSyncer.run();
+    }
+
+    private void saveBeginnerTooltipPreview(boolean enabled) {
+        KeyboardSettings settings = RuntimeDefaults.keyboardSettingsFrom(this.settings);
+        currentThemeCustomMarker.run();
+        settingsSaver.accept(settings.withHintVisibility(
+                settings.showHangulSlideHints,
+                settings.showEnglishSlideHints,
+                enabled));
+    }
+
 }

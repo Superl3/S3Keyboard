@@ -36,7 +36,7 @@ final class RemoteAppCatalog {
     }
 
     static String familyForPackage(String packageName) {
-        String normalized = normalizePackage(packageName);
+        String normalized = AppPackageCatalog.normalizePackageName(packageName);
         for (Entry entry : ENTRIES) {
             if (entry.packageName.equals(normalized)) {
                 return entry.family;
@@ -50,16 +50,12 @@ final class RemoteAppCatalog {
         if (family != null) {
             return family;
         }
-        return normalizePackage(packageName).isEmpty() ? "unknown" : "custom";
+        return AppPackageCatalog.normalizePackageName(packageName).isEmpty() ? "unknown" : "custom";
     }
 
     static String remoteProfileIdForPackage(String packageName) {
         String family = familyForPackage(packageName);
         return family == null ? "remote_desktop" : "remote_" + family;
-    }
-
-    private static String normalizePackage(String packageName) {
-        return packageName == null ? "" : packageName.trim();
     }
 
     private static final class Entry {

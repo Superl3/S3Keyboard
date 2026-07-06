@@ -8,8 +8,8 @@ final class AppInputProfileResolver {
             String packageName,
             EditorInputPolicy basePolicy,
             boolean remoteModeRequested) {
-        EditorInputPolicy policy = basePolicy == null ? EditorInputPolicy.DEFAULT : basePolicy;
-        String normalizedPackage = packageName == null ? "" : packageName.trim();
+        EditorInputPolicy policy = RuntimeDefaults.editorInputPolicy(basePolicy);
+        String normalizedPackage = AppPackageCatalog.normalizePackageName(packageName);
         if (remoteModeRequested) {
             return AppInputProfileCatalog.remote(normalizedPackage);
         }

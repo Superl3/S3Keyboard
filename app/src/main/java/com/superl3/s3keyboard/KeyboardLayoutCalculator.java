@@ -14,7 +14,7 @@ final class KeyboardLayoutCalculator {
             float width,
             float height,
             float density) {
-        return layout(rows, settings, KeyboardErgonomicsOptions.DEFAULT, width, height, density);
+        return layout(rows, settings, null, width, height, density);
     }
 
     static List<Slot> layout(
@@ -28,9 +28,8 @@ final class KeyboardLayoutCalculator {
             return Collections.emptyList();
         }
 
-        KeyboardErgonomicsOptions safeErgonomicsOptions = ergonomicsOptions == null
-                ? KeyboardErgonomicsOptions.DEFAULT
-                : ergonomicsOptions;
+        KeyboardErgonomicsOptions safeErgonomicsOptions =
+                RuntimeDefaults.keyboardErgonomics(ergonomicsOptions);
         float safeDensity = Math.max(0.1f, density);
         float leftInset = dp(settings.activeLeftPaddingDp(), safeDensity);
         float rightInset = dp(settings.activeRightPaddingDp(), safeDensity);

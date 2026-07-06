@@ -19,8 +19,7 @@ import android.widget.Toast;
 import java.util.List;
 import java.util.Locale;
 
-public final class S3KeyboardService extends InputMethodService
-        implements HangulKeyboardView.OnKeyGestureListener, HangulKeyboardView.OnPreviewOverlayListener {
+public final class S3KeyboardService extends InputMethodService {
     private final HangulAutomata automata = new HangulAutomata();
     private final HangulCommitOnlyEditor commitOnlyEditor = new HangulCommitOnlyEditor();
     private final DoubleSpacePeriodState doubleSpacePeriodState = new DoubleSpacePeriodState();
@@ -43,21 +42,13 @@ public final class S3KeyboardService extends InputMethodService
     private ClipboardPanelController clipboardPanelController;
     private ThemeClipboardImportController themeClipboardImportController;
     private PopupWindow quickSettingsPopup;
-    private final RemoteInputController remoteInputController =
-            new RemoteInputController(new RemoteInputController.Host() {
-                @Override
-                public RemoteImeShortcut remoteImeShortcut() {
-                    return settings.remoteImeShortcut;
-                }
-
-                @Override
-                public void onRemoteMetaStateChanged(int pendingMetaState, int lockedMetaState) {
-                    updateShiftStateView();
-                }
-            });
+    private final RemoteInputController remoteInputController = new RemoteInputController(
+            () -> settings.remoteImeShortcut,
+            (pendingMetaState, lockedMetaState) -> updateShiftStateView());
     private boolean remoteModeAutoActivated;
     private String currentEditorPackageName = "";
     private InputConnection commandDispatchInputConnection;
+    private int pendingOwnComposingSelectionUpdates;
     private final KeyboardCommandDispatcher.Target commandDispatchTarget =
             new S3KeyboardCommandTarget(this);
 
@@ -66,7 +57,7 @@ public final class S3KeyboardService extends InputMethodService
     @Override
     public View onCreateInputView() {
         dismissPreviewPopup();
-        settings = KeyboardPreferences.load(this).withEnterKeyLabel(enterActionLabel());
+        settings = withSessionRuntimeState(KeyboardPreferences.load(this));
         layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
 
         floatingModeController = new FloatingModeController(this);
@@ -74,237 +65,121 @@ public final class S3KeyboardService extends InputMethodService
         clipboardPanelController = new ClipboardPanelController(
                 this,
                 floatingModeController,
-                new ClipboardPanelController.Host() {
-                    @Override
-                    public KeyboardSettings settings() {
-                        return settings;
-                    }
-
-                    @Override
-                    public EditorInputPolicy editorPolicy() {
-                        return editorPolicy;
-                    }
-
-                    @Override
-                    public void commitClipboardText(String text) {
-                        InputConnection inputConnection = getCurrentInputConnection();
-                        InputConnectionTextOperator.commitText(inputConnection, text);
-                    }
-                });
+                () -> settings,
+                () -> editorPolicy,
+                this::commitClipboardText);
 
         inputRoot = new FrameLayout(this);
         inputRoot.setClipChildren(false);
         inputRoot.setClipToPadding(false);
 
-        LinearLayout mainContainer = new LinearLayout(this);
-        mainContainer.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout mainContainer = SettingsRowBuilder.vertical(this);
 
         inputView = new HangulKeyboardView(this);
         inputView.setKeyboardSurface(editorPolicy.surface);
         inputView.setSettings(settings);
         inputView.setRedactTypingEventText(!editorPolicy.allowTextConveniences);
         updateShiftStateView();
-        inputView.setOnKeyGestureListener(this);
-        inputView.setOnPreviewOverlayListener(this);
+        inputView.setOnKeyGestureListener(this::onKeyGesture);
+        inputView.setOnPreviewOverlayListener(this::showPreviewOverlays);
 
         suggestionStripController = new EnglishSuggestionStripController(
                 this,
-                suggestion -> acceptEnglishSuggestion(suggestion));
+                this::acceptEnglishSuggestion);
 
-        mainContainer.addView(clipboardPanelController.createToolbar(), new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        mainContainer.addView(suggestionStripController.createView(), new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        mainContainer.addView(inputView, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        mainContainer.addView(clipboardPanelController.createToolbar(), SettingsRowBuilder.matchWrap());
+        mainContainer.addView(suggestionStripController.createView(), SettingsRowBuilder.matchWrap());
+        mainContainer.addView(inputView, SettingsRowBuilder.matchWrap());
 
-        inputRoot.addView(mainContainer, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT));
+        inputRoot.addView(mainContainer, SettingsRowBuilder.frameMatchWrap());
 
         inputRoot.addView(
                 clipboardPanelController.createOverlayView(),
                 clipboardPanelController.overlayLayoutParams());
 
-        previewOverlayController = new PreviewOverlayController(this);
-        previewOverlayController.setSettings(settings);
-        remoteCompatibilityPanelController = new RemoteCompatibilityPanelController(
-                this,
-                new RemoteCompatibilityPanelController.Host() {
-                    @Override
-                    public String currentPackageName() {
-                        return currentEditorPackageName;
-                    }
+        initializePanelControllers();
 
-                    @Override
-                    public int sendCompatibilityKey(int keyCode, int metaState) {
-                        return sendRemoteCompatibilityKey(keyCode, metaState);
-                    }
-                });
-        inputIssueReportController = new InputIssueReportClipboardController(
-                this,
-                new InputIssueReportClipboardController.Host() {
-                    @Override
-                    public void prepareIssueReport() {
-                        if (inputView != null) {
-                            inputView.flushLearningState();
-                        }
-                    }
-
-                    @Override
-                    public String currentPackageName() {
-                        return currentEditorPackageName;
-                    }
-
-                    @Override
-                    public AppInputProfile inputProfile() {
-                        return appInputProfile;
-                    }
-
-                    @Override
-                    public KeyboardSettings currentSettings() {
-                        return settings;
-                    }
-
-                    @Override
-                    public EditorInputPolicy currentEditorPolicy() {
-                        return editorPolicy;
-                    }
-                });
-        themeClipboardImportController = new ThemeClipboardImportController(
-                this,
-                new ThemeClipboardImportController.Host() {
-                    @Override
-                    public KeyboardSettings currentSettings() {
-                        return settings;
-                    }
-
-                    @Override
-                    public String enterKeyLabel() {
-                        return enterActionLabel();
-                    }
-
-                    @Override
-                    public boolean forceNumberRow() {
-                        return editorPolicy.forceNumberRow;
-                    }
-
-                    @Override
-                    public void applyImportedSettings(KeyboardSettings nextSettings) {
-                        settings = nextSettings;
-                        applyCurrentSettingsToInputView();
-                    }
-
-                    @Override
-                    public void dismissQuickSettings() {
-                        S3KeyboardService.this.dismissQuickSettings();
-                    }
-                });
-        quickThemePanelController = new QuickThemePanelController(
-                this,
-                new QuickThemePanelController.Host() {
-                    @Override
-                    public KeyboardMode currentKeyboardMode() {
-                        return settings.keyboardMode;
-                    }
-
-                    @Override
-                    public String enterKeyLabel() {
-                        return enterActionLabel();
-                    }
-
-                    @Override
-                    public boolean forceNumberRow() {
-                        return editorPolicy.forceNumberRow;
-                    }
-
-                    @Override
-                    public void applyRuntimeSettings(KeyboardSettings nextSettings) {
-                        settings = nextSettings;
-                        applyCurrentSettingsToInputView();
-                    }
-
-                    @Override
-                    public void dismissQuickSettings() {
-                        S3KeyboardService.this.dismissQuickSettings();
-                    }
-                });
-        quickSettingsPanelController = new QuickSettingsPanelController(
-                this,
-                remoteCompatibilityPanelController,
-                quickThemePanelController,
-                new QuickSettingsPanelController.Host() {
-                    @Override
-                    public KeyboardSettings settings() {
-                        return settings;
-                    }
-
-                    @Override
-                    public String remoteModeToggleLabel() {
-                        return S3KeyboardService.this.remoteModeToggleLabel();
-                    }
-
-                    @Override
-                    public void toggleRemoteMode() {
-                        S3KeyboardService.this.toggleRemoteMode();
-                    }
-
-                    @Override
-                    public String numberRowToggleLabel() {
-                        return S3KeyboardService.this.numberRowToggleLabel();
-                    }
-
-                    @Override
-                    public boolean activeNumberRowVisible() {
-                        return S3KeyboardService.this.activeNumberRowVisible();
-                    }
-
-                    @Override
-                    public void toggleActiveNumberRow() {
-                        S3KeyboardService.this.toggleActiveNumberRow();
-                    }
-
-                    @Override
-                    public void setHandedness(HandednessMode mode) {
-                        S3KeyboardService.this.setHandedness(mode);
-                    }
-
-                    @Override
-                    public void importThemeFromClipboard() {
-                        if (themeClipboardImportController != null) {
-                            themeClipboardImportController.importFromClipboard();
-                        }
-                    }
-
-                    @Override
-                    public void copyInputIssueReport() {
-                        inputIssueReportController.copyToClipboard();
-                    }
-
-                    @Override
-                    public void dismissQuickSettings() {
-                        S3KeyboardService.this.dismissQuickSettings();
-                    }
-                });
-
-        floatingModeController.setOnPositionChangedListener(new FloatingModeController.OnPositionChangedListener() {
-            @Override
-            public void onPositionChanged(int offsetX, int offsetY) {
-                applyFloatingMode();
-            }
-            @Override
-            public void onFloatingModeChanged(boolean enabled) {
-                updateToolbarVisibility();
-                applyFloatingMode();
-            }
-        });
+        floatingModeController.setOnPositionChangedListener(this::applyFloatingMode);
+        floatingModeController.setOnFloatingModeChangedListener(this::onFloatingModeChanged);
 
         updateToolbarVisibility();
         updateClipboardListener();
         return inputRoot;
+    }
+
+    private void initializePanelControllers() {
+        previewOverlayController = new PreviewOverlayController(this);
+        previewOverlayController.setSettings(settings);
+        remoteCompatibilityPanelController = new RemoteCompatibilityPanelController(
+                this,
+                () -> currentEditorPackageName,
+                this::sendCompatibilityKey);
+        inputIssueReportController = new InputIssueReportClipboardController(
+                this,
+                this::prepareIssueReport,
+                () -> currentEditorPackageName,
+                () -> appInputProfile,
+                () -> settings,
+                () -> editorPolicy);
+        themeClipboardImportController = new ThemeClipboardImportController(
+                this,
+                () -> settings,
+                this::enterActionLabel,
+                () -> editorPolicy.forceNumberRow,
+                this::applyRuntimeSettings,
+                this::dismissQuickSettings);
+        quickThemePanelController = new QuickThemePanelController(
+                this,
+                () -> settings.keyboardMode,
+                this::enterActionLabel,
+                () -> editorPolicy.forceNumberRow,
+                this::applyRuntimeSettings,
+                this::dismissQuickSettings);
+        quickSettingsPanelController = new QuickSettingsPanelController(
+                this,
+                remoteCompatibilityPanelController,
+                quickThemePanelController,
+                () -> settings,
+                this::remoteModeToggleLabel,
+                this::toggleRemoteMode,
+                this::numberRowToggleLabel,
+                this::activeNumberRowVisible,
+                this::toggleActiveNumberRow,
+                this::setHandedness,
+                this::importThemeFromClipboard,
+                this::copyInputIssueReport,
+                this::dismissQuickSettings);
+    }
+
+    private void onFloatingModeChanged(boolean enabled) {
+        updateToolbarVisibility();
+        applyFloatingMode();
+    }
+
+    private void commitClipboardText(String text) {
+        InputConnection inputConnection = getCurrentInputConnection();
+        InputConnectionTextOperator.commitText(inputConnection, text);
+    }
+
+    private void prepareIssueReport() {
+        if (inputView != null) {
+            inputView.flushLearningState();
+        }
+    }
+
+    private void applyRuntimeSettings(KeyboardSettings nextSettings) {
+        settings = withSessionRuntimeState(nextSettings);
+        applyCurrentSettingsToInputView();
+    }
+
+    private void importThemeFromClipboard() {
+        if (themeClipboardImportController != null) {
+            themeClipboardImportController.importFromClipboard();
+        }
+    }
+
+    private void copyInputIssueReport() {
+        inputIssueReportController.copyToClipboard();
     }
 
     private void updateToolbarVisibility() {
@@ -360,6 +235,7 @@ public final class S3KeyboardService extends InputMethodService
         updateClipboardListener();
         automata.reset();
         commitOnlyEditor.reset();
+        pendingOwnComposingSelectionUpdates = 0;
         previousTextRepairState.reset();
         doubleSpacePeriodState.reset();
         englishShiftState.reset();
@@ -387,6 +263,7 @@ public final class S3KeyboardService extends InputMethodService
         }
         automata.reset();
         commitOnlyEditor.reset();
+        pendingOwnComposingSelectionUpdates = 0;
         previousTextRepairState.reset();
         englishShiftState.reset();
         qwertyInputAssistant.reset();
@@ -426,12 +303,17 @@ public final class S3KeyboardService extends InputMethodService
             if (inputConnection != null) {
                 InputConnectionTextOperator.finishComposing(inputConnection);
             }
+            pendingOwnComposingSelectionUpdates = 0;
             previousTextRepairState.reset();
             doubleSpacePeriodState.reset();
             refreshQwertyAssistantFromEditor();
             return;
         }
         if (automata.getComposingText().isEmpty()) {
+            return;
+        }
+        if (pendingOwnComposingSelectionUpdates > 0) {
+            pendingOwnComposingSelectionUpdates--;
             return;
         }
         if (isComposingSelectionMismatch(newSelStart, newSelEnd, candidatesStart, candidatesEnd)) {
@@ -441,6 +323,7 @@ public final class S3KeyboardService extends InputMethodService
             } else {
                 automata.reset();
                 commitOnlyEditor.reset();
+                pendingOwnComposingSelectionUpdates = 0;
             }
             previousTextRepairState.reset();
             doubleSpacePeriodState.reset();
@@ -448,7 +331,6 @@ public final class S3KeyboardService extends InputMethodService
         }
     }
 
-    @Override
     public void onKeyGesture(String value) {
         InputConnection inputConnection = getCurrentInputConnection();
         if (inputConnection == null || value == null || value.isEmpty()) {
@@ -564,7 +446,9 @@ public final class S3KeyboardService extends InputMethodService
                 ? dingulCenterReplacementVowel(currentVowel)
                 : dingulWideReplacementVowel(currentVowel);
         if (replacementVowel != '\0' && automata.replaceCurrentVowelWithoutFinal(replacementVowel)) {
-            commitOnlyEditor.refreshDisplayedComposing(automata, commitOnlySink(inputConnection));
+            commitOnlyEditor.refreshDisplayedComposing(
+                    automata,
+                    InputConnectionTextOperator.commitOnlySink(inputConnection));
             return;
         }
         char nextVowel = centerVowelKey
@@ -759,12 +643,21 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void inputHangulCommitOnly(InputConnection inputConnection, String text) {
-        commitOnlyEditor.input(automata, text, commitOnlySink(inputConnection));
+        commitOnlyEditor.input(
+                automata,
+                text,
+                InputConnectionTextOperator.commitOnlySink(inputConnection));
     }
 
     private boolean usesCommitOnlyHangul() {
-        return settings.keyboardMode == KeyboardMode.HANGUL
-                && (editorPolicy.rawKeyInput || !editorPolicy.allowComposingText);
+        return usesCommitOnlyHangul(settings, editorPolicy);
+    }
+
+    static boolean usesCommitOnlyHangul(KeyboardSettings settings, EditorInputPolicy editorPolicy) {
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
+        EditorInputPolicy safePolicy = editorPolicy == null ? EditorInputPolicy.DEFAULT : editorPolicy;
+        return safeSettings.keyboardMode == KeyboardMode.HANGUL
+                && (safePolicy.rawKeyInput || !safePolicy.allowComposingText);
     }
 
     private static boolean containsHangulAutomataText(String text) {
@@ -791,10 +684,6 @@ public final class S3KeyboardService extends InputMethodService
             }
         }
         return true;
-    }
-
-    private HangulCommitOnlyEditor.Sink commitOnlySink(InputConnection inputConnection) {
-        return InputConnectionTextOperator.commitOnlySink(inputConnection);
     }
 
     private String applyHangulQwertyShift(String text) {
@@ -892,7 +781,7 @@ public final class S3KeyboardService extends InputMethodService
         layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
         boolean remotePackageMatched = KeyboardPreferences.shouldAutoEnableRemoteMode(
                 this,
-                info == null || info.packageName == null ? "" : info.packageName);
+                AppPackageCatalog.normalizePackageName(info == null ? null : info.packageName));
         InputSessionSettings session = InputSessionSettingsResolver.resolve(
                 info,
                 storedSettings,
@@ -904,7 +793,14 @@ public final class S3KeyboardService extends InputMethodService
         currentEditorPackageName = session.packageName;
         appInputProfile = session.appInputProfile;
         remoteModeAutoActivated = session.remoteModeAutoActivated;
-        settings = session.runtimeSettings;
+        settings = withSessionRuntimeState(session.runtimeSettings);
+    }
+
+    private KeyboardSettings withSessionRuntimeState(KeyboardSettings source) {
+        KeyboardSettings safe = RuntimeDefaults.keyboardSettings(source);
+        return safe
+                .withEnterKeyLabel(enterActionLabel())
+                .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
     }
 
     void commitSpace(InputConnection inputConnection) {
@@ -966,9 +862,7 @@ public final class S3KeyboardService extends InputMethodService
             return;
         }
         KeyboardMode nextMode = settings.keyboardMode.next();
-        settings = settings.withKeyboardMode(nextMode)
-                .withEnterKeyLabel(enterActionLabel())
-                .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
+        settings = withSessionRuntimeState(settings.withKeyboardMode(nextMode));
         KeyboardPreferences.saveKeyboardMode(this, nextMode);
         applyCurrentSettingsToInputView();
     }
@@ -1008,10 +902,6 @@ public final class S3KeyboardService extends InputMethodService
 
     void delete(InputConnection inputConnection) {
         previousTextRepairState.markDelete();
-        if (commitOnlyEditor.backspace(automata, commitOnlySink(inputConnection))) {
-            refreshQwertyAssistantFromEditor();
-            return;
-        }
         if (settings.remoteModeEnabled) {
             automata.reset();
             commitOnlyEditor.reset();
@@ -1025,6 +915,12 @@ public final class S3KeyboardService extends InputMethodService
             commitOnlyEditor.reset();
             InputConnectionTextOperator.finishComposing(inputConnection);
             sendSoftKey(inputConnection, KeyEvent.KEYCODE_DEL, 0);
+            refreshQwertyAssistantFromEditor();
+            return;
+        }
+        if (usesCommitOnlyHangul() && commitOnlyEditor.backspace(
+                automata,
+                InputConnectionTextOperator.commitOnlySink(inputConnection))) {
             refreshQwertyAssistantFromEditor();
             return;
         }
@@ -1100,6 +996,9 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void updateComposing(InputConnection inputConnection) {
+        if (!automata.getComposingText().isEmpty()) {
+            pendingOwnComposingSelectionUpdates = Math.min(pendingOwnComposingSelectionUpdates + 2, 4);
+        }
         InputConnectionTextOperator.updateComposing(inputConnection, automata, commitOnlyEditor);
     }
 
@@ -1126,6 +1025,7 @@ public final class S3KeyboardService extends InputMethodService
 
     void commitCurrent(InputConnection inputConnection) {
         InputConnectionTextOperator.commitCurrent(inputConnection, automata, commitOnlyEditor);
+        pendingOwnComposingSelectionUpdates = 0;
     }
 
     void commitReservedPhrase(InputConnection inputConnection, String command) {
@@ -1169,9 +1069,7 @@ public final class S3KeyboardService extends InputMethodService
 
     void setHandedness(HandednessMode mode) {
         doubleSpacePeriodState.reset();
-        settings = settings.withHandednessPreset(mode)
-                .withEnterKeyLabel(enterActionLabel())
-                .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
+        settings = withSessionRuntimeState(settings.withHandednessPreset(mode));
         KeyboardPreferences.saveHandednessPreset(this, settings);
         applyCurrentSettingsToInputView();
     }
@@ -1193,16 +1091,22 @@ public final class S3KeyboardService extends InputMethodService
         View panel = quickSettingsPanelController.createPanel();
         quickSettingsPopup = new PopupWindow(
                 panel,
-                Math.max(dp(280), getResources().getDisplayMetrics().widthPixels - dp(24)),
+                Math.max(
+                        SettingsRowBuilder.dp(this, 280),
+                        getResources().getDisplayMetrics().widthPixels - SettingsRowBuilder.dp(this, 24)),
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 true);
         quickSettingsPopup.setOutsideTouchable(true);
         quickSettingsPopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         quickSettingsPopup.setClippingEnabled(false);
-        quickSettingsPopup.showAtLocation(inputRoot, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, dp(12));
+        quickSettingsPopup.showAtLocation(
+                inputRoot,
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL,
+                0,
+                SettingsRowBuilder.dp(this, 12));
     }
 
-    private int sendRemoteCompatibilityKey(int keyCode, int metaState) {
+    private int sendCompatibilityKey(int keyCode, int metaState) {
         InputConnection inputConnection = getCurrentInputConnection();
         if (inputConnection == null) {
             return RemoteCompatibilityPanelController.SEND_SKIPPED;
@@ -1252,13 +1156,10 @@ public final class S3KeyboardService extends InputMethodService
     }
 
     private void toggleRemoteMode() {
-        settings = settings
-                .withRemoteOptions(
-                        !settings.remoteModeEnabled,
-                        settings.remoteKeyPreset,
-                        settings.remoteImeShortcut)
-                .withEnterKeyLabel(enterActionLabel())
-                .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
+        settings = withSessionRuntimeState(settings.withRemoteOptions(
+                !settings.remoteModeEnabled,
+                settings.remoteKeyPreset,
+                settings.remoteImeShortcut));
         remoteModeAutoActivated = false;
         remoteInputController.reset();
         if (remoteCompatibilityPanelController != null) {
@@ -1281,11 +1182,9 @@ public final class S3KeyboardService extends InputMethodService
             dismissQuickSettings();
             return;
         }
-        settings = (settings.keyboardMode == KeyboardMode.ENGLISH
+        settings = withSessionRuntimeState(settings.keyboardMode == KeyboardMode.ENGLISH
                 ? settings.withEnglishNumberRow(!settings.showEnglishNumberRow)
-                : settings.withHangulNumberRow(!settings.showHangulNumberRow))
-                .withEnterKeyLabel(enterActionLabel())
-                .withRuntimeNumberRowForced(editorPolicy.forceNumberRow);
+                : settings.withHangulNumberRow(!settings.showHangulNumberRow));
         KeyboardPreferences.saveSettings(this, settings);
         applyCurrentSettingsToInputView();
         Toast.makeText(this, numberRowToggleLabel(), Toast.LENGTH_SHORT).show();
@@ -1308,28 +1207,10 @@ public final class S3KeyboardService extends InputMethodService
         updateSuggestionStrip();
     }
 
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
-    }
-
-    @Override
-    public void onPreviewOverlayChanged(PreviewOverlaySpec spec) {
-        if (previewOverlayController != null) {
-            previewOverlayController.show(inputView, spec);
-        }
-    }
-
-    @Override
-    public void onPreviewOverlaysChanged(List<PreviewOverlaySpec> specs) {
+    private void showPreviewOverlays(List<PreviewOverlaySpec> specs) {
         if (previewOverlayController != null) {
             previewOverlayController.show(inputView, specs);
         }
-    }
-
-    @Override
-    public void onPreviewOverlayHidden() {
-        dismissPreviewPopup();
     }
 
     private void dismissPreviewPopup() {

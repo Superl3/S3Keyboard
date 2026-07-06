@@ -1,6 +1,6 @@
 package com.superl3.s3keyboard;
 
-enum AdditionalNumberRowColorMode {
+enum AdditionalNumberRowColorMode implements SettingsLabelOption {
     FULL_ALPHA("full_alpha", R.string.number_row_color_full_alpha, KeyVisualRole.ALPHA, KeyVisualRole.ALPHA),
     HALF_MOD_4567(
             "half_mod_4567",
@@ -35,6 +35,8 @@ enum AdditionalNumberRowColorMode {
             KeyVisualRole.MODIFIER),
     FULL_ACCENT("full_accent", R.string.number_row_color_full_accent, KeyVisualRole.ACCENT, KeyVisualRole.ACCENT);
 
+    private static final AdditionalNumberRowColorMode[] DISPLAY_ORDER = values();
+
     final String preferenceValue;
     final int labelResId;
     private final KeyVisualRole outerRole;
@@ -51,8 +53,13 @@ enum AdditionalNumberRowColorMode {
         this.innerRole = innerRole;
     }
 
+    @Override
+    public int labelResId() {
+        return labelResId;
+    }
+
     static AdditionalNumberRowColorMode fromPreference(String value) {
-        for (AdditionalNumberRowColorMode mode : values()) {
+        for (AdditionalNumberRowColorMode mode : DISPLAY_ORDER) {
             if (mode.preferenceValue.equals(value)) {
                 return mode;
             }
@@ -67,6 +74,23 @@ enum AdditionalNumberRowColorMode {
             return FULL_MOD;
         }
         return FULL_MOD;
+    }
+
+    static AdditionalNumberRowColorMode[] displayOrder() {
+        return DISPLAY_ORDER.clone();
+    }
+
+    static int indexOf(AdditionalNumberRowColorMode selected) {
+        int fallbackIndex = 0;
+        for (int i = 0; i < DISPLAY_ORDER.length; i++) {
+            if (DISPLAY_ORDER[i] == FULL_MOD) {
+                fallbackIndex = i;
+            }
+            if (DISPLAY_ORDER[i] == selected) {
+                return i;
+            }
+        }
+        return fallbackIndex;
     }
 
     KeyVisualRole roleForDigit(char digit) {

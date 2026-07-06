@@ -15,7 +15,7 @@ final class GestureThresholdPolicy {
             KeyboardSettings settings,
             GestureKey key,
             DingulVowelGestureProfile vowelProfile) {
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
         return thresholdForKey(safeSettings.gestureThresholdDp, key, vowelProfile);
     }
 
@@ -33,7 +33,7 @@ final class GestureThresholdPolicy {
             GestureKey key,
             GestureAction action,
             DingulVowelGestureProfile vowelProfile) {
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
         int adjustment = touchBias == null ? 0 : touchBias.gestureThresholdAdjustmentForDirection(action);
         return thresholdForKey(safeSettings.gestureThresholdDp + adjustment, key, vowelProfile);
     }

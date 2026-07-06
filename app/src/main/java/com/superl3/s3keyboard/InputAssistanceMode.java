@@ -1,6 +1,6 @@
 package com.superl3.s3keyboard;
 
-enum InputAssistanceMode {
+enum InputAssistanceMode implements SettingsLabelOption {
     CUSTOM(R.string.input_assistance_custom_mode, null),
     CLEAN(R.string.input_assistance_clean_mode, new Profile(
             false,
@@ -27,6 +27,13 @@ enum InputAssistanceMode {
             true,
             KeyboardErgonomicsPreset.AGGRESSIVE));
 
+    private static final InputAssistanceMode[] DEBUGGABLE_DISPLAY_ORDER = values();
+    private static final InputAssistanceMode[] RELEASE_DISPLAY_ORDER = {
+            CUSTOM,
+            CLEAN,
+            LEARNING
+    };
+
     final int labelResId;
     final Profile profile;
 
@@ -35,8 +42,29 @@ enum InputAssistanceMode {
         this.profile = profile;
     }
 
+    @Override
+    public int labelResId() {
+        return labelResId;
+    }
+
     boolean isPreset() {
         return profile != null;
+    }
+
+    static InputAssistanceMode[] displayOrder(boolean debuggableBuild) {
+        return debuggableBuild ? DEBUGGABLE_DISPLAY_ORDER.clone() : RELEASE_DISPLAY_ORDER.clone();
+    }
+
+    static int indexOf(InputAssistanceMode[] modes, InputAssistanceMode mode) {
+        if (modes == null || modes.length == 0) {
+            return 0;
+        }
+        for (int i = 0; i < modes.length; i++) {
+            if (modes[i] == mode) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     static InputAssistanceMode match(

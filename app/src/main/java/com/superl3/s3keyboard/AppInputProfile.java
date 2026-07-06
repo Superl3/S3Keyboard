@@ -53,7 +53,7 @@ final class AppInputProfile {
     }
 
     EditorInputPolicy apply(EditorInputPolicy policy) {
-        EditorInputPolicy base = policy == null ? EditorInputPolicy.DEFAULT : policy;
+        EditorInputPolicy base = RuntimeDefaults.editorInputPolicy(policy);
         return base.withOverrides(
                 preferAsciiLayout,
                 forceNumberRow,

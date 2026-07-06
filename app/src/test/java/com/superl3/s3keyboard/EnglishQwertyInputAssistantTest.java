@@ -27,6 +27,17 @@ public final class EnglishQwertyInputAssistantTest {
     }
 
     @Test
+    public void nullCorrectionEngineUsesDefaultSuggestions() {
+        EnglishQwertyInputAssistant assistant = new EnglishQwertyInputAssistant(null);
+
+        assistant.recordCommittedText("t");
+        assistant.recordCommittedText("e");
+        assistant.recordCommittedText("h");
+
+        assertEquals("the", assistant.suggestions().get(0).text);
+    }
+
+    @Test
     public void autoCorrectsCurrentWordThroughInputConnection() {
         EnglishQwertyInputAssistant assistant = new EnglishQwertyInputAssistant();
         FakeConnection fake = new FakeConnection();

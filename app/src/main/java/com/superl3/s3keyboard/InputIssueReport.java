@@ -26,12 +26,9 @@ final class InputIssueReport {
         SharedPreferences prefs = context == null
                 ? null
                 : context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        AppInputProfile safeProfile = inputProfile == null
-                ? AppInputProfile.STANDARD
-                : inputProfile;
-        KeyboardErgonomicsOptions ergonomicsOptions = context == null
-                ? KeyboardErgonomicsOptions.DEFAULT
-                : KeyboardPreferences.loadErgonomicsOptions(context);
+        AppInputProfile safeProfile = RuntimeDefaults.appInputProfile(inputProfile);
+        KeyboardErgonomicsOptions ergonomicsOptions = RuntimeDefaults.keyboardErgonomics(
+                context == null ? null : KeyboardPreferences.loadErgonomicsOptions(context));
         List<RemoteCompatibilityLog.Entry> remoteEntries = context == null
                 ? Collections.emptyList()
                 : RemoteCompatibilityLog.load(context);
@@ -40,14 +37,14 @@ final class InputIssueReport {
             report.put("generatedAtMs", System.currentTimeMillis());
             report.put("redaction", redactionSummary());
             report.put("settingsSchema", settingsSchemaSummary());
-            report.put("packageName", packageName == null ? "" : packageName);
+            report.put("packageName", RuntimeDefaults.stringOrDefault(packageName, ""));
             report.put("inputProfile", safeProfile.id);
             report.put("inputProfileDetails", inputProfileSummary(safeProfile));
             report.put("appProfileOverrides", appProfileOverrideSummary(
                     packageName,
-                    context == null
-                            ? AppInputProfileOverrides.EMPTY
-                            : KeyboardPreferences.loadAppInputProfileOverrides(context)));
+                    RuntimeDefaults.appInputProfileOverrides(context == null
+                            ? null
+                            : KeyboardPreferences.loadAppInputProfileOverrides(context))));
             report.put("keyboardMode", settings == null ? "" : settings.keyboardMode.name());
             report.put("remoteModeEnabled", settings != null && settings.remoteModeEnabled);
             report.put("settings", KeyboardSettingsSnapshot.from(
@@ -104,11 +101,11 @@ final class InputIssueReport {
             KeyboardSettings settings,
             KeyboardErgonomicsOptions ergonomicsOptions,
             EditorInputPolicy policy) {
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
-        KeyboardErgonomicsOptions safeErgonomics = ergonomicsOptions == null
-                ? KeyboardErgonomicsOptions.DEFAULT
-                : ergonomicsOptions;
-        KeyboardSurface currentSurface = policy == null ? KeyboardSurface.NORMAL : policy.surface;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
+        KeyboardErgonomicsOptions safeErgonomics =
+                RuntimeDefaults.keyboardErgonomics(ergonomicsOptions);
+        KeyboardSurface currentSurface =
+                RuntimeDefaults.keyboardSurface(policy == null ? null : policy.surface);
         KeyboardSettings normalSettings = safeSettings.withRemoteOptions(
                 false,
                 safeSettings.remoteKeyPreset,
@@ -136,11 +133,10 @@ final class InputIssueReport {
             KeyboardSettings settings,
             KeyboardErgonomicsOptions ergonomicsOptions,
             KeyboardSurface surface) {
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
-        KeyboardErgonomicsOptions safeErgonomics = ergonomicsOptions == null
-                ? KeyboardErgonomicsOptions.DEFAULT
-                : ergonomicsOptions;
-        KeyboardSurface safeSurface = surface == null ? KeyboardSurface.NORMAL : surface;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
+        KeyboardErgonomicsOptions safeErgonomics =
+                RuntimeDefaults.keyboardErgonomics(ergonomicsOptions);
+        KeyboardSurface safeSurface = RuntimeDefaults.keyboardSurface(surface);
         List<KeyboardLayoutCalculator.Slot> slots = KeyboardLayoutCalculator.layout(
                 KeyboardLayoutFactory.build(safeSettings, safeSurface),
                 safeSettings,
@@ -167,7 +163,7 @@ final class InputIssueReport {
     }
 
     static JSONObject inputProfileSummary(AppInputProfile profile) {
-        AppInputProfile safe = profile == null ? AppInputProfile.STANDARD : profile;
+        AppInputProfile safe = RuntimeDefaults.appInputProfile(profile);
         JSONObject object = new JSONObject();
         put(object, "id", safe.id);
         put(object, "source", safe.source);
@@ -182,7 +178,7 @@ final class InputIssueReport {
     static JSONObject appProfileOverrideSummary(
             String packageName,
             AppInputProfileOverrides overrides) {
-        AppInputProfileOverrides safe = overrides == null ? AppInputProfileOverrides.EMPTY : overrides;
+        AppInputProfileOverrides safe = RuntimeDefaults.appInputProfileOverrides(overrides);
         JSONObject object = new JSONObject();
         boolean ascii = KeyboardPreferences.packageListContains(safe.asciiPackages, packageName);
         boolean numberRow = KeyboardPreferences.packageListContains(safe.numberRowPackages, packageName);
@@ -285,16 +281,18 @@ final class InputIssueReport {
     }
 
     static JSONObject userInputAssistance(Context context, KeyboardSettings settings) {
-        return userInputAssistance(context, settings, context == null
-                ? KeyboardErgonomicsOptions.DEFAULT
-                : KeyboardPreferences.loadErgonomicsOptions(context));
+        return userInputAssistance(
+                context,
+                settings,
+                RuntimeDefaults.keyboardErgonomics(
+                        context == null ? null : KeyboardPreferences.loadErgonomicsOptions(context)));
     }
 
     static JSONObject userInputAssistance(
             Context context,
             KeyboardSettings settings,
             KeyboardErgonomicsOptions ergonomicsOptions) {
-        KeyboardSettings safeSettings = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
         boolean showHangulConsonantHints = context == null
                 ? safeSettings.showHangulSlideHints
                 : KeyboardPreferences.loadShowHangulConsonantSlideHints(context);
@@ -316,9 +314,8 @@ final class InputIssueReport {
                 showPreview,
                 showDebugOverlay);
         KeyboardErgonomicsPreset currentErgonomicsPreset =
-                KeyboardErgonomicsPreset.findMatching(ergonomicsOptions == null
-                        ? KeyboardErgonomicsOptions.DEFAULT
-                        : ergonomicsOptions);
+                KeyboardErgonomicsPreset.findMatching(
+                        RuntimeDefaults.keyboardErgonomics(ergonomicsOptions));
         KeyboardErgonomicsPreset recommendedErgonomicsPreset = mode.profile == null
                 ? null
                 : mode.profile.recommendedErgonomicsPreset;

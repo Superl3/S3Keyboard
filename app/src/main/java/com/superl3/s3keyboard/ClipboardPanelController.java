@@ -5,7 +5,6 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -13,18 +12,15 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 final class ClipboardPanelController {
-    interface Host {
-        KeyboardSettings settings();
-
-        EditorInputPolicy editorPolicy();
-
-        void commitClipboardText(String text);
-    }
-
     private final Context context;
     private final FloatingModeController floatingModeController;
-    private final Host host;
+    private final Supplier<KeyboardSettings> settings;
+    private final Supplier<EditorInputPolicy> editorPolicy;
+    private final Consumer<String> clipboardTextCommitter;
     private final ClipboardStore store;
     private final ClipboardManager clipboardManager;
     private final ClipboardManager.OnPrimaryClipChangedListener clipboardListener;
@@ -35,67 +31,35 @@ final class ClipboardPanelController {
     private TextView remoteIndicator;
     private boolean clipboardListenerRegistered;
 
-    ClipboardPanelController(Context context, FloatingModeController floatingModeController, Host host) {
+    ClipboardPanelController(
+            Context context,
+            FloatingModeController floatingModeController,
+            Supplier<KeyboardSettings> settings,
+            Supplier<EditorInputPolicy> editorPolicy,
+            Consumer<String> clipboardTextCommitter) {
         this.context = context;
         this.floatingModeController = floatingModeController;
-        this.host = host;
+        this.settings = RuntimeDefaults.keyboardSettingsSupplier(settings);
+        this.editorPolicy = RuntimeDefaults.editorInputPolicySupplier(editorPolicy);
+        this.clipboardTextCommitter = RuntimeDefaults.stringConsumer(clipboardTextCommitter);
         this.store = new ClipboardStore(context);
         this.clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
         this.clipboardListener = this::capturePrimaryClipboard;
     }
 
     LinearLayout createToolbar() {
-        toolbarLayout = new LinearLayout(context);
-        toolbarLayout.setOrientation(LinearLayout.HORIZONTAL);
+        toolbarLayout = SettingsRowBuilder.horizontal(context);
         toolbarLayout.setGravity(Gravity.CENTER_VERTICAL);
-        toolbarLayout.setBackgroundColor(settings().keyboardBackgroundColor);
+        toolbarLayout.setBackgroundColor(RuntimeDefaults.keyboardSettingsFrom(settings).keyboardBackgroundColor);
 
-        dragHandle = new View(context);
-        LinearLayout.LayoutParams handleParams = new LinearLayout.LayoutParams(
-                (int) TypedValue.applyDimension(
-                        TypedValue.COMPLEX_UNIT_DIP,
-                        48,
-                        context.getResources().getDisplayMetrics()),
-                (int) TypedValue.applyDimension(
-                        TypedValue.COMPLEX_UNIT_DIP,
-                        8,
-                        context.getResources().getDisplayMetrics()));
-        handleParams.weight = 0;
-        handleParams.gravity = Gravity.CENTER;
-        handleParams.setMargins(0, 8, 0, 8);
-        dragHandle.setLayoutParams(handleParams);
-        dragHandle.setBackgroundColor(Color.LTGRAY);
-        dragHandle.setOnTouchListener((v, event) ->
-                floatingModeController != null && floatingModeController.onHandleTouch(v, event));
+        dragHandle = createDragHandle();
+        clipboardButton = createClipboardButton();
+        remoteIndicator = createRemoteIndicator();
 
-        View spacer1 = new View(context);
-        spacer1.setLayoutParams(new LinearLayout.LayoutParams(0, 0, 1));
-        View spacer2 = new View(context);
-        spacer2.setLayoutParams(new LinearLayout.LayoutParams(0, 0, 1));
-
-        clipboardButton = new Button(context);
-        clipboardButton.setText(R.string.clipboard_toolbar_button);
-        clipboardButton.setBackgroundColor(Color.TRANSPARENT);
-        clipboardButton.setTextColor(settings().keyIdleColor);
-        clipboardButton.setOnClickListener(v -> toggle());
-        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        buttonParams.weight = 0;
-        clipboardButton.setLayoutParams(buttonParams);
-
-        remoteIndicator = new TextView(context);
-        remoteIndicator.setText("");
-        remoteIndicator.setTextSize(12);
-        remoteIndicator.setTypeface(Typeface.DEFAULT_BOLD);
-        remoteIndicator.setTextColor(contrastColor(settings().keyboardBackgroundColor));
-        remoteIndicator.setGravity(Gravity.CENTER);
-        remoteIndicator.setPadding(dp(10), 0, dp(10), 0);
-
-        toolbarLayout.addView(spacer1);
+        toolbarLayout.addView(createSpacer());
         toolbarLayout.addView(remoteIndicator);
         toolbarLayout.addView(dragHandle);
-        toolbarLayout.addView(spacer2);
+        toolbarLayout.addView(createSpacer());
         toolbarLayout.addView(clipboardButton);
         updateVisibility();
         return toolbarLayout;
@@ -106,19 +70,13 @@ final class ClipboardPanelController {
                 context,
                 store,
                 () -> clipboardView.setVisibility(View.GONE),
-                text -> {
-                    if (host != null) {
-                        host.commitClipboardText(text);
-                    }
-                });
+                clipboardTextCommitter);
         clipboardView.setVisibility(View.GONE);
         return clipboardView;
     }
 
     FrameLayout.LayoutParams overlayLayoutParams() {
-        return new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT);
+        return SettingsRowBuilder.frameMatchMatch();
     }
 
     void toggle() {
@@ -136,8 +94,10 @@ final class ClipboardPanelController {
         if (toolbarLayout == null || floatingModeController == null) {
             return;
         }
+        KeyboardSettings currentSettings = RuntimeDefaults.keyboardSettingsFrom(settings);
+        EditorInputPolicy currentPolicy = RuntimeDefaults.editorInputPolicyFrom(editorPolicy);
         boolean floatingEnabled = false;
-        boolean clipboardEnabled = store.isEnabled() && !editorPolicy().password;
+        boolean clipboardEnabled = store.isEnabled() && !currentPolicy.password;
         boolean showToolbar = floatingEnabled || clipboardEnabled;
         toolbarLayout.setVisibility(showToolbar ? View.VISIBLE : View.GONE);
         if (dragHandle != null) {
@@ -148,7 +108,7 @@ final class ClipboardPanelController {
         }
         if (remoteIndicator != null) {
             remoteIndicator.setVisibility(View.GONE);
-            remoteIndicator.setTextColor(contrastColor(settings().keyboardBackgroundColor));
+            remoteIndicator.setTextColor(toolbarTextColor(currentSettings));
         }
         if (!clipboardEnabled && clipboardView != null) {
             clipboardView.setVisibility(View.GONE);
@@ -156,14 +116,15 @@ final class ClipboardPanelController {
     }
 
     void updateAppearance() {
+        KeyboardSettings currentSettings = RuntimeDefaults.keyboardSettingsFrom(settings);
         if (toolbarLayout != null) {
-            toolbarLayout.setBackgroundColor(settings().keyboardBackgroundColor);
+            toolbarLayout.setBackgroundColor(currentSettings.keyboardBackgroundColor);
         }
         if (clipboardButton != null) {
-            clipboardButton.setTextColor(settings().keyIdleColor);
+            clipboardButton.setTextColor(currentSettings.keyIdleColor);
         }
         if (remoteIndicator != null) {
-            remoteIndicator.setTextColor(contrastColor(settings().keyboardBackgroundColor));
+            remoteIndicator.setTextColor(toolbarTextColor(currentSettings));
         }
     }
 
@@ -171,7 +132,8 @@ final class ClipboardPanelController {
         if (clipboardManager == null) {
             return;
         }
-        boolean shouldRegister = store.isEnabled() && !editorPolicy().password;
+        boolean shouldRegister = store.isEnabled()
+                && !RuntimeDefaults.editorInputPolicyFrom(editorPolicy).password;
         if (shouldRegister && !clipboardListenerRegistered) {
             clipboardManager.addPrimaryClipChangedListener(clipboardListener);
             clipboardListenerRegistered = true;
@@ -190,7 +152,7 @@ final class ClipboardPanelController {
     private void capturePrimaryClipboard() {
         if (clipboardManager == null
                 || !store.isEnabled()
-                || editorPolicy().password) {
+                || RuntimeDefaults.editorInputPolicyFrom(editorPolicy).password) {
             return;
         }
         ClipData clip = clipboardManager.getPrimaryClip();
@@ -207,25 +169,56 @@ final class ClipboardPanelController {
         }
     }
 
-    private KeyboardSettings settings() {
-        KeyboardSettings settings = host == null ? null : host.settings();
-        return settings == null ? KeyboardSettings.defaults() : settings;
+    private View createDragHandle() {
+        View handle = new View(context);
+        LinearLayout.LayoutParams params = SettingsRowBuilder.fixedSize(context, 48, 8);
+        params.weight = 0;
+        params.gravity = Gravity.CENTER;
+        params.setMargins(0, SettingsRowBuilder.dp(context, 8), 0, SettingsRowBuilder.dp(context, 8));
+        handle.setLayoutParams(params);
+        handle.setBackgroundColor(Color.LTGRAY);
+        handle.setOnTouchListener((v, event) ->
+                floatingModeController != null && floatingModeController.onHandleTouch(v, event));
+        return handle;
     }
 
-    private EditorInputPolicy editorPolicy() {
-        EditorInputPolicy policy = host == null ? null : host.editorPolicy();
-        return policy == null ? EditorInputPolicy.DEFAULT : policy;
+    private View createSpacer() {
+        View spacer = new View(context);
+        spacer.setLayoutParams(SettingsRowBuilder.weightedSpacer());
+        return spacer;
     }
 
-    private int dp(int value) {
-        return Math.round(value * context.getResources().getDisplayMetrics().density);
+    private Button createClipboardButton() {
+        Button button = SettingsRowBuilder.button(
+                context,
+                R.string.clipboard_toolbar_button,
+                v -> toggle());
+        button.setBackgroundColor(Color.TRANSPARENT);
+        button.setTextColor(RuntimeDefaults.keyboardSettingsFrom(settings).keyIdleColor);
+        LinearLayout.LayoutParams params = SettingsRowBuilder.wrapContent();
+        params.weight = 0;
+        button.setLayoutParams(params);
+        return button;
     }
 
-    private int contrastColor(int color) {
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-        double luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
-        return luminance > 0.58 ? 0xFF111827 : 0xFFFFFFFF;
+    private TextView createRemoteIndicator() {
+        TextView indicator = SettingsRowBuilder.label(context, "");
+        indicator.setTextSize(12);
+        indicator.setTypeface(Typeface.DEFAULT_BOLD);
+        indicator.setTextColor(toolbarTextColor(RuntimeDefaults.keyboardSettingsFrom(settings)));
+        indicator.setGravity(Gravity.CENTER);
+        indicator.setPadding(
+                SettingsRowBuilder.dp(context, 10),
+                0,
+                SettingsRowBuilder.dp(context, 10),
+                0);
+        return indicator;
     }
+
+    private int toolbarTextColor(KeyboardSettings currentSettings) {
+        return KeyboardColorMath.contrastTextColor(
+                currentSettings.keyboardBackgroundColor,
+                147);
+    }
+
 }

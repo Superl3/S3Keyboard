@@ -1,6 +1,9 @@
 package com.superl3.s3keyboard;
 
 final class PreviewBubbleLayout {
+    private static final float LIFT_RISE_END = 0.34f;
+    private static final float LIFT_HOLD_END = 0.70f;
+
     private PreviewBubbleLayout() {
     }
 
@@ -23,11 +26,14 @@ final class PreviewBubbleLayout {
         if (!motionEnabled) {
             return 0;
         }
-        if (progress < 0.34f) {
-            return Math.round(peakLiftPx * smoothStep(progress / 0.34f));
+        if (progress < LIFT_RISE_END) {
+            return Math.round(peakLiftPx * smoothStep(progress / LIFT_RISE_END));
         }
-        if (progress < 0.62f) {
-            float descend = smoothStep((progress - 0.34f) / 0.28f);
+        if (progress < LIFT_HOLD_END) {
+            return peakLiftPx;
+        }
+        if (progress < 1f) {
+            float descend = smoothStep((progress - LIFT_HOLD_END) / (1f - LIFT_HOLD_END));
             return Math.round(peakLiftPx + (settleLiftPx - peakLiftPx) * descend);
         }
         return settleLiftPx;
@@ -36,6 +42,20 @@ final class PreviewBubbleLayout {
     static int cornerRadiusPx(int keyRadiusPx, boolean angular, int minRadiusPx, int angularMaxPx, int roundedMaxPx) {
         int maxRadius = angular ? angularMaxPx : roundedMaxPx;
         return Math.max(minRadiusPx, Math.min(maxRadius, keyRadiusPx));
+    }
+
+    static boolean nearAnchor(
+            float bubbleCenterX,
+            float bubbleTop,
+            float anchorCenterX,
+            float anchorTop,
+            float anchorWidth,
+            float anchorHeight,
+            int minimumThresholdPx) {
+        float horizontalThreshold = Math.max(anchorWidth * 1.25f, minimumThresholdPx);
+        float verticalThreshold = Math.max(anchorHeight * 1.25f, minimumThresholdPx);
+        return Math.abs(bubbleCenterX - anchorCenterX) <= horizontalThreshold
+                && Math.abs(bubbleTop - anchorTop) <= verticalThreshold;
     }
 
     private static float clamp(float value, float min, float max) {

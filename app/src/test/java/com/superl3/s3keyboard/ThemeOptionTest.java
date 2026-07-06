@@ -3,6 +3,7 @@ package com.superl3.s3keyboard;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
@@ -146,6 +147,18 @@ public final class ThemeOptionTest {
         assertEquals(1, ThemeOption.indexOfStableId(options, KeyboardThemePreset.PRESETS[0].id));
         assertEquals(options.length - 1, ThemeOption.indexOfStableId(options, "custom-1"));
         assertEquals(0, ThemeOption.indexOfStableId(options, "missing"));
+        assertEquals(-1, ThemeOption.indexOfStableId(options, "", -1));
+        assertEquals(-1, ThemeOption.indexOfStableId(options, "missing", -1));
+    }
+
+    @Test
+    public void atSafelyResolvesSpinnerSelection() {
+        ThemeOption[] options = ThemeOption.buildOptions(null, false);
+
+        assertEquals(options[0], ThemeOption.at(options, 0));
+        assertNull(ThemeOption.at(options, -1));
+        assertNull(ThemeOption.at(options, options.length));
+        assertNull(ThemeOption.at(null, 0));
     }
 
     private ThemeOption option(String id) {

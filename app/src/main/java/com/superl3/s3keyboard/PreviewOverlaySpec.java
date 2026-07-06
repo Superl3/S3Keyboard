@@ -14,7 +14,11 @@ final class PreviewOverlaySpec {
     final int cornerRadiusPx;
     final boolean angularBubble;
     final float alpha;
-    final float scale;
+    final float scaleX;
+    final float scaleY;
+    final float textScale;
+    final float commitGlowAlpha;
+    final float inputImpactAlpha;
 
     PreviewOverlaySpec(
             String label,
@@ -30,7 +34,11 @@ final class PreviewOverlaySpec {
             int cornerRadiusPx,
             boolean angularBubble,
             float alpha,
-            float scale) {
+            float scaleX,
+            float scaleY,
+            float textScale,
+            float commitGlowAlpha,
+            float inputImpactAlpha) {
         this.label = label;
         this.x = x;
         this.y = y;
@@ -44,6 +52,10 @@ final class PreviewOverlaySpec {
         this.cornerRadiusPx = cornerRadiusPx;
         this.angularBubble = angularBubble;
         this.alpha = alpha;
-        this.scale = scale;
+        this.scaleX = scaleX;
+        this.scaleY = scaleY;
+        this.textScale = Math.max(0.72f, Math.min(1.18f, textScale));
+        this.commitGlowAlpha = Math.max(0f, Math.min(1f, commitGlowAlpha));
+        this.inputImpactAlpha = Math.max(0f, Math.min(1f, inputImpactAlpha));
     }
 }

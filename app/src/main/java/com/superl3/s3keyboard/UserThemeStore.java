@@ -149,11 +149,11 @@ final class UserThemeStore {
         }
 
         UserTheme(String id, String name, String json, boolean external, String sourcePath) {
-            this.id = id == null ? "" : id;
+            this.id = RuntimeDefaults.stringOrDefault(id, "");
             this.name = name == null || name.isEmpty() ? "Custom Theme" : name;
-            this.json = json == null ? "" : json;
+            this.json = RuntimeDefaults.stringOrDefault(json, "");
             this.external = external;
-            this.sourcePath = sourcePath == null ? "" : sourcePath;
+            this.sourcePath = RuntimeDefaults.stringOrDefault(sourcePath, "");
         }
 
         private static UserTheme empty(int index) {

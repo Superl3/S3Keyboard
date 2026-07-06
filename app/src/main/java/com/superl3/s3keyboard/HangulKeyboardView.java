@@ -1,5 +1,8 @@
 package com.superl3.s3keyboard;
 
+import static com.superl3.s3keyboard.KeyboardColorMath.perceivedLuminance;
+import static com.superl3.s3keyboard.KeyboardColorMath.withAlpha;
+
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
@@ -31,12 +34,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 
-public final class HangulKeyboardView extends View {
+public final class HangulKeyboardView extends View
+        implements KeyboardVirtualKeyAccessibilityProvider.Host,
+                DingulSlideIntentResolver.Policy {
     private static final int TOOL_TYPE_PALM = 5;
     private static final long KEY_PRESS_ANIMATION_MS = 105;
     private static final long SLIDE_LOCK_ANIMATION_MS = 170;
-    private static final int MAX_RELEASED_PREVIEW_BUBBLES = 6;
+    private static final int MAX_RELEASED_PREVIEW_BUBBLES = 2;
+    private static final int PREVIEW_BUBBLE_MIN_WIDTH_DP = 50;
+    private static final int PREVIEW_BUBBLE_MAX_WIDTH_DP = 92;
+    private static final int PREVIEW_BUBBLE_HORIZONTAL_PADDING_DP = 34;
+    private static final int PREVIEW_BUBBLE_HEIGHT_DP = 72;
+    private static final int PREVIEW_BUBBLE_TOP_GAP_DP = 2;
+    private static final int PREVIEW_BUBBLE_PEAK_LIFT_DP = 0;
+    private static final int PREVIEW_BUBBLE_SETTLE_LIFT_DP = 0;
+    private static final int PREVIEW_BUBBLE_RELEASE_FLOAT_DP = 0;
+    private static final int PREVIEW_BUBBLE_COMMIT_LIFT_DP = 0;
     private static final long LONG_PRESS_PULSE_MS = 280;
     private static final long MODE_TRANSITION_MS = 260;
     private static final String TYPING_PROBE_TAG = "DingulTypingProbe";
@@ -69,98 +84,9 @@ public final class HangulKeyboardView extends View {
     private final List<TouchSample> recentTextTouchSamples = new ArrayList<>();
     private final List<PreviewBubbleAnimation> releasedPreviewBubbles = new ArrayList<>();
     private final KeyboardVirtualKeyAccessibilityProvider accessibilityNodeProvider =
-            new KeyboardVirtualKeyAccessibilityProvider(
-                    this,
-                    new KeyboardVirtualKeyAccessibilityProvider.Host() {
-                        @Override
-                        public List<KeySlot> accessibilityKeySlots() {
-                            return keySlots;
-                        }
-
-                        @Override
-                        public KeyboardSettings accessibilitySettings() {
-                            return settings;
-                        }
-
-                        @Override
-                        public KeyboardSurface accessibilityKeyboardSurface() {
-                            return keyboardSurface;
-                        }
-
-                        @Override
-                        public boolean accessibilityDebugKeyBoundsOverlayEnabled() {
-                            return debugKeyBoundsOverlayEnabled;
-                        }
-
-                        @Override
-                        public boolean performHostAccessibilityClick() {
-                            return HangulKeyboardView.this.performClick();
-                        }
-
-                        @Override
-                        public boolean performKeyAccessibilityClick(
-                                int virtualViewId,
-                                GestureKey key) {
-                            return HangulKeyboardView.this.performKeyAccessibilityClick(key);
-                        }
-                    });
+            new KeyboardVirtualKeyAccessibilityProvider(this, this);
     private final KeyboardFeedback feedback = new KeyboardFeedback(this);
-    private final RepeatController repeatController = new RepeatController(this, new RepeatController.Callback() {
-        @Override
-        public void onRepeat(String value) {
-            emitValue(value);
-        }
-    });
-    private final DingulSlideIntentResolver.Policy dingulSlideIntentPolicy =
-            new DingulSlideIntentResolver.Policy() {
-                @Override
-                public boolean isDingulTypingKey(GestureKey key) {
-                    return HangulKeyboardView.this.isDingulTypingKey(key);
-                }
-
-                @Override
-                public GestureAction actionFor(GestureKey key, float dx, float dy) {
-                    return new GestureState().release(
-                            dx,
-                            dy,
-                            baseGestureThresholdPx(key),
-                            gestureThresholdPxFor(key, GestureAction.UP),
-                            gestureThresholdPxFor(key, GestureAction.DOWN),
-                            gestureThresholdPxFor(key, GestureAction.LEFT),
-                            gestureThresholdPxFor(key, GestureAction.RIGHT),
-                            axisDominanceRatioFor(key));
-                }
-
-                @Override
-                public float thresholdPx(GestureKey key, GestureAction action) {
-                    return gestureThresholdPxFor(key, action);
-                }
-
-                @Override
-                public GestureAction shadowActionFor(GestureKey key, float dx, float dy) {
-                    int threshold = shadowGestureThresholdPxFor(key);
-                    return new GestureState().release(
-                            dx,
-                            dy,
-                            threshold,
-                            threshold,
-                            threshold,
-                            threshold,
-                            threshold,
-                            axisDominanceRatioFor(key));
-                }
-
-                @Override
-                public float shadowThresholdPx(GestureKey key, GestureAction action) {
-                    return shadowGestureThresholdPxFor(key);
-                }
-
-                @Override
-                public boolean hasOutput(GestureKey key, GestureAction action) {
-                    String value = key == null ? null : key.valueFor(action);
-                    return value != null && !value.isEmpty() && !KeyboardCommands.CMD_NOOP.equals(value);
-                }
-            };
+    private final RepeatController repeatController = new RepeatController(this, this::emitValue);
 
     private KeyboardSettings settings = KeyboardSettings.defaults();
     private KeyboardLayoutProfiles layoutProfiles = KeyboardLayoutProfiles.defaults();
@@ -171,8 +97,8 @@ public final class HangulKeyboardView extends View {
     private TouchBiasStore.DingulTouchProfile dingulTouchProfile = TouchBiasStore.DingulTouchProfile.empty();
     private TypingEventJournal.CorrectionStats typingCorrectionStats =
             TypingEventJournal.correctionStats("");
-    private OnKeyGestureListener listener;
-    private OnPreviewKeySelectionListener previewKeySelectionListener;
+    private Consumer<String> listener;
+    private Consumer<GestureKey> previewKeySelectionListener;
     private boolean englishShiftActive;
     private boolean englishCapsLocked;
     private int remoteLockedMetaState;
@@ -184,7 +110,7 @@ public final class HangulKeyboardView extends View {
     private boolean showHangulConsonantSlideHints = true;
     private boolean showHangulVowelSlideHints = true;
     private boolean showSpacebarSlideHints = true;
-    private OnPreviewOverlayListener previewOverlayListener;
+    private Consumer<List<PreviewOverlaySpec>> previewOverlayListener;
     private long nextTouchSequence;
     private TouchSample lastTextTouchSample;
     private boolean differentiatedHapticEnabled = true;
@@ -226,21 +152,21 @@ public final class HangulKeyboardView extends View {
         setSettings(KeyboardPreferences.load(context));
     }
 
-    public void setOnKeyGestureListener(OnKeyGestureListener listener) {
+    public void setOnKeyGestureListener(Consumer<String> listener) {
         this.listener = listener;
     }
 
-    void setOnPreviewKeySelectionListener(OnPreviewKeySelectionListener listener) {
+    void setOnPreviewKeySelectionListener(Consumer<GestureKey> listener) {
         previewKeySelectionListener = listener;
     }
 
-    void setOnPreviewOverlayListener(OnPreviewOverlayListener listener) {
+    void setOnPreviewOverlayListener(Consumer<List<PreviewOverlaySpec>> listener) {
         previewOverlayListener = listener;
     }
 
     void setSettings(KeyboardSettings settings) {
         KeyboardSettings previousSettings = this.settings;
-        this.settings = settings == null ? KeyboardSettings.defaults() : settings;
+        this.settings = RuntimeDefaults.keyboardSettings(settings);
         boolean rebuildRows = rows.isEmpty() || layoutModelChanged(previousSettings, this.settings);
         motionEffectLevel = KeyboardPreferences.loadMotionEffectLevel(getContext());
         maybeStartModeTransition(previousSettings, this.settings);
@@ -325,7 +251,7 @@ public final class HangulKeyboardView extends View {
     }
 
     void setKeyboardSurface(KeyboardSurface surface) {
-        KeyboardSurface safeSurface = surface == null ? KeyboardSurface.NORMAL : surface;
+        KeyboardSurface safeSurface = RuntimeDefaults.keyboardSurface(surface);
         if (keyboardSurface == safeSurface) {
             return;
         }
@@ -341,7 +267,7 @@ public final class HangulKeyboardView extends View {
     }
 
     void setLayoutProfiles(KeyboardLayoutProfiles profiles) {
-        KeyboardLayoutProfiles safeProfiles = profiles == null ? KeyboardLayoutProfiles.defaults() : profiles;
+        KeyboardLayoutProfiles safeProfiles = RuntimeDefaults.keyboardLayoutProfiles(profiles);
         if (layoutProfiles.hangulLayout == safeProfiles.hangulLayout
                 && layoutProfiles.englishLayout == safeProfiles.englishLayout) {
             return;
@@ -640,7 +566,9 @@ public final class HangulKeyboardView extends View {
         if (startingNewGesture) {
             previewGestureGeneration++;
         }
-        pruneReleasedPreviewBubbles();
+        long nowMs = SystemClock.uptimeMillis();
+        fadeReleasedPreviewBubblesNear(keySlot, nowMs);
+        pruneReleasedPreviewBubbles(nowMs);
         TouchState state = new TouchState(
                 pointerId,
                 keySlot,
@@ -648,10 +576,10 @@ public final class HangulKeyboardView extends View {
                 event.getY(pointerIndex),
                 nextTouchSequence++,
                 previewGestureGeneration,
-                SystemClock.uptimeMillis(),
+                nowMs,
                 !keySlot.contains(event.getX(pointerIndex), event.getY(pointerIndex)));
         rememberDebugTouch(state, GestureAction.TAP, keySlot);
-        updatePreviewBubbleForTouch(state, false);
+        updatePreviewBubbleForTouch(state, false, nowMs);
         activeTouches.add(state);
         if (previewPointerId == -1) {
             previewPointerId = pointerId;
@@ -729,7 +657,7 @@ public final class HangulKeyboardView extends View {
         cancelLongPressTimer(state);
         if (previewKeySelectionListener != null) {
             feedback.tap();
-            previewKeySelectionListener.onPreviewKeySelected(state.keySlot.key);
+            previewKeySelectionListener.accept(state.keySlot.key);
             removeTouchState(state, true);
             return true;
         }
@@ -768,26 +696,23 @@ public final class HangulKeyboardView extends View {
     }
 
     private void scheduleLongPress(final TouchState state, int delayMs) {
-        state.longPressRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (!activeTouches.contains(state) || state.gestureState.isLocked()) {
-                    return;
-                }
-                state.longPressTriggered = true;
-                state.activeAction = GestureAction.LONG_PRESS;
-                rememberDebugTouch(state, GestureAction.LONG_PRESS, state.keySlot);
-                state.longPressAnimationStartMs = SystemClock.uptimeMillis();
-                feedback.longPress();
-                String repeatValue = longPressRepeatValue(state.keySlot.key);
-                if (repeatValue != null) {
-                    repeatController.start(repeatValue, settings.repeatIntervalMs, settings.repeatIntervalMs, true);
-                } else {
-                    emitValue(state.keySlot.key.valueFor(GestureAction.LONG_PRESS));
-                }
-                updatePreviewPopup();
-                invalidate();
+        state.longPressRunnable = () -> {
+            if (!activeTouches.contains(state) || state.gestureState.isLocked()) {
+                return;
             }
+            state.longPressTriggered = true;
+            state.activeAction = GestureAction.LONG_PRESS;
+            rememberDebugTouch(state, GestureAction.LONG_PRESS, state.keySlot);
+            state.longPressAnimationStartMs = SystemClock.uptimeMillis();
+            feedback.longPress();
+            String repeatValue = longPressRepeatValue(state.keySlot.key);
+            if (repeatValue != null) {
+                repeatController.start(repeatValue, settings.repeatIntervalMs, settings.repeatIntervalMs, true);
+            } else {
+                emitValue(state.keySlot.key.valueFor(GestureAction.LONG_PRESS));
+            }
+            updatePreviewPopup();
+            invalidate();
         };
         postDelayed(state.longPressRunnable, delayMs);
     }
@@ -817,7 +742,7 @@ public final class HangulKeyboardView extends View {
                 upX,
                 upY,
                 dp(settings.hitSlopDp),
-                dingulSlideIntentPolicy);
+                this);
         if (result != null) {
             return new ResolvedTouchOutput(
                         result.target,
@@ -838,7 +763,7 @@ public final class HangulKeyboardView extends View {
                 upX,
                 upY,
                 dp(settings.hitSlopDp),
-                dingulSlideIntentPolicy);
+                this);
         if (shadow != null && shouldApplyActiveSlideCorrection(state.keySlot, shadow)) {
             return new ResolvedTouchOutput(
                     shadow.target,
@@ -960,7 +885,7 @@ public final class HangulKeyboardView extends View {
         }
         if (listener != null && value != null && !value.isEmpty()) {
             recordImmediateDeleteIfNeeded(value);
-            listener.onKeyGesture(value);
+            listener.accept(value);
         }
     }
 
@@ -1303,6 +1228,36 @@ public final class HangulKeyboardView extends View {
                 debugKeyBoundsOverlayEnabled));
     }
 
+    @Override
+    public List<KeySlot> accessibilityKeySlots() {
+        return keySlots;
+    }
+
+    @Override
+    public KeyboardSettings accessibilitySettings() {
+        return settings;
+    }
+
+    @Override
+    public KeyboardSurface accessibilityKeyboardSurface() {
+        return keyboardSurface;
+    }
+
+    @Override
+    public boolean accessibilityDebugKeyBoundsOverlayEnabled() {
+        return debugKeyBoundsOverlayEnabled;
+    }
+
+    @Override
+    public boolean performHostAccessibilityClick() {
+        return performClick();
+    }
+
+    @Override
+    public boolean performKeyAccessibilityClick(int virtualViewId, GestureKey key) {
+        return performKeyAccessibilityClick(key);
+    }
+
     private boolean performKeyAccessibilityClick(GestureKey key) {
         if (key == null) {
             return false;
@@ -1320,12 +1275,7 @@ public final class HangulKeyboardView extends View {
         if (!shouldLogTypingProbe()) {
             return;
         }
-        post(new Runnable() {
-            @Override
-            public void run() {
-                logTypingProbePlan();
-            }
-        });
+        post(this::logTypingProbePlan);
     }
 
     private void logTypingProbePlan() {
@@ -2908,11 +2858,9 @@ public final class HangulKeyboardView extends View {
 
     private int previewBubbleBackgroundFor(KeySlot keySlot) {
         int baseColor = baseColorForKey(keySlot);
-        int r = (baseColor >> 16) & 0xFF;
-        int g = (baseColor >> 8) & 0xFF;
-        int b = baseColor & 0xFF;
-        int luminance = (r * 299 + g * 587 + b * 114) / 1000;
-        return luminance > 150 ? darkenColor(baseColor, 0.88f) : lightenColor(baseColor, 1.22f);
+        return perceivedLuminance(baseColor) > 150
+                ? darkenColor(baseColor, 0.88f)
+                : lightenColor(baseColor, 1.22f);
     }
 
     private int depthColor(KeySlot keySlot, float pressProgress) {
@@ -2957,13 +2905,6 @@ public final class HangulKeyboardView extends View {
             return new float[] { 0f, 0.62f, 1f };
         }
         return new float[] { 0f, 0.42f, 1f };
-    }
-
-    private int perceivedLuminance(int color) {
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-        return (r * 299 + g * 587 + b * 114) / 1000;
     }
 
     private int blendColor(int foreground, int background, float foregroundAmount) {
@@ -3029,10 +2970,6 @@ public final class HangulKeyboardView extends View {
 
     private int darkenColor(int color, float factor) {
         return shadeColor(color, factor);
-    }
-
-    private int withAlpha(int color, int alpha) {
-        return (clampColor(alpha) << 24) | (color & 0x00FFFFFF);
     }
 
     private int clampColor(int value) {
@@ -3114,18 +3051,19 @@ public final class HangulKeyboardView extends View {
             hidePreviewPopup();
             return;
         }
-        pruneReleasedPreviewBubbles();
+        long nowMs = SystemClock.uptimeMillis();
+        pruneReleasedPreviewBubbles(nowMs);
         List<PreviewOverlaySpec> specs = new ArrayList<>();
         for (PreviewBubbleAnimation bubble : releasedPreviewBubbles) {
-            PreviewOverlaySpec spec = previewBubbleSpec(bubble);
+            PreviewOverlaySpec spec = previewBubbleSpec(bubble, nowMs);
             if (spec != null) {
                 specs.add(spec);
             }
         }
         for (TouchState state : activeTouches) {
-            PreviewBubbleAnimation bubble = previewBubbleForTouch(state);
+            PreviewBubbleAnimation bubble = previewBubbleForTouch(state, nowMs);
             if (bubble != null) {
-                PreviewOverlaySpec spec = previewBubbleSpec(bubble);
+                PreviewOverlaySpec spec = previewBubbleSpec(bubble, nowMs);
                 if (spec != null) {
                     specs.add(spec);
                 }
@@ -3134,14 +3072,10 @@ public final class HangulKeyboardView extends View {
         if (previewOverlayListener == null) {
             return;
         }
-        if (specs.isEmpty()) {
-            previewOverlayListener.onPreviewOverlayHidden();
-        } else {
-            previewOverlayListener.onPreviewOverlaysChanged(specs);
-        }
+        previewOverlayListener.accept(specs);
     }
 
-    private PreviewOverlaySpec previewBubbleSpec(PreviewBubbleAnimation bubble) {
+    private PreviewOverlaySpec previewBubbleSpec(PreviewBubbleAnimation bubble, long nowMs) {
         overlayTextPaint.setTextSize(overlayTextSizeFor(bubble.label));
         overlayTextPaint.setTypeface(KeyboardTypefaceCatalog.typefaceFor(
                 getContext(),
@@ -3150,25 +3084,27 @@ public final class HangulKeyboardView extends View {
                 settings.primaryTextItalic));
         int popupWidth = PreviewBubbleLayout.widthPx(
                 overlayTextPaint.measureText(bubble.label),
-                renderDp(48),
-                renderDp(92),
-                renderDp(28));
-        int popupHeight = renderDp(70);
-        float previewMotionProgress = bubble.motionProgress(
-                SystemClock.uptimeMillis(),
-                motionEffectsEnabled(),
-                motionDurationScale());
-        float previewScale = bubble.scale(
-                SystemClock.uptimeMillis(),
-                motionEffectsEnabled(),
-                motionDurationScale());
+                renderDp(PREVIEW_BUBBLE_MIN_WIDTH_DP),
+                renderDp(PREVIEW_BUBBLE_MAX_WIDTH_DP),
+                renderDp(PREVIEW_BUBBLE_HORIZONTAL_PADDING_DP));
+        int popupHeight = renderDp(PREVIEW_BUBBLE_HEIGHT_DP);
+        boolean motionEnabled = motionEffectsEnabled();
+        float durationScale = motionDurationScale();
+        float previewMotionProgress = bubble.motionProgress(nowMs, motionEnabled, durationScale);
+        float previewScaleX = bubble.scaleX(nowMs, motionEnabled, durationScale);
+        float previewScaleY = bubble.scaleY(nowMs, motionEnabled, durationScale);
         int previewLift = previewBubbleLift(previewMotionProgress);
+        previewLift += previewBubbleReleaseLift(
+                bubble.releaseFloatProgress(nowMs, motionEnabled, durationScale));
+        previewLift += previewBubbleCommitLift(
+                bubble.commitLiftProgress(nowMs, motionEnabled, durationScale));
         int x = PreviewBubbleLayout.xPx(bubble.anchorCenterX, popupWidth, getWidth(), renderDp(2));
-        int y = PreviewBubbleLayout.yPx(bubble.anchorTop, popupHeight, renderDp(3), previewLift);
-        float alpha = bubble.alpha(
-                SystemClock.uptimeMillis(),
-                motionEffectsEnabled(),
-                motionDurationScale());
+        int y = PreviewBubbleLayout.yPx(
+                bubble.anchorTop,
+                popupHeight,
+                renderDp(PREVIEW_BUBBLE_TOP_GAP_DP),
+                previewLift);
+        float alpha = bubble.alpha(nowMs, motionEnabled, durationScale);
         if (alpha <= 0f) {
             return null;
         }
@@ -3184,20 +3120,24 @@ public final class HangulKeyboardView extends View {
                 bubble.borderColor,
                 bubble.borderWidthPx,
                 previewBubbleCornerRadius(),
-                true,
+                false,
                 alpha,
-                previewScale);
+                previewScaleX,
+                previewScaleY,
+                bubble.textScale(nowMs, motionEnabled, durationScale),
+                bubble.commitGlowAlpha(nowMs, motionEnabled, durationScale),
+                bubble.inputImpactAlpha(nowMs, motionEnabled, durationScale));
     }
 
-    private PreviewBubbleAnimation previewBubbleForTouch(TouchState state) {
-        if (state == null || !shouldShowPreviewForTouch(state)) {
+    private PreviewBubbleAnimation previewBubbleForTouch(TouchState state, long nowMs) {
+        if (state == null) {
             return null;
         }
-        updatePreviewBubbleForTouch(state, false);
+        updatePreviewBubbleForTouch(state, false, nowMs);
         return state.previewBubble;
     }
 
-    private void updatePreviewBubbleForTouch(TouchState state, boolean released) {
+    private void updatePreviewBubbleForTouch(TouchState state, boolean released, long nowMs) {
         String value = previewValueForTouch(state);
         String label = displayFor(value);
         if (label == null) {
@@ -3214,11 +3154,11 @@ public final class HangulKeyboardView extends View {
                     previewBubbleBackgroundFor(state.keySlot),
                     settings.borderColor,
                     renderDp(settings.keyBorderWidthDp),
-                    SystemClock.uptimeMillis(),
+                    nowMs,
                     released);
         }
         if (released) {
-            state.previewBubble.markReleased(SystemClock.uptimeMillis());
+            state.previewBubble.markReleased(nowMs);
         }
     }
 
@@ -3229,7 +3169,8 @@ public final class HangulKeyboardView extends View {
         if (state.previewGeneration != previewGestureGeneration) {
             return;
         }
-        updatePreviewBubbleForTouch(state, true);
+        long nowMs = SystemClock.uptimeMillis();
+        updatePreviewBubbleForTouch(state, true, nowMs);
         PreviewBubbleAnimation bubble = state.previewBubble;
         if (bubble == null) {
             return;
@@ -3239,17 +3180,36 @@ public final class HangulKeyboardView extends View {
         trimReleasedPreviewBubbles();
     }
 
-    private void pruneReleasedPreviewBubbles() {
+    private void pruneReleasedPreviewBubbles(long nowMs) {
+        boolean motionEnabled = motionEffectsEnabled();
+        float durationScale = motionDurationScale();
         for (int i = releasedPreviewBubbles.size() - 1; i >= 0; i--) {
             if (releasedPreviewBubbles.get(i).expired(
-                    SystemClock.uptimeMillis(),
-                    motionEffectsEnabled(),
-                    motionDurationScale())) {
+                    nowMs,
+                    motionEnabled,
+                    durationScale)) {
                 releasedPreviewBubbles.remove(i);
             }
         }
         if (!releasedPreviewBubbles.isEmpty()) {
             trimReleasedPreviewBubbles();
+        }
+    }
+
+    private void fadeReleasedPreviewBubblesNear(KeySlot keySlot, long nowMs) {
+        RectF anchor = keySlot.visualBounds();
+        int minimumThresholdPx = renderDp(42);
+        for (PreviewBubbleAnimation bubble : releasedPreviewBubbles) {
+            if (PreviewBubbleLayout.nearAnchor(
+                    bubble.anchorCenterX,
+                    bubble.anchorTop,
+                    anchor.centerX(),
+                    anchor.top,
+                    anchor.width(),
+                    anchor.height(),
+                    minimumThresholdPx)) {
+                bubble.markSuperseded(nowMs);
+            }
         }
     }
 
@@ -3267,10 +3227,8 @@ public final class HangulKeyboardView extends View {
         RectF anchor = state.keySlot.visualBounds();
         return new PreviewBubbleAnimation(
                 label,
-                state.sequence,
                 anchor.centerX(),
                 anchor.top,
-                anchor.bottom,
                 KeyboardKeyVisualClassifier.textColorFor(settings, state.keySlot.key),
                 previewBubbleBackgroundFor(state.keySlot),
                 settings.borderColor,
@@ -3283,27 +3241,31 @@ public final class HangulKeyboardView extends View {
         return PreviewBubbleLayout.liftPx(
                 motionEffectsEnabled(),
                 progress,
-                renderDp(20f * motionIntensityScale()),
-                renderDp(12f * motionIntensityScale()));
+                renderDp(PREVIEW_BUBBLE_PEAK_LIFT_DP * motionIntensityScale()),
+                renderDp(PREVIEW_BUBBLE_SETTLE_LIFT_DP * motionIntensityScale()));
+    }
+
+    private int previewBubbleReleaseLift(float progress) {
+        return Math.round(renderDp(PREVIEW_BUBBLE_RELEASE_FLOAT_DP * motionIntensityScale()) * progress);
+    }
+
+    private int previewBubbleCommitLift(float progress) {
+        return Math.round(renderDp(PREVIEW_BUBBLE_COMMIT_LIFT_DP * motionIntensityScale()) * progress);
     }
 
     private int previewBubbleCornerRadius() {
         return PreviewBubbleLayout.cornerRadiusPx(
                 renderDp(settings.keyRoundnessDp),
                 settings.visualEffects.angularPreviewBubble,
-                renderDp(2),
-                renderDp(6),
-                renderDp(18));
+                renderDp(5),
+                renderDp(16),
+                renderDp(22));
     }
 
     private void hidePreviewPopup() {
         if (previewOverlayListener != null) {
-            previewOverlayListener.onPreviewOverlayHidden();
+            previewOverlayListener.accept(Collections.emptyList());
         }
-    }
-
-    private boolean shouldShowPreviewForTouch(TouchState state) {
-        return true;
     }
 
     private String previewValueForTouch(TouchState state) {
@@ -3648,16 +3610,8 @@ public final class HangulKeyboardView extends View {
         }
         iconPaint.setStyle(Paint.Style.FILL);
         canvas.drawCircle(cx, cy, radius, iconPaint);
-        iconPaint.setColor(contrastColor(color));
+        iconPaint.setColor(KeyboardColorMath.contrastTextColor(color, 150));
         canvas.drawCircle(cx, cy, Math.max(1f, radius * 0.38f), iconPaint);
-    }
-
-    private int contrastColor(int color) {
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-        int luminance = (r * 299 + g * 587 + b * 114) / 1000;
-        return luminance > 150 ? 0xFF111827 : 0xFFFFFFFF;
     }
 
     private void drawIconCentered(
@@ -4203,6 +4157,49 @@ public final class HangulKeyboardView extends View {
         return KeyboardIconSizing.overlayIconSizePx(getDensity()) * renderScale();
     }
 
+    @Override
+    public GestureAction actionFor(GestureKey key, float dx, float dy) {
+        return new GestureState().release(
+                dx,
+                dy,
+                baseGestureThresholdPx(key),
+                gestureThresholdPxFor(key, GestureAction.UP),
+                gestureThresholdPxFor(key, GestureAction.DOWN),
+                gestureThresholdPxFor(key, GestureAction.LEFT),
+                gestureThresholdPxFor(key, GestureAction.RIGHT),
+                axisDominanceRatioFor(key));
+    }
+
+    @Override
+    public float thresholdPx(GestureKey key, GestureAction action) {
+        return gestureThresholdPxFor(key, action);
+    }
+
+    @Override
+    public GestureAction shadowActionFor(GestureKey key, float dx, float dy) {
+        int threshold = shadowGestureThresholdPxFor(key);
+        return new GestureState().release(
+                dx,
+                dy,
+                threshold,
+                threshold,
+                threshold,
+                threshold,
+                threshold,
+                axisDominanceRatioFor(key));
+    }
+
+    @Override
+    public float shadowThresholdPx(GestureKey key, GestureAction action) {
+        return shadowGestureThresholdPxFor(key);
+    }
+
+    @Override
+    public boolean hasOutput(GestureKey key, GestureAction action) {
+        String value = key == null ? null : key.valueFor(action);
+        return value != null && !value.isEmpty() && !KeyboardCommands.CMD_NOOP.equals(value);
+    }
+
     private int baseGestureThresholdPx(GestureKey key) {
         return dp(GestureThresholdPolicy.baseThresholdDp(settings, key, dingulVowelGestureProfile));
     }
@@ -4241,7 +4238,8 @@ public final class HangulKeyboardView extends View {
         return DINGUL_AXIS_DOMINANCE_RATIO;
     }
 
-    private boolean isDingulTypingKey(GestureKey key) {
+    @Override
+    public boolean isDingulTypingKey(GestureKey key) {
         if (!activeLayoutIsDingul() || key == null) {
             return false;
         }
@@ -4269,22 +4267,6 @@ public final class HangulKeyboardView extends View {
 
     private boolean activeHangulDingul() {
         return settings.keyboardMode == KeyboardMode.HANGUL && activeLayoutIsDingul();
-    }
-
-    public interface OnKeyGestureListener {
-        void onKeyGesture(String value);
-    }
-
-    interface OnPreviewKeySelectionListener {
-        void onPreviewKeySelected(GestureKey key);
-    }
-
-    interface OnPreviewOverlayListener {
-        void onPreviewOverlayChanged(PreviewOverlaySpec spec);
-
-        void onPreviewOverlaysChanged(List<PreviewOverlaySpec> specs);
-
-        void onPreviewOverlayHidden();
     }
 
     private static final class TouchState {

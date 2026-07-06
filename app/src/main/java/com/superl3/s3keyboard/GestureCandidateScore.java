@@ -9,7 +9,7 @@ final class GestureCandidateScore {
     final boolean applied;
 
     GestureCandidateScore(String keyId, GestureAction action, float score, boolean applied) {
-        this.keyId = keyId == null ? "" : keyId;
+        this.keyId = RuntimeDefaults.stringOrDefault(keyId, "");
         this.action = action == null ? GestureAction.TAP : action;
         this.score = score;
         this.applied = applied;

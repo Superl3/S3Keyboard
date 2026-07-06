@@ -12,6 +12,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntBinaryOperator;
 
 import org.junit.Test;
 
@@ -456,11 +457,11 @@ public final class ImeConnectionDispatcherTest {
         assertEquals(2, fake.keyEventCount);
     }
 
-    private static final class RecordingKeySender implements ImeConnectionDispatcher.KeySender {
+    private static final class RecordingKeySender implements IntBinaryOperator {
         final List<SentKey> sent = new ArrayList<>();
 
         @Override
-        public int send(int keyCode, int metaState) {
+        public int applyAsInt(int keyCode, int metaState) {
             sent.add(new SentKey(keyCode, metaState));
             return RemoteKeyEventSequence.eventCount(keyCode, metaState);
         }

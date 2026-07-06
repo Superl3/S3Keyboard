@@ -2,10 +2,7 @@ package com.superl3.s3keyboard;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
@@ -13,19 +10,24 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.util.EnumMap;
 import java.util.EnumSet;
 
 public final class AccentPlacementActivity extends Activity {
+    private static final AccentPlacementPolicy.SpaceRole[] SPACE_ROLE_ORDER =
+            AccentPlacementPolicy.SpaceRole.displayOrder();
+    private static final AccentPlacementPolicy.QuestionRole[] QUESTION_ROLE_ORDER =
+            AccentPlacementPolicy.QuestionRole.displayOrder();
+    private static final AdditionalNumberRowColorMode[] NUMBER_ROW_COLOR_MODE_ORDER =
+            AdditionalNumberRowColorMode.displayOrder();
+    private static final AccentPlacementTarget[] TARGET_ORDER =
+            AccentPlacementTarget.displayOrder();
+
     private KeyboardSettings settings;
     private boolean syncing;
     private CheckBox themeDefaultCheckBox;
-    private CheckBox settingsEnterCheckBox;
-    private CheckBox metaCheckBox;
-    private CheckBox qwertyShiftCheckBox;
-    private CheckBox backspaceCheckBox;
-    private CheckBox dingulDotCheckBox;
-    private CheckBox dingulSlashCheckBox;
-    private CheckBox escPointCheckBox;
+    private final EnumMap<AccentPlacementTarget, CheckBox> targetCheckBoxes =
+            new EnumMap<>(AccentPlacementTarget.class);
     private Spinner spaceRoleSpinner;
     private Spinner questionRoleSpinner;
     private Spinner numberRowModeSpinner;
@@ -46,122 +48,103 @@ public final class AccentPlacementActivity extends Activity {
     private View createContentView() {
         ScrollView scrollView = new ScrollView(this);
         scrollView.setBackgroundColor(SettingsUiPalette.from(this).background);
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(16), dp(18), dp(16), dp(24));
+        LinearLayout root = SettingsRowBuilder.vertical(this);
+        root.setPadding(
+                SettingsRowBuilder.dp(this, 16),
+                SettingsRowBuilder.dp(this, 18),
+                SettingsRowBuilder.dp(this, 16),
+                SettingsRowBuilder.dp(this, 24));
         scrollView.addView(root);
 
-        TextView title = label(getString(R.string.accent_placement_title));
+        TextView title = SettingsRowBuilder.label(this, R.string.accent_placement_title);
         title.setTextSize(20);
-        root.addView(title, matchWrap());
+        SettingsRowBuilder.addView(root, title);
 
-        TextView helper = label(getString(R.string.accent_placement_helper));
-        root.addView(helper, topParams(6));
+        SettingsRowBuilder.labelRow(this, root, R.string.accent_placement_helper, 6);
 
-        root.addView(sectionLabel(getString(R.string.accent_placement_qwerty_section)), topParams(16));
+        SettingsRowBuilder.sectionLabelRow(this, root, R.string.accent_placement_qwerty_section, 16);
         qwertyPreview = previewKeyboard(KeyboardMode.ENGLISH);
-        root.addView(qwertyPreview, previewParams(118));
+        root.addView(qwertyPreview, SettingsRowBuilder.matchHeightWithTop(this, 118, 6));
 
-        root.addView(sectionLabel(getString(R.string.accent_placement_dingul_section)), topParams(14));
+        SettingsRowBuilder.sectionLabelRow(this, root, R.string.accent_placement_dingul_section, 14);
         dingulPreview = previewKeyboard(KeyboardMode.HANGUL);
-        root.addView(dingulPreview, previewParams(144));
+        root.addView(dingulPreview, SettingsRowBuilder.matchHeightWithTop(this, 144, 6));
 
-        themeDefaultCheckBox = checkBox(getString(R.string.accent_placement_theme_default));
-        themeDefaultCheckBox.setOnClickListener(v -> {
-            if (!syncing) {
-                AccentPlacementPolicy current = KeyboardPreferences.loadAccentPlacementPolicy(this);
-                savePolicy(current.themeDefault ? AccentPlacementPolicy.none() : AccentPlacementPolicy.themeDefault());
-            }
-        });
-        root.addView(themeDefaultCheckBox, topParams(18));
+        themeDefaultCheckBox = SettingsRowBuilder.checkBoxRow(
+                this,
+                root,
+                getString(R.string.accent_placement_theme_default),
+                18,
+                () -> !syncing,
+                isChecked -> savePolicy(isChecked
+                        ? AccentPlacementPolicy.themeDefault()
+                        : AccentPlacementPolicy.none()));
 
-        settingsEnterCheckBox = targetCheckBox(AccentPlacementTarget.SETTINGS_ENTER);
-        metaCheckBox = targetCheckBox(AccentPlacementTarget.META);
-        qwertyShiftCheckBox = targetCheckBox(AccentPlacementTarget.QWERTY_SHIFT);
-        backspaceCheckBox = targetCheckBox(AccentPlacementTarget.BACKSPACE);
-        dingulDotCheckBox = targetCheckBox(AccentPlacementTarget.DINGUL_DOT);
-        dingulSlashCheckBox = targetCheckBox(AccentPlacementTarget.DINGUL_SLASH);
-        escPointCheckBox = targetCheckBox(AccentPlacementTarget.ESC_POINT);
-        root.addView(settingsEnterCheckBox, topParams(8));
-        root.addView(metaCheckBox, topParams(4));
-        root.addView(qwertyShiftCheckBox, topParams(4));
-        root.addView(backspaceCheckBox, topParams(4));
-        root.addView(dingulDotCheckBox, topParams(4));
-        root.addView(dingulSlashCheckBox, topParams(4));
-        root.addView(escPointCheckBox, topParams(4));
+        for (AccentPlacementTarget target : TARGET_ORDER) {
+            CheckBox checkBox = SettingsRowBuilder.checkBoxRow(
+                    this,
+                    root,
+                    getString(target.labelResId),
+                    targetCheckBoxes.size() == 0 ? 8 : 4,
+                    () -> !syncing,
+                    isChecked -> savePolicy(policyFromControls()));
+            targetCheckBoxes.put(target, checkBox);
+        }
 
-        root.addView(sectionLabel(getString(R.string.accent_placement_spacebar_section)), topParams(16));
+        SettingsRowBuilder.sectionLabelRow(this, root, R.string.accent_placement_spacebar_section, 16);
         spaceRoleSpinner = spaceRoleSpinner();
-        root.addView(spaceRoleSpinner, topParams(6));
+        SettingsRowBuilder.addViewWithTop(this, root, spaceRoleSpinner, 6);
 
-        root.addView(sectionLabel(getString(R.string.accent_placement_question_section)), topParams(16));
+        SettingsRowBuilder.sectionLabelRow(this, root, R.string.accent_placement_question_section, 16);
         questionRoleSpinner = questionRoleSpinner();
-        root.addView(questionRoleSpinner, topParams(6));
+        SettingsRowBuilder.addViewWithTop(this, root, questionRoleSpinner, 6);
 
-        root.addView(sectionLabel(getString(R.string.accent_placement_number_row_section)), topParams(16));
+        SettingsRowBuilder.sectionLabelRow(this, root, R.string.accent_placement_number_row_section, 16);
         numberRowModeSpinner = numberRowModeSpinner();
-        root.addView(numberRowModeSpinner, topParams(6));
+        SettingsRowBuilder.addViewWithTop(this, root, numberRowModeSpinner, 6);
 
-        LinearLayout buttonRow = new LinearLayout(this);
-        buttonRow.setOrientation(LinearLayout.HORIZONTAL);
-        Button noneButton = actionButton(getString(R.string.accent_placement_none));
-        noneButton.setOnClickListener(v -> savePolicy(AccentPlacementPolicy.none()));
-        Button allButton = actionButton(getString(R.string.accent_placement_select_all));
-        allButton.setOnClickListener(v -> savePolicy(AccentPlacementPolicy.of(
-                EnumSet.allOf(AccentPlacementTarget.class),
-                AccentPlacementPolicy.SpaceRole.ACCENT,
-                AccentPlacementPolicy.QuestionRole.ACCENT)));
-        buttonRow.addView(noneButton, weightedButtonParams());
-        buttonRow.addView(allButton, weightedButtonParams());
-        root.addView(buttonRow, topParams(14));
+        LinearLayout buttonRow = SettingsRowBuilder.horizontal(this);
+        SettingsRowBuilder.weightedButton(
+                this,
+                buttonRow,
+                R.string.accent_placement_none,
+                3,
+                3,
+                v -> savePolicy(AccentPlacementPolicy.none()));
+        SettingsRowBuilder.weightedButton(
+                this,
+                buttonRow,
+                R.string.accent_placement_select_all,
+                3,
+                3,
+                v -> savePolicy(AccentPlacementPolicy.of(
+                        AccentPlacementTarget.allDisplayTargets(),
+                        AccentPlacementPolicy.SpaceRole.ACCENT,
+                        AccentPlacementPolicy.QuestionRole.ACCENT)));
+        SettingsRowBuilder.addViewWithTop(this, root, buttonRow, 14);
 
-        Button closeButton = actionButton(getString(R.string.action_close));
-        closeButton.setOnClickListener(v -> finish());
-        root.addView(closeButton, topParams(16));
+        SettingsRowBuilder.buttonRow(this, root, R.string.action_close, 16, v -> finish());
         return scrollView;
-    }
-
-    private CheckBox targetCheckBox(AccentPlacementTarget target) {
-        CheckBox checkBox = checkBox(getString(target.labelResId));
-        checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (!syncing) {
-                savePolicy(policyFromControls());
-            }
-        });
-        return checkBox;
     }
 
     private void syncControls() {
         syncing = true;
         AccentPlacementPolicy policy = KeyboardPreferences.loadAccentPlacementPolicy(this);
         boolean userAccentLocked = KeyboardPreferences.selectedThemeLocksUserAccentPlacement(this);
+        boolean customPlacementEnabled = !policy.themeDefault && !userAccentLocked;
         themeDefaultCheckBox.setChecked(policy.themeDefault || userAccentLocked);
         themeDefaultCheckBox.setEnabled(!userAccentLocked);
-        settingsEnterCheckBox.setChecked(!policy.themeDefault && !userAccentLocked
-                && policy.contains(AccentPlacementTarget.SETTINGS_ENTER));
-        metaCheckBox.setChecked(!policy.themeDefault && !userAccentLocked
-                && policy.contains(AccentPlacementTarget.META));
-        qwertyShiftCheckBox.setChecked(!policy.themeDefault && !userAccentLocked
-                && policy.contains(AccentPlacementTarget.QWERTY_SHIFT));
-        backspaceCheckBox.setChecked(!policy.themeDefault && !userAccentLocked
-                && policy.contains(AccentPlacementTarget.BACKSPACE));
-        dingulDotCheckBox.setChecked(!policy.themeDefault && !userAccentLocked
-                && policy.contains(AccentPlacementTarget.DINGUL_DOT));
-        dingulSlashCheckBox.setChecked(!policy.themeDefault && !userAccentLocked
-                && policy.contains(AccentPlacementTarget.DINGUL_SLASH));
-        escPointCheckBox.setChecked(!policy.themeDefault && !userAccentLocked
-                && policy.contains(AccentPlacementTarget.ESC_POINT));
-        spaceRoleSpinner.setSelection(policy.spaceRole.ordinal());
-        questionRoleSpinner.setSelection(policy.questionRole.ordinal());
-        numberRowModeSpinner.setSelection(settings.additionalNumberRowColorMode.ordinal());
-        boolean customPlacementEnabled = !policy.themeDefault && !userAccentLocked;
-        settingsEnterCheckBox.setEnabled(customPlacementEnabled);
-        metaCheckBox.setEnabled(customPlacementEnabled);
-        qwertyShiftCheckBox.setEnabled(customPlacementEnabled);
-        backspaceCheckBox.setEnabled(customPlacementEnabled);
-        dingulDotCheckBox.setEnabled(customPlacementEnabled);
-        dingulSlashCheckBox.setEnabled(customPlacementEnabled);
-        escPointCheckBox.setEnabled(customPlacementEnabled);
+        for (AccentPlacementTarget target : TARGET_ORDER) {
+            CheckBox checkBox = targetCheckBoxes.get(target);
+            if (checkBox != null) {
+                checkBox.setChecked(customPlacementEnabled && policy.contains(target));
+                checkBox.setEnabled(customPlacementEnabled);
+            }
+        }
+        spaceRoleSpinner.setSelection(AccentPlacementPolicy.SpaceRole.indexOf(policy.spaceRole));
+        questionRoleSpinner.setSelection(AccentPlacementPolicy.QuestionRole.indexOf(policy.questionRole));
+        numberRowModeSpinner.setSelection(AdditionalNumberRowColorMode.indexOf(
+                settings.additionalNumberRowColorMode));
         spaceRoleSpinner.setEnabled(customPlacementEnabled);
         questionRoleSpinner.setEnabled(customPlacementEnabled);
         updatePreviews(policy);
@@ -170,31 +153,16 @@ public final class AccentPlacementActivity extends Activity {
 
     private AccentPlacementPolicy policyFromControls() {
         EnumSet<AccentPlacementTarget> targets = EnumSet.noneOf(AccentPlacementTarget.class);
-        if (settingsEnterCheckBox.isChecked()) {
-            targets.add(AccentPlacementTarget.SETTINGS_ENTER);
-        }
-        if (metaCheckBox.isChecked()) {
-            targets.add(AccentPlacementTarget.META);
-        }
-        if (qwertyShiftCheckBox.isChecked()) {
-            targets.add(AccentPlacementTarget.QWERTY_SHIFT);
-        }
-        if (backspaceCheckBox.isChecked()) {
-            targets.add(AccentPlacementTarget.BACKSPACE);
-        }
-        if (dingulDotCheckBox.isChecked()) {
-            targets.add(AccentPlacementTarget.DINGUL_DOT);
-        }
-        if (dingulSlashCheckBox.isChecked()) {
-            targets.add(AccentPlacementTarget.DINGUL_SLASH);
-        }
-        if (escPointCheckBox.isChecked()) {
-            targets.add(AccentPlacementTarget.ESC_POINT);
+        for (AccentPlacementTarget target : TARGET_ORDER) {
+            CheckBox checkBox = targetCheckBoxes.get(target);
+            if (checkBox != null && checkBox.isChecked()) {
+                targets.add(target);
+            }
         }
         AccentPlacementPolicy.SpaceRole spaceRole =
-                AccentPlacementPolicy.SpaceRole.values()[spaceRoleSpinner.getSelectedItemPosition()];
+                AccentPlacementPolicy.SpaceRole.at(spaceRoleSpinner.getSelectedItemPosition());
         AccentPlacementPolicy.QuestionRole questionRole =
-                AccentPlacementPolicy.QuestionRole.values()[questionRoleSpinner.getSelectedItemPosition()];
+                AccentPlacementPolicy.QuestionRole.at(questionRoleSpinner.getSelectedItemPosition());
         return AccentPlacementPolicy.of(targets, spaceRole, questionRole);
     }
 
@@ -226,132 +194,32 @@ public final class AccentPlacementActivity extends Activity {
     }
 
     private Spinner spaceRoleSpinner() {
-        Spinner spinner = new Spinner(this);
-        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
+        return SettingsRowBuilder.optionSpinner(
                 this,
-                SettingsDisplayLabels.labels(this, AccentPlacementPolicy.SpaceRole.values()));
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!syncing) {
-                    savePolicy(policyFromControls());
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        return spinner;
+                SPACE_ROLE_ORDER,
+                () -> !syncing,
+                role -> savePolicy(policyFromControls()));
     }
 
     private Spinner questionRoleSpinner() {
-        Spinner spinner = new Spinner(this);
-        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
+        return SettingsRowBuilder.optionSpinner(
                 this,
-                SettingsDisplayLabels.labels(this, AccentPlacementPolicy.QuestionRole.values()));
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!syncing) {
-                    savePolicy(policyFromControls());
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        return spinner;
+                QUESTION_ROLE_ORDER,
+                () -> !syncing,
+                role -> savePolicy(policyFromControls()));
     }
 
     private Spinner numberRowModeSpinner() {
-        Spinner spinner = new Spinner(this);
-        ArrayAdapter<String> adapter = new SettingsArrayAdapter<>(
+        return SettingsRowBuilder.optionSpinner(
                 this,
-                SettingsDisplayLabels.labels(this, AdditionalNumberRowColorMode.values()));
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!syncing) {
-                    settings = settings.withAdditionalNumberRowColorMode(
-                            AdditionalNumberRowColorMode.values()[position]);
+                NUMBER_ROW_COLOR_MODE_ORDER,
+                () -> !syncing,
+                mode -> {
+                    settings = settings.withAdditionalNumberRowColorMode(mode);
                     KeyboardPreferences.saveSettings(AccentPlacementActivity.this, settings);
                     updatePreviews(KeyboardPreferences.loadAccentPlacementPolicy(
                             AccentPlacementActivity.this));
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        return spinner;
+                });
     }
 
-    private TextView label(String text) {
-        TextView label = new TextView(this);
-        label.setText(text);
-        label.setTextColor(SettingsUiPalette.from(this).textPrimary);
-        label.setTextSize(14);
-        return label;
-    }
-
-    private TextView sectionLabel(String text) {
-        TextView label = label(text);
-        label.setTextSize(16);
-        label.setGravity(Gravity.START);
-        return label;
-    }
-
-    private CheckBox checkBox(String text) {
-        CheckBox checkBox = new CheckBox(this);
-        checkBox.setText(text);
-        SettingsViewStyler.compoundButton(checkBox, this);
-        return checkBox;
-    }
-
-    private Button actionButton(String text) {
-        Button button = new Button(this);
-        button.setText(text);
-        SettingsViewStyler.button(button, this, false);
-        return button;
-    }
-
-    private LinearLayout.LayoutParams previewParams(int heightDp) {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(heightDp));
-        params.topMargin = dp(6);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams weightedButtonParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f);
-        params.leftMargin = dp(3);
-        params.rightMargin = dp(3);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
-
-    private LinearLayout.LayoutParams topParams(int topMarginDp) {
-        LinearLayout.LayoutParams params = matchWrap();
-        params.topMargin = dp(topMarginDp);
-        return params;
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
-    }
 }

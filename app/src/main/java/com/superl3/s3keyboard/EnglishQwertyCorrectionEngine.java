@@ -16,6 +16,14 @@ final class EnglishQwertyCorrectionEngine {
             new EnglishQwertyCorrectionEngine(EnglishWordDictionary.COMMON_WORDS);
 
     private static final int MAX_WORD_LENGTH = 32;
+    private static final Comparator<Candidate> CANDIDATE_ORDER = Comparator
+            .comparingInt((Candidate candidate) -> candidate.exactCorrection ? 1 : 0)
+            .reversed()
+            .thenComparing(Comparator
+                    .comparingDouble((Candidate candidate) -> candidate.score)
+                    .reversed())
+            .thenComparingInt(candidate -> candidate.text.length());
+
     private final String[] words;
     private final Map<String, String> exactCorrections;
     private final Map<Character, Set<Character>> adjacentKeys;
@@ -47,20 +55,7 @@ final class EnglishQwertyCorrectionEngine {
                 candidates.add(new Candidate(applyCase(currentWord, candidate), score, false));
             }
         }
-        candidates.sort(new Comparator<Candidate>() {
-            @Override
-            public int compare(Candidate first, Candidate second) {
-                int exactOrder = Boolean.compare(second.exactCorrection, first.exactCorrection);
-                if (exactOrder != 0) {
-                    return exactOrder;
-                }
-                int scoreOrder = Float.compare(second.score, first.score);
-                if (scoreOrder != 0) {
-                    return scoreOrder;
-                }
-                return Integer.compare(first.text.length(), second.text.length());
-            }
-        });
+        candidates.sort(CANDIDATE_ORDER);
         if (candidates.size() <= maxCandidates) {
             return candidates;
         }

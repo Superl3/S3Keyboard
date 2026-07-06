@@ -63,7 +63,7 @@ final class AppPackageCatalog {
     }
 
     private static boolean contains(String[] packages, String packageName) {
-        String normalized = normalizePackage(packageName);
+        String normalized = normalizePackageName(packageName);
         for (String candidate : packages) {
             if (candidate.equals(normalized)) {
                 return true;
@@ -72,7 +72,7 @@ final class AppPackageCatalog {
         return false;
     }
 
-    private static String normalizePackage(String packageName) {
+    static String normalizePackageName(String packageName) {
         return packageName == null ? "" : packageName.trim();
     }
 }

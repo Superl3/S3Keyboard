@@ -2,22 +2,18 @@ package com.superl3.s3keyboard;
 
 import android.content.Context;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 final class HapticSettingsController {
-    interface Host {
-        KeyboardSettings settings();
-
-        void saveSettings(KeyboardSettings settings);
-
-        void syncControls();
-    }
-
     private final Context context;
-    private final Host host;
+    private final Supplier<KeyboardSettings> settings;
+    private final Consumer<KeyboardSettings> settingsSaver;
+    private final Runnable controlsSyncer;
     private CheckBox hapticCheckBox;
     private CheckBox differentiatedCheckBox;
     private TextView durationValue;
@@ -26,78 +22,75 @@ final class HapticSettingsController {
     private SeekBar gapSeekBar;
     private boolean syncing;
 
-    HapticSettingsController(Context context, Host host) {
+    HapticSettingsController(
+            Context context,
+            Supplier<KeyboardSettings> settings,
+            Consumer<KeyboardSettings> settingsSaver,
+            Runnable controlsSyncer) {
         this.context = context;
-        this.host = host;
+        this.settings = RuntimeDefaults.keyboardSettingsSupplier(settings);
+        this.settingsSaver = RuntimeDefaults.keyboardSettingsConsumer(settingsSaver);
+        this.controlsSyncer = RuntimeDefaults.runnable(controlsSyncer);
     }
 
     void addTo(LinearLayout root) {
-        hapticCheckBox = checkBox(R.string.settings_haptic_feedback);
-        hapticCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (!syncing) {
-                    host.saveSettings(host.settings().withHapticFeedback(isChecked));
-                }
-            }
-        });
-        root.addView(hapticCheckBox, matchWrapWithTop(8));
+        hapticCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                root,
+                R.string.settings_haptic_feedback,
+                8,
+                () -> !syncing,
+                this::saveHapticFeedback);
 
-        differentiatedCheckBox = checkBox(R.string.settings_differentiated_haptic);
-        differentiatedCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (!syncing) {
-                    KeyboardPreferences.saveDifferentiatedHapticEnabled(context, isChecked);
-                    host.syncControls();
-                }
-            }
-        });
-        root.addView(differentiatedCheckBox, matchWrapWithTop(4));
+        differentiatedCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                root,
+                R.string.settings_differentiated_haptic,
+                4,
+                () -> !syncing,
+                this::saveDifferentiatedHaptic);
 
-        durationValue = SettingsRowBuilder.label(context, "");
-        durationSeekBar = seekBar(
+        durationValue = SettingsRowBuilder.valueLabel(context);
+        durationSeekBar = SettingsRowBuilder.seekBarRow(
+                context,
+                root,
+                durationValue,
                 KeyboardPreferences.MAX_HAPTIC_TICK_DURATION_MS
-                        - KeyboardPreferences.MIN_HAPTIC_TICK_DURATION_MS);
-        durationSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onUserProgressChanged(int progress) {
-                KeyboardPreferences.saveHapticTickDurationMs(
-                        context,
-                        KeyboardPreferences.MIN_HAPTIC_TICK_DURATION_MS + progress);
-                host.syncControls();
-            }
-        });
-        root.addView(durationValue, matchWrapWithTop(12));
-        root.addView(durationSeekBar, matchWrap());
+                        - KeyboardPreferences.MIN_HAPTIC_TICK_DURATION_MS,
+                12,
+                () -> !syncing,
+                progress -> {
+                    KeyboardPreferences.saveHapticTickDurationMs(
+                            context,
+                            KeyboardPreferences.MIN_HAPTIC_TICK_DURATION_MS + progress);
+                    controlsSyncer.run();
+                });
 
-        gapValue = SettingsRowBuilder.label(context, "");
-        gapSeekBar = seekBar(
-                KeyboardPreferences.MAX_HAPTIC_TICK_GAP_MS - KeyboardPreferences.MIN_HAPTIC_TICK_GAP_MS);
-        gapSeekBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onUserProgressChanged(int progress) {
-                KeyboardPreferences.saveHapticTickGapMs(
-                        context,
-                        KeyboardPreferences.MIN_HAPTIC_TICK_GAP_MS + progress);
-                host.syncControls();
-            }
-        });
-        root.addView(gapValue, matchWrapWithTop(12));
-        root.addView(gapSeekBar, matchWrap());
+        gapValue = SettingsRowBuilder.valueLabel(context);
+        gapSeekBar = SettingsRowBuilder.seekBarRow(
+                context,
+                root,
+                gapValue,
+                KeyboardPreferences.MAX_HAPTIC_TICK_GAP_MS - KeyboardPreferences.MIN_HAPTIC_TICK_GAP_MS,
+                12,
+                () -> !syncing,
+                progress -> {
+                    KeyboardPreferences.saveHapticTickGapMs(
+                            context,
+                            KeyboardPreferences.MIN_HAPTIC_TICK_GAP_MS + progress);
+                    controlsSyncer.run();
+                });
     }
 
     void sync(KeyboardSettings settings) {
         if (hapticCheckBox == null) {
             return;
         }
-        KeyboardSettings safe = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings safe = RuntimeDefaults.keyboardSettings(settings);
         int durationMs = KeyboardPreferences.loadHapticTickDurationMs(context);
         int gapMs = KeyboardPreferences.loadHapticTickGapMs(context);
 
         syncing = true;
-        SettingsViewStyler.compoundButton(hapticCheckBox, context);
-        SettingsViewStyler.compoundButton(differentiatedCheckBox, context);
         hapticCheckBox.setChecked(safe.hapticFeedbackEnabled);
         differentiatedCheckBox.setChecked(KeyboardPreferences.loadDifferentiatedHapticEnabled(context));
         durationSeekBar.setProgress(durationMs - KeyboardPreferences.MIN_HAPTIC_TICK_DURATION_MS);
@@ -110,47 +103,13 @@ final class HapticSettingsController {
         syncing = false;
     }
 
-    private CheckBox checkBox(int labelResId) {
-        CheckBox checkBox = new CheckBox(context);
-        checkBox.setText(labelResId);
-        SettingsViewStyler.compoundButton(checkBox, context);
-        return checkBox;
+    private void saveHapticFeedback(boolean isChecked) {
+        settingsSaver.accept(RuntimeDefaults.keyboardSettingsFrom(settings).withHapticFeedback(isChecked));
     }
 
-    private SeekBar seekBar(int max) {
-        SeekBar seekBar = new SeekBar(context);
-        seekBar.setMax(max);
-        return seekBar;
+    private void saveDifferentiatedHaptic(boolean isChecked) {
+        KeyboardPreferences.saveDifferentiatedHapticEnabled(context, isChecked);
+        controlsSyncer.run();
     }
 
-    private LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
-
-    private LinearLayout.LayoutParams matchWrapWithTop(int topMarginDp) {
-        LinearLayout.LayoutParams params = matchWrap();
-        params.topMargin = Math.round(topMarginDp * context.getResources().getDisplayMetrics().density);
-        return params;
-    }
-
-    private abstract class SimpleSeekListener implements SeekBar.OnSeekBarChangeListener {
-        @Override
-        public final void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-            if (fromUser && !syncing) {
-                onUserProgressChanged(progress);
-            }
-        }
-
-        @Override
-        public void onStartTrackingTouch(SeekBar seekBar) {
-        }
-
-        @Override
-        public void onStopTrackingTouch(SeekBar seekBar) {
-        }
-
-        abstract void onUserProgressChanged(int progress);
-    }
 }

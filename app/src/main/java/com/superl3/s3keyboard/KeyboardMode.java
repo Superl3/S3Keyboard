@@ -1,6 +1,6 @@
 package com.superl3.s3keyboard;
 
-enum KeyboardMode {
+enum KeyboardMode implements SettingsLabelOption {
     HANGUL("hangul", R.string.keyboard_mode_hangul),
     ENGLISH("english", R.string.keyboard_mode_english);
 
@@ -10,6 +10,11 @@ enum KeyboardMode {
     KeyboardMode(String preferenceValue, int labelResId) {
         this.preferenceValue = preferenceValue;
         this.labelResId = labelResId;
+    }
+
+    @Override
+    public int labelResId() {
+        return labelResId;
     }
 
     KeyboardMode next() {

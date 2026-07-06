@@ -10,6 +10,21 @@ import org.junit.Test;
 
 public final class KeyboardThemeJsonTest {
     @Test
+    public void nullSettingsUseDefaultThemeBaseForImportAndExport() {
+        String exported = KeyboardThemeJson.exportTheme(null, "Defaults", "local", null);
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(
+                null,
+                "{"
+                        + "\"schemaVersion\":1,"
+                        + "\"colors\":{\"alphaKey\":\"#123456\"}"
+                        + "}");
+
+        assertEquals(true, exported.contains("\"alphaKey\""));
+        assertEquals(0xFF123456, imported.keyIdleColor);
+        assertEquals(KeyboardSettings.DEFAULT_FONT_FAMILY, imported.fontFamily);
+    }
+
+    @Test
     public void themeJsonRoundTripsV1VisualSettings() {
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withExtendedThemeColors(

@@ -10,7 +10,7 @@ import org.junit.Test;
 public final class InputAssistanceSettingsControllerTest {
     @Test
     public void releaseModesHideDebugPreset() {
-        InputAssistanceMode[] modes = InputAssistanceSettingsController.availableModes(false);
+        InputAssistanceMode[] modes = InputAssistanceMode.displayOrder(false);
 
         assertEquals(3, modes.length);
         assertSame(InputAssistanceMode.CUSTOM, modes[0]);
@@ -20,7 +20,7 @@ public final class InputAssistanceSettingsControllerTest {
 
     @Test
     public void debuggableModesExposeDebugPreset() {
-        InputAssistanceMode[] modes = InputAssistanceSettingsController.availableModes(true);
+        InputAssistanceMode[] modes = InputAssistanceMode.displayOrder(true);
 
         assertEquals(InputAssistanceMode.values().length, modes.length);
         assertSame(InputAssistanceMode.DEBUG, modes[modes.length - 1]);
@@ -28,15 +28,15 @@ public final class InputAssistanceSettingsControllerTest {
 
     @Test
     public void modeIndexFallsBackToCustomWhenHiddenOrMissing() {
-        InputAssistanceMode[] releaseModes = InputAssistanceSettingsController.availableModes(false);
+        InputAssistanceMode[] releaseModes = InputAssistanceMode.displayOrder(false);
 
-        assertEquals(2, InputAssistanceSettingsController.indexOf(
+        assertEquals(2, InputAssistanceMode.indexOf(
                 releaseModes,
                 InputAssistanceMode.LEARNING));
-        assertEquals(0, InputAssistanceSettingsController.indexOf(
+        assertEquals(0, InputAssistanceMode.indexOf(
                 releaseModes,
                 InputAssistanceMode.DEBUG));
-        assertEquals(0, InputAssistanceSettingsController.indexOf(
+        assertEquals(0, InputAssistanceMode.indexOf(
                 null,
                 InputAssistanceMode.DEBUG));
     }

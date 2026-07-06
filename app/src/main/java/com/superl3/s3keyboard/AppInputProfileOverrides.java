@@ -13,14 +13,14 @@ final class AppInputProfileOverrides {
             String numberRowPackages,
             String noComposingPackages,
             String noTextConveniencesPackages) {
-        this.asciiPackages = safe(asciiPackages);
-        this.numberRowPackages = safe(numberRowPackages);
-        this.noComposingPackages = safe(noComposingPackages);
-        this.noTextConveniencesPackages = safe(noTextConveniencesPackages);
+        this.asciiPackages = RuntimeDefaults.stringOrDefault(asciiPackages, "");
+        this.numberRowPackages = RuntimeDefaults.stringOrDefault(numberRowPackages, "");
+        this.noComposingPackages = RuntimeDefaults.stringOrDefault(noComposingPackages, "");
+        this.noTextConveniencesPackages = RuntimeDefaults.stringOrDefault(noTextConveniencesPackages, "");
     }
 
     AppInputProfile apply(String packageName, AppInputProfile profile) {
-        AppInputProfile safeProfile = profile == null ? AppInputProfile.STANDARD : profile;
+        AppInputProfile safeProfile = RuntimeDefaults.appInputProfile(profile);
         Boolean preferAscii = KeyboardPreferences.packageListContains(asciiPackages, packageName)
                 ? Boolean.TRUE
                 : null;
@@ -46,9 +46,5 @@ final class AppInputProfileOverrides {
                 allowComposing,
                 allowTextConveniences,
                 "user_app_profile_override");
-    }
-
-    private static String safe(String value) {
-        return value == null ? "" : value;
     }
 }

@@ -13,6 +13,7 @@ enum AccentPlacementTarget {
 
     final String preferenceValue;
     final int labelResId;
+    private static final AccentPlacementTarget[] DISPLAY_ORDER = values();
 
     AccentPlacementTarget(String preferenceValue, int labelResId) {
         this.preferenceValue = preferenceValue;
@@ -34,7 +35,7 @@ enum AccentPlacementTarget {
             targets.add(BACKSPACE);
             return;
         }
-        for (AccentPlacementTarget target : values()) {
+        for (AccentPlacementTarget target : DISPLAY_ORDER) {
             if (target.preferenceValue.equals(value)) {
                 targets.add(target);
                 return;
@@ -42,8 +43,21 @@ enum AccentPlacementTarget {
         }
     }
 
+    static AccentPlacementTarget[] displayOrder() {
+        return DISPLAY_ORDER.clone();
+    }
+
+    static EnumSet<AccentPlacementTarget> allDisplayTargets() {
+        EnumSet<AccentPlacementTarget> targets = EnumSet.noneOf(AccentPlacementTarget.class);
+        for (AccentPlacementTarget target : DISPLAY_ORDER) {
+            targets.add(target);
+        }
+        return targets;
+    }
+
     String[] keysFor(KeyboardSettings settings) {
-        KeyboardMode mode = settings == null ? KeyboardMode.HANGUL : settings.keyboardMode;
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
+        KeyboardMode mode = safeSettings.keyboardMode;
         switch (this) {
             case SETTINGS_ENTER:
                 return new String[]{"options", "settings", "enter"};
@@ -58,7 +72,7 @@ enum AccentPlacementTarget {
             case DINGUL_SLASH:
                 return mode == KeyboardMode.HANGUL ? new String[]{"/"} : new String[0];
             case ESC_POINT:
-                if (settings != null && settings.showNumberRow) {
+                if (safeSettings.showNumberRow) {
                     return new String[]{"1"};
                 }
                 return mode == KeyboardMode.ENGLISH ? new String[]{"q"} : new String[]{"ㄱ"};

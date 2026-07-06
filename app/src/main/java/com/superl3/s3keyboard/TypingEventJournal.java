@@ -59,7 +59,8 @@ final class TypingEventJournal {
             if (event == null || !TYPE_LABEL.equals(event.optString(TYPE))) {
                 continue;
             }
-            if (safe(targetEventId).equals(event.optString(TARGET_EVENT_ID))) {
+            if (RuntimeDefaults.stringOrDefault(targetEventId, "")
+                    .equals(event.optString(TARGET_EVENT_ID))) {
                 latest = Label.fromId(event.optString(LABEL));
             }
         }
@@ -356,7 +357,7 @@ final class TypingEventJournal {
             JSONObject event = events.optJSONObject(i);
             if (event != null
                     && TYPE_INPUT.equals(event.optString(TYPE))
-                    && safe(id).equals(event.optString(ID))) {
+                    && RuntimeDefaults.stringOrDefault(id, "").equals(event.optString(ID))) {
                 return event;
             }
         }
@@ -417,10 +418,10 @@ final class TypingEventJournal {
             int deleteBurstSize) {
         JSONObject event = new JSONObject();
         put(event, TYPE, TYPE_LABEL);
-        put(event, TARGET_EVENT_ID, safe(targetEventId));
-        put(event, REPLACEMENT_EVENT_ID, safe(replacementEventId));
+        put(event, TARGET_EVENT_ID, RuntimeDefaults.stringOrDefault(targetEventId, ""));
+        put(event, REPLACEMENT_EVENT_ID, RuntimeDefaults.stringOrDefault(replacementEventId, ""));
         put(event, LABEL, label == null ? Label.UNKNOWN_CORRECTION.id : label.id);
-        put(event, SOURCE, safe(source));
+        put(event, SOURCE, RuntimeDefaults.stringOrDefault(source, ""));
         put(event, CONFIDENCE, clamp(confidence, 0, 100));
         if (deleteDepth > 0) {
             put(event, DELETE_DEPTH, deleteDepth);
@@ -504,10 +505,6 @@ final class TypingEventJournal {
                 || action == GestureAction.DOWN
                 || action == GestureAction.LEFT
                 || action == GestureAction.RIGHT;
-    }
-
-    private static String safe(String value) {
-        return value == null ? "" : value;
     }
 
     private static int clamp(int value, int min, int max) {
@@ -688,8 +685,8 @@ final class TypingEventJournal {
                 String originKeyCodePoints,
                 String candidateKeyCodePoints,
                 GestureAction action) {
-            return safe(originKeyCodePoints) + "|"
-                    + safe(candidateKeyCodePoints) + "|"
+            return RuntimeDefaults.stringOrDefault(originKeyCodePoints, "") + "|"
+                    + RuntimeDefaults.stringOrDefault(candidateKeyCodePoints, "") + "|"
                     + safeAction(action).name();
         }
     }
@@ -766,11 +763,11 @@ final class TypingEventJournal {
                 GestureAction shadowAction,
                 float shadowScore,
                 boolean shadowApplied) {
-            this.id = safe(id);
+            this.id = RuntimeDefaults.stringOrDefault(id, "");
             this.timeMs = Math.max(0L, timeMs);
             this.keyboardMode = keyboardMode == null ? KeyboardMode.HANGUL : keyboardMode;
-            this.keyCodePoints = safe(keyCodePoints);
-            this.valueCodePoints = safe(valueCodePoints);
+            this.keyCodePoints = RuntimeDefaults.stringOrDefault(keyCodePoints, "");
+            this.valueCodePoints = RuntimeDefaults.stringOrDefault(valueCodePoints, "");
             this.action = safeAction(action);
             this.fallbackAction = safeAction(fallbackAction);
             this.downXDp = downXDp;
@@ -784,7 +781,7 @@ final class TypingEventJournal {
             this.touchYOffsetDp = touchYOffsetDp;
             this.biasXDp = biasXDp;
             this.biasYDp = biasYDp;
-            this.shadowKeyCodePoints = safe(shadowKeyCodePoints);
+            this.shadowKeyCodePoints = RuntimeDefaults.stringOrDefault(shadowKeyCodePoints, "");
             this.shadowAction = shadowAction;
             this.shadowScore = shadowScore;
             this.shadowApplied = shadowApplied;

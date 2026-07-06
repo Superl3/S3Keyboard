@@ -14,18 +14,15 @@ final class InputSessionSettingsResolver {
             String enterActionLabel) {
         ResolvedImeAction enterAction = ImeActionLabelResolver.resolve(info);
         EditorInputPolicy basePolicy = EditorInputPolicy.from(info);
-        String packageName = info == null || info.packageName == null ? "" : info.packageName;
-        KeyboardSettings safeSettings = storedSettings == null
-                ? KeyboardSettings.defaults()
-                : storedSettings;
+        String packageName = AppPackageCatalog.normalizePackageName(info == null ? null : info.packageName);
+        KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(storedSettings);
         boolean remoteProfileRequested = safeSettings.remoteModeEnabled || remotePackageMatched;
         AppInputProfile profile = AppInputProfileResolver.resolve(
                 packageName,
                 basePolicy,
                 remoteProfileRequested);
-        AppInputProfileOverrides overrides = appProfileOverrides == null
-                ? AppInputProfileOverrides.EMPTY
-                : appProfileOverrides;
+        AppInputProfileOverrides overrides =
+                RuntimeDefaults.appInputProfileOverrides(appProfileOverrides);
         profile = overrides.apply(packageName, profile);
         EditorInputPolicy effectivePolicy = profile.apply(basePolicy);
         KeyboardMode runtimeMode = effectivePolicy.initialKeyboardMode(safeSettings.keyboardMode);
@@ -36,7 +33,7 @@ final class InputSessionSettingsResolver {
                         safeSettings.remoteModeEnabled || autoRemoteMode,
                         safeSettings.remoteKeyPreset,
                         safeSettings.remoteImeShortcut)
-                .withEnterKeyLabel(safeLabel(enterActionLabel))
+                .withEnterKeyLabel(RuntimeDefaults.stringOrDefault(enterActionLabel, ""))
                 .withRuntimeNumberRowForced(effectivePolicy.forceNumberRow);
         return new InputSessionSettings(
                 enterAction,
@@ -45,9 +42,5 @@ final class InputSessionSettingsResolver {
                 packageName,
                 runtimeSettings,
                 autoRemoteMode);
-    }
-
-    private static String safeLabel(String label) {
-        return label == null ? "" : label;
     }
 }

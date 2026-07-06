@@ -2,12 +2,14 @@ package com.superl3.s3keyboard;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 final class SettingsViewStyler {
@@ -22,13 +24,29 @@ final class SettingsViewStyler {
         button.setAllCaps(false);
         button.setTextColor(selected ? ui.selectedText : ui.controlText);
         button.setGravity(Gravity.CENTER);
-        button.setMinHeight(dp(context, 44));
-        button.setPadding(dp(context, 24), 0, dp(context, 24), 0);
+        button.setMinHeight(SettingsRowBuilder.dp(context, 44));
+        button.setPadding(SettingsRowBuilder.dp(context, 24), 0, SettingsRowBuilder.dp(context, 24), 0);
         GradientDrawable background = new GradientDrawable();
         background.setColor(selected ? ui.selectedFill : ui.controlFill);
-        background.setCornerRadius(dp(context, 8));
-        background.setStroke(Math.max(1, dp(context, selected ? 2 : 1)), selected ? ui.selectedBorder : ui.border);
+        background.setCornerRadius(SettingsRowBuilder.dp(context, 8));
+        background.setStroke(
+                Math.max(1, SettingsRowBuilder.dp(context, selected ? 2 : 1)),
+                selected ? ui.selectedBorder : ui.border);
         button.setBackground(background);
+    }
+
+    static void buttonIcon(Button button, Context context, int drawableResId) {
+        if (button == null || context == null) {
+            return;
+        }
+        button.setCompoundDrawablesWithIntrinsicBounds(drawableResId, 0, 0, 0);
+        button.setCompoundDrawablePadding(SettingsRowBuilder.dp(context, 8));
+        int tint = SettingsUiPalette.from(context).controlText;
+        for (Drawable drawable : button.getCompoundDrawables()) {
+            if (drawable != null) {
+                drawable.setTint(tint);
+            }
+        }
     }
 
     static void label(TextView view, Context context, boolean secondary) {
@@ -65,16 +83,26 @@ final class SettingsViewStyler {
         SettingsUiPalette ui = SettingsUiPalette.from(context);
         input.setTextColor(ui.textPrimary);
         input.setHintTextColor(ui.textSecondary);
-        input.setMinHeight(dp(context, 44));
-        input.setPadding(dp(context, 14), 0, dp(context, 14), 0);
+        input.setMinHeight(SettingsRowBuilder.dp(context, 44));
+        input.setPadding(SettingsRowBuilder.dp(context, 14), 0, SettingsRowBuilder.dp(context, 14), 0);
         GradientDrawable background = new GradientDrawable();
         background.setColor(ui.surfaceRaised);
-        background.setCornerRadius(dp(context, 8));
-        background.setStroke(Math.max(1, dp(context, 1)), ui.border);
+        background.setCornerRadius(SettingsRowBuilder.dp(context, 8));
+        background.setStroke(Math.max(1, SettingsRowBuilder.dp(context, 1)), ui.border);
         input.setBackground(background);
     }
 
-    private static int dp(Context context, int value) {
-        return Math.round(value * context.getResources().getDisplayMetrics().density);
+    static void spinner(Spinner spinner, Context context) {
+        if (spinner == null || context == null) {
+            return;
+        }
+        SettingsUiPalette ui = SettingsUiPalette.from(context);
+        spinner.setMinimumHeight(SettingsRowBuilder.dp(context, 44));
+        spinner.setPadding(SettingsRowBuilder.dp(context, 8), 0, SettingsRowBuilder.dp(context, 8), 0);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(ui.controlFill);
+        background.setCornerRadius(SettingsRowBuilder.dp(context, 8));
+        background.setStroke(Math.max(1, SettingsRowBuilder.dp(context, 1)), ui.border);
+        spinner.setBackground(background);
     }
 }

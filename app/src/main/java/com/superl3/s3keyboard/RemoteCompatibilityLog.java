@@ -35,8 +35,8 @@ final class RemoteCompatibilityLog {
         List<Entry> entries = load(context);
         entries.add(0, new Entry(
                 System.currentTimeMillis(),
-                packageName == null ? "" : packageName,
-                label == null ? "" : label,
+                AppPackageCatalog.normalizePackageName(packageName),
+                RuntimeDefaults.stringOrDefault(label, ""),
                 keyCode,
                 metaState,
                 acceptedEventCount,
@@ -52,8 +52,8 @@ final class RemoteCompatibilityLog {
             String packageName,
             String label,
             String manualResult) {
-        String normalizedPackage = normalizePackage(packageName);
-        String normalizedLabel = label == null ? "" : label;
+        String normalizedPackage = AppPackageCatalog.normalizePackageName(packageName);
+        String normalizedLabel = RuntimeDefaults.stringOrDefault(label, "");
         if (normalizedLabel.isEmpty()) {
             return false;
         }
@@ -73,11 +73,11 @@ final class RemoteCompatibilityLog {
         if (entries == null || label == null || label.isEmpty()) {
             return false;
         }
-        String normalizedPackage = normalizePackage(packageName);
+        String normalizedPackage = AppPackageCatalog.normalizePackageName(packageName);
         for (int i = 0; i < entries.size(); i++) {
             Entry entry = entries.get(i);
             if (label.equals(entry.label)
-                    && normalizePackage(entry.packageName).equals(normalizedPackage)) {
+                    && AppPackageCatalog.normalizePackageName(entry.packageName).equals(normalizedPackage)) {
                 entries.set(i, entry.withManualResult(manualResult));
                 return true;
             }
@@ -183,10 +183,6 @@ final class RemoteCompatibilityLog {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
     }
 
-    private static String normalizePackage(String packageName) {
-        return packageName == null ? "" : packageName.trim();
-    }
-
     private static String normalizeResult(String manualResult) {
         if (RESULT_PASS.equals(manualResult) || RESULT_FAIL.equals(manualResult)) {
             return manualResult;
@@ -222,8 +218,8 @@ final class RemoteCompatibilityLog {
                 int acceptedEventCount,
                 String manualResult) {
             this.timestampMs = timestampMs;
-            this.packageName = packageName == null ? "" : packageName;
-            this.label = label == null ? "" : label;
+            this.packageName = RuntimeDefaults.stringOrDefault(packageName, "");
+            this.label = RuntimeDefaults.stringOrDefault(label, "");
             this.keyCode = keyCode;
             this.metaState = metaState;
             this.acceptedEventCount = acceptedEventCount;

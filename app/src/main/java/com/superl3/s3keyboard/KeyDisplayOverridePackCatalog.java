@@ -359,6 +359,41 @@ final class KeyDisplayOverridePackCatalog {
         };
     }
 
+    static String[] selectablePackLabels(boolean includeThemeDefault, String themeDefaultLabel) {
+        String[] ids = selectablePackIds(includeThemeDefault);
+        String[] labels = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            labels[i] = ids[i].isEmpty()
+                    ? themeDefaultLabel
+                    : displayName(ids[i]);
+        }
+        return labels;
+    }
+
+    static String selectablePackIdAt(int position, boolean includeThemeDefault) {
+        String[] ids = selectablePackIds(includeThemeDefault);
+        if (position < 0 || position >= ids.length) {
+            return ids[0];
+        }
+        return ids[position];
+    }
+
+    static int selectablePackIndexOf(String packId, boolean includeThemeDefault) {
+        String[] ids = selectablePackIds(includeThemeDefault);
+        String normalized = includeThemeDefault && (packId == null || packId.isEmpty())
+                ? PACK_THEME_DEFAULT
+                : normalizePackId(packId);
+        for (int i = 0; i < ids.length; i++) {
+            String candidate = ids[i].isEmpty()
+                    ? PACK_THEME_DEFAULT
+                    : normalizePackId(ids[i]);
+            if (candidate.equals(normalized)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
     private static Map<String, KeyDisplayOverride> createSimpleTextOverrides() {
         Map<String, KeyDisplayOverride> overrides = new HashMap<>();
         putText(overrides, "label:.", "hihihi");

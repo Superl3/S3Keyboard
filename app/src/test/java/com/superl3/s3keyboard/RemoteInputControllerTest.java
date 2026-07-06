@@ -13,26 +13,26 @@ import org.junit.Test;
 public final class RemoteInputControllerTest {
     @Test
     public void tappedModifierAppliesToNextRemoteKeyThenClears() {
-        FakeHost host = new FakeHost();
+        FakeRemoteState state = new FakeRemoteState();
         RecordingKeySender sender = new RecordingKeySender();
-        RemoteInputController controller = newController(host, sender);
+        RemoteInputController controller = newController(state, sender);
 
         controller.handleCommand(null, KeyboardCommands.CMD_REMOTE_CTRL_LATCH);
-        assertTrue((host.lastPendingMetaState & KeyEvent.META_CTRL_ON) != 0);
+        assertTrue((state.lastPendingMetaState & KeyEvent.META_CTRL_ON) != 0);
 
         controller.sendKey(null, KeyEvent.KEYCODE_A, 0);
 
         assertEquals(0, controller.pendingMetaState());
-        assertEquals(0, host.lastPendingMetaState);
+        assertEquals(0, state.lastPendingMetaState);
         assertEquals(KeyEvent.KEYCODE_A, sender.last().keyCode);
         assertTrue((sender.last().metaState & KeyEvent.META_CTRL_ON) != 0);
     }
 
     @Test
     public void lockedModifierPersistsAcrossRemoteKeys() {
-        FakeHost host = new FakeHost();
+        FakeRemoteState state = new FakeRemoteState();
         RecordingKeySender sender = new RecordingKeySender();
-        RemoteInputController controller = newController(host, sender);
+        RemoteInputController controller = newController(state, sender);
 
         controller.handleCommand(null, KeyboardCommands.CMD_REMOTE_ALT_LOCK);
         controller.sendKey(null, KeyEvent.KEYCODE_A, 0);
@@ -45,10 +45,10 @@ public final class RemoteInputControllerTest {
 
     @Test
     public void imeToggleUsesConfiguredShortcut() {
-        FakeHost host = new FakeHost();
-        host.shortcut = RemoteImeShortcut.WIN_SPACE;
+        FakeRemoteState state = new FakeRemoteState();
+        state.shortcut = RemoteImeShortcut.WIN_SPACE;
         RecordingKeySender sender = new RecordingKeySender();
-        RemoteInputController controller = newController(host, sender);
+        RemoteInputController controller = newController(state, sender);
 
         controller.handleCommand(null, KeyboardCommands.CMD_REMOTE_IME_TOGGLE);
 
@@ -58,9 +58,9 @@ public final class RemoteInputControllerTest {
 
     @Test
     public void compatibilityKeyClearsPreviousModifierState() {
-        FakeHost host = new FakeHost();
+        FakeRemoteState state = new FakeRemoteState();
         RecordingKeySender sender = new RecordingKeySender();
-        RemoteInputController controller = newController(host, sender);
+        RemoteInputController controller = newController(state, sender);
 
         controller.handleCommand(null, KeyboardCommands.CMD_REMOTE_CTRL_LATCH);
         controller.sendCompatibilityKey(null, KeyEvent.KEYCODE_F1, 0);
@@ -71,25 +71,27 @@ public final class RemoteInputControllerTest {
         assertEquals(0, sender.last().metaState & KeyEvent.META_CTRL_ON);
     }
 
-    private static final class FakeHost implements RemoteInputController.Host {
+    private static final class FakeRemoteState {
         RemoteImeShortcut shortcut = RemoteImeShortcut.ALT_SHIFT;
         int lastPendingMetaState;
         int lastLockedMetaState;
 
-        @Override
-        public RemoteImeShortcut remoteImeShortcut() {
+        RemoteImeShortcut remoteImeShortcut() {
             return shortcut;
         }
 
-        @Override
-        public void onRemoteMetaStateChanged(int pendingMetaState, int lockedMetaState) {
+        void onRemoteMetaStateChanged(int pendingMetaState, int lockedMetaState) {
             lastPendingMetaState = pendingMetaState;
             lastLockedMetaState = lockedMetaState;
         }
     }
 
-    private static RemoteInputController newController(FakeHost host, RecordingKeySender sender) {
-        return new RemoteInputController(host, () -> 100L, sender);
+    private static RemoteInputController newController(FakeRemoteState state, RecordingKeySender sender) {
+        return new RemoteInputController(
+                state::remoteImeShortcut,
+                state::onRemoteMetaStateChanged,
+                () -> 100L,
+                sender);
     }
 
     private static final class RecordingKeySender implements RemoteInputController.KeySender {

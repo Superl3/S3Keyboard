@@ -47,68 +47,72 @@ public final class ThemeSelectorActivity extends Activity {
         ScrollView scrollView = new ScrollView(this);
         SettingsUiPalette ui = SettingsUiPalette.from(this);
         scrollView.setBackgroundColor(ui.background);
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout root = SettingsRowBuilder.vertical(this);
         root.setGravity(Gravity.CENTER_HORIZONTAL);
-        root.setPadding(dp(20), dp(20), dp(20), dp(24));
+        root.setPadding(
+                SettingsRowBuilder.dp(this, 20),
+                SettingsRowBuilder.dp(this, 20),
+                SettingsRowBuilder.dp(this, 20),
+                SettingsRowBuilder.dp(this, 24));
         scrollView.addView(root);
 
-        TextView title = label(getString(R.string.theme_selector_title));
+        TextView title = SettingsRowBuilder.label(this, R.string.theme_selector_title);
         title.setTextColor(ui.textPrimary);
         title.setTextSize(22);
         title.setTypeface(Typeface.DEFAULT_BOLD);
-        root.addView(title, matchWrap());
+        root.addView(title, SettingsRowBuilder.matchWrap());
 
-        Button editorButton = new Button(this);
-        editorButton.setText(R.string.theme_editor_open);
-        styleSystemButton(editorButton, false);
-        editorButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_keyboard_settings, 0, 0, 0);
-        editorButton.setCompoundDrawablePadding(dp(8));
-        editorButton.setOnClickListener(v -> startActivity(new Intent(this, ThemeEditorActivity.class)));
-        root.addView(editorButton, topParams(12));
+        SettingsRowBuilder.iconButtonRow(
+                this,
+                root,
+                R.string.theme_editor_open,
+                R.drawable.ic_keyboard_settings,
+                12,
+                v -> startActivity(new Intent(this, ThemeEditorActivity.class)));
 
-        Button resetButton = new Button(this);
-        resetButton.setText(R.string.theme_reset_default);
-        styleSystemButton(resetButton, false);
-        resetButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_keyboard_reset, 0, 0, 0);
-        resetButton.setCompoundDrawablePadding(dp(8));
-        resetButton.setOnClickListener(v -> resetThemeToDefault());
-        root.addView(resetButton, topParams(8));
+        SettingsRowBuilder.iconButtonRow(
+                this,
+                root,
+                R.string.theme_reset_default,
+                R.drawable.ic_keyboard_reset,
+                8,
+                v -> resetThemeToDefault());
 
         ExternalThemeStore.ensureThemeDirectory(this);
-        externalThemeSummary = label("");
+        externalThemeSummary = SettingsRowBuilder.valueLabel(this);
         externalThemeSummary.setTextColor(ui.textSecondary);
-        root.addView(externalThemeSummary, topParams(10));
+        root.addView(externalThemeSummary, SettingsRowBuilder.matchWrapWithTop(this, 10));
 
-        LinearLayout externalRow = new LinearLayout(this);
-        externalRow.setOrientation(LinearLayout.HORIZONTAL);
-        Button externalPathButton = new Button(this);
-        externalPathButton.setText(R.string.external_theme_folder_setting);
-        styleSystemButton(externalPathButton, false);
-        externalPathButton.setOnClickListener(v -> showExternalThemePathDialog());
-        externalRow.addView(externalPathButton, weightedButtonParams());
-        Button refreshExternalButton = new Button(this);
-        refreshExternalButton.setText(R.string.action_refresh);
-        styleSystemButton(refreshExternalButton, false);
-        refreshExternalButton.setOnClickListener(v -> rebuildCards());
-        externalRow.addView(refreshExternalButton, weightedButtonParams());
-        root.addView(externalRow, topParams(8));
+        LinearLayout externalRow = SettingsRowBuilder.horizontal(this);
+        SettingsRowBuilder.weightedButton(
+                this,
+                externalRow,
+                R.string.external_theme_folder_setting,
+                3,
+                3,
+                v -> showExternalThemePathDialog());
+        SettingsRowBuilder.weightedButton(
+                this,
+                externalRow,
+                R.string.action_refresh,
+                3,
+                3,
+                v -> rebuildCards());
+        root.addView(externalRow, SettingsRowBuilder.matchWrapWithTop(this, 8));
 
-        LinearLayout previewModeRow = new LinearLayout(this);
-        previewModeRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout previewModeRow = SettingsRowBuilder.horizontal(this);
         dingulPreviewButton = previewModeButton(
                 getString(R.string.theme_preview_mode_dingul),
                 KeyboardMode.HANGUL);
         qwertyPreviewButton = previewModeButton(
                 getString(R.string.theme_preview_mode_qwerty),
                 KeyboardMode.ENGLISH);
-        previewModeRow.addView(dingulPreviewButton, weightedButtonParams());
-        previewModeRow.addView(qwertyPreviewButton, weightedButtonParams());
-        root.addView(previewModeRow, topParams(10));
+        previewModeRow.addView(dingulPreviewButton, SettingsRowBuilder.weightedWrap(this, 3, 3));
+        previewModeRow.addView(qwertyPreviewButton, SettingsRowBuilder.weightedWrap(this, 3, 3));
+        root.addView(previewModeRow, SettingsRowBuilder.matchWrapWithTop(this, 10));
 
-        cards = new LinearLayout(this);
-        cards.setOrientation(LinearLayout.VERTICAL);
-        root.addView(cards, topParams(14));
+        cards = SettingsRowBuilder.vertical(this);
+        root.addView(cards, SettingsRowBuilder.matchWrapWithTop(this, 14));
         rebuildCards();
         return scrollView;
     }
@@ -119,13 +123,15 @@ public final class ThemeSelectorActivity extends Activity {
         }
         UserThemeStore.UserTheme[] externalThemes = ExternalThemeStore.load(this);
         themeOptions = ThemeOption.buildOptions(UserThemeStore.load(this), externalThemes, false);
-        selectedIndex = indexOfSelectedTheme(KeyboardPreferences.loadSelectedThemeId(this));
+        selectedIndex = ThemeOption.indexOfStableId(
+                themeOptions,
+                KeyboardPreferences.loadSelectedThemeId(this),
+                -1);
         updatePreviewModeButtons();
         updateExternalThemeSummary(externalThemes.length);
         cards.removeAllViews();
         for (int i = 0; i < themeOptions.length; i++) {
-            LinearLayout.LayoutParams params = matchWrap();
-            params.topMargin = dp(i == 0 ? 0 : 10);
+            LinearLayout.LayoutParams params = SettingsRowBuilder.matchWrapWithTop(this, i == 0 ? 0 : 10);
             cards.addView(themeCard(i), params);
         }
     }
@@ -146,38 +152,32 @@ public final class ThemeSelectorActivity extends Activity {
         boolean selected = index == selectedIndex;
         SettingsUiPalette ui = SettingsUiPalette.from(this);
 
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(14), dp(14), dp(14), dp(16));
+        LinearLayout card = SettingsRowBuilder.vertical(this);
+        card.setPadding(
+                SettingsRowBuilder.dp(this, 14),
+                SettingsRowBuilder.dp(this, 14),
+                SettingsRowBuilder.dp(this, 14),
+                SettingsRowBuilder.dp(this, 16));
         card.setBackground(cardBackground(ui, selected));
-        card.setElevation(selected ? dp(4) : dp(1));
+        card.setElevation(SettingsRowBuilder.dp(this, selected ? 4 : 1));
         card.setOnClickListener(v -> applyTheme(index));
 
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        TextView title = label(option.label);
+        LinearLayout header = SettingsRowBuilder.horizontal(this);
+        TextView title = SettingsRowBuilder.label(this, option.label);
         title.setTextColor(ui.textPrimary);
         title.setTextSize(18);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setSingleLine(true);
         title.setEllipsize(TextUtils.TruncateAt.END);
-        header.addView(title, new LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f));
+        header.addView(title, SettingsRowBuilder.weightedWrap(this, 1f, 0, 0));
         if (selected) {
-            LinearLayout.LayoutParams badgeParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            badgeParams.leftMargin = dp(8);
-            header.addView(selectedBadge(ui), badgeParams);
+            header.addView(selectedBadge(ui), SettingsRowBuilder.wrapContentWithLeft(this, 8));
         }
-        card.addView(header, matchWrap());
+        card.addView(header, SettingsRowBuilder.matchWrap());
 
         boolean englishPreview = previewMode == KeyboardMode.ENGLISH;
         card.addView(previewKeyboard(englishPreview ? englishSettings : hangulSettings),
-                previewParams(englishPreview ? 88 : 108));
+                SettingsRowBuilder.matchHeightWithTop(this, englishPreview ? 88 : 108, 10));
         return card;
     }
 
@@ -192,15 +192,14 @@ public final class ThemeSelectorActivity extends Activity {
     }
 
     private void showExternalThemePathDialog() {
-        EditText input = new EditText(this);
+        EditText input = SettingsRowBuilder.editText(this);
         input.setSingleLine(true);
         input.setSelectAllOnFocus(true);
         input.setText(ExternalThemeStore.loadDirectoryPath(this));
-        SettingsViewStyler.editText(input, this);
-        int padding = dp(18);
-        LinearLayout container = new LinearLayout(this);
+        int padding = SettingsRowBuilder.dp(this, 18);
+        LinearLayout container = SettingsRowBuilder.vertical(this);
         container.setPadding(padding, padding, padding, 0);
-        container.addView(input, matchWrap());
+        container.addView(input, SettingsRowBuilder.matchWrap());
 
         new AlertDialog.Builder(this)
                 .setTitle(R.string.external_theme_folder_title)
@@ -221,30 +220,35 @@ public final class ThemeSelectorActivity extends Activity {
     }
 
     private TextView selectedBadge(SettingsUiPalette ui) {
-        TextView badge = label(getString(R.string.selected_badge));
+        TextView badge = SettingsRowBuilder.label(this, R.string.selected_badge);
         badge.setTextColor(ui.selectedText);
         badge.setTextSize(12);
         badge.setTypeface(Typeface.DEFAULT_BOLD);
         badge.setGravity(Gravity.CENTER);
-        badge.setPadding(dp(10), dp(3), dp(10), dp(3));
+        badge.setPadding(
+                SettingsRowBuilder.dp(this, 10),
+                SettingsRowBuilder.dp(this, 3),
+                SettingsRowBuilder.dp(this, 10),
+                SettingsRowBuilder.dp(this, 3));
         GradientDrawable background = new GradientDrawable();
         background.setColor(ui.selectedFill);
-        background.setCornerRadius(dp(999));
-        background.setStroke(dp(1), ui.selectedBorder);
+        background.setCornerRadius(SettingsRowBuilder.dp(this, 999));
+        background.setStroke(SettingsRowBuilder.dp(this, 1), ui.selectedBorder);
         badge.setBackground(background);
         return badge;
     }
 
     private Button previewModeButton(String label, KeyboardMode mode) {
-        Button button = new Button(this);
-        button.setText(label);
-        button.setAllCaps(false);
+        Button button = SettingsRowBuilder.button(
+                this,
+                label,
+                previewMode == mode,
+                v -> {
+                    previewMode = mode;
+                    updatePreviewModeButtons();
+                    rebuildCards();
+                });
         styleSystemButton(button, previewMode == mode);
-        button.setOnClickListener(v -> {
-            previewMode = mode;
-            updatePreviewModeButtons();
-            rebuildCards();
-        });
         return button;
     }
 
@@ -283,80 +287,23 @@ public final class ThemeSelectorActivity extends Activity {
         return KeyboardPreviewFactory.nonInteractive(this, previewSettings);
     }
 
-    private int indexOfSelectedTheme(String selectedThemeId) {
-        if (selectedThemeId == null || selectedThemeId.isEmpty()) {
-            return -1;
-        }
-        for (int i = 0; i < themeOptions.length; i++) {
-            if (selectedThemeId.equals(themeOptions[i].stableId())) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     private GradientDrawable cardBackground(SettingsUiPalette ui, boolean selected) {
         GradientDrawable background = new GradientDrawable();
         background.setColor(ui.surfaceRaised);
-        background.setCornerRadius(dp(18));
-        background.setStroke(dp(selected ? 4 : 1), selected ? ui.selectedBorder : ui.border);
+        background.setCornerRadius(SettingsRowBuilder.dp(this, 18));
+        background.setStroke(
+                SettingsRowBuilder.dp(this, selected ? 4 : 1),
+                selected ? ui.selectedBorder : ui.border);
         return background;
     }
 
     private void styleSystemButton(Button button, boolean selected) {
-        SettingsUiPalette ui = SettingsUiPalette.from(this);
-        button.setTextColor(selected ? ui.selectedText : ui.controlText);
-        button.setAllCaps(false);
-        button.setMinHeight(dp(44));
-        button.setPadding(dp(18), 0, dp(18), 0);
-        button.setGravity(Gravity.CENTER);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(selected ? ui.selectedFill : ui.controlFill);
-        background.setCornerRadius(dp(8));
-        background.setStroke(dp(selected ? 2 : 1), selected ? ui.selectedBorder : ui.border);
-        button.setBackground(background);
-    }
-
-    private TextView label(String text) {
-        TextView label = new TextView(this);
-        label.setText(text);
-        label.setTextColor(SettingsUiPalette.from(this).textPrimary);
-        label.setTextSize(14);
-        return label;
-    }
-
-    private LinearLayout.LayoutParams previewParams(int heightDp) {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(heightDp));
-        params.topMargin = dp(10);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams topParams(int topMarginDp) {
-        LinearLayout.LayoutParams params = matchWrap();
-        params.topMargin = dp(topMarginDp);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams weightedButtonParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+        SettingsViewStyler.button(button, this, selected);
+        button.setPadding(
+                SettingsRowBuilder.dp(this, 18),
                 0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f);
-        params.leftMargin = dp(3);
-        params.rightMargin = dp(3);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
+                SettingsRowBuilder.dp(this, 18),
+                0);
     }
 
 }

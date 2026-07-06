@@ -1,6 +1,6 @@
 package com.superl3.s3keyboard;
 
-enum AccentPlacementMode {
+enum AccentPlacementMode implements SettingsLabelOption {
     THEME_DEFAULT("theme_default", R.string.accent_placement_mode_theme_default),
     NONE("none", R.string.accent_placement_mode_none),
     ENTER_SHIFT("enter_shift", R.string.accent_placement_mode_enter_shift),
@@ -16,6 +16,11 @@ enum AccentPlacementMode {
     AccentPlacementMode(String preferenceValue, int labelResId) {
         this.preferenceValue = preferenceValue;
         this.labelResId = labelResId;
+    }
+
+    @Override
+    public int labelResId() {
+        return labelResId;
     }
 
     static AccentPlacementMode fromPreference(String value) {

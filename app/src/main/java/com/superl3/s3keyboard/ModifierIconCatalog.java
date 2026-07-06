@@ -126,4 +126,36 @@ final class ModifierIconCatalog {
                 PACK_METROPOLIS_POINTS
         };
     }
+
+    static String[] selectablePackLabels(boolean includeThemeDefault, String themeDefaultLabel) {
+        String[] ids = selectablePackIds(includeThemeDefault);
+        String[] labels = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            labels[i] = ids[i].isEmpty()
+                    ? themeDefaultLabel
+                    : displayName(ids[i]);
+        }
+        return labels;
+    }
+
+    static String selectablePackIdAt(int position, boolean includeThemeDefault) {
+        String[] ids = selectablePackIds(includeThemeDefault);
+        if (position < 0 || position >= ids.length) {
+            return ids[0];
+        }
+        return ids[position];
+    }
+
+    static int selectablePackIndexOf(String packId, boolean includeThemeDefault) {
+        String[] ids = selectablePackIds(includeThemeDefault);
+        String normalized = includeThemeDefault && (packId == null || packId.isEmpty())
+                ? PACK_THEME_DEFAULT
+                : normalizePackId(packId);
+        for (int i = 0; i < ids.length; i++) {
+            if (ids[i].equals(normalized)) {
+                return i;
+            }
+        }
+        return 0;
+    }
 }

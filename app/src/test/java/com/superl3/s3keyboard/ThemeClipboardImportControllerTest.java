@@ -3,113 +3,192 @@ package com.superl3.s3keyboard;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
+
 import org.junit.Test;
 
 public final class ThemeClipboardImportControllerTest {
     @Test
     public void validClipboardThemeImportsSavesAndDismisses() {
         KeyboardSettings theme = KeyboardSettings.defaults().withKeyRoundness(9);
-        FakeHost host = new FakeHost();
+        FakeRuntime runtime = new FakeRuntime();
         FakeSettingsStore store = new FakeSettingsStore();
         FakeNotifier notifier = new FakeNotifier();
         ThemeClipboardImportController controller = new ThemeClipboardImportController(
-                host,
+                runtime::currentSettings,
+                runtime::enterKeyLabel,
+                runtime::forceNumberRow,
+                runtime::applyImportedSettings,
+                runtime::dismissQuickSettings,
                 () -> KeyboardThemeJson.exportTheme(theme, "Round", "test", null),
                 store,
                 notifier);
 
         controller.importFromClipboard();
 
-        assertEquals(9, host.applied.keyRoundnessDp);
+        assertEquals(9, runtime.applied.keyRoundnessDp);
         assertEquals(9, store.saved.keyRoundnessDp);
-        assertEquals(host.enterKeyLabel(), host.applied.enterKeyLabel);
-        assertEquals(true, host.applied.showNumberRow);
+        assertEquals(runtime.enterKeyLabel(), runtime.applied.enterKeyLabel);
+        assertEquals(true, runtime.applied.showNumberRow);
         assertEquals(R.string.clipboard_theme_imported, notifier.lastMessageResId);
-        assertEquals(true, host.dismissed);
+        assertEquals(true, runtime.dismissed);
     }
 
     @Test
     public void emptyClipboardThemeReportsEmptyAndDoesNotSave() {
-        FakeHost host = new FakeHost();
+        FakeRuntime runtime = new FakeRuntime();
         FakeSettingsStore store = new FakeSettingsStore();
         FakeNotifier notifier = new FakeNotifier();
         ThemeClipboardImportController controller = new ThemeClipboardImportController(
-                host,
+                runtime::currentSettings,
+                runtime::enterKeyLabel,
+                runtime::forceNumberRow,
+                runtime::applyImportedSettings,
+                runtime::dismissQuickSettings,
                 () -> "   ",
                 store,
                 notifier);
 
         controller.importFromClipboard();
 
-        assertNull(host.applied);
+        assertNull(runtime.applied);
         assertNull(store.saved);
         assertEquals(R.string.clipboard_theme_empty, notifier.lastMessageResId);
-        assertEquals(false, host.dismissed);
+        assertEquals(false, runtime.dismissed);
+    }
+
+    @Test
+    public void nullClipboardThemeReportsEmptyAndDoesNotSave() {
+        FakeRuntime runtime = new FakeRuntime();
+        FakeSettingsStore store = new FakeSettingsStore();
+        FakeNotifier notifier = new FakeNotifier();
+        ThemeClipboardImportController controller = new ThemeClipboardImportController(
+                runtime::currentSettings,
+                runtime::enterKeyLabel,
+                runtime::forceNumberRow,
+                runtime::applyImportedSettings,
+                runtime::dismissQuickSettings,
+                () -> null,
+                store,
+                notifier);
+
+        controller.importFromClipboard();
+
+        assertNull(runtime.applied);
+        assertNull(store.saved);
+        assertEquals(R.string.clipboard_theme_empty, notifier.lastMessageResId);
+        assertEquals(false, runtime.dismissed);
+    }
+
+    @Test
+    public void clipboardThemeTrimsBeforeImporting() {
+        KeyboardSettings theme = KeyboardSettings.defaults().withKeyRoundness(11);
+        FakeRuntime runtime = new FakeRuntime();
+        FakeSettingsStore store = new FakeSettingsStore();
+        FakeNotifier notifier = new FakeNotifier();
+        ThemeClipboardImportController controller = new ThemeClipboardImportController(
+                runtime::currentSettings,
+                runtime::enterKeyLabel,
+                runtime::forceNumberRow,
+                runtime::applyImportedSettings,
+                runtime::dismissQuickSettings,
+                () -> "  \n" + KeyboardThemeJson.exportTheme(theme, "Round", "test", null) + "\n  ",
+                store,
+                notifier);
+
+        controller.importFromClipboard();
+
+        assertEquals(11, runtime.applied.keyRoundnessDp);
+        assertEquals(11, store.saved.keyRoundnessDp);
+        assertEquals(R.string.clipboard_theme_imported, notifier.lastMessageResId);
+    }
+
+    @Test
+    public void missingRuntimeEnterLabelFallsBackToCurrentSettingsLabel() {
+        KeyboardSettings current = KeyboardSettings.defaults().withEnterKeyLabel("FallbackEnter");
+        KeyboardSettings theme = KeyboardSettings.defaults().withKeyRoundness(5);
+        FakeRuntime runtime = new FakeRuntime();
+        FakeSettingsStore store = new FakeSettingsStore();
+        FakeNotifier notifier = new FakeNotifier();
+        ThemeClipboardImportController controller = new ThemeClipboardImportController(
+                () -> current,
+                () -> null,
+                runtime::forceNumberRow,
+                runtime::applyImportedSettings,
+                runtime::dismissQuickSettings,
+                () -> KeyboardThemeJson.exportTheme(theme, "Round", "test", null),
+                store,
+                notifier);
+
+        controller.importFromClipboard();
+
+        assertEquals("FallbackEnter", runtime.applied.enterKeyLabel);
+        assertEquals("FallbackEnter", store.saved.enterKeyLabel);
     }
 
     @Test
     public void invalidClipboardThemeReportsInvalidAndKeepsCurrentSettings() {
-        FakeHost host = new FakeHost();
+        FakeRuntime runtime = new FakeRuntime();
         FakeSettingsStore store = new FakeSettingsStore();
         FakeNotifier notifier = new FakeNotifier();
         ThemeClipboardImportController controller = new ThemeClipboardImportController(
-                host,
+                runtime::currentSettings,
+                runtime::enterKeyLabel,
+                runtime::forceNumberRow,
+                runtime::applyImportedSettings,
+                runtime::dismissQuickSettings,
                 () -> "{not json}",
                 store,
                 notifier);
 
         controller.importFromClipboard();
 
-        assertNull(host.applied);
+        assertNull(runtime.applied);
         assertNull(store.saved);
         assertEquals(R.string.clipboard_theme_invalid, notifier.lastMessageResId);
-        assertEquals(false, host.dismissed);
+        assertEquals(false, runtime.dismissed);
     }
 
-    private static final class FakeHost implements ThemeClipboardImportController.Host {
+    private static final class FakeRuntime {
         KeyboardSettings applied;
         boolean dismissed;
 
-        @Override
-        public KeyboardSettings currentSettings() {
+        KeyboardSettings currentSettings() {
             return KeyboardSettings.defaults();
         }
 
-        @Override
-        public String enterKeyLabel() {
+        String enterKeyLabel() {
             return "검색";
         }
 
-        @Override
-        public boolean forceNumberRow() {
+        boolean forceNumberRow() {
             return true;
         }
 
-        @Override
-        public void applyImportedSettings(KeyboardSettings settings) {
+        void applyImportedSettings(KeyboardSettings settings) {
             applied = settings;
         }
 
-        @Override
-        public void dismissQuickSettings() {
+        void dismissQuickSettings() {
             dismissed = true;
         }
     }
 
-    private static final class FakeSettingsStore implements ThemeClipboardImportController.SettingsStore {
+    private static final class FakeSettingsStore implements Consumer<KeyboardSettings> {
         KeyboardSettings saved;
 
         @Override
-        public void save(KeyboardSettings settings) {
+        public void accept(KeyboardSettings settings) {
             saved = settings;
         }
     }
 
-    private static final class FakeNotifier implements ThemeClipboardImportController.Notifier {
+    private static final class FakeNotifier implements IntConsumer {
         int lastMessageResId;
 
         @Override
-        public void show(int messageResId) {
+        public void accept(int messageResId) {
             lastMessageResId = messageResId;
         }
     }

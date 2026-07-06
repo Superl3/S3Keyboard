@@ -1,5 +1,7 @@
 package com.superl3.s3keyboard;
 
+import static com.superl3.s3keyboard.KeyboardColorMath.withAlpha;
+
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -32,7 +34,7 @@ final class KeyboardDebugOverlayRenderer {
             int edgeRailDirection) {
         float stroke = Math.max(1f, dp(1, density, renderScale));
         float radius = Math.max(0f, dp(settings.keyRoundnessDp, density, renderScale));
-        String safeLastKeyId = lastKeyId == null ? "" : lastKeyId;
+        String safeLastKeyId = RuntimeDefaults.stringOrDefault(lastKeyId, "");
         for (HangulKeyboardView.KeySlot keySlot : keySlots) {
             boolean recent = keySlot.debugId().equals(safeLastKeyId);
             drawRect(canvas, keySlot.hitBounds(), HIT_RECT_COLOR, stroke, radius, recent ? 118 : 68);
@@ -149,10 +151,6 @@ final class KeyboardDebugOverlayRenderer {
         canvas.drawText(info, pad * 2f, top + height - pad * 0.75f, textPaint);
         textPaint.setTypeface(previousTypeface);
         textPaint.setTextAlign(previousAlign);
-    }
-
-    private static int withAlpha(int color, int alpha) {
-        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
     }
 
     private static int dp(float value, float density, float renderScale) {

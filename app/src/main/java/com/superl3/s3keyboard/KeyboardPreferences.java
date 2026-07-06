@@ -451,9 +451,7 @@ final class KeyboardPreferences {
     }
 
     static void saveRemoteAutoModeEnabled(Context context, boolean enabled) {
-        prefs(context).edit()
-                .putBoolean(REMOTE_AUTO_MODE_ENABLED, enabled)
-                .apply();
+        saveBoolean(context, REMOTE_AUTO_MODE_ENABLED, enabled);
     }
 
     static String loadRemoteAutoModePackages(Context context) {
@@ -461,9 +459,7 @@ final class KeyboardPreferences {
     }
 
     static void saveRemoteAutoModePackages(Context context, String packages) {
-        prefs(context).edit()
-                .putString(REMOTE_AUTO_MODE_PACKAGES, packages == null ? "" : packages)
-                .apply();
+        saveString(context, REMOTE_AUTO_MODE_PACKAGES, packages);
     }
 
     static boolean shouldAutoEnableRemoteMode(Context context, String packageName) {
@@ -485,9 +481,7 @@ final class KeyboardPreferences {
     }
 
     static void saveAppProfileAsciiPackages(Context context, String packages) {
-        prefs(context).edit()
-                .putString(APP_PROFILE_ASCII_PACKAGES, packages == null ? "" : packages)
-                .apply();
+        saveString(context, APP_PROFILE_ASCII_PACKAGES, packages);
     }
 
     static String loadAppProfileNumberRowPackages(Context context) {
@@ -495,9 +489,7 @@ final class KeyboardPreferences {
     }
 
     static void saveAppProfileNumberRowPackages(Context context, String packages) {
-        prefs(context).edit()
-                .putString(APP_PROFILE_NUMBER_ROW_PACKAGES, packages == null ? "" : packages)
-                .apply();
+        saveString(context, APP_PROFILE_NUMBER_ROW_PACKAGES, packages);
     }
 
     static String loadAppProfileNoComposingPackages(Context context) {
@@ -505,9 +497,7 @@ final class KeyboardPreferences {
     }
 
     static void saveAppProfileNoComposingPackages(Context context, String packages) {
-        prefs(context).edit()
-                .putString(APP_PROFILE_NO_COMPOSING_PACKAGES, packages == null ? "" : packages)
-                .apply();
+        saveString(context, APP_PROFILE_NO_COMPOSING_PACKAGES, packages);
     }
 
     static String loadAppProfileNoTextConveniencesPackages(Context context) {
@@ -515,9 +505,7 @@ final class KeyboardPreferences {
     }
 
     static void saveAppProfileNoTextConveniencesPackages(Context context, String packages) {
-        prefs(context).edit()
-                .putString(APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES, packages == null ? "" : packages)
-                .apply();
+        saveString(context, APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES, packages);
     }
 
     static boolean packageListContains(String packageList, String packageName) {
@@ -597,9 +585,7 @@ final class KeyboardPreferences {
     }
 
     static void saveDebugKeyBoundsOverlayEnabled(Context context, boolean enabled) {
-        prefs(context).edit()
-                .putBoolean(DEBUG_KEY_BOUNDS_OVERLAY_ENABLED, enabled)
-                .apply();
+        saveBoolean(context, DEBUG_KEY_BOUNDS_OVERLAY_ENABLED, enabled);
     }
 
     static MotionEffectLevel loadMotionEffectLevel(Context context) {
@@ -609,11 +595,10 @@ final class KeyboardPreferences {
     }
 
     static void saveMotionEffectLevel(Context context, MotionEffectLevel level) {
-        prefs(context).edit()
-                .putString(
-                        MOTION_EFFECT_LEVEL,
-                        (level == null ? DEFAULT_MOTION_EFFECT_LEVEL : level).preferenceValue)
-                .apply();
+        saveString(
+                context,
+                MOTION_EFFECT_LEVEL,
+                (level == null ? DEFAULT_MOTION_EFFECT_LEVEL : level).preferenceValue);
     }
 
     static AccentPlacementMode loadAccentPlacementMode(Context context) {
@@ -623,11 +608,10 @@ final class KeyboardPreferences {
     }
 
     static void saveAccentPlacementMode(Context context, AccentPlacementMode mode) {
-        prefs(context).edit()
-                .putString(
-                        ACCENT_PLACEMENT_MODE,
-                        (mode == null ? AccentPlacementMode.DEFAULT : mode).preferenceValue)
-                .apply();
+        saveString(
+                context,
+                ACCENT_PLACEMENT_MODE,
+                (mode == null ? AccentPlacementMode.DEFAULT : mode).preferenceValue);
     }
 
     static AccentPlacementPolicy loadAccentPlacementPolicy(Context context) {
@@ -696,9 +680,7 @@ final class KeyboardPreferences {
     }
 
     static void saveKeyboardMode(Context context, KeyboardMode mode) {
-        prefs(context).edit()
-                .putString(KEYBOARD_MODE_LAST, mode.preferenceValue)
-                .apply();
+        saveString(context, KEYBOARD_MODE_LAST, mode.preferenceValue);
     }
 
     static KeyboardLayoutProfiles loadLayoutProfiles(Context context) {
@@ -717,19 +699,17 @@ final class KeyboardPreferences {
     }
 
     static void saveHangulLayoutProfile(Context context, KeyboardLayoutProfile profile) {
-        prefs(context).edit()
-                .putString(
-                        HANGUL_LAYOUT_PROFILE,
-                        (profile == null ? KeyboardLayoutProfiles.DEFAULT_HANGUL : profile).preferenceValue)
-                .apply();
+        saveString(
+                context,
+                HANGUL_LAYOUT_PROFILE,
+                (profile == null ? KeyboardLayoutProfiles.DEFAULT_HANGUL : profile).preferenceValue);
     }
 
     static void saveEnglishLayoutProfile(Context context, KeyboardLayoutProfile profile) {
-        prefs(context).edit()
-                .putString(
-                        ENGLISH_LAYOUT_PROFILE,
-                        (profile == null ? KeyboardLayoutProfiles.DEFAULT_ENGLISH : profile).preferenceValue)
-                .apply();
+        saveString(
+                context,
+                ENGLISH_LAYOUT_PROFILE,
+                (profile == null ? KeyboardLayoutProfiles.DEFAULT_ENGLISH : profile).preferenceValue);
     }
 
     static String loadSelectedThemeId(Context context) {
@@ -737,9 +717,7 @@ final class KeyboardPreferences {
     }
 
     static void saveSelectedThemeId(Context context, String themeId) {
-        prefs(context).edit()
-                .putString(SELECTED_THEME_ID, themeId == null ? "" : themeId)
-                .apply();
+        saveString(context, SELECTED_THEME_ID, themeId);
     }
 
     static int loadHapticTickDurationMs(Context context) {
@@ -757,11 +735,12 @@ final class KeyboardPreferences {
     }
 
     static void saveHapticTickDurationMs(Context context, int durationMs) {
-        prefs(context).edit()
-                .putInt(
-                        HAPTIC_TICK_DURATION_MS,
-                        clamp(durationMs, MIN_HAPTIC_TICK_DURATION_MS, MAX_HAPTIC_TICK_DURATION_MS))
-                .apply();
+        saveClampedInt(
+                context,
+                HAPTIC_TICK_DURATION_MS,
+                durationMs,
+                MIN_HAPTIC_TICK_DURATION_MS,
+                MAX_HAPTIC_TICK_DURATION_MS);
     }
 
     static boolean loadDifferentiatedHapticEnabled(Context context) {
@@ -769,7 +748,7 @@ final class KeyboardPreferences {
     }
 
     static void saveDifferentiatedHapticEnabled(Context context, boolean enabled) {
-        prefs(context).edit().putBoolean(DIFFERENTIATED_HAPTIC_ENABLED, enabled).apply();
+        saveBoolean(context, DIFFERENTIATED_HAPTIC_ENABLED, enabled);
     }
 
     static boolean loadTouchBiasAutoCorrectionEnabled(Context context) {
@@ -777,7 +756,7 @@ final class KeyboardPreferences {
     }
 
     static void saveTouchBiasAutoCorrectionEnabled(Context context, boolean enabled) {
-        prefs(context).edit().putBoolean(TOUCH_BIAS_AUTO_CORRECTION_ENABLED, enabled).apply();
+        saveBoolean(context, TOUCH_BIAS_AUTO_CORRECTION_ENABLED, enabled);
     }
 
     static boolean loadPalmRejectionEnabled(Context context) {
@@ -785,7 +764,7 @@ final class KeyboardPreferences {
     }
 
     static void savePalmRejectionEnabled(Context context, boolean enabled) {
-        prefs(context).edit().putBoolean(PALM_REJECTION_ENABLED, enabled).apply();
+        saveBoolean(context, PALM_REJECTION_ENABLED, enabled);
     }
 
     static boolean loadClipboardHistoryEnabled(Context context) {
@@ -793,7 +772,7 @@ final class KeyboardPreferences {
     }
 
     static void saveClipboardHistoryEnabled(Context context, boolean enabled) {
-        prefs(context).edit().putBoolean(CLIPBOARD_HISTORY_ENABLED, enabled).apply();
+        saveBoolean(context, CLIPBOARD_HISTORY_ENABLED, enabled);
     }
 
     static DingulVowelGestureProfile loadDingulVowelGestureProfile(Context context) {
@@ -803,11 +782,10 @@ final class KeyboardPreferences {
     }
 
     static void saveDingulVowelGestureProfile(Context context, DingulVowelGestureProfile profile) {
-        prefs(context).edit()
-                .putString(
-                        DINGUL_VOWEL_GESTURE_PROFILE,
-                        (profile == null ? DingulVowelGestureProfile.DEFAULT : profile).preferenceValue)
-                .apply();
+        saveString(
+                context,
+                DINGUL_VOWEL_GESTURE_PROFILE,
+                (profile == null ? DingulVowelGestureProfile.DEFAULT : profile).preferenceValue);
     }
 
     static long loadInputLearningEpoch(Context context) {
@@ -823,7 +801,7 @@ final class KeyboardPreferences {
     }
 
     static void saveDebugShowResolverScores(Context context, boolean enabled) {
-        prefs(context).edit().putBoolean(DEBUG_SHOW_RESOLVER_SCORES, enabled).apply();
+        saveBoolean(context, DEBUG_SHOW_RESOLVER_SCORES, enabled);
     }
 
     static InputAssistanceMode loadInputAssistanceMode(Context context) {
@@ -833,9 +811,10 @@ final class KeyboardPreferences {
     }
 
     static void saveInputAssistanceMode(Context context, InputAssistanceMode mode) {
-        prefs(context).edit()
-                .putString(INPUT_ASSISTANCE_MODE, (mode == null ? InputAssistanceMode.CUSTOM : mode).toString())
-                .apply();
+        saveString(
+                context,
+                INPUT_ASSISTANCE_MODE,
+                (mode == null ? InputAssistanceMode.CUSTOM : mode).toString());
     }
 
     static boolean loadShowCurrentAppProfile(Context context) {
@@ -843,7 +822,7 @@ final class KeyboardPreferences {
     }
 
     static void saveShowCurrentAppProfile(Context context, boolean enabled) {
-        prefs(context).edit().putBoolean(SHOW_CURRENT_APP_PROFILE, enabled).apply();
+        saveBoolean(context, SHOW_CURRENT_APP_PROFILE, enabled);
     }
 
     static int loadSpacebarCursorDeadZoneDp(Context context) {
@@ -854,11 +833,12 @@ final class KeyboardPreferences {
     }
 
     static void saveSpacebarCursorDeadZoneDp(Context context, int valueDp) {
-        prefs(context).edit()
-                .putInt(
-                        SPACEBAR_CURSOR_DEAD_ZONE_DP,
-                        clamp(valueDp, MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP, MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP))
-                .apply();
+        saveClampedInt(
+                context,
+                SPACEBAR_CURSOR_DEAD_ZONE_DP,
+                valueDp,
+                MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP,
+                MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP);
     }
 
     static boolean loadFloatingModeEnabled(Context context) {
@@ -866,13 +846,11 @@ final class KeyboardPreferences {
     }
 
     static void saveFloatingModeEnabled(Context context, boolean enabled) {
-        prefs(context).edit().putBoolean(FLOATING_MODE_ENABLED, enabled).apply();
+        saveBoolean(context, FLOATING_MODE_ENABLED, enabled);
     }
 
     static void saveHapticTickGapMs(Context context, int gapMs) {
-        prefs(context).edit()
-                .putInt(HAPTIC_TICK_GAP_MS, clamp(gapMs, MIN_HAPTIC_TICK_GAP_MS, MAX_HAPTIC_TICK_GAP_MS))
-                .apply();
+        saveClampedInt(context, HAPTIC_TICK_GAP_MS, gapMs, MIN_HAPTIC_TICK_GAP_MS, MAX_HAPTIC_TICK_GAP_MS);
     }
 
     static boolean loadShowConsonantPreview(Context context) {
@@ -884,15 +862,11 @@ final class KeyboardPreferences {
     }
 
     static void saveShowConsonantPreview(Context context, boolean enabled) {
-        prefs(context).edit()
-                .putBoolean(SHOW_CONSONANT_PREVIEW, enabled)
-                .apply();
+        saveBoolean(context, SHOW_CONSONANT_PREVIEW, enabled);
     }
 
     static void saveShowVowelPreview(Context context, boolean enabled) {
-        prefs(context).edit()
-                .putBoolean(SHOW_VOWEL_PREVIEW, enabled)
-                .apply();
+        saveBoolean(context, SHOW_VOWEL_PREVIEW, enabled);
     }
 
     static boolean loadShowHangulConsonantSlideHints(Context context) {
@@ -916,21 +890,15 @@ final class KeyboardPreferences {
     }
 
     static void saveShowHangulConsonantSlideHints(Context context, boolean enabled) {
-        prefs(context).edit()
-                .putBoolean(SHOW_HANGUL_CONSONANT_SLIDE_HINTS, enabled)
-                .apply();
+        saveBoolean(context, SHOW_HANGUL_CONSONANT_SLIDE_HINTS, enabled);
     }
 
     static void saveShowHangulVowelSlideHints(Context context, boolean enabled) {
-        prefs(context).edit()
-                .putBoolean(SHOW_HANGUL_VOWEL_SLIDE_HINTS, enabled)
-                .apply();
+        saveBoolean(context, SHOW_HANGUL_VOWEL_SLIDE_HINTS, enabled);
     }
 
     static void saveShowSpacebarSlideHints(Context context, boolean enabled) {
-        prefs(context).edit()
-                .putBoolean(SHOW_SPACEBAR_SLIDE_HINTS, enabled)
-                .apply();
+        saveBoolean(context, SHOW_SPACEBAR_SLIDE_HINTS, enabled);
     }
 
     static void saveHandednessPreset(Context context, KeyboardSettings settings) {
@@ -950,9 +918,7 @@ final class KeyboardPreferences {
     }
 
     static void saveReservedPhrase(Context context, GestureAction action, String value) {
-        prefs(context).edit()
-                .putString(reservedPhraseKey(action), value == null ? "" : value)
-                .apply();
+        saveString(context, reservedPhraseKey(action), value);
     }
 
     static String loadReservedPhraseForCommand(Context context, String command) {
@@ -961,6 +927,18 @@ final class KeyboardPreferences {
 
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+    }
+
+    private static void saveBoolean(Context context, String key, boolean value) {
+        prefs(context).edit().putBoolean(key, value).apply();
+    }
+
+    private static void saveString(Context context, String key, String value) {
+        prefs(context).edit().putString(key, value == null ? "" : value).apply();
+    }
+
+    private static void saveClampedInt(Context context, String key, int value, int min, int max) {
+        prefs(context).edit().putInt(key, clamp(value, min, max)).apply();
     }
 
     private static JSONObject jsonObject(String json) {

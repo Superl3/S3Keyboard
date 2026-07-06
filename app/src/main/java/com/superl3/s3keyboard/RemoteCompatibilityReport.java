@@ -205,7 +205,7 @@ final class RemoteCompatibilityReport {
     }
 
     static Summary summarize(String packageName, List<RemoteCompatibilityLog.Entry> entries) {
-        String normalizedPackage = normalizePackage(packageName);
+        String normalizedPackage = AppPackageCatalog.normalizePackageName(packageName);
         Map<String, CaseStatus> statuses = new LinkedHashMap<>();
         for (RemoteCompatibilityMatrix.Case testCase : RemoteCompatibilityMatrix.all()) {
             statuses.put(testCase.label, new CaseStatus(testCase, null));
@@ -225,15 +225,11 @@ final class RemoteCompatibilityReport {
     }
 
     private static boolean samePackage(String expected, String actual) {
-        String normalizedActual = normalizePackage(actual);
+        String normalizedActual = AppPackageCatalog.normalizePackageName(actual);
         if (expected.isEmpty()) {
             return normalizedActual.isEmpty();
         }
         return expected.equals(normalizedActual);
-    }
-
-    private static String normalizePackage(String packageName) {
-        return packageName == null ? "" : packageName.trim();
     }
 
     static String appFamily(String packageName) {

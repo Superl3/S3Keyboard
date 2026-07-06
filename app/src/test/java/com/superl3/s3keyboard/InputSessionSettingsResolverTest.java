@@ -76,6 +76,26 @@ public final class InputSessionSettingsResolverTest {
     }
 
     @Test
+    public void urlFieldPrefersAsciiButKeepsHangulComposingAvailable() {
+        KeyboardSettings stored = KeyboardSettings.defaults().withKeyboardMode(KeyboardMode.HANGUL);
+        EditorInfo info = textInfo("com.sec.android.app.sbrowser");
+        info.inputType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI;
+
+        InputSessionSettings session = InputSessionSettingsResolver.resolve(
+                info,
+                stored,
+                false,
+                AppInputProfileOverrides.EMPTY,
+                "Go");
+
+        assertEquals("url", session.appInputProfile.id);
+        assertTrue(session.editorPolicy.preferAsciiLayout);
+        assertTrue(session.editorPolicy.allowComposingText);
+        assertFalse(session.editorPolicy.allowTextConveniences);
+        assertEquals(KeyboardMode.ENGLISH, session.runtimeSettings.keyboardMode);
+    }
+
+    @Test
     public void userPackageOverridesAreAppliedAfterBuiltInProfile() {
         KeyboardSettings stored = KeyboardSettings.defaults();
         EditorInfo info = textInfo("com.example.editor");

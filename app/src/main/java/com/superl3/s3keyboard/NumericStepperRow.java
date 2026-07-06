@@ -7,26 +7,23 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
-final class NumericStepperRow extends LinearLayout {
-    interface Listener {
-        void onValueChanged(int value);
-    }
+import java.util.function.IntConsumer;
 
+final class NumericStepperRow extends LinearLayout {
     private final EditText input;
     private final int maxValue;
-    private final Listener listener;
+    private final IntConsumer listener;
 
-    NumericStepperRow(Context context, int initialValue, int maxValue, Listener listener) {
+    NumericStepperRow(Context context, int initialValue, int maxValue, IntConsumer listener) {
         super(context);
         this.maxValue = maxValue;
-        this.listener = listener;
+        this.listener = RuntimeDefaults.intConsumer(listener);
         setOrientation(HORIZONTAL);
-        input = new EditText(context);
+        input = SettingsRowBuilder.editText(context);
         input.setSingleLine(true);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
         input.setImeOptions(EditorInfo.IME_ACTION_DONE);
         input.setSelectAllOnFocus(true);
-        SettingsViewStyler.editText(input, context);
         input.setText(String.valueOf(initialValue));
 
         Button minusButton = stepperButton(context, "-");
@@ -47,9 +44,9 @@ final class NumericStepperRow extends LinearLayout {
             }
         });
 
-        addView(minusButton, buttonParams());
-        addView(input, inputParams(context));
-        addView(plusButton, buttonParams());
+        addView(minusButton, SettingsRowBuilder.weightedWrap(context, 0.9f, 0, 0));
+        addView(input, SettingsRowBuilder.weightedWrap(context, 1.2f, 6, 6));
+        addView(plusButton, SettingsRowBuilder.weightedWrap(context, 0.9f, 0, 0));
     }
 
     EditText input() {
@@ -75,30 +72,13 @@ final class NumericStepperRow extends LinearLayout {
     private void setValue(int value, boolean notify) {
         int clamped = Math.max(0, Math.min(maxValue, value));
         input.setText(String.valueOf(clamped));
-        if (notify && listener != null) {
-            listener.onValueChanged(clamped);
+        if (notify) {
+            listener.accept(clamped);
         }
     }
 
     private static Button stepperButton(Context context, String text) {
-        Button button = new Button(context);
-        button.setText(text);
-        SettingsViewStyler.button(button, context, false);
-        return button;
+        return SettingsRowBuilder.button(context, text);
     }
 
-    private static LayoutParams buttonParams() {
-        return new LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.9f);
-    }
-
-    private static LayoutParams inputParams(Context context) {
-        LayoutParams params = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1.2f);
-        params.leftMargin = dp(context, 6);
-        params.rightMargin = dp(context, 6);
-        return params;
-    }
-
-    private static int dp(Context context, int value) {
-        return Math.round(value * context.getResources().getDisplayMetrics().density);
-    }
 }

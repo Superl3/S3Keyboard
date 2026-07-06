@@ -17,17 +17,17 @@ final class KeyboardSettingsModel {
         this.layout = layout;
         this.input = input;
         this.remote = remote;
-        this.ergonomics = ergonomics == null ? KeyboardErgonomicsOptions.DEFAULT : ergonomics;
+        this.ergonomics = RuntimeDefaults.keyboardErgonomics(ergonomics);
     }
 
     static KeyboardSettingsModel from(KeyboardSettings settings) {
-        return from(settings, KeyboardErgonomicsOptions.DEFAULT);
+        return from(settings, null);
     }
 
     static KeyboardSettingsModel from(
             KeyboardSettings settings,
             KeyboardErgonomicsOptions ergonomicsOptions) {
-        KeyboardSettings safe = settings == null ? KeyboardSettings.defaults() : settings;
+        KeyboardSettings safe = RuntimeDefaults.keyboardSettings(settings);
         return new KeyboardSettingsModel(
                 new Appearance(safe),
                 new Layout(safe),
