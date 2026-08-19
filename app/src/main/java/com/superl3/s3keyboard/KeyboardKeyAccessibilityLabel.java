@@ -78,6 +78,45 @@ final class KeyboardKeyAccessibilityLabel {
         return commandLabel;
     }
 
+    static String actionDescription(Context context, GestureAction action, String value) {
+        String display = displayValue(context, value);
+        if (action == null || isEmpty(display)) {
+            return null;
+        }
+        String actionLabel = actionLabel(context, action);
+        if (isEmpty(actionLabel)) {
+            return null;
+        }
+        return context == null
+                ? actionLabel + " " + display
+                : context.getString(
+                        R.string.keyboard_accessibility_custom_action_format,
+                        actionLabel,
+                        display);
+    }
+
+    private static String actionLabel(Context context, GestureAction action) {
+        switch (action) {
+            case TAP:
+                return stringFor(context, R.string.keyboard_accessibility_action_tap, "tap");
+            case UP:
+                return stringFor(context, R.string.keyboard_accessibility_action_up, "up");
+            case DOWN:
+                return stringFor(context, R.string.keyboard_accessibility_action_down, "down");
+            case LEFT:
+                return stringFor(context, R.string.keyboard_accessibility_action_left, "left");
+            case RIGHT:
+                return stringFor(context, R.string.keyboard_accessibility_action_right, "right");
+            case LONG_PRESS:
+                return stringFor(
+                        context,
+                        R.string.keyboard_accessibility_action_long_press,
+                        "long press");
+            default:
+                return null;
+        }
+    }
+
     private static void appendGesture(
             StringBuilder builder,
             String actionLabel,

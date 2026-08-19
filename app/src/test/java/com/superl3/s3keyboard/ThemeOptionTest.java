@@ -16,7 +16,7 @@ public final class ThemeOptionTest {
 
         ThemeOption[] options = ThemeOption.buildOptions(customThemes, true);
 
-        assertEquals("Current custom", options[0].label);
+        assertEquals("Current settings", options[0].label);
         assertEquals("", options[0].stableId());
         assertEquals(KeyboardThemePreset.PRESETS[0].displayName, options[1].label);
         assertEquals("My Theme", options[options.length - 1].label);
@@ -147,8 +147,12 @@ public final class ThemeOptionTest {
         assertEquals(1, ThemeOption.indexOfStableId(options, KeyboardThemePreset.PRESETS[0].id));
         assertEquals(options.length - 1, ThemeOption.indexOfStableId(options, "custom-1"));
         assertEquals(0, ThemeOption.indexOfStableId(options, "missing"));
-        assertEquals(-1, ThemeOption.indexOfStableId(options, "", -1));
+        assertEquals(0, ThemeOption.indexOfStableId(options, "", -1));
         assertEquals(-1, ThemeOption.indexOfStableId(options, "missing", -1));
+        assertEquals(-1, ThemeOption.indexOfStableId(
+                ThemeOption.buildOptions(null, false),
+                "",
+                -1));
     }
 
     @Test

@@ -121,8 +121,24 @@ public final class HangulAutomataTest {
     }
 
     @Test
-    public void repeatedNieunStaysTwoStandaloneConsonants() {
-        assertEquals("\u3134\u3134", type("\u3134\u3134"));
+    public void repeatedSimpleConsonantsNeverBecomeTenseAutomatically() {
+        assertEquals("ㄱㄱ", type("ㄱㄱ"));
+        assertEquals("ㄷㄷ", type("ㄷㄷ"));
+        assertEquals("ㅂㅂ", type("ㅂㅂ"));
+        assertEquals("ㅅㅅ", type("ㅅㅅ"));
+        assertEquals("ㅈㅈ", type("ㅈㅈ"));
+        assertEquals("각ㄱ", type("ㄱㅏㄱㄱ"));
+        assertEquals("갓ㅅ", type("ㄱㅏㅅㅅ"));
+    }
+
+    @Test
+    public void dingulOneFingerPracticePhraseComposes() {
+        assertEquals(
+                "\uB9CC\uB098\uC11C \uBC18\uAC00\uC6CC\uC694 \uD0C0\uAC01\uAE30 \uC5B4\uB54C\uC694",
+                type("\u3141\u314F\u3134\u3134\u314F\u3145\u3153 "
+                        + "\u3142\u314F\u3134\u3131\u314F\u3147\u315D\u3147\u315B "
+                        + "\u314C\u314F\u3131\u314F\u3131\u3131\u3163 "
+                        + "\u3147\u3153\u3138\u3150\u3147\u315B"));
     }
 
     private String type(String input) {

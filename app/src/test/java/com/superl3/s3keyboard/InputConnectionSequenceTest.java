@@ -35,7 +35,7 @@ public final class InputConnectionSequenceTest {
                 fake.connection(),
                 automata,
                 commitOnlyEditor);
-        InputConnectionTextOperator.deleteCommittedCodePoint(fake.connection());
+        InputConnectionTextOperator.deleteCommittedGrapheme(fake.connection());
         fake.performEditorActionResult = false;
         ImeConnectionDispatcher.performEnter(
                 fake.connection(),

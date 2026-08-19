@@ -95,6 +95,52 @@ public final class HangulCommitOnlyEditorTest {
         assertEquals("\uAC00", sink.text.toString());
     }
 
+    @Test
+    public void selectedRangeAlwaysBreaksFallbackCompositionEvenWithPendingOwnUpdates() {
+        HangulCommitOnlyEditor editor = new HangulCommitOnlyEditor();
+        TestSink sink = new TestSink();
+        HangulAutomata automata = new HangulAutomata();
+        editor.input(automata, "\u3131", sink);
+
+        assertTrue(editor.shouldAcceptExternalSelectionChange(
+                0,
+                0,
+                0,
+                2,
+                -1,
+                -1));
+    }
+
+    @Test
+    public void unexpectedCaretMoveIsNotConsumedByPendingOwnCommit() {
+        HangulCommitOnlyEditor editor = new HangulCommitOnlyEditor();
+        TestSink sink = new TestSink();
+        HangulAutomata automata = new HangulAutomata();
+        editor.input(automata, "\u3131", sink);
+
+        assertTrue(editor.shouldAcceptExternalSelectionChange(
+                1,
+                1,
+                0,
+                0,
+                -1,
+                -1));
+    }
+
+    @Test
+    public void coalescedDeleteAndReplacementCallbackConsumesBothExpectedDeltas() {
+        HangulCommitOnlyEditor editor = new HangulCommitOnlyEditor();
+        TestSink sink = new TestSink();
+        HangulAutomata automata = new HangulAutomata();
+        editor.input(automata, "\u3131", sink);
+        assertFalse(editor.shouldAcceptExternalSelectionChange(0, 0, 1, 1, -1, -1));
+
+        editor.input(automata, "\u314F", sink);
+
+        assertFalse(editor.shouldAcceptExternalSelectionChange(1, 1, 1, 1, -1, -1));
+        assertTrue(editor.shouldAcceptExternalSelectionChange(1, 1, 0, 0, -1, -1));
+    }
+
     private static final class TestSink implements HangulCommitOnlyEditor.Sink {
         final StringBuilder text = new StringBuilder();
 

@@ -70,7 +70,9 @@ final class KeyboardLayoutFactory {
             } else {
                 rows.addAll(safeProfiles.hangulLayout == KeyboardLayoutProfile.QWERTY
                         ? hangulQwertyRows()
-                        : hangulRows(safeSettings.hangulSpecialColumnPercent));
+                        : hangulRows(
+                                safeSettings.hangulSpecialColumnPercent,
+                                safeProfiles.dingulDotEnterKeyEnabled));
             }
         }
         rows.add(bottomRow(safeSettings));
@@ -218,11 +220,15 @@ final class KeyboardLayoutFactory {
     }
 
     private static GestureKey deleteKey(int widthUnits) {
+        return deleteKey("Del", widthUnits);
+    }
+
+    private static GestureKey deleteKey(String label, int widthUnits) {
         return new GestureKey(
-                "Del",
+                label,
                 KeyboardCommands.CMD_DELETE,
-                null,
-                null,
+                KeyboardCommands.CMD_DELETE,
+                KeyboardCommands.CMD_DELETE_WORD,
                 KeyboardCommands.CMD_DELETE_WORD,
                 null,
                 null,
@@ -234,7 +240,7 @@ final class KeyboardLayoutFactory {
         return GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, null, widthUnits, KeyIcon.ENTER);
     }
 
-    private static List<KeyboardRow> hangulRows(int specialColumnPercent) {
+    private static List<KeyboardRow> hangulRows(int specialColumnPercent, boolean dotEnterKeyEnabled) {
         int specialPercent = Math.max(
                 KeyboardSettings.MIN_HANGUL_SPECIAL_COLUMN_PERCENT,
                 Math.min(KeyboardSettings.MAX_HANGUL_SPECIAL_COLUMN_PERCENT, specialColumnPercent));
@@ -274,8 +280,21 @@ final class KeyboardLayoutFactory {
                 new KeyboardRow(Arrays.asList(
                         mainKey("ㅈ", "ㅈ", "ㅉ", "~", "ㅊ", "ㅊ", mainUnits),
                         mainKey("ㅎ", "ㅎ", "0", "8", "7", "9", mainUnits),
-                        enterKey(mainUnits),
+                        dotEnterKeyEnabled ? enterKey(mainUnits) : dotDotKey(mainUnits),
                         specialKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits));
+    }
+
+    private static GestureKey dotDotKey(int widthUnits) {
+        return new GestureKey(
+                ". .",
+                KeyboardCommands.CMD_SPACE,
+                "\u315B",
+                "\u3160",
+                "\u3155",
+                "\u3151",
+                null,
+                widthUnits,
+                KeyIcon.NONE);
     }
 
     private static List<KeyboardRow> hangulQwertyRows() {
@@ -671,6 +690,9 @@ final class KeyboardLayoutFactory {
     }
 
     private static GestureKey specialKey(String label, String command, int widthUnits) {
+        if (KeyboardCommands.CMD_DELETE.equals(command)) {
+            return deleteKey(label, widthUnits);
+        }
         return GestureKey.command(label, command, widthUnits);
     }
 

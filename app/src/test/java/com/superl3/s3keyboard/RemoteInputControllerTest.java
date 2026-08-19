@@ -72,6 +72,45 @@ public final class RemoteInputControllerTest {
     }
 
     @Test
+    public void lockedPendingAndExplicitModifiersComposeWithoutClearingTheLock() {
+        FakeRemoteState state = new FakeRemoteState();
+        RecordingKeySender sender = new RecordingKeySender();
+        RemoteInputController controller = newController(state, sender);
+
+        controller.handleCommand(null, KeyboardCommands.CMD_REMOTE_CTRL_LOCK);
+        controller.handleCommand(null, KeyboardCommands.CMD_REMOTE_ALT_LATCH);
+        controller.sendKey(null, KeyEvent.KEYCODE_A, KeyEvent.META_SHIFT_ON);
+
+        assertTrue((sender.last().metaState & KeyEvent.META_CTRL_ON) != 0);
+        assertTrue((sender.last().metaState & KeyEvent.META_ALT_ON) != 0);
+        assertTrue((sender.last().metaState & KeyEvent.META_SHIFT_ON) != 0);
+        assertEquals(0, controller.pendingMetaState());
+        assertTrue((controller.lockedMetaState() & KeyEvent.META_CTRL_ON) != 0);
+        assertEquals(controller.lockedMetaState(), state.lastLockedMetaState);
+    }
+
+    @Test
+    public void imeToggleClearsExistingModifiersBeforeSendingItsOwnShortcut() {
+        FakeRemoteState state = new FakeRemoteState();
+        state.shortcut = RemoteImeShortcut.WIN_SPACE;
+        RecordingKeySender sender = new RecordingKeySender();
+        RemoteInputController controller = newController(state, sender);
+
+        controller.handleCommand(null, KeyboardCommands.CMD_REMOTE_CTRL_LOCK);
+        controller.handleCommand(null, KeyboardCommands.CMD_REMOTE_ALT_LATCH);
+        controller.handleCommand(null, KeyboardCommands.CMD_REMOTE_IME_TOGGLE);
+
+        assertEquals(KeyEvent.KEYCODE_SPACE, sender.last().keyCode);
+        assertTrue((sender.last().metaState & KeyEvent.META_META_ON) != 0);
+        assertEquals(0, sender.last().metaState & KeyEvent.META_CTRL_ON);
+        assertEquals(0, sender.last().metaState & KeyEvent.META_ALT_ON);
+        assertEquals(0, controller.pendingMetaState());
+        assertEquals(0, controller.lockedMetaState());
+        assertEquals(0, state.lastPendingMetaState);
+        assertEquals(0, state.lastLockedMetaState);
+    }
+
+    @Test
     public void remoteCursorKeysBypassLocalEditorBoundaryChecks() {
         FakeRemoteState state = new FakeRemoteState();
         RecordingKeySender sender = new RecordingKeySender();

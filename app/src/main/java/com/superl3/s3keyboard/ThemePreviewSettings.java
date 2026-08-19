@@ -18,7 +18,7 @@ final class ThemePreviewSettings {
             AccentPlacementPolicy accentPlacementPolicy) {
         KeyboardSettings preview = applyPreviewAppearance(option, baseSettings)
                 .withKeyboardMode(mode)
-                .withHintVisibility(false, false, false)
+                .withHintVisibility(true, true, false)
                 .withHangulNumberRow(false)
                 .withEnglishNumberRow(true);
         AccentPlacementPolicy policy = accentPlacementPolicy == null

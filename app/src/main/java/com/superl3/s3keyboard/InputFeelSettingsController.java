@@ -31,39 +31,64 @@ final class InputFeelSettingsController {
     }
 
     void addTo(LinearLayout root) {
-        hapticSettingsController = new HapticSettingsController(
+        LinearLayout touchSection = SettingsSubsection.add(
                 context,
-                settings,
-                settingsSaver,
-                controlsSyncer);
-        hapticSettingsController.addTo(root);
-
+                root,
+                R.string.settings_input_touch_subsection,
+                true).content;
         gestureTouchSettingsController = new GestureTouchSettingsController(
                 context,
                 settings,
                 settingsSaver,
                 controlsSyncer);
-        gestureTouchSettingsController.addTo(root);
+        gestureTouchSettingsController.addTo(touchSection);
 
-        repeatSettingsController = new RepeatSettingsController(
+        LinearLayout convenienceSection = SettingsSubsection.add(
                 context,
-                settings,
-                settingsSaver);
-        repeatSettingsController.addTo(root);
-
+                root,
+                R.string.settings_input_convenience_subsection,
+                false).content;
         inputConvenienceSettingsController = new InputConvenienceSettingsController(
                 context,
                 settings,
                 settingsSaver,
                 controlsSyncer,
                 () -> localDataControlsController);
-        inputConvenienceSettingsController.addTo(root);
+        inputConvenienceSettingsController.addTo(convenienceSection);
 
+        LinearLayout hapticSection = SettingsSubsection.add(
+                context,
+                root,
+                R.string.settings_input_haptic_subsection,
+                false).content;
+        hapticSettingsController = new HapticSettingsController(
+                context,
+                settings,
+                settingsSaver,
+                controlsSyncer);
+        hapticSettingsController.addTo(hapticSection);
+
+        LinearLayout repeatSection = SettingsSubsection.add(
+                context,
+                root,
+                R.string.settings_input_repeat_subsection,
+                false).content;
+        repeatSettingsController = new RepeatSettingsController(
+                context,
+                settings,
+                settingsSaver);
+        repeatSettingsController.addTo(repeatSection);
+
+        LinearLayout dataSection = SettingsSubsection.add(
+                context,
+                root,
+                R.string.settings_input_data_subsection,
+                false).content;
         localDataSettingsController = new LocalDataSettingsController(
                 context,
                 () -> localDataControlsController,
                 controlsSyncer);
-        localDataSettingsController.addTo(root);
+        localDataSettingsController.addTo(dataSection);
     }
 
     void sync(KeyboardSettings settings) {

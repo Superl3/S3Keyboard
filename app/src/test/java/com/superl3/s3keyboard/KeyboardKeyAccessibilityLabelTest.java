@@ -48,4 +48,26 @@ public final class KeyboardKeyAccessibilityLabelTest {
         assertEquals(KeyboardCommands.CMD_CLIPBOARD_PANEL, key.tap);
         assertFalse("Assist rail must not carry English display labels.", "Clip".equals(key.label));
     }
+
+    @Test
+    public void customAccessibilityActionNamesTheGestureAndExactMappedValue() {
+        assertEquals(
+                "up A",
+                KeyboardKeyAccessibilityLabel.actionDescription(
+                        null,
+                        GestureAction.UP,
+                        "A"));
+        assertEquals(
+                "long press !",
+                KeyboardKeyAccessibilityLabel.actionDescription(
+                        null,
+                        GestureAction.LONG_PRESS,
+                        "!"));
+        assertEquals(
+                null,
+                KeyboardKeyAccessibilityLabel.actionDescription(
+                        null,
+                        GestureAction.LEFT,
+                        null));
+    }
 }

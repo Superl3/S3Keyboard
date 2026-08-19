@@ -29,11 +29,6 @@ final class LocalDataSettingsController {
 
         dingulInputDiagnosticsValue = SettingsRowBuilder.bodyLabelRow(context, root, "", 6);
 
-        SettingsRowBuilder.labelRow(context, root, R.string.practice_mode_section, 12);
-        root.addView(
-                PracticeModeController.createPanel(context),
-                SettingsRowBuilder.matchWrapWithTop(context, 6));
-
         addResetButton(
                 root,
                 R.string.clear_all_local_data,

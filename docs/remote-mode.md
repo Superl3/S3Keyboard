@@ -20,12 +20,26 @@
   smoke reports can compare compatibility by app family instead of collapsing
   every target into one generic remote profile.
 - When enabled, the keyboard keeps the normal input engine but overlays a Windows-oriented runtime layout. It must not mutate the saved Hangul/English number-row visibility preferences or theme/icon choices.
+- Quick theme selection and clipboard theme import load the persisted settings
+  as their save base, then reapply the active app session's Remote/language/
+  forced-number-row state only to the live keyboard. Remote and number-row quick
+  toggles persist only their own preference keys, so an auto-remote session
+  cannot accidentally turn its temporary QWERTY/number-row policy into the
+  global default.
 - The overlay always uses the PC QWERTY surface while remote mode is enabled, even if the saved local language mode is Hangul. Leaving remote mode restores the normal saved layout choice.
 - The current target is remote desktop style apps that accept Android IME `InputConnection.sendKeyEvent(...)` events and forward them to Windows. Modifier shortcuts are sent as explicit modifier down, main key down/up, modifier up sequences instead of relying only on a key event meta state.
+- Ctrl, Win, Alt, and Shift can be composed in one chord. Android-side tests verify
+  all modifier downs before the main key, reverse-order modifier ups, matching
+  `downTime` values, one-shot consumption, and locked-modifier persistence.
+  The configured remote IME shortcut first clears pending/locked modifiers and
+  then sends only its own Alt+Shift, Ctrl+Space, Win+Space, or LanguageSwitch
+  sequence so an earlier latch cannot contaminate the language command.
 - Remote mode forces fixed text labels only for the visible PC modifier keys: `Ctrl`, `Win`, and `Alt`. Shift, Backspace, Space, Lang, Menu, and Enter keep the normal icon/display-pack rendering path. The Menu key still exposes quick settings, and Menu long press remains the local escape path to app settings.
-- When remote mode is on, quick settings exposes a compatibility test pad for
+- When remote mode is on, quick settings exposes a collapsed compatibility test pad for
   `Esc`, `Tab`, `Shift+Tab`, `Ctrl+Tab`, `Alt+Tab`, `Ctrl+A`, `F1..F12`,
-  `Alt+Shift`, `Ctrl+Space`, `Win+Space`, and `LanguageSwitch`. Each press is
+  `Alt+Shift`, `Ctrl+Space`, `Win+Space`, and `LanguageSwitch`. Expanding
+  `원격 키 전달 테스트` reveals the pad without pushing normal quick toggles out
+  of the initial view. Each press is
   logged locally with package name, label, key code, meta state, timestamp, and
   accepted local `InputConnection` event count. Reports also include the
   expected generated event count for that shortcut and mark local transport as

@@ -212,7 +212,7 @@ final class EnglishQwertyCorrectionEngine {
         corrections.put("thta", "that");
         corrections.put("wiht", "with");
         corrections.put("wih", "with");
-        corrections.put("youre", "your");
+        corrections.put("youre", "you're");
         corrections.put("ypu", "you");
         corrections.put("yuo", "you");
         corrections.put("gppd", "good");

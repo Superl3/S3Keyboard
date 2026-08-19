@@ -24,6 +24,7 @@ final class ClipboardStore {
     private static final String KEY_ENABLED = KeyboardPreferences.CLIPBOARD_HISTORY_ENABLED;
     private static final String SEPARATOR = "\u001F"; // Unit separator
     static final int MAX_ENTRIES = 10;
+    static final int MAX_ENTRY_LENGTH = 4096;
 
     private final SharedPreferences preferences;
 
@@ -53,12 +54,13 @@ final class ClipboardStore {
      * Duplicates are moved to the front.
      */
     void add(String text) {
-        if (text == null || text.isEmpty() || !isEnabled()) {
+        String storable = storableEntry(text);
+        if (storable == null || !isEnabled()) {
             return;
         }
         List<String> entries = load();
-        entries.remove(text);
-        entries.add(0, text);
+        entries.remove(storable);
+        entries.add(0, storable);
         while (entries.size() > MAX_ENTRIES) {
             entries.remove(entries.size() - 1);
         }
@@ -99,8 +101,12 @@ final class ClipboardStore {
         }
         String[] parts = raw.split(SEPARATOR, -1);
         for (String part : parts) {
-            if (!part.isEmpty()) {
-                entries.add(part);
+            String storable = storableEntry(part);
+            if (storable != null) {
+                entries.add(storable);
+                if (entries.size() >= MAX_ENTRIES) {
+                    break;
+                }
             }
         }
         return entries;
@@ -108,12 +114,28 @@ final class ClipboardStore {
 
     private void save(List<String> entries) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < entries.size(); i++) {
-            if (i > 0) {
+        int written = 0;
+        for (String entry : entries) {
+            String storable = storableEntry(entry);
+            if (storable == null) {
+                continue;
+            }
+            if (written > 0) {
                 sb.append(SEPARATOR);
             }
-            sb.append(entries.get(i).replace(SEPARATOR, " "));
+            sb.append(storable);
+            written++;
+            if (written >= MAX_ENTRIES) {
+                break;
+            }
         }
         preferences.edit().putString(KEY_ENTRIES, sb.toString()).apply();
+    }
+
+    static String storableEntry(String text) {
+        if (text == null || text.isEmpty() || text.length() > MAX_ENTRY_LENGTH) {
+            return null;
+        }
+        return text.replace(SEPARATOR, " ");
     }
 }

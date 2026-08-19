@@ -13,6 +13,7 @@ final class KeyboardDebugOverlayRenderer {
     private static final int HIT_RECT_COLOR = 0xFFFF5C5C;
     private static final int VISUAL_RECT_COLOR = 0xFF35D07F;
     private static final int ORIGIN_COLOR = 0xFF39C8FF;
+    private static final int ACTIVE_ORIGIN_COLOR = 0xFFFF8A3D;
     private static final int TOUCH_COLOR = 0xFFFFD84A;
     private static final int TOUCH_OUTLINE_COLOR = 0xFF2B2B2B;
 
@@ -28,10 +29,15 @@ final class KeyboardDebugOverlayRenderer {
             float renderScale,
             float lastDownX,
             float lastDownY,
+            float gestureOriginX,
+            float gestureOriginY,
             String lastKeyId,
             GestureAction lastAction,
             GestureCandidateScore candidateScore,
-            int edgeRailDirection) {
+            int edgeRailDirection,
+            String oneFingerState,
+            String oneFingerTarget,
+            String oneFingerPendingTimer) {
         float stroke = Math.max(1f, dp(1, density, renderScale));
         float radius = Math.max(0f, dp(settings.keyRoundnessDp, density, renderScale));
         String safeLastKeyId = RuntimeDefaults.stringOrDefault(lastKeyId, "");
@@ -44,6 +50,15 @@ final class KeyboardDebugOverlayRenderer {
         if (!Float.isNaN(lastDownX) && !Float.isNaN(lastDownY)) {
             drawLastTouch(canvas, lastDownX, lastDownY, stroke, density, renderScale);
         }
+        if (!Float.isNaN(gestureOriginX) && !Float.isNaN(gestureOriginY)) {
+            drawOrigin(
+                    canvas,
+                    gestureOriginX,
+                    gestureOriginY,
+                    ACTIVE_ORIGIN_COLOR,
+                    density,
+                    renderScale);
+        }
         drawLegend(
                 canvas,
                 density,
@@ -52,7 +67,10 @@ final class KeyboardDebugOverlayRenderer {
                 safeLastKeyId,
                 lastAction,
                 candidateScore,
-                edgeRailDirection);
+                edgeRailDirection,
+                oneFingerState,
+                oneFingerTarget,
+                oneFingerPendingTimer);
     }
 
     private void drawRect(
@@ -116,13 +134,26 @@ final class KeyboardDebugOverlayRenderer {
             String lastKeyId,
             GestureAction lastAction,
             GestureCandidateScore candidateScore,
-            int edgeRailDirection) {
+            int edgeRailDirection,
+            String oneFingerState,
+            String oneFingerTarget,
+            String oneFingerPendingTimer) {
         String info = "debug key bounds  key="
                 + (lastKeyId.isEmpty() ? "-" : lastKeyId)
                 + "  action="
                 + (lastAction == null ? GestureAction.TAP : lastAction).name()
                 + "  rail="
                 + edgeDirectionText(edgeRailDirection);
+        String safeOneFingerState = RuntimeDefaults.stringOrDefault(oneFingerState, "");
+        if (!safeOneFingerState.isEmpty()
+                && !"IDLE".equals(safeOneFingerState)) {
+            info += "  flow=" + safeOneFingerState
+                    + " target=" + RuntimeDefaults.stringOrDefault(oneFingerTarget, "-");
+            String pendingTimer = RuntimeDefaults.stringOrDefault(oneFingerPendingTimer, "-");
+            if (!"-".equals(pendingTimer)) {
+                info += " pending=" + pendingTimer;
+            }
+        }
         if (candidateScore != null && candidateScore.isPresent()) {
             info += "  candidate="
                     + candidateScore.keyId

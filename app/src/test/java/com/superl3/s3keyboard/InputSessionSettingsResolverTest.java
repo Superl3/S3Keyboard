@@ -35,6 +35,34 @@ public final class InputSessionSettingsResolverTest {
     }
 
     @Test
+    public void leavingAutoRemotePackageRestoresStoredLocalSessionState() {
+        KeyboardSettings stored = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.HANGUL)
+                .withRemoteOptions(false, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT)
+                .withHangulNumberRow(false);
+
+        InputSessionSettings remoteSession = InputSessionSettingsResolver.resolve(
+                textInfo("com.limelight"),
+                stored,
+                true,
+                AppInputProfileOverrides.EMPTY,
+                "Send");
+        InputSessionSettings localSession = InputSessionSettingsResolver.resolve(
+                textInfo("com.example.notes"),
+                stored,
+                false,
+                AppInputProfileOverrides.EMPTY,
+                "Send");
+
+        assertTrue(remoteSession.runtimeSettings.remoteModeEnabled);
+        assertEquals(KeyboardMode.ENGLISH, remoteSession.runtimeSettings.keyboardMode);
+        assertTrue(remoteSession.runtimeSettings.showNumberRow);
+        assertFalse(localSession.runtimeSettings.remoteModeEnabled);
+        assertEquals(KeyboardMode.HANGUL, localSession.runtimeSettings.keyboardMode);
+        assertFalse(localSession.runtimeSettings.showNumberRow);
+    }
+
+    @Test
     public void storedRemoteModeUsesRemoteProfileButIsNotAutoActivated() {
         KeyboardSettings stored = KeyboardSettings.defaults()
                 .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.CTRL_SPACE);

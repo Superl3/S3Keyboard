@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="settings_subsection_tag" type="id" />
+    <item name="keyboard_accessibility_swipe_up" type="id" />
+    <item name="keyboard_accessibility_swipe_down" type="id" />
+    <item name="keyboard_accessibility_swipe_left" type="id" />
+    <item name="keyboard_accessibility_swipe_right" type="id" />
+</resources>

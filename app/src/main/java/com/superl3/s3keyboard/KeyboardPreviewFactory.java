@@ -8,12 +8,11 @@ final class KeyboardPreviewFactory {
     }
 
     static HangulKeyboardView nonInteractive(Context context, KeyboardSettings settings) {
-        HangulKeyboardView preview = new HangulKeyboardView(context);
+        HangulKeyboardView preview = new HangulKeyboardView(context, true);
         preview.setCompactPreviewRendering(true);
         preview.setSettings(RuntimeDefaults.keyboardSettings(settings));
-        preview.setClickable(true);
+        preview.setEnabled(false);
         preview.setFocusable(false);
-        preview.setOnTouchListener((v, event) -> true);
         preview.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         return preview;
     }

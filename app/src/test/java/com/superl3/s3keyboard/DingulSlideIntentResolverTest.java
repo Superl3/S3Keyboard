@@ -207,7 +207,7 @@ public final class DingulSlideIntentResolverTest {
                 if (key == LOWER_TAP_ONLY_KEY && action != GestureAction.TAP) {
                     return false;
                 }
-                String value = key.valueFor(action);
+                String value = key.mappedValueFor(action);
                 return value != null && !value.isEmpty();
             }
         };

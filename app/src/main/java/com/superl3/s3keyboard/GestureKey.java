@@ -73,15 +73,28 @@ final class GestureKey {
     }
 
     String valueFor(GestureAction action) {
+        String mapped = mappedValueFor(action);
         switch (action) {
             case UP:
-                return fallback(upSlide);
             case DOWN:
-                return fallback(downSlide);
             case LEFT:
-                return fallback(leftSlide);
             case RIGHT:
-                return fallback(rightSlide);
+                return fallback(mapped);
+            default:
+                return mapped;
+        }
+    }
+
+    String mappedValueFor(GestureAction action) {
+        switch (action) {
+            case UP:
+                return upSlide;
+            case DOWN:
+                return downSlide;
+            case LEFT:
+                return leftSlide;
+            case RIGHT:
+                return rightSlide;
             case LONG_PRESS:
                 return longPress;
             case TAP:

@@ -3,6 +3,7 @@ package com.superl3.s3keyboard;
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 
 import java.util.function.BooleanSupplier;
@@ -16,6 +17,9 @@ final class QuickSettingsPanelController {
     private final Supplier<KeyboardSettings> settings;
     private final Supplier<String> remoteModeToggleLabel;
     private final Runnable remoteModeToggler;
+    private final Supplier<String> singleTapCommitModeToggleLabel;
+    private final BooleanSupplier singleTapCommitModeEnabled;
+    private final Runnable singleTapCommitModeToggler;
     private final Supplier<String> numberRowToggleLabel;
     private final BooleanSupplier activeNumberRowVisible;
     private final Runnable activeNumberRowToggler;
@@ -31,6 +35,9 @@ final class QuickSettingsPanelController {
             Supplier<KeyboardSettings> settings,
             Supplier<String> remoteModeToggleLabel,
             Runnable remoteModeToggler,
+            Supplier<String> singleTapCommitModeToggleLabel,
+            BooleanSupplier singleTapCommitModeEnabled,
+            Runnable singleTapCommitModeToggler,
             Supplier<String> numberRowToggleLabel,
             BooleanSupplier activeNumberRowVisible,
             Runnable activeNumberRowToggler,
@@ -44,6 +51,10 @@ final class QuickSettingsPanelController {
         this.settings = RuntimeDefaults.keyboardSettingsSupplier(settings);
         this.remoteModeToggleLabel = RuntimeDefaults.emptyStringSupplier(remoteModeToggleLabel);
         this.remoteModeToggler = RuntimeDefaults.runnable(remoteModeToggler);
+        this.singleTapCommitModeToggleLabel =
+                RuntimeDefaults.emptyStringSupplier(singleTapCommitModeToggleLabel);
+        this.singleTapCommitModeEnabled = RuntimeDefaults.booleanSupplier(singleTapCommitModeEnabled);
+        this.singleTapCommitModeToggler = RuntimeDefaults.runnable(singleTapCommitModeToggler);
         this.numberRowToggleLabel = RuntimeDefaults.emptyStringSupplier(numberRowToggleLabel);
         this.activeNumberRowVisible = RuntimeDefaults.booleanSupplier(activeNumberRowVisible);
         this.activeNumberRowToggler = RuntimeDefaults.runnable(activeNumberRowToggler);
@@ -74,29 +85,6 @@ final class QuickSettingsPanelController {
                 QuickPanelUi.titleLabel(context, R.string.quick_settings_title),
                 0);
 
-        QuickPanelUi.addWithTop(
-                context,
-                panel,
-                QuickPanelUi.quickButton(
-                        context,
-                        remoteModeToggleLabel.get(),
-                        currentSettings.remoteModeEnabled,
-                        v -> remoteModeToggler.run()),
-                8);
-        if (currentSettings.remoteModeEnabled && remoteCompatibilityPanelController != null) {
-            remoteCompatibilityPanelController.addTo(panel);
-        }
-
-        QuickPanelUi.addWithTop(
-                context,
-                panel,
-                QuickPanelUi.quickButton(
-                        context,
-                        numberRowToggleLabel.get(),
-                        activeNumberRowVisible.getAsBoolean(),
-                        v -> activeNumberRowToggler.run()),
-                8);
-
         LinearLayout handRow = QuickPanelUi.row(context);
         handRow.addView(
                 handednessButton(
@@ -116,7 +104,27 @@ final class QuickSettingsPanelController {
                         HandednessMode.RIGHT,
                         currentSettings),
                 QuickPanelUi.weightedParams(context, 0, 0));
-        QuickPanelUi.addWithTop(context, panel, handRow, 6);
+        QuickPanelUi.addWithTop(context, panel, handRow, 8);
+
+        QuickPanelUi.addWithTop(
+                context,
+                panel,
+                QuickPanelUi.quickButton(
+                        context,
+                        singleTapCommitModeToggleLabel.get(),
+                        singleTapCommitModeEnabled.getAsBoolean(),
+                        v -> singleTapCommitModeToggler.run()),
+                8);
+
+        QuickPanelUi.addWithTop(
+                context,
+                panel,
+                QuickPanelUi.quickButton(
+                        context,
+                        numberRowToggleLabel.get(),
+                        activeNumberRowVisible.getAsBoolean(),
+                        v -> activeNumberRowToggler.run()),
+                8);
 
         if (quickThemePanelController != null) {
             quickThemePanelController.addTo(panel);
@@ -127,19 +135,44 @@ final class QuickSettingsPanelController {
                 panel,
                 QuickPanelUi.quickButton(
                         context,
-                        context.getString(R.string.import_theme_from_clipboard),
-                        false,
-                        v -> themeClipboardImporter.run()),
-                6);
-        QuickPanelUi.addWithTop(
-                context,
+                        remoteModeToggleLabel.get(),
+                        currentSettings.remoteModeEnabled,
+                        v -> remoteModeToggler.run()),
+                8);
+        if (currentSettings.remoteModeEnabled && remoteCompatibilityPanelController != null) {
+            addDisclosureSection(
+                    panel,
+                    R.string.quick_settings_remote_test_open,
+                    R.string.quick_settings_remote_test_close,
+                    6,
+                    remoteCompatibilityPanelController::addTo);
+        }
+
+        addDisclosureSection(
                 panel,
-                QuickPanelUi.quickButton(
-                        context,
-                        context.getString(R.string.copy_input_issue_report),
-                        false,
-                        v -> inputIssueReportCopier.run()),
-                6);
+                R.string.quick_settings_tools_open,
+                R.string.quick_settings_tools_close,
+                6,
+                tools -> {
+                    QuickPanelUi.addWithTop(
+                            context,
+                            tools,
+                            QuickPanelUi.quickButton(
+                                    context,
+                                    context.getString(R.string.import_theme_from_clipboard),
+                                    false,
+                                    v -> themeClipboardImporter.run()),
+                            6);
+                    QuickPanelUi.addWithTop(
+                            context,
+                            tools,
+                            QuickPanelUi.quickButton(
+                                    context,
+                                    context.getString(R.string.copy_input_issue_report),
+                                    false,
+                                    v -> inputIssueReportCopier.run()),
+                            6);
+                });
         QuickPanelUi.addWithTop(
                 context,
                 panel,
@@ -160,6 +193,30 @@ final class QuickSettingsPanelController {
             handednessApplier.accept(mode);
             dismissQuickSettings.run();
         });
+    }
+
+    private void addDisclosureSection(
+            LinearLayout panel,
+            int openLabelResId,
+            int closeLabelResId,
+            int topMarginDp,
+            Consumer<LinearLayout> contentBuilder) {
+        LinearLayout content = SettingsRowBuilder.vertical(context);
+        content.setVisibility(View.GONE);
+        Button toggle = QuickPanelUi.quickButton(
+                context,
+                context.getString(openLabelResId),
+                false,
+                null);
+        toggle.setOnClickListener(view -> {
+            boolean expanded = content.getVisibility() != View.VISIBLE;
+            content.setVisibility(expanded ? View.VISIBLE : View.GONE);
+            toggle.setText(expanded ? closeLabelResId : openLabelResId);
+            SettingsViewStyler.button(toggle, context, expanded);
+        });
+        QuickPanelUi.addWithTop(context, panel, toggle, topMarginDp);
+        RuntimeDefaults.consumer(contentBuilder).accept(content);
+        panel.addView(content, SettingsRowBuilder.matchWrap());
     }
 
 }

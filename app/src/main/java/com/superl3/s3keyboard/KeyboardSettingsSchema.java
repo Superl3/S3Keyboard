@@ -77,9 +77,9 @@ final class KeyboardSettingsSchema {
         List<Entry> entries = new ArrayList<>();
 
         add(entries, Section.LAYOUT,
-                KeyboardPreferences.KEYBOARD_MODE_LAST,
                 KeyboardPreferences.HANGUL_LAYOUT_PROFILE,
                 KeyboardPreferences.ENGLISH_LAYOUT_PROFILE,
+                KeyboardPreferences.DINGUL_DOT_ENTER_KEY_ENABLED,
                 KeyboardPreferences.HANDEDNESS_MODE,
                 KeyboardPreferences.LEFT_MARGIN_DP,
                 KeyboardPreferences.RIGHT_MARGIN_DP,
@@ -92,16 +92,18 @@ final class KeyboardSettingsSchema {
                 KeyboardPreferences.KEYBOARD_BOTTOM_PADDING_DP,
                 KeyboardPreferences.BOTTOM_ROW_TOP_PADDING_DP,
                 KeyboardPreferences.NUMBER_ROW_BOTTOM_GAP_DP,
-                KeyboardPreferences.KEYBOARD_HEIGHT_DP,
                 KeyboardPreferences.HANGUL_KEYBOARD_HEIGHT_DP,
                 KeyboardPreferences.ENGLISH_KEYBOARD_HEIGHT_DP,
-                KeyboardPreferences.SHOW_NUMBER_ROW,
                 KeyboardPreferences.SHOW_HANGUL_NUMBER_ROW,
                 KeyboardPreferences.SHOW_ENGLISH_NUMBER_ROW,
                 KeyboardPreferences.ADDITIONAL_NUMBER_ROW_COLOR_MODE,
-                KeyboardPreferences.HANGUL_SPECIAL_COLUMN_PERCENT,
-                KeyboardPreferences.HANGUL_MAIN_KEY_UNITS,
-                KeyboardPreferences.FLOATING_MODE_ENABLED);
+                KeyboardPreferences.HANGUL_SPECIAL_COLUMN_PERCENT);
+        add(entries, Section.LAYOUT, StorageRisk.NONE, false,
+                KeyboardPreferences.KEYBOARD_MODE_LAST);
+        add(entries, Section.LEGACY, StorageRisk.NONE, false,
+                KeyboardPreferences.KEYBOARD_HEIGHT_DP,
+                KeyboardPreferences.SHOW_NUMBER_ROW,
+                KeyboardPreferences.HANGUL_MAIN_KEY_UNITS);
 
         add(entries, Section.APPEARANCE,
                 KeyboardPreferences.KEY_IDLE_COLOR,
@@ -143,14 +145,11 @@ final class KeyboardSettingsSchema {
                 KeyboardPreferences.SINGLE_TAP_START_HOLD_MS,
                 KeyboardPreferences.SINGLE_TAP_COMMIT_HOLD_MS,
                 KeyboardPreferences.ENGLISH_DOUBLE_SPACE_PERIOD_ENABLED,
-                KeyboardPreferences.SHOW_HANGUL_SLIDE_HINTS,
                 KeyboardPreferences.SHOW_ENGLISH_SLIDE_HINTS,
                 KeyboardPreferences.SHOW_HANGUL_CONSONANT_SLIDE_HINTS,
                 KeyboardPreferences.SHOW_HANGUL_VOWEL_SLIDE_HINTS,
                 KeyboardPreferences.SHOW_SPACEBAR_SLIDE_HINTS,
                 KeyboardPreferences.SHOW_BEGINNER_TOOLTIP_PREVIEW,
-                KeyboardPreferences.SHOW_CONSONANT_PREVIEW,
-                KeyboardPreferences.SHOW_VOWEL_PREVIEW,
                 KeyboardPreferences.HAPTIC_TICK_DURATION_MS,
                 KeyboardPreferences.HAPTIC_TICK_GAP_MS,
                 KeyboardPreferences.DIFFERENTIATED_HAPTIC_ENABLED,
@@ -159,6 +158,10 @@ final class KeyboardSettingsSchema {
                 KeyboardPreferences.DINGUL_VOWEL_GESTURE_PROFILE,
                 KeyboardPreferences.INPUT_ASSISTANCE_MODE,
                 KeyboardPreferences.SPACEBAR_CURSOR_DEAD_ZONE_DP);
+        add(entries, Section.LEGACY, StorageRisk.NONE, false,
+                KeyboardPreferences.SHOW_HANGUL_SLIDE_HINTS,
+                KeyboardPreferences.SHOW_CONSONANT_PREVIEW,
+                KeyboardPreferences.SHOW_VOWEL_PREVIEW);
 
         add(entries, Section.THEME,
                 KeyboardPreferences.ACCENT_PLACEMENT_MODE,
@@ -195,8 +198,9 @@ final class KeyboardSettingsSchema {
         add(entries, Section.PRIVACY_DEBUG, StorageRisk.LOCAL_DIAGNOSTIC, true,
                 KeyboardPreferences.DEBUG_KEY_BOUNDS_OVERLAY_ENABLED,
                 KeyboardPreferences.DEBUG_SHOW_RESOLVER_SCORES,
-                KeyboardPreferences.INPUT_LEARNING_EPOCH,
                 KeyboardPreferences.SHOW_CURRENT_APP_PROFILE);
+        add(entries, Section.PRIVACY_DEBUG, StorageRisk.NONE, false,
+                KeyboardPreferences.INPUT_LEARNING_EPOCH);
         add(entries, Section.PRIVACY_DEBUG, StorageRisk.LOCAL_TEXT, false,
                 ClipboardStore.KEY_ENTRIES,
                 TouchBiasStore.TYPING_EVENT_JOURNAL);

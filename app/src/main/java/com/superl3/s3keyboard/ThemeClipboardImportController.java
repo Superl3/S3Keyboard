@@ -11,6 +11,7 @@ import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
 final class ThemeClipboardImportController {
+    private final Supplier<KeyboardSettings> storedSettings;
     private final Supplier<KeyboardSettings> currentSettings;
     private final Supplier<String> enterKeyLabel;
     private final BooleanSupplier forceNumberRow;
@@ -28,6 +29,7 @@ final class ThemeClipboardImportController {
             Consumer<KeyboardSettings> runtimeSettingsApplier,
             Runnable dismissQuickSettings) {
         this(
+                () -> KeyboardPreferences.load(context),
                 currentSettings,
                 enterKeyLabel,
                 forceNumberRow,
@@ -50,6 +52,29 @@ final class ThemeClipboardImportController {
             Supplier<String> clipboardTextReader,
             Consumer<KeyboardSettings> settingsStore,
             IntConsumer notifier) {
+        this(
+                currentSettings,
+                currentSettings,
+                enterKeyLabel,
+                forceNumberRow,
+                runtimeSettingsApplier,
+                dismissQuickSettings,
+                clipboardTextReader,
+                settingsStore,
+                notifier);
+    }
+
+    ThemeClipboardImportController(
+            Supplier<KeyboardSettings> storedSettings,
+            Supplier<KeyboardSettings> currentSettings,
+            Supplier<String> enterKeyLabel,
+            BooleanSupplier forceNumberRow,
+            Consumer<KeyboardSettings> runtimeSettingsApplier,
+            Runnable dismissQuickSettings,
+            Supplier<String> clipboardTextReader,
+            Consumer<KeyboardSettings> settingsStore,
+            IntConsumer notifier) {
+        this.storedSettings = RuntimeDefaults.keyboardSettingsSupplier(storedSettings);
         this.currentSettings = RuntimeDefaults.keyboardSettingsSupplier(currentSettings);
         this.enterKeyLabel = RuntimeDefaults.nullStringSupplier(enterKeyLabel);
         this.forceNumberRow = RuntimeDefaults.booleanSupplier(forceNumberRow);
@@ -67,15 +92,16 @@ final class ThemeClipboardImportController {
             return;
         }
         try {
-            KeyboardSettings current = RuntimeDefaults.keyboardSettingsFrom(currentSettings);
-            KeyboardSettings imported = RuntimeDefaults.withRuntimeImeState(
-                    KeyboardThemeJson.importTheme(current, json),
-                    null,
-                    enterKeyLabel.get(),
-                    current.enterKeyLabel,
-                    forceNumberRow.getAsBoolean());
+            KeyboardSettings persisted = RuntimeDefaults.keyboardSettingsFrom(storedSettings);
+            KeyboardSettings runtime = RuntimeDefaults.keyboardSettingsFrom(currentSettings);
+            KeyboardSettings imported = KeyboardThemeJson.importTheme(persisted, json);
             settingsStore.accept(imported);
-            runtimeSettingsApplier.accept(imported);
+            KeyboardSettings runtimeImported = RuntimeDefaults.withRuntimeImeState(
+                    imported,
+                    runtime,
+                    enterKeyLabel.get(),
+                    forceNumberRow.getAsBoolean());
+            runtimeSettingsApplier.accept(runtimeImported);
             notifier.accept(R.string.clipboard_theme_imported);
             dismissQuickSettings.run();
         } catch (IllegalArgumentException exception) {

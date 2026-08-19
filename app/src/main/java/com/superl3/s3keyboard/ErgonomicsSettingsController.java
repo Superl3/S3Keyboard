@@ -65,6 +65,11 @@ final class ErgonomicsSettingsController {
                 R.string.settings_left_assist_rail,
                 4,
                 (options, isChecked) -> options.withLeftAssistRail(isChecked));
+        SettingsRowBuilder.secondaryLabelRow(
+                context,
+                root,
+                R.string.settings_left_assist_rail_summary,
+                2);
         uniformGridGapCheckBox = addErgonomicsCheckBox(
                 root,
                 R.string.settings_uniform_grid_gap,

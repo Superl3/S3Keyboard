@@ -6,12 +6,15 @@ import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 public final class MainActivity extends Activity {
+    static final int REQUEST_EDIT_LAYOUT = 1001;
+
     private KeyboardSettings settings;
     private KeyboardLayoutProfiles layoutProfiles;
     private KeyboardErgonomicsOptions ergonomicsOptions = KeyboardErgonomicsOptions.DEFAULT;
@@ -19,25 +22,38 @@ public final class MainActivity extends Activity {
     private LayoutSettingsController layoutSettingsController;
     private InputAssistanceSettingsController inputAssistanceSettingsController;
     private InputFeelSettingsController inputFeelSettingsController;
+    private OneFingerInputSettingsController oneFingerInputSettingsController;
     private RemoteWindowsSettingsController remoteWindowsSettingsController;
     private TypographySettingsController typographySettingsController;
     private DisplayStyleSettingsController displayStyleSettingsController;
-    private AppearanceSettingsController appearanceSettingsController;
     private MotionEffectSettingsController motionEffectSettingsController;
     private boolean demoShowKeyboard;
     private DemoFieldProfile demoFieldProfile = DemoFieldProfile.STANDARD;
     private SettingsHubController settingsHubController;
+    private SettingsWizardController settingsWizardController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SettingsSystemBars.apply(this);
         if (getActionBar() != null) {
             getActionBar().hide();
         }
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         loadCurrentPreferences();
+        getWindow().setSoftInputMode(demoShowKeyboard
+                ? WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
+                : WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         setContentView(createContentView());
+        settingsWizardController.restoreState(savedInstanceState);
         syncControls();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if (settingsWizardController != null) {
+            settingsWizardController.saveState(outState);
+        }
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -51,6 +67,12 @@ public final class MainActivity extends Activity {
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (settingsHubController != null) {
             settingsHubController.hideKeyboardWhenTouchingOutside(event);
+        }
+        if (settingsWizardController != null) {
+            settingsWizardController.hideKeyboardWhenTouchingOutside(event);
+        }
+        if (oneFingerInputSettingsController != null) {
+            oneFingerInputSettingsController.hideKeyboardWhenTouchingOutside(event);
         }
         return super.dispatchTouchEvent(event);
     }
@@ -72,52 +94,74 @@ public final class MainActivity extends Activity {
         settings = KeyboardPreferences.load(this);
         layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
         ergonomicsOptions = KeyboardPreferences.loadErgonomicsOptions(this);
-        KeyboardPreferences.saveFloatingModeEnabled(this, false);
         applyIntentOverrides(getIntent());
     }
 
-    private ScrollView createContentView() {
+    private View createContentView() {
         int padding = SettingsRowBuilder.dp(this, 16);
         SettingsUiPalette ui = SettingsUiPalette.from(this);
-        ScrollView scrollView = new ScrollView(this);
-        scrollView.setBackgroundColor(ui.background);
-        LinearLayout root = SettingsRowBuilder.vertical(this);
-        root.setGravity(Gravity.CENTER_HORIZONTAL);
-        root.setPadding(padding, padding, padding, padding);
-        scrollView.addView(root);
+        LinearLayout page = SettingsRowBuilder.vertical(this);
+        page.setBackgroundColor(ui.background);
+        page.setFocusableInTouchMode(true);
+        if (!demoShowKeyboard) {
+            page.requestFocus();
+        }
 
         TextView title = SettingsRowBuilder.label(this, R.string.app_name);
         title.setTextSize(22);
         title.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams titleParams = SettingsRowBuilder.matchWrap();
-        titleParams.bottomMargin = SettingsRowBuilder.dp(this, 12);
-        root.addView(title, titleParams);
+        title.setPadding(padding, padding, padding, 0);
+        LinearLayout contentRoot = SettingsRowBuilder.vertical(this);
+        contentRoot.setGravity(Gravity.CENTER_HORIZONTAL);
+        contentRoot.setPadding(padding, 0, padding, padding);
+        if (usesCompactHeightSettingsLayout()) {
+            ScrollView pageScroll = new ScrollView(this);
+            pageScroll.setFillViewport(true);
+            pageScroll.setBackgroundColor(ui.background);
+            LinearLayout scrollingPage = SettingsRowBuilder.vertical(this);
+            scrollingPage.addView(title, SettingsRowBuilder.matchWrap());
+            settingsWizardController = new SettingsWizardController(
+                    this,
+                    scrollingPage,
+                    contentRoot,
+                    () -> pageScroll.post(() -> pageScroll.scrollTo(0, contentRoot.getTop())));
+            scrollingPage.addView(contentRoot, SettingsRowBuilder.matchWrap());
+            pageScroll.addView(scrollingPage);
+            page.addView(pageScroll, SettingsRowBuilder.matchWeightedFill());
+        } else {
+            page.addView(title, SettingsRowBuilder.matchWrap());
+            ScrollView contentScroll = new ScrollView(this);
+            contentScroll.setFillViewport(true);
+            contentScroll.setBackgroundColor(ui.background);
+            contentScroll.addView(contentRoot);
+            settingsWizardController = new SettingsWizardController(
+                    this,
+                    page,
+                    contentRoot,
+                    () -> contentScroll.scrollTo(0, 0));
+            page.addView(contentScroll, SettingsRowBuilder.matchWeightedFill());
+        }
 
-        LinearLayout inputSection = addExpandableSection(
-                root,
-                getString(R.string.settings_input_feel_section),
-                true);
-        inputFeelSettingsController = new InputFeelSettingsController(
-                this,
-                this::settings,
-                this::saveSettings,
-                this::syncControls);
-        inputFeelSettingsController.addTo(inputSection);
-
-        LinearLayout hubSection = addExpandableSection(root, getString(R.string.settings_hub_title), true);
+        LinearLayout hubSection = addWizardStep(
+                R.string.settings_hub_title,
+                R.string.settings_search_keywords_hub);
         settingsHubController = new SettingsHubController(
                 this,
                 this::settings,
                 this::markCurrentThemeCustom,
                 this::saveSettings);
         settingsHubController.addTo(hubSection, demoFieldProfile, demoShowKeyboard);
-        // Keep existing preference wiring alive while appearance editing moves to ThemeEditor.
-        initializeHiddenAppearanceControls();
+        LinearLayout oneFingerSection = addWizardStep(
+                R.string.settings_one_finger_section,
+                R.string.settings_search_keywords_one_finger);
+        oneFingerInputSettingsController = new OneFingerInputSettingsController(
+                this,
+                this::syncControls);
+        oneFingerInputSettingsController.addTo(oneFingerSection);
 
-        LinearLayout layoutSection = addExpandableSection(
-                root,
-                getString(R.string.settings_layout_section),
-                true);
+        LinearLayout layoutSection = addWizardStep(
+                R.string.settings_layout_section,
+                R.string.settings_search_keywords_layout);
         layoutSettingsController = new LayoutSettingsController(
                 this,
                 this::settings,
@@ -126,26 +170,34 @@ public final class MainActivity extends Activity {
                 this::saveSettings,
                 this::saveHangulLayoutProfile,
                 this::saveEnglishLayoutProfile,
+                this::saveDingulDotEnterKeyEnabled,
                 this::saveErgonomicsOptions,
                 this::syncControls);
         layoutSettingsController.addTo(layoutSection);
 
-        LinearLayout displaySection = addExpandableSection(
-                root,
-                getString(R.string.settings_display_section),
-                true);
+        LinearLayout inputSection = addWizardStep(
+                R.string.settings_input_feel_section,
+                R.string.settings_search_keywords_input);
+        inputFeelSettingsController = new InputFeelSettingsController(
+                this,
+                this::settings,
+                this::saveSettings,
+                this::syncControls);
+        inputFeelSettingsController.addTo(inputSection);
+
+        LinearLayout displaySection = addWizardStep(
+                R.string.settings_display_section,
+                R.string.settings_search_keywords_display);
         addVisibleVisualControls(displaySection);
 
-        LinearLayout reservedSection = addExpandableSection(
-                root,
-                getString(R.string.settings_reserved_phrase_section),
-                false);
+        LinearLayout reservedSection = addWizardStep(
+                R.string.settings_reserved_phrase_section,
+                R.string.settings_search_keywords_reserved);
         new ReservedPhraseSettingsController(this).addTo(reservedSection);
 
-        LinearLayout remoteSection = addExpandableSection(
-                root,
-                getString(R.string.settings_remote_windows_section),
-                false);
+        LinearLayout remoteSection = addWizardStep(
+                R.string.settings_remote_windows_section,
+                R.string.settings_search_keywords_remote);
         remoteWindowsSettingsController = new RemoteWindowsSettingsController(
                 this,
                 this::settings,
@@ -153,56 +205,68 @@ public final class MainActivity extends Activity {
                 this::syncControls);
         remoteWindowsSettingsController.addTo(remoteSection);
 
-        LinearLayout androidSection = addExpandableSection(
-                root,
-                getString(R.string.settings_android_ime_section),
-                false);
+        LinearLayout androidSection = addWizardStep(
+                R.string.settings_android_ime_section,
+                R.string.settings_search_keywords_android);
         androidImeSettingsController =
                 new AndroidImeSettingsController(this, this::isDebuggableBuild, this::syncControls);
         androidImeSettingsController.addTo(androidSection);
 
-        return scrollView;
+        settingsWizardController.finishSetup();
+        return page;
+    }
+
+    private boolean usesCompactHeightSettingsLayout() {
+        return demoShowKeyboard || getResources().getConfiguration().screenHeightDp < 520;
     }
 
     private void addVisibleVisualControls(LinearLayout root) {
+        LinearLayout keySection = SettingsSubsection.add(
+                this,
+                root,
+                R.string.settings_display_keys_subsection,
+                true).content;
         displayStyleSettingsController = new DisplayStyleSettingsController(
                 this,
                 this::settings,
                 this::markCurrentThemeCustom,
                 this::saveSettings);
-        displayStyleSettingsController.addPackControlsTo(root);
+        displayStyleSettingsController.addPackControlsTo(keySection);
+        displayStyleSettingsController.addPointKeycapControlTo(keySection);
 
+        LinearLayout typographySection = SettingsSubsection.add(
+                this,
+                root,
+                R.string.settings_display_typography_subsection,
+                false).content;
         typographySettingsController = new TypographySettingsController(
                 this,
                 this::settings,
-                this::markCurrentThemeCustom,
                 this::saveSettings);
-        typographySettingsController.addTo(root);
+        typographySettingsController.addTo(typographySection);
 
-        displayStyleSettingsController.addPointKeycapControlTo(root);
-
+        LinearLayout hintsSection = SettingsSubsection.add(
+                this,
+                root,
+                R.string.settings_display_hints_subsection,
+                false).content;
         inputAssistanceSettingsController = new InputAssistanceSettingsController(
                 this,
                 this::settings,
                 this::ergonomicsOptions,
                 this::isDebuggableBuild,
-                this::markCurrentThemeCustom,
                 this::saveSettings,
                 this::saveSettingsAndErgonomics,
                 this::syncControls);
-        inputAssistanceSettingsController.addTo(root);
+        inputAssistanceSettingsController.addTo(hintsSection);
 
-        motionEffectSettingsController = new MotionEffectSettingsController(this, this::syncControls);
-        motionEffectSettingsController.addTo(root);
-    }
-
-    private void initializeHiddenAppearanceControls() {
-        appearanceSettingsController = new AppearanceSettingsController(
+        LinearLayout motionSection = SettingsSubsection.add(
                 this,
-                this::settings,
-                this::markCurrentThemeCustom,
-                this::saveSettings);
-        appearanceSettingsController.initializeHiddenControls();
+                root,
+                R.string.settings_display_motion_subsection,
+                false).content;
+        motionEffectSettingsController = new MotionEffectSettingsController(this, this::syncControls);
+        motionEffectSettingsController.addTo(motionSection);
     }
 
     private KeyboardSettings settings() {
@@ -237,6 +301,11 @@ public final class MainActivity extends Activity {
         KeyboardPreferences.saveEnglishLayoutProfile(this, profile);
     }
 
+    private void saveDingulDotEnterKeyEnabled(boolean enabled) {
+        layoutProfiles = layoutProfiles.withDingulDotEnterKeyEnabled(enabled);
+        KeyboardPreferences.saveDingulDotEnterKeyEnabled(this, enabled);
+    }
+
     private void saveErgonomicsOptions(KeyboardErgonomicsOptions options) {
         ergonomicsOptions = options;
         saveErgonomicsAndSync();
@@ -259,6 +328,9 @@ public final class MainActivity extends Activity {
         }
 
         layoutSettingsController.sync(settings, layoutProfiles);
+        if (settingsHubController != null) {
+            settingsHubController.sync();
+        }
         if (androidImeSettingsController != null) {
             androidImeSettingsController.sync();
         }
@@ -267,6 +339,9 @@ public final class MainActivity extends Activity {
         }
         if (inputFeelSettingsController != null) {
             inputFeelSettingsController.sync(settings);
+        }
+        if (oneFingerInputSettingsController != null) {
+            oneFingerInputSettingsController.sync();
         }
         if (remoteWindowsSettingsController != null) {
             remoteWindowsSettingsController.sync(settings);
@@ -277,22 +352,26 @@ public final class MainActivity extends Activity {
         if (displayStyleSettingsController != null) {
             displayStyleSettingsController.sync(settings);
         }
-        if (appearanceSettingsController != null) {
-            appearanceSettingsController.sync(settings);
-        }
         if (motionEffectSettingsController != null) {
             motionEffectSettingsController.sync();
         }
     }
 
-    private LinearLayout addExpandableSection(LinearLayout root, String text, boolean expandedByDefault) {
-        SettingsSectionCard card = SettingsSectionCard.create(this, text, expandedByDefault);
-        root.addView(card.container, SettingsRowBuilder.matchWrapWithTop(this, 12));
-        return card.content;
+    private LinearLayout addWizardStep(int titleResId, int keywordsResId) {
+        return settingsWizardController.addStep(titleResId, keywordsResId);
     }
 
     private boolean isDebuggableBuild() {
         return (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_EDIT_LAYOUT && resultCode == RESULT_OK) {
+            loadCurrentPreferences();
+            syncControls();
+        }
     }
 
     private void markCurrentThemeCustom() {

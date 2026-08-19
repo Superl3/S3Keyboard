@@ -37,7 +37,11 @@ final class InputConnectionTextOperator {
                 && inputConnection.deleteSurroundingTextInCodePoints(count, 0)) {
             return;
         }
-        inputConnection.deleteSurroundingText(count, 0);
+        int requestedChars = count > Integer.MAX_VALUE / 2 ? Integer.MAX_VALUE : count * 2;
+        CharSequence beforeCursor = inputConnection.getTextBeforeCursor(requestedChars, 0);
+        inputConnection.deleteSurroundingText(
+                EditorTextBoundaryPolicy.trailingCodePointUtf16UnitCount(beforeCursor, count),
+                0);
     }
 
     static void deleteBeforeCursorCodePoint(InputConnection inputConnection) {
@@ -50,14 +54,49 @@ final class InputConnectionTextOperator {
         }
     }
 
-    static void deleteCommittedCodePoint(InputConnection inputConnection) {
+    static void deleteCommittedGrapheme(InputConnection inputConnection) {
         if (inputConnection == null) {
             return;
         }
         // Some editors keep stale composing spans after surrounding-text delete.
         finishComposing(inputConnection);
-        deleteBeforeCursorCodePoints(inputConnection, 1);
+        if (!deleteSelectedText(inputConnection)) {
+            deleteBeforeCursorGrapheme(inputConnection);
+        }
         finishComposing(inputConnection);
+    }
+
+    static boolean deleteSelectedText(InputConnection inputConnection) {
+        if (inputConnection == null) {
+            return false;
+        }
+        CharSequence selected = inputConnection.getSelectedText(0);
+        if (selected == null || selected.length() == 0) {
+            return false;
+        }
+        // Never delete an adjacent grapheme when an editor rejects selection replacement.
+        inputConnection.commitText("", 1);
+        return true;
+    }
+
+    static boolean hasSelection(InputConnection inputConnection) {
+        if (inputConnection == null) {
+            return false;
+        }
+        CharSequence selected = inputConnection.getSelectedText(0);
+        return selected != null && selected.length() > 0;
+    }
+
+    static void deleteBeforeCursorGrapheme(InputConnection inputConnection) {
+        if (inputConnection == null) {
+            return;
+        }
+        CharSequence beforeCursor = inputConnection.getTextBeforeCursor(128, 0);
+        int utf16Units = EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount(beforeCursor);
+        if (utf16Units > 0 && inputConnection.deleteSurroundingText(utf16Units, 0)) {
+            return;
+        }
+        deleteBeforeCursorCodePoints(inputConnection, 1);
     }
 
     static boolean isCursorAtBoundary(InputConnection inputConnection, boolean right) {
@@ -111,12 +150,14 @@ final class InputConnectionTextOperator {
         }
     }
 
-    static void commitText(InputConnection inputConnection, String text) {
+    static boolean commitText(InputConnection inputConnection, String text) {
         if (inputConnection != null && text != null && !text.isEmpty()) {
             finishComposing(inputConnection);
-            inputConnection.commitText(text, 1);
+            boolean committed = inputConnection.commitText(text, 1);
             finishComposing(inputConnection);
+            return committed;
         }
+        return false;
     }
 
     static void commitTextReplacingComposing(InputConnection inputConnection, String text) {

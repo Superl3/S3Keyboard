@@ -13,6 +13,8 @@ Closed beta means a small tester group can install the keyboard without being su
 - Password and number-like fields force the number row and prefer the English/ASCII layout at runtime without overwriting the saved user language mode.
 - Demo/test intent overrides are ignored unless the app is a debuggable build and `demo_settings=true` is supplied.
 - Release build config has versioning, minification, resource shrinking, and property-based signing separation.
+- API 23 builds use core-library desugaring for the Java functional APIs used by settings and input controllers.
+- The canonical `scripts\check.ps1` gate includes Android lint in addition to unit tests and APK assembly.
 
 ## Manual closed-beta smoke matrix
 
@@ -26,7 +28,7 @@ Closed beta means a small tester group can install the keyboard without being su
 
 ## Remaining beta risks
 
-- TalkBack virtual-key nodes are implemented for the custom keyboard view, including per-key descriptions and accessibility click on tap outputs. Real-device TalkBack traversal and gesture conflict smoke testing is still required.
+- TalkBack virtual-key nodes expose hit-bound based focus, tap, and custom up/down/left/right/long-press actions. Real-device TalkBack traversal, action-menu wording, and gesture-conflict smoke testing are still required.
 - Browser and Messages/Notes smoke tests still require real-device or emulator app coverage because installed packages vary by system image.
 - `scripts\smoke-ime-apps.ps1` now records a JSON artifact for installed
   browser, messaging, notes, and remote-desktop packages. Treat its

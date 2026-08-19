@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 final class TypographySettingsController {
     private final Context context;
     private final Supplier<KeyboardSettings> settings;
-    private final Runnable currentThemeCustomMarker;
     private final Consumer<KeyboardSettings> settingsSaver;
     private Spinner fontFamilySpinner;
     private CheckBox followThemeTypographyCheckBox;
@@ -31,11 +30,9 @@ final class TypographySettingsController {
     TypographySettingsController(
             Context context,
             Supplier<KeyboardSettings> settings,
-            Runnable currentThemeCustomMarker,
             Consumer<KeyboardSettings> settingsSaver) {
         this.context = context;
         this.settings = RuntimeDefaults.keyboardSettingsSupplier(settings);
-        this.currentThemeCustomMarker = RuntimeDefaults.runnable(currentThemeCustomMarker);
         this.settingsSaver = RuntimeDefaults.keyboardSettingsConsumer(settingsSaver);
     }
 
@@ -213,7 +210,6 @@ final class TypographySettingsController {
     }
 
     private void saveCustomTypography(KeyboardSettings settings) {
-        currentThemeCustomMarker.run();
         settingsSaver.accept(settings);
     }
 

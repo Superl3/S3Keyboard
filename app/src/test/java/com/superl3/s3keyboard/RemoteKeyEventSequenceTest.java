@@ -49,6 +49,34 @@ public final class RemoteKeyEventSequenceTest {
     }
 
     @Test
+    public void fourModifierChordReleasesEveryModifierInReverseOrder() {
+        int allModifiers = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON
+                | KeyEvent.META_META_ON | KeyEvent.META_META_LEFT_ON
+                | KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON
+                | KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON;
+
+        List<RemoteKeyEventSequence.EventSpec> events = RemoteKeyEventSequence.build(
+                KeyEvent.KEYCODE_A,
+                allModifiers,
+                400L);
+
+        assertEquals(10, events.size());
+        assertEvent(events.get(0), KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CTRL_LEFT);
+        assertEvent(events.get(1), KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_META_LEFT);
+        assertEvent(events.get(2), KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ALT_LEFT);
+        assertEvent(events.get(3), KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT);
+        assertEvent(events.get(4), KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A);
+        assertEvent(events.get(5), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A);
+        assertEvent(events.get(6), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT);
+        assertEvent(events.get(7), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ALT_LEFT);
+        assertEvent(events.get(8), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_META_LEFT);
+        assertEvent(events.get(9), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_CTRL_LEFT);
+        assertEquals(events.get(0).downTimeMs, events.get(9).downTimeMs);
+        assertEquals(events.get(3).downTimeMs, events.get(6).downTimeMs);
+        assertTrue((events.get(4).metaState & allModifiers) == allModifiers);
+    }
+
+    @Test
     public void keyEventsUseSoftKeyboardFlags() {
         assertTrue((RemoteKeyEventSequence.KEY_EVENT_FLAGS & KeyEvent.FLAG_SOFT_KEYBOARD) != 0);
         assertTrue((RemoteKeyEventSequence.KEY_EVENT_FLAGS & KeyEvent.FLAG_KEEP_TOUCH_MODE) != 0);

@@ -63,8 +63,11 @@ final class KeyboardCommandRouter {
             case KeyboardCommands.CMD_HIDE:
                 return KeyboardCommandRoute.HIDE;
             default:
-                return KeyboardCommands.isRemoteCommand(value)
-                        ? KeyboardCommandRoute.REMOTE
+                if (KeyboardCommands.isRemoteCommand(value)) {
+                    return KeyboardCommandRoute.REMOTE;
+                }
+                return KeyboardCommands.isCommand(value)
+                        ? KeyboardCommandRoute.NOOP
                         : KeyboardCommandRoute.TEXT;
         }
     }

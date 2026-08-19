@@ -37,6 +37,7 @@ public final class AccentPlacementActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SettingsSystemBars.apply(this);
         if (getActionBar() != null) {
             getActionBar().hide();
         }
@@ -147,6 +148,7 @@ public final class AccentPlacementActivity extends Activity {
                 settings.additionalNumberRowColorMode));
         spaceRoleSpinner.setEnabled(customPlacementEnabled);
         questionRoleSpinner.setEnabled(customPlacementEnabled);
+        numberRowModeSpinner.setEnabled(customPlacementEnabled);
         updatePreviews(policy);
         syncing = false;
     }

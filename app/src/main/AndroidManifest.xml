@@ -4,6 +4,8 @@
 
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -12,8 +14,7 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -34,6 +35,20 @@
             android:name=".AccentPlacementActivity"
             android:exported="false"
             android:label="@string/accent_placement_activity_label" />
+
+        <activity
+            android:name=".LayoutEditorActivity"
+            android:exported="false"
+            android:label="@string/layout_editor_activity_label"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+
+        <activity
+            android:name=".VoiceInputActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/VoiceInputProxyTheme" />
 
         <service
             android:name=".S3KeyboardService"

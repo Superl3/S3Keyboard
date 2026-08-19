@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 
 final class QuickThemePanelController {
     private final Context context;
-    private final Supplier<KeyboardMode> currentKeyboardMode;
+    private final Supplier<KeyboardSettings> currentSettings;
     private final Supplier<String> enterKeyLabel;
     private final BooleanSupplier forceNumberRow;
     private final Consumer<KeyboardSettings> runtimeSettingsApplier;
@@ -19,13 +19,13 @@ final class QuickThemePanelController {
 
     QuickThemePanelController(
             Context context,
-            Supplier<KeyboardMode> currentKeyboardMode,
+            Supplier<KeyboardSettings> currentSettings,
             Supplier<String> enterKeyLabel,
             BooleanSupplier forceNumberRow,
             Consumer<KeyboardSettings> runtimeSettingsApplier,
             Runnable dismissQuickSettings) {
         this.context = context;
-        this.currentKeyboardMode = RuntimeDefaults.keyboardModeSupplier(currentKeyboardMode);
+        this.currentSettings = RuntimeDefaults.keyboardSettingsSupplier(currentSettings);
         this.enterKeyLabel = RuntimeDefaults.nullStringSupplier(enterKeyLabel);
         this.forceNumberRow = RuntimeDefaults.booleanSupplier(forceNumberRow);
         this.runtimeSettingsApplier = RuntimeDefaults.keyboardSettingsConsumer(runtimeSettingsApplier);
@@ -37,9 +37,10 @@ final class QuickThemePanelController {
             return;
         }
         ThemeOption[] options = ThemeOption.buildOptions(
+                context,
                 UserThemeStore.load(context),
                 ExternalThemeStore.load(context),
-                false);
+                true);
         if (options.length == 0) {
             return;
         }
@@ -66,16 +67,16 @@ final class QuickThemePanelController {
             return;
         }
         try {
+            KeyboardSettings runtimeSettings = RuntimeDefaults.keyboardSettingsFrom(currentSettings);
             KeyboardSettings storedSettings = KeyboardPreferences.load(context);
             KeyboardSettings savedSettings = option.applyTo(storedSettings);
             KeyboardPreferences.saveSelectedThemeId(context, option.stableId());
             savedSettings = KeyboardPreferences.applyAccentPlacementPolicy(context, savedSettings);
             KeyboardPreferences.saveSettings(context, savedSettings);
-            KeyboardSettings runtimeSettings = RuntimeDefaults.withRuntimeImeState(
+            runtimeSettings = RuntimeDefaults.withRuntimeImeState(
                     savedSettings,
-                    currentKeyboardMode.get(),
+                    runtimeSettings,
                     enterKeyLabel.get(),
-                    savedSettings.enterKeyLabel,
                     forceNumberRow.getAsBoolean());
             runtimeSettingsApplier.accept(runtimeSettings);
             dismissQuickSettings.run();

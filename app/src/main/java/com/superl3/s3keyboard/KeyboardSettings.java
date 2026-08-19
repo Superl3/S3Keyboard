@@ -2,6 +2,7 @@ package com.superl3.s3keyboard;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 final class KeyboardSettings {
@@ -28,6 +29,8 @@ final class KeyboardSettings {
     static final int MAX_BOTTOM_ROW_TOP_PADDING_DP = 24;
     static final int MAX_NUMBER_ROW_BOTTOM_GAP_DP = 24;
     static final int DEFAULT_HIT_SLOP_DP = 8;
+    static final int MIN_HIT_SLOP_DP = 0;
+    static final int MAX_HIT_SLOP_DP = 32;
     static final int MIN_GESTURE_THRESHOLD_DP = 12;
     static final int MAX_GESTURE_THRESHOLD_DP = 64;
     static final int DEFAULT_GESTURE_THRESHOLD_DP = 22;
@@ -788,7 +791,7 @@ final class KeyboardSettings {
                 ? DEFAULT_ADDITIONAL_NUMBER_ROW_COLOR_MODE
                 : additionalNumberRowColorMode;
         this.hapticFeedbackEnabled = hapticFeedbackEnabled;
-        this.hitSlopDp = clamp(hitSlopDp, 0, 32);
+        this.hitSlopDp = clamp(hitSlopDp, MIN_HIT_SLOP_DP, MAX_HIT_SLOP_DP);
         this.gestureThresholdDp = clamp(
                 gestureThresholdDp,
                 MIN_GESTURE_THRESHOLD_DP,
@@ -1750,6 +1753,35 @@ final class KeyboardSettings {
                 showEnglishNumberRow,
                 forceNumberRow,
                 enabled,
+                hitSlopDp,
+                gestureThresholdDp,
+                touchYOffsetDp,
+                repeatStartDelayMs,
+                repeatIntervalMs,
+                englishDoubleSpacePeriodEnabled,
+                enterKeyLabel,
+                keyIdleColor,
+                keyPressedColor,
+                keyboardBackgroundColor,
+                accentColor,
+                secondaryColor,
+                keyRoundnessDp,
+                keyBorderWidthDp,
+                keyGapDp,
+                hangulSpecialColumnPercent);
+    }
+
+    KeyboardSettings withHitSlop(int hitSlopDp) {
+        return copy(
+                keyboardMode,
+                handednessMode,
+                leftMarginDp,
+                rightMarginDp,
+                keyboardHeightDp,
+                showHangulNumberRow,
+                showEnglishNumberRow,
+                forceNumberRow,
+                hapticFeedbackEnabled,
                 hitSlopDp,
                 gestureThresholdDp,
                 touchYOffsetDp,
@@ -3194,7 +3226,7 @@ final class KeyboardSettings {
     }
 
     static String normalizeKeyOverrideName(String key) {
-        return key == null ? "" : key.trim().toLowerCase().replaceAll("\\s+", "");
+        return key == null ? "" : key.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
     }
 
     private static Map<String, Integer> normalizeKeyColorOverrides(Map<String, Integer> overrides) {

@@ -1,8 +1,12 @@
 package com.superl3.s3keyboard;
 
+import java.util.ArrayDeque;
+
 final class HangulCommitOnlyEditor {
+    private static final int MAX_PENDING_SELECTION_DELTAS = 12;
+
     private int displayedComposingCodePoints;
-    private int pendingOwnSelectionUpdates;
+    private final ArrayDeque<Integer> pendingOwnSelectionDeltas = new ArrayDeque<>();
 
     interface Sink {
         void deleteBeforeCursorCodePoints(int count);
@@ -21,18 +25,25 @@ final class HangulCommitOnlyEditor {
             int candidatesStart,
             int candidatesEnd) {
         if (!hasDisplayedComposing()) {
-            pendingOwnSelectionUpdates = 0;
-            return false;
-        }
-        if (pendingOwnSelectionUpdates > 0) {
-            pendingOwnSelectionUpdates--;
+            pendingOwnSelectionDeltas.clear();
             return false;
         }
         if (newSelStart != newSelEnd) {
             return true;
         }
         if (candidatesStart >= 0 || candidatesEnd >= 0) {
-            return newSelStart < candidatesStart || newSelStart != candidatesEnd;
+            if (newSelStart < candidatesStart || newSelStart != candidatesEnd) {
+                return true;
+            }
+        }
+        if (oldSelStart != oldSelEnd && !pendingOwnSelectionDeltas.isEmpty()) {
+            pendingOwnSelectionDeltas.clear();
+            return false;
+        }
+        if (consumeExpectedSelectionDelta(
+                newSelStart - oldSelStart,
+                newSelEnd - oldSelEnd)) {
+            return false;
         }
         return oldSelStart != newSelStart || oldSelEnd != newSelEnd;
     }
@@ -83,8 +94,10 @@ final class HangulCommitOnlyEditor {
         String composing = automata.flush();
         if (displayedComposingCodePoints > 0) {
             displayedComposingCodePoints = 0;
+            pendingOwnSelectionDeltas.clear();
             return;
         }
+        pendingOwnSelectionDeltas.clear();
         if (!composing.isEmpty()) {
             sink.commitText(composing);
         }
@@ -92,14 +105,14 @@ final class HangulCommitOnlyEditor {
 
     void reset() {
         displayedComposingCodePoints = 0;
-        pendingOwnSelectionUpdates = 0;
+        pendingOwnSelectionDeltas.clear();
     }
 
     private void inputHangulChar(HangulAutomata automata, char ch, Sink sink) {
         deleteDisplayedComposing(sink);
         String committed = automata.input(ch);
         if (!committed.isEmpty()) {
-            sink.commitText(committed);
+            commitOwnText(sink, committed);
         }
         commitDisplayedComposing(automata.getComposingText(), sink);
     }
@@ -108,17 +121,51 @@ final class HangulCommitOnlyEditor {
         if (displayedComposingCodePoints <= 0) {
             return;
         }
-        sink.deleteBeforeCursorCodePoints(displayedComposingCodePoints);
+        int deletedCodePoints = displayedComposingCodePoints;
+        sink.deleteBeforeCursorCodePoints(deletedCodePoints);
         displayedComposingCodePoints = 0;
-        pendingOwnSelectionUpdates++;
+        recordOwnSelectionDelta(-deletedCodePoints);
     }
 
     private void commitDisplayedComposing(String composing, Sink sink) {
         if (composing == null || composing.isEmpty()) {
             return;
         }
-        sink.commitText(composing);
+        commitOwnText(sink, composing);
         displayedComposingCodePoints = composing.codePointCount(0, composing.length());
-        pendingOwnSelectionUpdates++;
+    }
+
+    private void commitOwnText(Sink sink, String text) {
+        sink.commitText(text);
+        recordOwnSelectionDelta(text.length());
+    }
+
+    private void recordOwnSelectionDelta(int delta) {
+        if (delta == 0) {
+            return;
+        }
+        while (pendingOwnSelectionDeltas.size() >= MAX_PENDING_SELECTION_DELTAS) {
+            pendingOwnSelectionDeltas.removeFirst();
+        }
+        pendingOwnSelectionDeltas.addLast(delta);
+    }
+
+    private boolean consumeExpectedSelectionDelta(int startDelta, int endDelta) {
+        if (pendingOwnSelectionDeltas.isEmpty() || startDelta != endDelta) {
+            return false;
+        }
+        int accumulated = 0;
+        int consumeCount = 0;
+        for (int pendingDelta : pendingOwnSelectionDeltas) {
+            accumulated += pendingDelta;
+            consumeCount++;
+            if (accumulated == startDelta) {
+                for (int index = 0; index < consumeCount; index++) {
+                    pendingOwnSelectionDeltas.removeFirst();
+                }
+                return true;
+            }
+        }
+        return false;
     }
 }

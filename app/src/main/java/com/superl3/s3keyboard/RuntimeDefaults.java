@@ -16,7 +16,6 @@ final class RuntimeDefaults {
     static final BooleanSupplier FALSE_BOOLEAN = () -> false;
     static final Supplier<String> EMPTY_STRING = () -> "";
     static final Supplier<String> NULL_STRING = () -> null;
-    static final Supplier<KeyboardMode> NULL_KEYBOARD_MODE = () -> null;
     static final Supplier<KeyboardSettings> DEFAULT_KEYBOARD_SETTINGS = KeyboardSettings::defaults;
     static final Supplier<KeyboardLayoutProfiles> DEFAULT_KEYBOARD_LAYOUT_PROFILES =
             KeyboardLayoutProfiles::defaults;
@@ -66,10 +65,6 @@ final class RuntimeDefaults {
 
     static Supplier<String> nullStringSupplier(Supplier<String> value) {
         return value == null ? NULL_STRING : value;
-    }
-
-    static Supplier<KeyboardMode> keyboardModeSupplier(Supplier<KeyboardMode> value) {
-        return value == null ? NULL_KEYBOARD_MODE : value;
     }
 
     static Supplier<KeyboardSettings> keyboardSettingsSupplier(Supplier<KeyboardSettings> value) {
@@ -212,23 +207,20 @@ final class RuntimeDefaults {
         return controls == null ? new LocalDataControlsController(context) : controls;
     }
 
-    static KeyboardMode keyboardMode(KeyboardMode mode, KeyboardMode fallback) {
-        return mode == null ? fallback : mode;
-    }
-
     static KeyboardSettings withRuntimeImeState(
-            KeyboardSettings settings,
-            KeyboardMode keyboardMode,
+            KeyboardSettings persistedSettings,
+            KeyboardSettings runtimeSettings,
             String enterKeyLabel,
-            String fallbackEnterKeyLabel,
             boolean forceNumberRow) {
-        KeyboardSettings safeSettings = keyboardSettings(settings);
-        String safeEnterFallback = stringOrDefault(
-                fallbackEnterKeyLabel,
-                safeSettings.enterKeyLabel);
-        return safeSettings
-                .withKeyboardMode(keyboardMode(keyboardMode, safeSettings.keyboardMode))
-                .withEnterKeyLabel(stringOrDefault(enterKeyLabel, safeEnterFallback))
+        KeyboardSettings persisted = keyboardSettings(persistedSettings);
+        KeyboardSettings runtime = keyboardSettings(runtimeSettings);
+        return persisted
+                .withKeyboardMode(runtime.keyboardMode)
+                .withRemoteOptions(
+                        runtime.remoteModeEnabled,
+                        runtime.remoteKeyPreset,
+                        runtime.remoteImeShortcut)
+                .withEnterKeyLabel(stringOrDefault(enterKeyLabel, persisted.enterKeyLabel))
                 .withRuntimeNumberRowForced(forceNumberRow);
     }
 

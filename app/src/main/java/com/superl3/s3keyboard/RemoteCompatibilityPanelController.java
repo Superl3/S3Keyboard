@@ -47,13 +47,15 @@ final class RemoteCompatibilityPanelController {
                 RemoteCompatibilityMatrix.ESC,
                 RemoteCompatibilityMatrix.TAB,
                 RemoteCompatibilityMatrix.SHIFT_TAB,
-                RemoteCompatibilityMatrix.CTRL_TAB,
-                RemoteCompatibilityMatrix.ALT_TAB);
+                RemoteCompatibilityMatrix.CTRL_TAB);
         addCaseRow(
                 panel,
+                RemoteCompatibilityMatrix.ALT_TAB,
                 RemoteCompatibilityMatrix.CTRL_A,
                 RemoteCompatibilityMatrix.ALT_SHIFT,
-                RemoteCompatibilityMatrix.CTRL_SPACE,
+                RemoteCompatibilityMatrix.CTRL_SPACE);
+        addCaseRow(
+                panel,
                 RemoteCompatibilityMatrix.WIN_SPACE,
                 RemoteCompatibilityMatrix.LANGUAGE_SWITCH);
         addFunctionCaseRow(panel, 0, 4);
@@ -221,7 +223,10 @@ final class RemoteCompatibilityPanelController {
                 context,
                 packageName,
                 RemoteCompatibilityLog.load(context));
-        historyView.setText(summary + "\n\n" + RemoteCompatibilityLog.describeRecent(context, 6));
+        historyView.setText(context.getString(
+                R.string.remote_compatibility_history_format,
+                summary,
+                RemoteCompatibilityLog.describeRecent(context, 6)));
     }
 
     private String currentPackageName() {

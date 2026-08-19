@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -91,7 +91,21 @@ def render(size, round_variant=False):
     cy = u(96)
     rounded_rectangle(draw, (cx - u(8), cy - u(8), cx + u(8), cy + u(8)), u(4), accent)
 
-    return canvas.resize((size, size), Image.Resampling.LANCZOS)
+    if round_variant:
+        mask = Image.new("L", canvas.size, 0)
+        ImageDraw.Draw(mask).ellipse((u(16), u(16), u(176), u(176)), fill=255)
+        canvas.putalpha(ImageChops.multiply(canvas.getchannel("A"), mask))
+
+    result = canvas.resize((size, size), Image.Resampling.LANCZOS)
+    if round_variant:
+        margin = max(1, round(size * 16 / 192))
+        final_mask = Image.new("L", result.size, 0)
+        ImageDraw.Draw(final_mask).ellipse(
+            (margin, margin, size - 1 - margin, size - 1 - margin),
+            fill=255,
+        )
+        result.putalpha(ImageChops.multiply(result.getchannel("A"), final_mask))
+    return result
 
 
 def main():

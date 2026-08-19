@@ -23,7 +23,6 @@ final class HangulAutomata {
     private static final Map<Character, Integer> INITIAL_BY_CHAR = new HashMap<>();
     private static final Map<Character, Integer> VOWEL_BY_CHAR = new HashMap<>();
     private static final Map<Character, Integer> FINAL_BY_CHAR = new HashMap<>();
-    private static final Map<String, Integer> DOUBLE_INITIAL_BY_SEQUENCE = new HashMap<>();
     private static final Map<String, Integer> COMPOUND_VOWEL_BY_SEQUENCE = new HashMap<>();
     private static final Map<Integer, Integer> VOWEL_BACKSPACE = new HashMap<>();
     private static final Map<String, Integer> COMPOUND_FINAL_BY_SEQUENCE = new HashMap<>();
@@ -40,12 +39,6 @@ final class HangulAutomata {
         for (int i = 1; i < FINAL_CHARS.length; i++) {
             FINAL_BY_CHAR.put(FINAL_CHARS[i], i);
         }
-
-        putDoubleInitial('ㄱ', 'ㄱ', 'ㄲ');
-        putDoubleInitial('ㄷ', 'ㄷ', 'ㄸ');
-        putDoubleInitial('ㅂ', 'ㅂ', 'ㅃ');
-        putDoubleInitial('ㅅ', 'ㅅ', 'ㅆ');
-        putDoubleInitial('ㅈ', 'ㅈ', 'ㅉ');
 
         putBackspaceInitial('ㄲ', 'ㄱ');
         putBackspaceInitial('ㄸ', 'ㄷ');
@@ -65,7 +58,6 @@ final class HangulAutomata {
         putCompoundVowel('ㅜ', 'ㅣ', 'ㅟ');
         putCompoundVowel('ㅡ', 'ㅣ', 'ㅢ');
 
-        putCompoundFinal('ㄱ', 'ㄱ', 'ㄲ');
         putCompoundFinal('ㄱ', 'ㅅ', 'ㄳ');
         putCompoundFinal('ㄴ', 'ㅈ', 'ㄵ');
         putCompoundFinal('ㄴ', 'ㅎ', 'ㄶ');
@@ -77,7 +69,6 @@ final class HangulAutomata {
         putCompoundFinal('ㄹ', 'ㅍ', 'ㄿ');
         putCompoundFinal('ㄹ', 'ㅎ', 'ㅀ');
         putCompoundFinal('ㅂ', 'ㅅ', 'ㅄ');
-        putCompoundFinal('ㅅ', 'ㅅ', 'ㅆ');
 
         putSplitFinal('ㄳ', 'ㄱ', 'ㅅ');
         putSplitFinal('ㄵ', 'ㄴ', 'ㅈ');
@@ -307,10 +298,6 @@ final class HangulAutomata {
             return INITIAL_BY_CHAR.get('ㅇ');
         }
         return initialIndex;
-    }
-
-    private static void putDoubleInitial(char first, char second, char combined) {
-        DOUBLE_INITIAL_BY_SEQUENCE.put("" + first + second, INITIAL_BY_CHAR.get(combined));
     }
 
     private static void putBackspaceInitial(char combined, char previous) {

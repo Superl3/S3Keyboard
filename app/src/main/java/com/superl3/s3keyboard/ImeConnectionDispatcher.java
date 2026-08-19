@@ -24,7 +24,7 @@ final class ImeConnectionDispatcher {
             return;
         }
         if (rawKeyInput) {
-            if (!sendCompleteSoftKey(softKeySender, KeyEvent.KEYCODE_ENTER, 0)) {
+            if (!sendAnySoftKey(softKeySender, KeyEvent.KEYCODE_ENTER, 0)) {
                 commitNewline(inputConnection);
             }
             return;
@@ -38,7 +38,7 @@ final class ImeConnectionDispatcher {
             return;
         }
         if (action.performEditorAction) {
-            if (!sendCompleteSoftKey(softKeySender, KeyEvent.KEYCODE_ENTER, 0)) {
+            if (!sendAnySoftKey(softKeySender, KeyEvent.KEYCODE_ENTER, 0)) {
                 commitNewline(inputConnection);
             }
             return;
@@ -59,14 +59,14 @@ final class ImeConnectionDispatcher {
             int codePoint = text.codePointAt(offset);
             offset += Character.charCount(codePoint);
             if (codePoint == '\n') {
-                if (!sendCompleteSoftKey(softKeySender, KeyEvent.KEYCODE_ENTER, 0)) {
+                if (!sendAnySoftKey(softKeySender, KeyEvent.KEYCODE_ENTER, 0)) {
                     inputConnection.commitText("\n", 1);
                 }
             } else if (codePoint >= 0x20 && codePoint <= 0x7E) {
                 RemoteKeyStroke stroke = RemoteKeyStroke.forText(String.valueOf((char) codePoint));
                 if (stroke == null) {
                     inputConnection.commitText(String.valueOf((char) codePoint), 1);
-                } else if (!sendCompleteSoftKey(softKeySender, stroke.keyCode, stroke.metaState)) {
+                } else if (!sendAnySoftKey(softKeySender, stroke.keyCode, stroke.metaState)) {
                     inputConnection.commitText(String.valueOf((char) codePoint), 1);
                 }
             } else {
@@ -141,6 +141,13 @@ final class ImeConnectionDispatcher {
             int metaState) {
         int expectedEvents = RemoteKeyEventSequence.eventCount(keyCode, metaState);
         return expectedEvents > 0 && send(sender, keyCode, metaState) >= expectedEvents;
+    }
+
+    private static boolean sendAnySoftKey(
+            IntBinaryOperator sender,
+            int keyCode,
+            int metaState) {
+        return send(sender, keyCode, metaState) > 0;
     }
 
     private static void commitNewline(InputConnection inputConnection) {

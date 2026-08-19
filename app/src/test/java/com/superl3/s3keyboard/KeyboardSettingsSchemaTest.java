@@ -102,6 +102,22 @@ public final class KeyboardSettingsSchemaTest {
                 RemoteCompatibilityLog.KEY_ENTRIES,
                 KeyboardSettingsSchema.Section.PRIVACY_DEBUG,
                 KeyboardSettingsSchema.StorageRisk.COMPATIBILITY);
+        assertInternalEntry(
+                KeyboardPreferences.KEYBOARD_MODE_LAST,
+                KeyboardSettingsSchema.Section.LAYOUT,
+                KeyboardSettingsSchema.StorageRisk.NONE);
+        assertInternalEntry(
+                KeyboardPreferences.INPUT_LEARNING_EPOCH,
+                KeyboardSettingsSchema.Section.PRIVACY_DEBUG,
+                KeyboardSettingsSchema.StorageRisk.NONE);
+        assertInternalEntry(
+                KeyboardPreferences.SHOW_NUMBER_ROW,
+                KeyboardSettingsSchema.Section.LEGACY,
+                KeyboardSettingsSchema.StorageRisk.NONE);
+        assertInternalEntry(
+                KeyboardPreferences.SHOW_CONSONANT_PREVIEW,
+                KeyboardSettingsSchema.Section.LEGACY,
+                KeyboardSettingsSchema.StorageRisk.NONE);
     }
 
     @Test

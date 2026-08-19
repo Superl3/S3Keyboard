@@ -37,6 +37,12 @@ The repo also includes wrapper scripts for the common path:
 .\scripts\install-debug.ps1 -Serial <device-ip>:<connect-port>
 ```
 
+`scripts\check.ps1` runs theme validation, the `KeyboardSettings` runtime-usage
+audit, unit tests, Android lint, and the debug APK build. The settings audit
+fails when a persisted setting no longer has a runtime consumer. Lint remains
+part of the normal gate so API-level, resource, and accessibility regressions
+fail the same command as input tests.
+
 The debug APK is written to:
 
 ```text
@@ -174,6 +180,10 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   behavior can stay covered by JVM tests.
 - `InputConnectionTextOperator` owns low-level composing, committed-text delete,
   cursor-boundary checks, normal text commits, and the commit-only Hangul sink.
+  A committed backspace first removes the active selection and otherwise deletes
+  one extended grapheme cluster, so emoji modifiers, flags, ZWJ sequences,
+  combining marks, and decomposed Hangul are not split. `EditorTextBoundaryPolicy`
+  owns pure word, code-point, and grapheme boundary calculations.
   Keep direct `commitText`, `setComposingText`,
   `deleteSurroundingTextInCodePoints`, and stale composing cleanup out of
   `S3KeyboardService` so conventional editor behavior can be regression-tested
@@ -193,22 +203,37 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   target table in its body. `RemoteCommandResolver` remains responsible only for
   Windows remote commands.
 - `QuickThemePanelController` owns the quick-settings theme spinner and theme
-  application persistence. The service only receives the runtime-adjusted
-  settings object so current language mode, enter label, and forced number-row
-  state are preserved without keeping theme UI logic in the IME lifecycle class.
+  application persistence. It applies the theme to a freshly loaded persisted
+  base, then overlays the current session language, remote state, enter label,
+  and forced number row only for the active view. App-profile runtime state must
+  never be written back as a global preference.
 - `QuickSettingsPanelController` owns the quick-settings panel body: remote
   toggle, remote compatibility pad insertion, number-row toggle, handedness
   buttons, theme selector, clipboard theme import, issue-report copy, and close
-  action. `S3KeyboardService` keeps only the `PopupWindow` lifecycle and the
-  IME/session side effects behind host callbacks.
+  action. Common controls are ordered before remote/diagnostic controls.
+  `S3KeyboardService` keeps only the `PopupWindow` lifecycle, measures the panel,
+  bounds it to the display in a scroll container, and exposes IME/session side
+  effects behind host callbacks.
 - `ThemeClipboardImportController` owns quick-settings theme import from the
   clipboard, including clipboard reading, JSON import, preference persistence,
-  toast feedback, and dismissal. `S3KeyboardService` only applies the imported
-  settings back to the active keyboard view through a host callback.
+  toast feedback, and dismissal. Like quick preset selection, it keeps separate
+  persisted and runtime settings suppliers so a URL/password/remote session
+  cannot leak forced mode state into the saved theme base. `S3KeyboardService`
+  only applies the imported runtime settings through a host callback.
 - `ClipboardPanelController` owns optional clipboard-history UI, clipboard
   listener registration, password-field suppression, and local history refresh.
+  The toggle action repeats the password/disabled guard rather than relying only
+  on toolbar visibility.
   `S3KeyboardService` only provides the current editor policy/settings snapshot
   and commits a selected clipboard item into the active `InputConnection`.
+- `HangulCommitOnlyEditor` is the fallback for editors that do not support
+  composing spans. It records the expected cursor delta of each fallback
+  delete/commit and consumes either individual or coalesced selection callbacks.
+  A selected range or an unexpected caret delta is treated as an external edit
+  and ends the fallback composition instead of rewriting text at the new cursor.
+- Previous-character Hangul repair and QWERTY suggestion/autocorrect paths must
+  not run while the editor has a selected range. Direct input then replaces the
+  selection using the editor's normal `commitText` contract.
 - Display assistance is grouped by `InputAssistanceMode`: clean mode hides
   hints and preview, learning mode keeps hints and preview visible, and debug
   mode also enables the debug key-bounds overlay on debuggable builds. Each mode
@@ -223,6 +248,17 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 - `KeyboardMode` is the language/composition mode only. `KeyboardLayoutProfiles`
   stores the physical surface per language, defaulting to Hangul Dingul and
   English QWERTY while allowing Hangul QWERTY and English Dingul from settings.
+- `AndroidImeActions` is the shared activation boundary for the quick-start and
+  Android/IME screens. Keep direct input-method settings/picker intents out of
+  individual settings controllers.
+- `AndroidImeStatus` derives the quick-start state from the enabled input-method
+  list and `Settings.Secure.DEFAULT_INPUT_METHOD`. It must fail closed to the
+  activation prompt rather than crashing settings when a vendor build restricts
+  either provider.
+- In one-finger Dingul input, a selected key remains armed until a direction
+  locks or an unmapped direction cancels it; leaving a narrow visual/hit rect is
+  not itself a cancellation signal. Movement beyond the tap dead zone pauses
+  the tap timer so a slow directional slide cannot become an accidental tap.
 - English QWERTY is tap-first. `EnglishQwertyInputAssistant` keeps only the
   current in-memory word for suggestion strip updates, applies exact typo
   corrections before boundary keys such as space and punctuation, and lets the
@@ -244,7 +280,8 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   surface, key count, remote mode, preview, and debug-overlay state. It also
   exposes per-key virtual accessibility nodes with tap/slide descriptions,
   matching text/content descriptions, hit-bound based node bounds, focusable
-  click actions, and accessibility click mapped to the key's tap output. The
+  click actions, explicit accessibility-focus lifecycle, and custom up/down/
+  left/right/long-press actions mapped to the key's real gesture output. The
   virtual node provider lives in `KeyboardVirtualKeyAccessibilityProvider`; keep
   TalkBack node construction out of the Canvas view body.
 - `KeyboardAccessibilityLayoutTest` verifies that default Hangul and QWERTY
@@ -269,6 +306,10 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   clears both.
 - Settings expose separate local deletion controls for touch correction/input
   logs, optional clipboard history, and remote compatibility test logs.
+- `scripts/render-theme-previews.ps1` treats its output directory as a generated
+  preview set once `theme-preview-grid.png` exists. It rejects colliding safe
+  filenames and removes PNGs that no longer correspond to the current theme
+  catalog, preventing deleted presets from appearing as stale previews.
   `LocalDataControlsController` owns these destructive local-data actions and
   the clipboard-history toggle side effect. It also formats the read-only local
   data summary shown in settings, so `MainActivity` should only wire controls,
@@ -432,6 +473,11 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
 - `ThemeSelectorActivity` persists the applied preset/custom theme id through
   `KeyboardPreferences.SELECTED_THEME_ID`. Avoid relying on card index alone
   because user themes can be added or removed.
+- Theme selector cards and `scripts/render-theme-previews.ps1` show QWERTY and
+  Dingul together without per-layout captions. QWERTY keeps its default number
+  row, Dingul keeps its default four input rows, and both render their actual
+  directional slide legends. Display-override themes such as GMK Dots continue
+  to suppress text hints on keys replaced by glyphs.
 
 ## Agent Handoff
 
@@ -485,9 +531,12 @@ Use this checklist on a real device after installing a debug APK:
 - Hold backspace and confirm repeated deletion starts naturally.
 - Tap the four right function rail keys, especially near the right bezel.
 - Enable left assist rail and tap clipboard, voice, undo, and tools. Clipboard
-  and tools should open existing panels; voice should show the explicit
-  unavailable message, and undo should use the editor's conventional undo
-  context-menu action when the target app supports it.
+  should explain how to enable local history when it is off, and should open the existing panel
+  without replacing an active Hangul syllable when it is on. Tools should open quick settings;
+  voice should launch the Android speech recognizer,
+  return recognized text to the same editor, and remain unavailable in password/raw/remote
+  fields. Undo should use the editor's conventional undo context-menu action when the target
+  app supports it and report unsupported editors instead of failing silently.
 - With compact function rail and ergonomic hitbox enabled, confirm backspace
   accepts touches toward the main keys and downward edge.
 - Confirm left assist rail, main 12 keys, and right function rail look like one

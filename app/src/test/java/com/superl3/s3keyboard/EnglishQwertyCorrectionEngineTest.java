@@ -29,6 +29,12 @@ public final class EnglishQwertyCorrectionEngineTest {
     }
 
     @Test
+    public void missingApostropheCorrectionKeepsTheIntendedMeaning() {
+        assertEquals("you're", EnglishQwertyCorrectionEngine.DEFAULT.autoCorrection("youre"));
+        assertEquals("You're", EnglishQwertyCorrectionEngine.DEFAULT.autoCorrection("Youre"));
+    }
+
+    @Test
     public void usesQwertyAdjacentSubstitutionForFatFingerCandidate() {
         List<EnglishQwertyCorrectionEngine.Candidate> candidates =
                 EnglishQwertyCorrectionEngine.DEFAULT.suggest("jeyboard", 3);

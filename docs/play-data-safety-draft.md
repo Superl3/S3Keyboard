@@ -8,6 +8,9 @@ This draft matches the current closed-beta implementation and should be reviewed
 - Shares user data: No.
 - Data transmitted off device: No.
 - Network permission: No `android.permission.INTERNET` permission is declared.
+- Optional voice input delegates recognition to the Android speech-recognition provider. The app
+  does not request microphone permission or retain audio; provider-side collection must be
+  disclosed according to the provider used in the test/release environment.
 
 Under Google Play Data safety guidance, collection means transmitting data off the user's device. This app keeps keyboard settings, local input-learning data, and optional clipboard history on device.
 

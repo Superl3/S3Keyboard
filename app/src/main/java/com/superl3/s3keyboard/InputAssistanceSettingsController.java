@@ -15,7 +15,6 @@ final class InputAssistanceSettingsController {
     private final Supplier<KeyboardSettings> settings;
     private final Supplier<KeyboardErgonomicsOptions> ergonomicsOptions;
     private final BooleanSupplier debuggableBuild;
-    private final Runnable currentThemeCustomMarker;
     private final Consumer<KeyboardSettings> settingsSaver;
     private final BiConsumer<KeyboardSettings, KeyboardErgonomicsOptions> settingsAndErgonomicsSaver;
     private final Runnable controlsSyncer;
@@ -33,7 +32,6 @@ final class InputAssistanceSettingsController {
             Supplier<KeyboardSettings> settings,
             Supplier<KeyboardErgonomicsOptions> ergonomicsOptions,
             BooleanSupplier debuggableBuild,
-            Runnable currentThemeCustomMarker,
             Consumer<KeyboardSettings> settingsSaver,
             BiConsumer<KeyboardSettings, KeyboardErgonomicsOptions> settingsAndErgonomicsSaver,
             Runnable controlsSyncer) {
@@ -41,7 +39,6 @@ final class InputAssistanceSettingsController {
         this.settings = RuntimeDefaults.keyboardSettingsSupplier(settings);
         this.ergonomicsOptions = RuntimeDefaults.keyboardErgonomicsSupplier(ergonomicsOptions);
         this.debuggableBuild = RuntimeDefaults.booleanSupplier(debuggableBuild);
-        this.currentThemeCustomMarker = RuntimeDefaults.runnable(currentThemeCustomMarker);
         this.settingsSaver = RuntimeDefaults.keyboardSettingsConsumer(settingsSaver);
         this.settingsAndErgonomicsSaver =
                 RuntimeDefaults.keyboardSettingsAndErgonomicsConsumer(settingsAndErgonomicsSaver);
@@ -223,7 +220,6 @@ final class InputAssistanceSettingsController {
 
     private void saveEnglishSlideHints(boolean enabled) {
         KeyboardSettings settings = RuntimeDefaults.keyboardSettingsFrom(this.settings);
-        currentThemeCustomMarker.run();
         settingsSaver.accept(settings.withHintVisibility(
                 settings.showHangulSlideHints,
                 enabled,
@@ -237,7 +233,6 @@ final class InputAssistanceSettingsController {
 
     private void saveBeginnerTooltipPreview(boolean enabled) {
         KeyboardSettings settings = RuntimeDefaults.keyboardSettingsFrom(this.settings);
-        currentThemeCustomMarker.run();
         settingsSaver.accept(settings.withHintVisibility(
                 settings.showHangulSlideHints,
                 settings.showEnglishSlideHints,

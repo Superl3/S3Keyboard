@@ -48,72 +48,33 @@ final class RemoteWindowsSettingsController {
     }
 
     void addTo(LinearLayout root) {
-        remoteModeCheckBox = SettingsRowBuilder.checkBoxRow(
+        LinearLayout basicsSection = SettingsSubsection.add(
                 context,
                 root,
+                R.string.settings_remote_basics_subsection,
+                true).content;
+        LinearLayout automaticSection = SettingsSubsection.add(
+                context,
+                root,
+                R.string.settings_remote_automatic_subsection,
+                false).content;
+        LinearLayout appOverridesSection = SettingsSubsection.add(
+                context,
+                root,
+                R.string.settings_remote_app_overrides_subsection,
+                false).content;
+
+        remoteModeCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                basicsSection,
                 R.string.settings_remote_mode,
                 8,
                 () -> !syncing,
                 this::saveRemoteMode);
 
-        remoteAutoModeCheckBox = SettingsRowBuilder.checkBoxRow(
-                context,
-                root,
-                R.string.settings_remote_auto_mode,
-                8,
-                () -> !syncing,
-                this::saveRemoteAutoMode);
-
-        showCurrentAppProfileCheckBox = SettingsRowBuilder.checkBoxRow(
-                context,
-                root,
-                R.string.settings_show_current_app_profile,
-                8,
-                () -> !syncing,
-                this::saveShowCurrentAppProfile);
-
-        currentAppProfileSummaryValue = SettingsRowBuilder.bodyLabelRow(context, root, "", 6);
-
-        remoteAutoPackagesInput = addPackageListPreference(
-                root,
-                R.string.settings_remote_auto_packages,
-                KeyboardPreferences.loadRemoteAutoModePackages(context),
-                packages -> KeyboardPreferences.saveRemoteAutoModePackages(context, packages));
-
-        SettingsRowBuilder.secondaryLabelRow(
-                context,
-                root,
-                R.string.settings_remote_auto_packages_help,
-                6);
-        SettingsRowBuilder.secondaryLabelRow(
-                context,
-                root,
-                R.string.settings_app_profile_overrides_help,
-                12);
-        appProfileAsciiPackagesInput = addPackageListPreference(
-                root,
-                R.string.settings_app_profile_ascii_packages,
-                KeyboardPreferences.loadAppProfileAsciiPackages(context),
-                packages -> KeyboardPreferences.saveAppProfileAsciiPackages(context, packages));
-        appProfileNumberRowPackagesInput = addPackageListPreference(
-                root,
-                R.string.settings_app_profile_number_row_packages,
-                KeyboardPreferences.loadAppProfileNumberRowPackages(context),
-                packages -> KeyboardPreferences.saveAppProfileNumberRowPackages(context, packages));
-        appProfileNoComposingPackagesInput = addPackageListPreference(
-                root,
-                R.string.settings_app_profile_no_composing_packages,
-                KeyboardPreferences.loadAppProfileNoComposingPackages(context),
-                packages -> KeyboardPreferences.saveAppProfileNoComposingPackages(context, packages));
-        appProfileNoTextConveniencesPackagesInput = addPackageListPreference(
-                root,
-                R.string.settings_app_profile_no_text_conveniences_packages,
-                KeyboardPreferences.loadAppProfileNoTextConveniencesPackages(context),
-                packages -> KeyboardPreferences.saveAppProfileNoTextConveniencesPackages(context, packages));
-
         remoteKeyPresetSpinner = SettingsRowBuilder.labeledControl(
                 context,
-                root,
+                basicsSection,
                 R.string.settings_remote_key_preset,
                 SettingsRowBuilder.optionSpinner(
                         context,
@@ -124,7 +85,7 @@ final class RemoteWindowsSettingsController {
 
         remoteImeShortcutSpinner = SettingsRowBuilder.labeledControl(
                 context,
-                root,
+                basicsSection,
                 R.string.settings_remote_ime_shortcut,
                 SettingsRowBuilder.optionSpinner(
                         context,
@@ -133,7 +94,71 @@ final class RemoteWindowsSettingsController {
                         this::saveRemoteImeShortcut),
                 12);
 
-        SettingsRowBuilder.secondaryLabelRow(context, root, R.string.settings_remote_mode_help, 12);
+        SettingsRowBuilder.secondaryLabelRow(
+                context,
+                basicsSection,
+                R.string.settings_remote_mode_help,
+                12);
+
+        remoteAutoModeCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                automaticSection,
+                R.string.settings_remote_auto_mode,
+                8,
+                () -> !syncing,
+                this::saveRemoteAutoMode);
+
+        showCurrentAppProfileCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                automaticSection,
+                R.string.settings_show_current_app_profile,
+                8,
+                () -> !syncing,
+                this::saveShowCurrentAppProfile);
+
+        currentAppProfileSummaryValue = SettingsRowBuilder.bodyLabelRow(
+                context,
+                automaticSection,
+                "",
+                6);
+
+        remoteAutoPackagesInput = addPackageListPreference(
+                automaticSection,
+                R.string.settings_remote_auto_packages,
+                KeyboardPreferences.loadRemoteAutoModePackages(context),
+                packages -> KeyboardPreferences.saveRemoteAutoModePackages(context, packages));
+
+        SettingsRowBuilder.secondaryLabelRow(
+                context,
+                automaticSection,
+                R.string.settings_remote_auto_packages_help,
+                6);
+
+        SettingsRowBuilder.secondaryLabelRow(
+                context,
+                appOverridesSection,
+                R.string.settings_app_profile_overrides_help,
+                0);
+        appProfileAsciiPackagesInput = addPackageListPreference(
+                appOverridesSection,
+                R.string.settings_app_profile_ascii_packages,
+                KeyboardPreferences.loadAppProfileAsciiPackages(context),
+                packages -> KeyboardPreferences.saveAppProfileAsciiPackages(context, packages));
+        appProfileNumberRowPackagesInput = addPackageListPreference(
+                appOverridesSection,
+                R.string.settings_app_profile_number_row_packages,
+                KeyboardPreferences.loadAppProfileNumberRowPackages(context),
+                packages -> KeyboardPreferences.saveAppProfileNumberRowPackages(context, packages));
+        appProfileNoComposingPackagesInput = addPackageListPreference(
+                appOverridesSection,
+                R.string.settings_app_profile_no_composing_packages,
+                KeyboardPreferences.loadAppProfileNoComposingPackages(context),
+                packages -> KeyboardPreferences.saveAppProfileNoComposingPackages(context, packages));
+        appProfileNoTextConveniencesPackagesInput = addPackageListPreference(
+                appOverridesSection,
+                R.string.settings_app_profile_no_text_conveniences_packages,
+                KeyboardPreferences.loadAppProfileNoTextConveniencesPackages(context),
+                packages -> KeyboardPreferences.saveAppProfileNoTextConveniencesPackages(context, packages));
     }
 
     void sync(KeyboardSettings settings) {

@@ -75,6 +75,10 @@ final class SettingsValueFormatter {
         return context.getString(R.string.settings_gesture_threshold_format, dp);
     }
 
+    static String hitSlop(Context context, int dp) {
+        return context.getString(R.string.settings_hit_slop_format, dp);
+    }
+
     static String spacebarCursorDeadZone(Context context, int dp) {
         return context.getString(R.string.settings_spacebar_cursor_dead_zone_format, dp);
     }

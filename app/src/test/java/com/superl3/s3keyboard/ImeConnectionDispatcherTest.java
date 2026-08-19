@@ -97,7 +97,7 @@ public final class ImeConnectionDispatcherTest {
     }
 
     @Test
-    public void rejectedEditorActionCommitsNewlineWhenSoftEnterIsPartiallyAccepted() {
+    public void rejectedEditorActionDoesNotDuplicatePartiallyAcceptedSoftEnter() {
         FakeConnection fake = new FakeConnection();
         fake.performEditorActionResult = false;
 
@@ -110,9 +110,8 @@ public final class ImeConnectionDispatcherTest {
                 new RecordingKeySender());
 
         assertEquals("performEditorAction", fake.calls.get(0));
-        assertEquals("commitText", fake.calls.get(1));
-        assertEquals(1, fake.committedText.size());
-        assertEquals("\n", fake.committedText.get(0));
+        assertEquals(1, fake.calls.size());
+        assertEquals(0, fake.committedText.size());
     }
 
     @Test
@@ -231,7 +230,7 @@ public final class ImeConnectionDispatcherTest {
     }
 
     @Test
-    public void rawKeyInputEnterCommitsNewlineWhenSoftSenderPartiallyAccepts() {
+    public void rawKeyInputEnterDoesNotDuplicatePartiallyAcceptedSoftKey() {
         FakeConnection fake = new FakeConnection();
 
         ImeConnectionDispatcher.performEnter(
@@ -243,8 +242,7 @@ public final class ImeConnectionDispatcherTest {
                 new RecordingKeySender());
 
         assertEquals(0, fake.editorActions.size());
-        assertEquals(1, fake.committedText.size());
-        assertEquals("\n", fake.committedText.get(0));
+        assertEquals(0, fake.committedText.size());
     }
 
     @Test
@@ -322,7 +320,7 @@ public final class ImeConnectionDispatcherTest {
     }
 
     @Test
-    public void rawTextFallsBackToCommitWhenSoftSenderPartiallyAcceptsAsciiKey() {
+    public void rawTextDoesNotDuplicatePartiallyAcceptedAsciiOrEnterKeys() {
         FakeConnection fake = new FakeConnection();
 
         ImeConnectionDispatcher.sendRawText(
@@ -330,9 +328,7 @@ public final class ImeConnectionDispatcherTest {
                 "a\n",
                 (keyCode, metaState) -> 1);
 
-        assertEquals(2, fake.committedText.size());
-        assertEquals("a", fake.committedText.get(0));
-        assertEquals("\n", fake.committedText.get(1));
+        assertEquals(0, fake.committedText.size());
     }
 
     @Test

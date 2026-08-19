@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -21,14 +20,12 @@ public final class ThemeSelectorActivity extends Activity {
     private LinearLayout cards;
     private ThemeOption[] themeOptions = new ThemeOption[0];
     private int selectedIndex;
-    private KeyboardMode previewMode = KeyboardMode.HANGUL;
-    private Button dingulPreviewButton;
-    private Button qwertyPreviewButton;
     private TextView externalThemeSummary;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SettingsSystemBars.apply(this);
         if (getActionBar() != null) {
             getActionBar().hide();
         }
@@ -76,12 +73,19 @@ public final class ThemeSelectorActivity extends Activity {
                 R.string.theme_reset_default,
                 R.drawable.ic_keyboard_reset,
                 8,
-                v -> resetThemeToDefault());
+                v -> ThemeResetConfirmation.show(this, this::resetThemeToDefault));
 
         ExternalThemeStore.ensureThemeDirectory(this);
+        LinearLayout externalSection = SettingsSubsection.add(
+                this,
+                root,
+                R.string.external_theme_section,
+                false).content;
         externalThemeSummary = SettingsRowBuilder.valueLabel(this);
         externalThemeSummary.setTextColor(ui.textSecondary);
-        root.addView(externalThemeSummary, SettingsRowBuilder.matchWrapWithTop(this, 10));
+        externalSection.addView(
+                externalThemeSummary,
+                SettingsRowBuilder.matchWrapWithTop(this, 4));
 
         LinearLayout externalRow = SettingsRowBuilder.horizontal(this);
         SettingsRowBuilder.weightedButton(
@@ -98,18 +102,7 @@ public final class ThemeSelectorActivity extends Activity {
                 3,
                 3,
                 v -> rebuildCards());
-        root.addView(externalRow, SettingsRowBuilder.matchWrapWithTop(this, 8));
-
-        LinearLayout previewModeRow = SettingsRowBuilder.horizontal(this);
-        dingulPreviewButton = previewModeButton(
-                getString(R.string.theme_preview_mode_dingul),
-                KeyboardMode.HANGUL);
-        qwertyPreviewButton = previewModeButton(
-                getString(R.string.theme_preview_mode_qwerty),
-                KeyboardMode.ENGLISH);
-        previewModeRow.addView(dingulPreviewButton, SettingsRowBuilder.weightedWrap(this, 3, 3));
-        previewModeRow.addView(qwertyPreviewButton, SettingsRowBuilder.weightedWrap(this, 3, 3));
-        root.addView(previewModeRow, SettingsRowBuilder.matchWrapWithTop(this, 10));
+        externalSection.addView(externalRow, SettingsRowBuilder.matchWrapWithTop(this, 8));
 
         cards = SettingsRowBuilder.vertical(this);
         root.addView(cards, SettingsRowBuilder.matchWrapWithTop(this, 14));
@@ -122,12 +115,11 @@ public final class ThemeSelectorActivity extends Activity {
             return;
         }
         UserThemeStore.UserTheme[] externalThemes = ExternalThemeStore.load(this);
-        themeOptions = ThemeOption.buildOptions(UserThemeStore.load(this), externalThemes, false);
+        themeOptions = ThemeOption.buildOptions(this, UserThemeStore.load(this), externalThemes, true);
         selectedIndex = ThemeOption.indexOfStableId(
                 themeOptions,
                 KeyboardPreferences.loadSelectedThemeId(this),
                 -1);
-        updatePreviewModeButtons();
         updateExternalThemeSummary(externalThemes.length);
         cards.removeAllViews();
         for (int i = 0; i < themeOptions.length; i++) {
@@ -175,9 +167,12 @@ public final class ThemeSelectorActivity extends Activity {
         }
         card.addView(header, SettingsRowBuilder.matchWrap());
 
-        boolean englishPreview = previewMode == KeyboardMode.ENGLISH;
-        card.addView(previewKeyboard(englishPreview ? englishSettings : hangulSettings),
-                SettingsRowBuilder.matchHeightWithTop(this, englishPreview ? 88 : 108, 10));
+        card.addView(
+                previewKeyboard(englishSettings),
+                SettingsRowBuilder.matchHeightWithTop(this, 88, 10));
+        card.addView(
+                previewKeyboard(hangulSettings),
+                SettingsRowBuilder.matchHeightWithTop(this, 108, 4));
         return card;
     }
 
@@ -238,29 +233,6 @@ public final class ThemeSelectorActivity extends Activity {
         return badge;
     }
 
-    private Button previewModeButton(String label, KeyboardMode mode) {
-        Button button = SettingsRowBuilder.button(
-                this,
-                label,
-                previewMode == mode,
-                v -> {
-                    previewMode = mode;
-                    updatePreviewModeButtons();
-                    rebuildCards();
-                });
-        styleSystemButton(button, previewMode == mode);
-        return button;
-    }
-
-    private void updatePreviewModeButtons() {
-        if (dingulPreviewButton != null) {
-            styleSystemButton(dingulPreviewButton, previewMode == KeyboardMode.HANGUL);
-        }
-        if (qwertyPreviewButton != null) {
-            styleSystemButton(qwertyPreviewButton, previewMode == KeyboardMode.ENGLISH);
-        }
-    }
-
     private void applyTheme(int index) {
         if (index < 0 || index >= themeOptions.length) {
             selectedIndex = 0;
@@ -290,20 +262,11 @@ public final class ThemeSelectorActivity extends Activity {
     private GradientDrawable cardBackground(SettingsUiPalette ui, boolean selected) {
         GradientDrawable background = new GradientDrawable();
         background.setColor(ui.surfaceRaised);
-        background.setCornerRadius(SettingsRowBuilder.dp(this, 18));
+        background.setCornerRadius(SettingsRowBuilder.dp(this, 8));
         background.setStroke(
-                SettingsRowBuilder.dp(this, selected ? 4 : 1),
+                SettingsRowBuilder.dp(this, selected ? 2 : 1),
                 selected ? ui.selectedBorder : ui.border);
         return background;
-    }
-
-    private void styleSystemButton(Button button, boolean selected) {
-        SettingsViewStyler.button(button, this, selected);
-        button.setPadding(
-                SettingsRowBuilder.dp(this, 18),
-                0,
-                SettingsRowBuilder.dp(this, 18),
-                0);
     }
 
 }

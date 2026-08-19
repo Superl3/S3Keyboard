@@ -1,6 +1,10 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 import org.junit.Test;
 
@@ -34,6 +38,28 @@ public final class KeyboardCommandRouterTest {
         assertEquals(KeyboardCommandRoute.NOOP, KeyboardCommandRouter.route(KeyboardCommands.CMD_NOOP));
         assertEquals(KeyboardCommandRoute.TEXT, KeyboardCommandRouter.route("가"));
         assertEquals(KeyboardCommandRoute.TEXT, KeyboardCommandRouter.route("abc"));
+        assertEquals(
+                KeyboardCommandRoute.NOOP,
+                KeyboardCommandRouter.route("__unregistered_internal_command__"));
+    }
+
+    @Test
+    public void everyDeclaredCommandHasAnExplicitRuntimeRoute() throws IllegalAccessException {
+        for (Field field : KeyboardCommands.class.getDeclaredFields()) {
+            if (field.getType() != String.class
+                    || !Modifier.isStatic(field.getModifiers())
+                    || !field.getName().startsWith("CMD_")) {
+                continue;
+            }
+            String command = (String) field.get(null);
+            KeyboardCommandRoute route = KeyboardCommandRouter.route(command);
+            if (KeyboardCommands.CMD_NOOP.equals(command)) {
+                assertEquals(KeyboardCommandRoute.NOOP, route);
+                continue;
+            }
+            assertNotEquals("unrouted command: " + field.getName(), KeyboardCommandRoute.NOOP, route);
+            assertNotEquals("command leaked as text: " + field.getName(), KeyboardCommandRoute.TEXT, route);
+        }
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.superl3.s3keyboard;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -10,6 +11,17 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 
 public final class KeyboardLayoutFactoryTest {
+    @Test
+    public void oneFingerModeTemporarilyRestoresTheDingulDotKey() {
+        KeyboardLayoutProfiles stored = KeyboardLayoutProfiles.defaults();
+
+        KeyboardLayoutProfiles effective = stored.effectiveForOneFingerInput(true);
+
+        assertTrue(stored.dingulDotEnterKeyEnabled);
+        assertFalse(effective.dingulDotEnterKeyEnabled);
+        assertTrue(stored.effectiveForOneFingerInput(false).dingulDotEnterKeyEnabled);
+    }
+
     @Test
     public void englishKeyHasTapUpperSlideAndNoLongPressInput() {
         KeyboardSettings settings = KeyboardSettings.defaults().withKeyboardMode(KeyboardMode.ENGLISH);
@@ -40,6 +52,23 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals("86,86,86,42", widths(rows.get(1)));
         assertEquals("86,86,86,42", widths(rows.get(2)));
         assertEquals("86,86,86,42", widths(rows.get(3)));
+    }
+
+    @Test
+    public void hangulDotDotKeyCanReplaceVisualEnterWhenEnabledOff() {
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(
+                KeyboardSettings.defaults(),
+                KeyboardSurface.NORMAL,
+                KeyboardLayoutProfiles.defaults().withDingulDotEnterKeyEnabled(false));
+        GestureKey dotDot = rows.get(3).keys.get(2);
+
+        assertEquals(". .", dotDot.label);
+        assertEquals(KeyboardCommands.CMD_SPACE, dotDot.valueFor(GestureAction.TAP));
+        assertEquals("\u315B", dotDot.valueFor(GestureAction.UP));
+        assertEquals("\u3160", dotDot.valueFor(GestureAction.DOWN));
+        assertEquals("\u3155", dotDot.valueFor(GestureAction.LEFT));
+        assertEquals("\u3151", dotDot.valueFor(GestureAction.RIGHT));
+        assertEquals(KeyIcon.NONE, dotDot.icon);
     }
 
     @Test
@@ -116,12 +145,15 @@ public final class KeyboardLayoutFactoryTest {
     }
 
     @Test
-    public void hangulDeleteKeyDoesNotRenderCursorSlideHints() {
+    public void hangulDeleteKeyOffersVerticalDeleteGestures() {
         GestureKey delete = findKey(KeyboardLayoutFactory.build(KeyboardSettings.defaults()), "삭제");
 
-        assertNull(delete.upSlide);
-        assertNull(delete.downSlide);
-        assertNull(delete.leftSlide);
+        assertEquals(KeyboardCommands.CMD_DELETE, delete.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_DELETE, delete.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_DELETE_WORD, delete.valueFor(GestureAction.DOWN));
+        assertEquals(KeyboardCommands.CMD_DELETE_WORD, delete.valueFor(GestureAction.LEFT));
+        assertEquals(KeyboardCommands.CMD_DELETE, delete.valueFor(GestureAction.RIGHT));
+        assertNull(delete.mappedValueFor(GestureAction.RIGHT));
         assertNull(delete.rightSlide);
     }
 
@@ -186,6 +218,8 @@ public final class KeyboardLayoutFactoryTest {
         GestureKey backspace = findKey(rows, "Del");
 
         assertEquals(KeyboardCommands.CMD_DELETE, backspace.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_DELETE, backspace.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_DELETE_WORD, backspace.valueFor(GestureAction.DOWN));
         assertEquals(KeyboardCommands.CMD_DELETE_WORD, backspace.valueFor(GestureAction.LEFT));
     }
 

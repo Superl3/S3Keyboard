@@ -3,12 +3,14 @@ package com.superl3.s3keyboard;
 import android.app.Activity;
 import android.graphics.Rect;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
 final class GesturePracticeInputController {
     private final Activity activity;
     private EditText input;
+    private View focusRetentionRegion;
 
     GesturePracticeInputController(Activity activity) {
         this.activity = activity;
@@ -28,7 +30,19 @@ final class GesturePracticeInputController {
         if (event.getAction() != MotionEvent.ACTION_DOWN
                 || input == null
                 || !input.hasFocus()
-                || !isTouchOutsideInput(event)) {
+                || !isTouchOutsideInput(event)
+                || isTouchInside(focusRetentionRegion, event)) {
+            return;
+        }
+        clearFocusAndHideKeyboard();
+    }
+
+    void setFocusRetentionRegion(View region) {
+        focusRetentionRegion = region;
+    }
+
+    void clearFocusAndHideKeyboard() {
+        if (input == null) {
             return;
         }
         input.clearFocus();
@@ -56,8 +70,15 @@ final class GesturePracticeInputController {
     }
 
     private boolean isTouchOutsideInput(MotionEvent event) {
+        return !isTouchInside(input, event);
+    }
+
+    private boolean isTouchInside(View view, MotionEvent event) {
+        if (view == null) {
+            return false;
+        }
         Rect rect = new Rect();
-        input.getGlobalVisibleRect(rect);
-        return !rect.contains(Math.round(event.getRawX()), Math.round(event.getRawY()));
+        view.getGlobalVisibleRect(rect);
+        return rect.contains(Math.round(event.getRawX()), Math.round(event.getRawY()));
     }
 }

@@ -10,7 +10,7 @@ import org.junit.Test;
 
 public final class ThemePreviewSettingsTest {
     @Test
-    public void previewSettingsDisableHintsAndKeepQwertyNumberRow() {
+    public void previewSettingsShowSlideHintsWithoutTooltipAndKeepQwertyNumberRow() {
         ThemeOption option = ThemeOption.buildOptions(null, false)[0];
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withHintVisibility(true, true, true)
@@ -23,8 +23,8 @@ public final class ThemePreviewSettingsTest {
                 KeyboardMode.ENGLISH);
 
         assertEquals(KeyboardMode.ENGLISH, preview.keyboardMode);
-        assertFalse(preview.showHangulSlideHints);
-        assertFalse(preview.showEnglishSlideHints);
+        assertEquals(true, preview.showHangulSlideHints);
+        assertEquals(true, preview.showEnglishSlideHints);
         assertFalse(preview.showBeginnerTooltipPreview);
         assertFalse(preview.showHangulNumberRow);
         assertEquals(true, preview.showEnglishNumberRow);

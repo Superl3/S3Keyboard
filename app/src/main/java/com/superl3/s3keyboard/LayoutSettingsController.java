@@ -1,8 +1,10 @@
 package com.superl3.s3keyboard;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -23,6 +25,7 @@ final class LayoutSettingsController {
     private final Consumer<KeyboardSettings> settingsSaver;
     private final Consumer<KeyboardLayoutProfile> hangulLayoutProfileSaver;
     private final Consumer<KeyboardLayoutProfile> englishLayoutProfileSaver;
+    private final Consumer<Boolean> dingulDotEnterKeySaver;
     private final Consumer<KeyboardErgonomicsOptions> ergonomicsOptionsSaver;
     private final Runnable controlsSyncer;
     private ErgonomicsSettingsController ergonomicsSettingsController;
@@ -34,6 +37,7 @@ final class LayoutSettingsController {
     private SeekBar hangulSpecialColumnSeekBar;
     private CheckBox hangulNumberRowCheckBox;
     private CheckBox englishNumberRowCheckBox;
+    private CheckBox dingulDotEnterKeyCheckBox;
     private TextView sharedPaddingValue;
     private TextView hangulHeightValue;
     private TextView englishHeightValue;
@@ -43,12 +47,12 @@ final class LayoutSettingsController {
     private TextView numberRowBottomGapValue;
     private TextView hangulKeyGapValue;
     private TextView englishKeyGapValue;
-    private EditText sharedPaddingInput;
-    private EditText keyboardTopPaddingInput;
-    private EditText keyboardBottomPaddingInput;
-    private EditText numberRowBottomGapInput;
-    private EditText hangulKeyGapInput;
-    private EditText englishKeyGapInput;
+    private NumericStepperRow sharedPaddingStepper;
+    private NumericStepperRow keyboardTopPaddingStepper;
+    private NumericStepperRow keyboardBottomPaddingStepper;
+    private NumericStepperRow numberRowBottomGapStepper;
+    private NumericStepperRow hangulKeyGapStepper;
+    private NumericStepperRow englishKeyGapStepper;
     private boolean syncing = true;
 
     LayoutSettingsController(
@@ -59,6 +63,7 @@ final class LayoutSettingsController {
             Consumer<KeyboardSettings> settingsSaver,
             Consumer<KeyboardLayoutProfile> hangulLayoutProfileSaver,
             Consumer<KeyboardLayoutProfile> englishLayoutProfileSaver,
+            Consumer<Boolean> dingulDotEnterKeySaver,
             Consumer<KeyboardErgonomicsOptions> ergonomicsOptionsSaver,
             Runnable controlsSyncer) {
         this.context = context;
@@ -70,6 +75,8 @@ final class LayoutSettingsController {
                 RuntimeDefaults.keyboardLayoutProfileConsumer(hangulLayoutProfileSaver);
         this.englishLayoutProfileSaver =
                 RuntimeDefaults.keyboardLayoutProfileConsumer(englishLayoutProfileSaver);
+        this.dingulDotEnterKeySaver =
+                dingulDotEnterKeySaver == null ? ignored -> { } : dingulDotEnterKeySaver;
         this.ergonomicsOptionsSaver =
                 RuntimeDefaults.keyboardErgonomicsConsumer(ergonomicsOptionsSaver);
         this.controlsSyncer = RuntimeDefaults.runnable(controlsSyncer);
@@ -77,9 +84,45 @@ final class LayoutSettingsController {
 
     void addTo(LinearLayout root) {
         KeyboardSettings initialSettings = RuntimeDefaults.keyboardSettingsFrom(settings);
-        handednessSpinner = SettingsRowBuilder.labeledControl(
+        Button editLayoutButton = SettingsRowBuilder.button(context, R.string.settings_edit_layout_visual);
+        editLayoutButton.setLayoutParams(
+                SettingsRowBuilder.matchWrapWithTop(context, 8));
+        root.addView(editLayoutButton);
+        editLayoutButton.setOnClickListener(v -> {
+            Intent intent = new Intent(context, LayoutEditorActivity.class);
+            if (context instanceof Activity) {
+                ((Activity) context).startActivityForResult(intent, MainActivity.REQUEST_EDIT_LAYOUT);
+            }
+        });
+
+        LinearLayout basicsSection = SettingsSubsection.add(
                 context,
                 root,
+                R.string.settings_layout_basics_subsection,
+                true).content;
+        LinearLayout ergonomicsSection = SettingsSubsection.add(
+                context,
+                root,
+                R.string.settings_layout_ergonomics_subsection,
+                false).content;
+        LinearLayout sizeSection = SettingsSubsection.add(
+                context,
+                root,
+                R.string.settings_layout_size_subsection,
+                false).content;
+        LinearLayout spacingSection = SettingsSubsection.add(
+                context,
+                root,
+                R.string.settings_layout_spacing_subsection,
+                false).content;
+        LinearLayout numberRowSection = SettingsSubsection.add(
+                context,
+                root,
+                R.string.settings_layout_number_row_subsection,
+                false).content;
+        handednessSpinner = SettingsRowBuilder.labeledControl(
+                context,
+                basicsSection,
                 R.string.settings_handedness_label,
                 SettingsRowBuilder.optionSpinner(
                         context,
@@ -92,7 +135,7 @@ final class LayoutSettingsController {
 
         hangulLayoutProfileSpinner = SettingsRowBuilder.labeledControl(
                 context,
-                root,
+                basicsSection,
                 R.string.settings_hangul_layout_label,
                 layoutProfileSpinner(profile -> {
                     hangulLayoutProfileSaver.accept(profile);
@@ -102,7 +145,7 @@ final class LayoutSettingsController {
 
         englishLayoutProfileSpinner = SettingsRowBuilder.labeledControl(
                 context,
-                root,
+                basicsSection,
                 R.string.settings_english_layout_label,
                 layoutProfileSpinner(profile -> {
                     englishLayoutProfileSaver.accept(profile);
@@ -114,22 +157,40 @@ final class LayoutSettingsController {
                 context,
                 () -> RuntimeDefaults.keyboardErgonomicsFrom(ergonomicsOptions),
                 ergonomicsOptionsSaver);
-        ergonomicsSettingsController.addTo(root);
+        ergonomicsSettingsController.addTo(ergonomicsSection);
 
-        sharedPaddingValue = SettingsRowBuilder.valueLabelRow(context, root, 12);
-        sharedPaddingInput = addNumericStepper(
-                root,
+        dingulDotEnterKeyCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                basicsSection,
+                R.string.settings_dingul_dot_enter_key,
+                8,
+                () -> !syncing,
+                enabled -> {
+                    dingulDotEnterKeySaver.accept(enabled);
+                    controlsSyncer.run();
+                });
+        SettingsRowBuilder.secondaryLabelRow(
+                context,
+                basicsSection,
+                R.string.settings_dingul_dot_enter_key_summary,
+                2);
+
+        sharedPaddingValue = SettingsRowBuilder.valueLabelRow(context, spacingSection, 12);
+        sharedPaddingStepper = addNumericStepper(
+                spacingSection,
                 initialSettings.leftMarginDp,
                 KeyboardSettings.MAX_MARGIN_DP,
+                R.string.settings_shared_padding_format,
                 value -> settingsSaver.accept(
                         RuntimeDefaults.keyboardSettingsFrom(settings)
                                 .withSharedMargin(value)));
 
-        keyboardTopPaddingValue = SettingsRowBuilder.valueLabelRow(context, root, 12);
-        keyboardTopPaddingInput = addNumericStepper(
-                root,
+        keyboardTopPaddingValue = SettingsRowBuilder.valueLabelRow(context, spacingSection, 12);
+        keyboardTopPaddingStepper = addNumericStepper(
+                spacingSection,
                 initialSettings.keyboardTopPaddingDp,
                 KeyboardSettings.MAX_KEYBOARD_TOP_PADDING_DP,
+                R.string.settings_keyboard_top_padding_format,
                 value -> {
                     KeyboardSettings safe = RuntimeDefaults.keyboardSettingsFrom(settings);
                     settingsSaver.accept(safe.withLayoutSpacing(
@@ -139,11 +200,12 @@ final class LayoutSettingsController {
                             safe.bottomRowTopPaddingDp));
                 });
 
-        keyboardBottomPaddingValue = SettingsRowBuilder.valueLabelRow(context, root, 12);
-        keyboardBottomPaddingInput = addNumericStepper(
-                root,
+        keyboardBottomPaddingValue = SettingsRowBuilder.valueLabelRow(context, spacingSection, 12);
+        keyboardBottomPaddingStepper = addNumericStepper(
+                spacingSection,
                 initialSettings.keyboardBottomPaddingDp,
                 KeyboardSettings.MAX_KEYBOARD_BOTTOM_PADDING_DP,
+                R.string.settings_keyboard_bottom_padding_format,
                 value -> {
                     KeyboardSettings safe = RuntimeDefaults.keyboardSettingsFrom(settings);
                     settingsSaver.accept(safe.withLayoutSpacing(
@@ -155,7 +217,7 @@ final class LayoutSettingsController {
 
         hangulNumberRowCheckBox = SettingsRowBuilder.checkBoxRow(
                 context,
-                root,
+                numberRowSection,
                 R.string.settings_hangul_number_row,
                 16,
                 () -> !syncing,
@@ -165,7 +227,7 @@ final class LayoutSettingsController {
 
         englishNumberRowCheckBox = SettingsRowBuilder.checkBoxRow(
                 context,
-                root,
+                numberRowSection,
                 R.string.settings_english_number_row,
                 8,
                 () -> !syncing,
@@ -173,20 +235,22 @@ final class LayoutSettingsController {
                         RuntimeDefaults.keyboardSettingsFrom(settings)
                                 .withEnglishNumberRow(isChecked)));
 
-        numberRowBottomGapValue = SettingsRowBuilder.valueLabelRow(context, root, 12);
-        numberRowBottomGapInput = addNumericStepper(
-                root,
+        numberRowBottomGapValue = SettingsRowBuilder.valueLabelRow(context, numberRowSection, 12);
+        numberRowBottomGapStepper = addNumericStepper(
+                numberRowSection,
                 initialSettings.numberRowBottomGapDp,
                 KeyboardSettings.MAX_NUMBER_ROW_BOTTOM_GAP_DP,
+                R.string.settings_number_row_gap_format,
                 value -> settingsSaver.accept(
                         RuntimeDefaults.keyboardSettingsFrom(settings)
                                 .withNumberRowBottomGap(value)));
 
-        hangulKeyGapValue = SettingsRowBuilder.valueLabelRow(context, root, 12);
-        hangulKeyGapInput = addNumericStepper(
-                root,
+        hangulKeyGapValue = SettingsRowBuilder.valueLabelRow(context, spacingSection, 12);
+        hangulKeyGapStepper = addNumericStepper(
+                spacingSection,
                 initialSettings.hangulKeyGapDp,
                 KeyboardSettings.MAX_KEY_GAP_DP,
+                R.string.settings_hangul_key_gap_format,
                 value -> {
                     currentThemeCustomMarker.run();
                     settingsSaver.accept(
@@ -194,11 +258,12 @@ final class LayoutSettingsController {
                                     .withHangulKeyGap(value));
                 });
 
-        englishKeyGapValue = SettingsRowBuilder.valueLabelRow(context, root, 8);
-        englishKeyGapInput = addNumericStepper(
-                root,
+        englishKeyGapValue = SettingsRowBuilder.valueLabelRow(context, spacingSection, 8);
+        englishKeyGapStepper = addNumericStepper(
+                spacingSection,
                 initialSettings.englishKeyGapDp,
                 KeyboardSettings.MAX_KEY_GAP_DP,
+                R.string.settings_english_key_gap_format,
                 value -> {
                     currentThemeCustomMarker.run();
                     settingsSaver.accept(
@@ -209,13 +274,12 @@ final class LayoutSettingsController {
         hangulHeightValue = SettingsRowBuilder.valueLabel(context);
         hangulHeightSeekBar = SettingsRowBuilder.seekBarRow(
                 context,
-                root,
+                sizeSection,
                 hangulHeightValue,
                 KeyboardSettings.MAX_HEIGHT_DP - KeyboardSettings.MIN_HEIGHT_DP,
                 16,
                 () -> !syncing,
                 progress -> {
-                    currentThemeCustomMarker.run();
                     settingsSaver.accept(
                             RuntimeDefaults.keyboardSettingsFrom(settings)
                                     .withHangulHeight(KeyboardSettings.MIN_HEIGHT_DP + progress));
@@ -224,13 +288,12 @@ final class LayoutSettingsController {
         englishHeightValue = SettingsRowBuilder.valueLabel(context);
         englishHeightSeekBar = SettingsRowBuilder.seekBarRow(
                 context,
-                root,
+                sizeSection,
                 englishHeightValue,
                 KeyboardSettings.MAX_HEIGHT_DP - KeyboardSettings.MIN_HEIGHT_DP,
                 8,
                 () -> !syncing,
                 progress -> {
-                    currentThemeCustomMarker.run();
                     settingsSaver.accept(
                             RuntimeDefaults.keyboardSettingsFrom(settings)
                                     .withEnglishHeight(KeyboardSettings.MIN_HEIGHT_DP + progress));
@@ -239,7 +302,7 @@ final class LayoutSettingsController {
         hangulSpecialColumnValue = SettingsRowBuilder.valueLabel(context);
         hangulSpecialColumnSeekBar = SettingsRowBuilder.seekBarRow(
                 context,
-                root,
+                sizeSection,
                 hangulSpecialColumnValue,
                 KeyboardSettings.MAX_HANGUL_SPECIAL_COLUMN_PERCENT
                         - KeyboardSettings.MIN_HANGUL_SPECIAL_COLUMN_PERCENT,
@@ -267,16 +330,17 @@ final class LayoutSettingsController {
         handednessSpinner.setSelection(HandednessMode.indexOf(safeSettings.handednessMode));
         hangulLayoutProfileSpinner.setSelection(KeyboardLayoutProfile.indexOf(safeProfiles.hangulLayout));
         englishLayoutProfileSpinner.setSelection(KeyboardLayoutProfile.indexOf(safeProfiles.englishLayout));
+        dingulDotEnterKeyCheckBox.setChecked(safeProfiles.dingulDotEnterKeyEnabled);
         hangulHeightSeekBar.setProgress(safeSettings.hangulKeyboardHeightDp - KeyboardSettings.MIN_HEIGHT_DP);
         englishHeightSeekBar.setProgress(safeSettings.englishKeyboardHeightDp - KeyboardSettings.MIN_HEIGHT_DP);
         hangulSpecialColumnSeekBar.setProgress(
                 safeSettings.hangulSpecialColumnPercent - KeyboardSettings.MIN_HANGUL_SPECIAL_COLUMN_PERCENT);
-        setNumericText(sharedPaddingInput, safeSettings.leftMarginDp);
-        setNumericText(keyboardTopPaddingInput, safeSettings.keyboardTopPaddingDp);
-        setNumericText(keyboardBottomPaddingInput, safeSettings.keyboardBottomPaddingDp);
-        setNumericText(numberRowBottomGapInput, safeSettings.numberRowBottomGapDp);
-        setNumericText(hangulKeyGapInput, safeSettings.hangulKeyGapDp);
-        setNumericText(englishKeyGapInput, safeSettings.englishKeyGapDp);
+        sharedPaddingStepper.syncValue(safeSettings.leftMarginDp);
+        keyboardTopPaddingStepper.syncValue(safeSettings.keyboardTopPaddingDp);
+        keyboardBottomPaddingStepper.syncValue(safeSettings.keyboardBottomPaddingDp);
+        numberRowBottomGapStepper.syncValue(safeSettings.numberRowBottomGapDp);
+        hangulKeyGapStepper.syncValue(safeSettings.hangulKeyGapDp);
+        englishKeyGapStepper.syncValue(safeSettings.englishKeyGapDp);
         hangulNumberRowCheckBox.setChecked(safeSettings.showHangulNumberRow);
         englishNumberRowCheckBox.setChecked(safeSettings.showEnglishNumberRow);
         sharedPaddingValue.setText(SettingsValueFormatter.sharedPadding(context, safeSettings.leftMarginDp));
@@ -299,33 +363,27 @@ final class LayoutSettingsController {
         handednessSpinner.post(() -> syncing = false);
     }
 
-    private EditText addNumericStepper(
+    private NumericStepperRow addNumericStepper(
             LinearLayout root,
             int initialValue,
             int maxValue,
+            int valueDescriptionResId,
             IntConsumer listener) {
         IntConsumer safeListener = RuntimeDefaults.intConsumer(listener);
         NumericStepperRow row = new NumericStepperRow(
                 context,
                 initialValue,
+                0,
                 maxValue,
+                1,
+                valueDescriptionResId,
                 value -> {
                     if (!syncing) {
                         safeListener.accept(value);
                     }
-                });
+        });
         root.addView(row, SettingsRowBuilder.matchWrap());
-        return row.input();
-    }
-
-    private void setNumericText(EditText input, int value) {
-        if (input == null) {
-            return;
-        }
-        String text = String.valueOf(value);
-        if (!text.contentEquals(input.getText())) {
-            input.setText(text);
-        }
+        return row;
     }
 
     private Spinner layoutProfileSpinner(Consumer<KeyboardLayoutProfile> listener) {

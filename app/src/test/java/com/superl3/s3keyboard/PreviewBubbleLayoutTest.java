@@ -22,22 +22,8 @@ public final class PreviewBubbleLayoutTest {
     }
 
     @Test
-    public void yPlacesBubbleAboveAnchorWithGapAndLift() {
-        assertEquals(26, PreviewBubbleLayout.yPx(100f, 61, 3, 10));
-    }
-
-    @Test
-    public void liftRisesThenSettles() {
-        assertEquals(0, PreviewBubbleLayout.liftPx(false, 1f, 14, 8));
-        assertEquals(0, PreviewBubbleLayout.liftPx(true, 0f, 14, 8));
-        assertTrue(PreviewBubbleLayout.liftPx(true, 0.30f, 14, 8) > 8);
-        assertTrue(PreviewBubbleLayout.liftPx(true, 0.40f, 14, 8) > 12);
-        assertEquals(14, PreviewBubbleLayout.liftPx(true, 0.50f, 14, 8));
-        assertEquals(14, PreviewBubbleLayout.liftPx(true, 0.70f, 14, 8));
-        int descending = PreviewBubbleLayout.liftPx(true, 0.88f, 14, 8);
-        assertTrue(descending > 8);
-        assertTrue(descending < 14);
-        assertEquals(8, PreviewBubbleLayout.liftPx(true, 1f, 14, 8));
+    public void yPlacesBubbleDirectlyAboveAnchorWithGap() {
+        assertEquals(36, PreviewBubbleLayout.yPx(100f, 61, 3));
     }
 
     @Test

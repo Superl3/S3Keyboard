@@ -1,8 +1,15 @@
 <resources>
-    <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+    <style name="AppThemeBase" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:colorAccent">#14545A</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:forceDarkAllowed">false</item>
+    </style>
+
+    <style name="AppTheme" parent="@style/AppThemeBase" />
+
+    <style name="VoiceInputProxyTheme" parent="@android:style/Theme.Translucent.NoTitleBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowDisablePreview">true</item>
     </style>
 </resources>

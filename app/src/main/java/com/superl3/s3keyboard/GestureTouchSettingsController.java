@@ -17,6 +17,8 @@ final class GestureTouchSettingsController {
     private final Supplier<KeyboardSettings> settings;
     private final Consumer<KeyboardSettings> settingsSaver;
     private final Runnable controlsSyncer;
+    private TextView hitSlopValue;
+    private SeekBar hitSlopSeekBar;
     private TextView gestureThresholdValue;
     private SeekBar gestureThresholdSeekBar;
     private Spinner vowelProfileSpinner;
@@ -38,6 +40,17 @@ final class GestureTouchSettingsController {
     }
 
     void addTo(LinearLayout root) {
+        hitSlopValue = SettingsRowBuilder.valueLabel(context);
+        hitSlopSeekBar = SettingsRowBuilder.seekBarRow(
+                context,
+                root,
+                hitSlopValue,
+                KeyboardSettings.MAX_HIT_SLOP_DP - KeyboardSettings.MIN_HIT_SLOP_DP,
+                12,
+                () -> !syncing,
+                progress -> settingsSaver.accept(RuntimeDefaults.keyboardSettingsFrom(settings)
+                        .withHitSlop(KeyboardSettings.MIN_HIT_SLOP_DP + progress)));
+
         gestureThresholdValue = SettingsRowBuilder.valueLabel(context);
         gestureThresholdSeekBar = SettingsRowBuilder.seekBarRow(
                 context,
@@ -101,6 +114,7 @@ final class GestureTouchSettingsController {
         int deadZoneDp = KeyboardPreferences.loadSpacebarCursorDeadZoneDp(context);
 
         syncing = true;
+        hitSlopSeekBar.setProgress(safe.hitSlopDp - KeyboardSettings.MIN_HIT_SLOP_DP);
         gestureThresholdSeekBar.setProgress(
                 safe.gestureThresholdDp - KeyboardSettings.MIN_GESTURE_THRESHOLD_DP);
         vowelProfileSpinner.setSelection(DingulVowelGestureProfile.indexOf(
@@ -108,6 +122,7 @@ final class GestureTouchSettingsController {
         spacebarDeadZoneSeekBar.setProgress(
                 deadZoneDp - KeyboardPreferences.MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP);
         touchYOffsetSeekBar.setProgress(safe.touchYOffsetDp - KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP);
+        hitSlopValue.setText(SettingsValueFormatter.hitSlop(context, safe.hitSlopDp));
         gestureThresholdValue.setText(SettingsValueFormatter.gestureThreshold(
                 context,
                 safe.gestureThresholdDp));

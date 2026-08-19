@@ -1,5 +1,7 @@
 package com.superl3.s3keyboard;
 
+import android.content.Context;
+
 final class ThemeOption {
     final String label;
     final KeyboardThemePreset preset;
@@ -40,7 +42,7 @@ final class ThemeOption {
                 KeyboardThemePreset.PRESETS.length + userCount + externalCount + customOffset];
 
         if (includeCurrentCustom) {
-            options[0] = new ThemeOption("Current custom", null, null, null, false, "");
+            options[0] = new ThemeOption("Current settings", null, null, null, false, "");
         }
 
         for (int i = 0; i < KeyboardThemePreset.PRESETS.length; i++) {
@@ -59,6 +61,44 @@ final class ThemeOption {
                     new ThemeOption("External: " + theme.name, null, theme.id, theme.json, true, theme.sourcePath);
         }
         return options;
+    }
+
+    static ThemeOption[] buildOptions(
+            Context context,
+            UserThemeStore.UserTheme[] userThemes,
+            UserThemeStore.UserTheme[] externalThemes,
+            boolean includeCurrentCustom) {
+        ThemeOption[] options = buildOptions(userThemes, externalThemes, includeCurrentCustom);
+        if (context == null) {
+            return options;
+        }
+        for (int index = 0; index < options.length; index++) {
+            ThemeOption option = options[index];
+            if (option == null) {
+                continue;
+            }
+            if (includeCurrentCustom && index == 0 && option.stableId().isEmpty()) {
+                options[index] = option.withLabel(context.getString(R.string.theme_current_settings));
+            } else if (option.externalTheme) {
+                String rawName = option.label.startsWith("External: ")
+                        ? option.label.substring("External: ".length())
+                        : option.label;
+                options[index] = option.withLabel(context.getString(
+                        R.string.theme_external_name_format,
+                        rawName));
+            }
+        }
+        return options;
+    }
+
+    private ThemeOption withLabel(String nextLabel) {
+        return new ThemeOption(
+                nextLabel,
+                preset,
+                userThemeId,
+                userThemeJson,
+                externalTheme,
+                sourcePath);
     }
 
     KeyboardSettings applyTo(KeyboardSettings settings) {
@@ -101,7 +141,7 @@ final class ThemeOption {
     }
 
     static int indexOfStableId(ThemeOption[] options, String stableId, int missingIndex) {
-        if (options == null || options.length == 0 || stableId == null || stableId.isEmpty()) {
+        if (options == null || options.length == 0 || stableId == null) {
             return missingIndex;
         }
         for (int i = 0; i < options.length; i++) {

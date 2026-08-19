@@ -67,6 +67,7 @@ public final class KeyboardSettingsTest {
         assertEquals(4, settings.keyboardBottomPaddingDp);
         assertEquals(0, settings.bottomRowTopPaddingDp);
         assertEquals(KeyboardSettings.DEFAULT_GESTURE_THRESHOLD_DP, settings.gestureThresholdDp);
+        assertEquals(KeyboardSettings.DEFAULT_HIT_SLOP_DP, settings.hitSlopDp);
         assertEquals(4, settings.touchYOffsetDp);
         assertEquals(430, KeyboardSettings.MAX_HEIGHT_DP);
     }
@@ -113,6 +114,17 @@ public final class KeyboardSettingsTest {
         assertEquals(KeyboardSettings.MIN_TOUCH_Y_OFFSET_DP,
                 KeyboardSettings.defaults().withTouchYOffset(-99).touchYOffsetDp);
         assertEquals(-6, KeyboardSettings.defaults().withTouchYOffset(-6).touchYOffsetDp);
+    }
+
+    @Test
+    public void hitSlopCanBeAdjustedAndClamped() {
+        assertEquals(
+                KeyboardSettings.MAX_HIT_SLOP_DP,
+                KeyboardSettings.defaults().withHitSlop(99).hitSlopDp);
+        assertEquals(
+                KeyboardSettings.MIN_HIT_SLOP_DP,
+                KeyboardSettings.defaults().withHitSlop(-1).hitSlopDp);
+        assertEquals(12, KeyboardSettings.defaults().withHitSlop(12).hitSlopDp);
     }
 
     @Test

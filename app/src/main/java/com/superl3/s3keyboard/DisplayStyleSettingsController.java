@@ -109,7 +109,10 @@ final class DisplayStyleSettingsController {
                 activity,
                 labels,
                 () -> !syncing,
-                position -> settingsSaver.accept(change.apply(position)));
+                position -> {
+                    currentThemeCustomMarker.run();
+                    settingsSaver.accept(change.apply(position));
+                });
     }
 
     private void savePointKeycapStyle(boolean isChecked) {

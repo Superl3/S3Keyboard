@@ -1,5 +1,6 @@
 package com.superl3.s3keyboard;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 import java.util.List;
 import java.util.function.Consumer;
 
+@SuppressLint("ViewConstructor")
 public class ClipboardView extends LinearLayout {
     private final ClipboardStore store;
     private final Runnable onClose;

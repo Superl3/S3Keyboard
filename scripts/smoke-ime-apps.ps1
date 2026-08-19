@@ -306,8 +306,18 @@ function New-ProfileExpectation {
 }
 
 function Focus-LocalPracticeField {
+    $dumpPath = "/sdcard/s3keyboard-smoke-window.xml"
+    Invoke-AdbTarget shell uiautomator dump $dumpPath
+    [xml] $hierarchy = Invoke-AdbTargetText shell cat $dumpPath
+    $field = $hierarchy.SelectSingleNode("//node[@class='android.widget.EditText']")
+    if ($null -eq $field -or $field.bounds -notmatch "\[(\d+),(\d+)\]\[(\d+),(\d+)\]") {
+        throw "Local practice field was not found in the current settings UI"
+    }
+    $tapX = [int](([int] $Matches[1] + [int] $Matches[3]) / 2)
+    $tapY = [int](([int] $Matches[2] + [int] $Matches[4]) / 2)
+
     for ($attempt = 0; $attempt -lt 12; $attempt++) {
-        Invoke-AdbTarget shell input tap 540 565
+        Invoke-AdbTarget shell input tap $tapX $tapY
         Start-Sleep -Milliseconds 500
         Invoke-AdbTarget shell ime set $Ime
         Start-Sleep -Milliseconds 700
@@ -370,6 +380,7 @@ function Add-SkippedResult {
 }
 
 Write-Host "Smoke: local settings/practice field"
+Invoke-AdbTarget shell am force-stop $Package
 Invoke-AdbTarget shell am start -n "$Package/.MainActivity" --ez demo_settings true --ez demo_show_keyboard true
 Focus-LocalPracticeField
 Save-State "local-practice" $Package "standard"
@@ -386,6 +397,7 @@ $SyntheticFields = @(
 
 foreach ($field in $SyntheticFields) {
     Write-Host "Smoke: synthetic $($field.Name)"
+    Invoke-AdbTarget shell am force-stop $Package
     Invoke-AdbTarget shell am start -n "$Package/.MainActivity" --ez demo_settings true --ez demo_show_keyboard true --es demo_field_profile $field.DemoProfile
     Focus-LocalPracticeField
     Save-State $field.Name $Package $field.Profile
@@ -441,7 +453,8 @@ foreach ($target in $Targets) {
         continue
     }
     Write-Host "Smoke: $($target.Name)"
-    Invoke-AdbTarget @($target.Command)
+    [string[]] $commandArguments = $target.Command
+    Invoke-AdbTarget @commandArguments
     Start-Sleep -Seconds 2
     Invoke-AdbTarget shell ime set $Ime
     Save-State $target.Name $target.PackageName $target.Profile

@@ -81,7 +81,6 @@ public final class ThemeEditorActivity extends Activity {
     private CheckBox secondaryTextBoldCheckBox;
     private CheckBox secondaryTextItalicCheckBox;
     private TextView selectedKeyLabel;
-    private TextView previewMeta;
     private TextView roundnessValue;
     private TextView keyBorderWidthValue;
     private TextView keyGapValue;
@@ -119,6 +118,7 @@ public final class ThemeEditorActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SettingsSystemBars.apply(this);
         if (getActionBar() != null) {
             getActionBar().hide();
         }
@@ -169,10 +169,7 @@ public final class ThemeEditorActivity extends Activity {
         });
         SettingsRowBuilder.addViewWithTop(this, root, modeGroup, 8);
 
-        previewMeta = SettingsRowBuilder.valueLabel(this);
-        SettingsRowBuilder.addViewWithTop(this, root, previewMeta, 6);
-
-        preview = new HangulKeyboardView(this);
+        preview = new HangulKeyboardView(this, true);
         preview.setOnPreviewKeySelectionListener(key -> {
             selectedKey = key;
             selectedOverrideKey = overrideKeyFor(key);
@@ -193,22 +190,26 @@ public final class ThemeEditorActivity extends Activity {
                 editorRoot,
                 getString(R.string.theme_editor_global_section),
                 true);
-        addColorControls(addExpandableSection(
+        addColorControls(SettingsSubsection.add(
+                this,
                 globalSection,
-                getString(R.string.theme_editor_colors_section),
-                true));
-        addShapeControls(addExpandableSection(
+                R.string.theme_editor_colors_section,
+                true).content);
+        addShapeControls(SettingsSubsection.add(
+                this,
                 globalSection,
-                getString(R.string.theme_editor_shape_section),
-                false));
-        addIconPackControls(addExpandableSection(
+                R.string.theme_editor_shape_section,
+                false).content);
+        addIconPackControls(SettingsSubsection.add(
+                this,
                 globalSection,
-                getString(R.string.theme_editor_icon_packs_section),
-                true));
-        addTypographyControls(addExpandableSection(
+                R.string.theme_editor_icon_packs_section,
+                true).content);
+        addTypographyControls(SettingsSubsection.add(
+                this,
                 globalSection,
-                getString(R.string.theme_editor_typography_section),
-                false));
+                R.string.theme_editor_typography_section,
+                false).content);
         addSelectedKeyInspector(editorRoot);
         return root;
     }
@@ -900,7 +901,7 @@ public final class ThemeEditorActivity extends Activity {
         SettingsRowBuilder.setTextIfPresent(keyDepthValue, getString(
                 R.string.theme_depth_format,
                 settings.keyDepthDp,
-                settings.keyDepthEnabled ? "" : " (flat)"));
+                settings.keyDepthEnabled ? "" : getString(R.string.settings_flat_suffix)));
         SettingsRowBuilder.setTextIfPresent(
                 keyFaceGradientStrengthValue,
                 getString(
@@ -912,12 +913,6 @@ public final class ThemeEditorActivity extends Activity {
         SettingsRowBuilder.setTextIfPresent(secondaryTextSizeValue, getString(
                 R.string.theme_secondary_text_size_format,
                 settings.secondaryTextSizePercent));
-        previewMeta.setText(getString(
-                R.string.theme_preview_meta_format,
-                settings.keyboardMode == KeyboardMode.ENGLISH
-                        ? getString(R.string.theme_preview_mode_qwerty)
-                        : getString(R.string.theme_preview_mode_dingul),
-                settings.measuredHeightDp()));
         updatePreviewHeight();
         preview.setSettings(settings);
         syncSelectedKeyInspector();

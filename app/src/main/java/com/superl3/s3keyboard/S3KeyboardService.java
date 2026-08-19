@@ -4,6 +4,11 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.inputmethodservice.InputMethodService;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.ResultReceiver;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -14,12 +19,16 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.ScrollView;
 import android.widget.Toast;
 
 import java.util.List;
 import java.util.Locale;
 
 public final class S3KeyboardService extends InputMethodService {
+    private static final long VOICE_INPUT_RESULT_TIMEOUT_MS = 30_000L;
+    private static final long VOICE_INPUT_RECONNECT_DELAY_MS = 350L;
+
     private final HangulAutomata automata = new HangulAutomata();
     private final HangulCommitOnlyEditor commitOnlyEditor = new HangulCommitOnlyEditor();
     private final DoubleSpacePeriodState doubleSpacePeriodState = new DoubleSpacePeriodState();
@@ -49,10 +58,12 @@ public final class S3KeyboardService extends InputMethodService {
     private String currentEditorPackageName = "";
     private InputConnection commandDispatchInputConnection;
     private int pendingOwnComposingSelectionUpdates;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Runnable pendingVoiceCommitRunnable = this::commitPendingVoiceInputIfReady;
+    private long voiceInputRequestId;
+    private PendingVoiceInput pendingVoiceInput;
     private final KeyboardCommandDispatcher.Target commandDispatchTarget =
             new S3KeyboardCommandTarget(this);
-
-    private FloatingModeController floatingModeController;
 
     @Override
     public View onCreateInputView() {
@@ -60,11 +71,8 @@ public final class S3KeyboardService extends InputMethodService {
         settings = withSessionRuntimeState(KeyboardPreferences.load(this));
         layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
 
-        floatingModeController = new FloatingModeController(this);
-        floatingModeController.setEnabled(false);
         clipboardPanelController = new ClipboardPanelController(
                 this,
-                floatingModeController,
                 () -> settings,
                 () -> editorPolicy,
                 this::commitClipboardText);
@@ -99,9 +107,6 @@ public final class S3KeyboardService extends InputMethodService {
 
         initializePanelControllers();
 
-        floatingModeController.setOnPositionChangedListener(this::applyFloatingMode);
-        floatingModeController.setOnFloatingModeChangedListener(this::onFloatingModeChanged);
-
         updateToolbarVisibility();
         updateClipboardListener();
         return inputRoot;
@@ -130,7 +135,7 @@ public final class S3KeyboardService extends InputMethodService {
                 this::dismissQuickSettings);
         quickThemePanelController = new QuickThemePanelController(
                 this,
-                () -> settings.keyboardMode,
+                () -> settings,
                 this::enterActionLabel,
                 () -> editorPolicy.forceNumberRow,
                 this::applyRuntimeSettings,
@@ -142,6 +147,9 @@ public final class S3KeyboardService extends InputMethodService {
                 () -> settings,
                 this::remoteModeToggleLabel,
                 this::toggleRemoteMode,
+                this::singleTapCommitModeToggleLabel,
+                this::singleTapCommitModeEnabled,
+                this::toggleSingleTapCommitMode,
                 this::numberRowToggleLabel,
                 this::activeNumberRowVisible,
                 this::toggleActiveNumberRow,
@@ -151,14 +159,22 @@ public final class S3KeyboardService extends InputMethodService {
                 this::dismissQuickSettings);
     }
 
-    private void onFloatingModeChanged(boolean enabled) {
-        updateToolbarVisibility();
-        applyFloatingMode();
-    }
-
     private void commitClipboardText(String text) {
+        if (editorPolicy.password || text == null || text.isEmpty()) {
+            return;
+        }
         InputConnection inputConnection = getCurrentInputConnection();
-        InputConnectionTextOperator.commitText(inputConnection, text);
+        if (inputConnection == null) {
+            return;
+        }
+        commitCurrent(inputConnection);
+        if (!InputConnectionTextOperator.commitText(inputConnection, text)) {
+            return;
+        }
+        doubleSpacePeriodState.reset();
+        previousTextRepairState.reset();
+        qwertyInputAssistant.reset();
+        updateSuggestionStrip();
     }
 
     private void prepareIssueReport() {
@@ -200,18 +216,6 @@ public final class S3KeyboardService extends InputMethodService {
         }
     }
 
-    private void applyFloatingMode() {
-        android.app.Dialog dialog = getWindow();
-        if (dialog == null) return;
-        android.view.Window window = dialog.getWindow();
-        if (window == null) return;
-        android.view.WindowManager.LayoutParams params = window.getAttributes();
-        params.gravity = Gravity.BOTTOM;
-        params.x = 0;
-        params.y = 0;
-        window.setAttributes(params);
-    }
-
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
@@ -220,11 +224,9 @@ public final class S3KeyboardService extends InputMethodService {
             inputView.setRedactTypingEventText(!editorPolicy.allowTextConveniences);
             applyCurrentSettingsToInputView();
         }
-        if (floatingModeController != null) {
-            updateToolbarVisibility();
-            applyFloatingMode();
-        }
+        updateToolbarVisibility();
         updateClipboardListener();
+        mainHandler.post(pendingVoiceCommitRunnable);
     }
 
     @Override
@@ -247,6 +249,7 @@ public final class S3KeyboardService extends InputMethodService {
         }
         updateShiftStateView();
         updateSuggestionStrip();
+        mainHandler.post(pendingVoiceCommitRunnable);
     }
 
     @Override
@@ -310,16 +313,24 @@ public final class S3KeyboardService extends InputMethodService {
             return;
         }
         if (automata.getComposingText().isEmpty()) {
+            refreshQwertyAssistantFromEditor();
             return;
         }
-        if (pendingOwnComposingSelectionUpdates > 0) {
+        boolean selectionMismatch = isComposingSelectionMismatch(
+                oldSelStart,
+                oldSelEnd,
+                newSelStart,
+                newSelEnd,
+                candidatesStart,
+                candidatesEnd);
+        if (pendingOwnComposingSelectionUpdates > 0 && !selectionMismatch) {
             pendingOwnComposingSelectionUpdates--;
             return;
         }
-        if (isComposingSelectionMismatch(newSelStart, newSelEnd, candidatesStart, candidatesEnd)) {
+        if (selectionMismatch) {
             InputConnection inputConnection = getCurrentInputConnection();
             if (inputConnection != null) {
-                commitCurrent(inputConnection);
+                releaseCurrentCompositionForExternalCursorMove(inputConnection);
             } else {
                 automata.reset();
                 commitOnlyEditor.reset();
@@ -364,9 +375,15 @@ public final class S3KeyboardService extends InputMethodService {
                 && !editorPolicy.replacesMainRows();
     }
 
+    private boolean qwertyAssistanceActive(InputConnection inputConnection) {
+        return qwertyAssistanceActive()
+                && !InputConnectionTextOperator.hasSelection(inputConnection);
+    }
+
     private void refreshQwertyAssistantFromEditor() {
-        if (qwertyAssistanceActive()) {
-            qwertyInputAssistant.refreshFromEditor(getCurrentInputConnection());
+        InputConnection inputConnection = getCurrentInputConnection();
+        if (qwertyAssistanceActive(inputConnection)) {
+            qwertyInputAssistant.refreshFromEditor(inputConnection);
         } else {
             qwertyInputAssistant.reset();
         }
@@ -383,11 +400,8 @@ public final class S3KeyboardService extends InputMethodService {
     }
 
     private void acceptEnglishSuggestion(String suggestion) {
-        if (!qwertyAssistanceActive()) {
-            return;
-        }
         InputConnection inputConnection = getCurrentInputConnection();
-        if (inputConnection == null) {
+        if (inputConnection == null || !qwertyAssistanceActive(inputConnection)) {
             return;
         }
         qwertyInputAssistant.replaceCurrentWord(inputConnection, suggestion);
@@ -401,14 +415,125 @@ public final class S3KeyboardService extends InputMethodService {
     }
 
     void handleVoiceInput() {
-        Toast.makeText(this, R.string.voice_input_unavailable, Toast.LENGTH_SHORT).show();
+        if (editorPolicy.password) {
+            Toast.makeText(this, R.string.voice_input_secure_field, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (editorPolicy.rawKeyInput || settings.remoteModeEnabled) {
+            Toast.makeText(this, R.string.voice_input_unsupported_field, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        InputConnection inputConnection = getCurrentInputConnection();
+        if (inputConnection == null || currentEditorPackageName.isEmpty()) {
+            Toast.makeText(this, R.string.voice_input_unavailable, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        commitCurrent(inputConnection);
+        if (inputView != null) {
+            inputView.cancelActiveGestureSession();
+        }
+        dismissPreviewPopup();
+        dismissQuickSettings();
+
+        long requestId = ++voiceInputRequestId;
+        String targetPackage = currentEditorPackageName;
+        pendingVoiceInput = null;
+        ResultReceiver receiver = new ResultReceiver(mainHandler) {
+            @Override
+            protected void onReceiveResult(int resultCode, Bundle resultData) {
+                handleVoiceInputResult(requestId, targetPackage, resultCode, resultData);
+            }
+        };
+        try {
+            startActivity(VoiceInputActivity.intent(this, receiver, voiceInputLanguageTag()));
+        } catch (RuntimeException exception) {
+            Toast.makeText(this, R.string.voice_input_unavailable, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String voiceInputLanguageTag() {
+        return settings.keyboardMode == KeyboardMode.HANGUL ? "ko-KR" : "en-US";
+    }
+
+    private void handleVoiceInputResult(
+            long requestId,
+            String targetPackage,
+            int resultCode,
+            Bundle resultData) {
+        if (requestId != voiceInputRequestId) {
+            return;
+        }
+        if (resultCode == VoiceInputResult.CANCELLED) {
+            return;
+        }
+        if (resultCode == VoiceInputResult.UNAVAILABLE) {
+            Toast.makeText(this, R.string.voice_input_unavailable, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String text = resultData == null
+                ? ""
+                : VoiceInputResult.normalizeRecognizedText(
+                        resultData.getString(VoiceInputResult.EXTRA_TEXT));
+        if (resultCode != VoiceInputResult.RECOGNIZED || text.isEmpty()) {
+            Toast.makeText(this, R.string.voice_input_no_match, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        pendingVoiceInput = new PendingVoiceInput(
+                requestId,
+                targetPackage,
+                text,
+                SystemClock.uptimeMillis());
+        mainHandler.removeCallbacks(pendingVoiceCommitRunnable);
+        mainHandler.postDelayed(pendingVoiceCommitRunnable, VOICE_INPUT_RECONNECT_DELAY_MS);
+    }
+
+    private void commitPendingVoiceInputIfReady() {
+        PendingVoiceInput pending = pendingVoiceInput;
+        if (pending == null) {
+            return;
+        }
+        long nowMs = SystemClock.uptimeMillis();
+        if (pending.requestId != voiceInputRequestId
+                || pending.isExpired(nowMs, VOICE_INPUT_RESULT_TIMEOUT_MS)) {
+            pendingVoiceInput = null;
+            return;
+        }
+        if (!pending.targets(currentEditorPackageName)) {
+            if (!currentEditorPackageName.isEmpty()) {
+                pendingVoiceInput = null;
+            }
+            return;
+        }
+        if (editorPolicy.password || editorPolicy.rawKeyInput || settings.remoteModeEnabled) {
+            pendingVoiceInput = null;
+            return;
+        }
+        InputConnection inputConnection = getCurrentInputConnection();
+        if (inputConnection == null) {
+            return;
+        }
+        commitCurrent(inputConnection);
+        if (InputConnectionTextOperator.commitText(inputConnection, pending.text)) {
+            pendingVoiceInput = null;
+            doubleSpacePeriodState.reset();
+            previousTextRepairState.reset();
+            qwertyInputAssistant.reset();
+            updateSuggestionStrip();
+            return;
+        }
+        if (pending.recordFailedCommitAndShouldRetry(4)) {
+            mainHandler.postDelayed(pendingVoiceCommitRunnable, VOICE_INPUT_RECONNECT_DELAY_MS);
+        }
     }
 
     void handleUndo() {
         InputConnection inputConnection = commandInputConnection();
         commitCurrent(inputConnection);
         doubleSpacePeriodState.reset();
-        ImeConnectionDispatcher.performUndo(inputConnection);
+        if (!ImeConnectionDispatcher.performUndo(inputConnection)) {
+            Toast.makeText(this, R.string.undo_unavailable, Toast.LENGTH_SHORT).show();
+        }
     }
 
     void inputDingulContextualVowel(InputConnection inputConnection, boolean centerVowelKey) {
@@ -460,6 +585,9 @@ public final class S3KeyboardService extends InputMethodService {
     private boolean combineWithPreviousOpenSyllableForDingulVowel(
             InputConnection inputConnection,
             boolean centerVowelKey) {
+        if (InputConnectionTextOperator.hasSelection(inputConnection)) {
+            return false;
+        }
         CharSequence beforeCursor = inputConnection.getTextBeforeCursor(1, 0);
         if (beforeCursor == null || beforeCursor.length() != 1) {
             return false;
@@ -633,11 +761,12 @@ public final class S3KeyboardService extends InputMethodService {
 
     private void inputEnglishText(InputConnection inputConnection, String text) {
         String committedText = englishShiftState.applyToInput(text);
-        if (qwertyAssistanceActive() && !isAsciiLetters(committedText)) {
+        boolean assistanceActive = qwertyAssistanceActive(inputConnection);
+        if (assistanceActive && !isAsciiLetters(committedText)) {
             qwertyInputAssistant.autoCorrectCurrentWord(inputConnection);
         }
         InputConnectionTextOperator.commitText(inputConnection, committedText);
-        if (qwertyAssistanceActive()) {
+        if (assistanceActive) {
             qwertyInputAssistant.recordCommittedText(committedText);
         } else {
             qwertyInputAssistant.reset();
@@ -731,6 +860,9 @@ public final class S3KeyboardService extends InputMethodService {
     }
 
     private boolean combineWithPreviousStandaloneConsonant(InputConnection inputConnection, char vowel) {
+        if (InputConnectionTextOperator.hasSelection(inputConnection)) {
+            return false;
+        }
         CharSequence beforeCursor = inputConnection.getTextBeforeCursor(1, 0);
         if (beforeCursor == null || beforeCursor.length() != 1) {
             return false;
@@ -751,6 +883,9 @@ public final class S3KeyboardService extends InputMethodService {
     }
 
     private boolean combineWithPreviousOpenSyllable(InputConnection inputConnection, char finalConsonant) {
+        if (InputConnectionTextOperator.hasSelection(inputConnection)) {
+            return false;
+        }
         CharSequence beforeCursor = inputConnection.getTextBeforeCursor(1, 0);
         if (beforeCursor == null || beforeCursor.length() != 1) {
             return false;
@@ -807,7 +942,7 @@ public final class S3KeyboardService extends InputMethodService {
 
     void commitSpace(InputConnection inputConnection) {
         commitCurrent(inputConnection);
-        if (qwertyAssistanceActive()) {
+        if (qwertyAssistanceActive(inputConnection)) {
             qwertyInputAssistant.autoCorrectCurrentWord(inputConnection);
         }
         if (settings.remoteModeEnabled) {
@@ -840,7 +975,7 @@ public final class S3KeyboardService extends InputMethodService {
 
     void performEnter(InputConnection inputConnection) {
         commitCurrent(inputConnection);
-        if (qwertyAssistanceActive()) {
+        if (qwertyAssistanceActive(inputConnection)) {
             qwertyInputAssistant.autoCorrectCurrentWord(inputConnection);
         }
         ImeConnectionDispatcher.performEnter(
@@ -948,6 +1083,11 @@ public final class S3KeyboardService extends InputMethodService {
             refreshQwertyAssistantFromEditor();
             return;
         }
+        if (InputConnectionTextOperator.deleteSelectedText(inputConnection)) {
+            InputConnectionTextOperator.finishComposing(inputConnection);
+            refreshQwertyAssistantFromEditor();
+            return;
+        }
         int deleteCount = wordDeleteCount(inputConnection);
         if (deleteCount <= 0) {
             deleteCommittedText(inputConnection);
@@ -962,7 +1102,7 @@ public final class S3KeyboardService extends InputMethodService {
     private void deleteCommittedText(InputConnection inputConnection) {
         automata.reset();
         commitOnlyEditor.reset();
-        InputConnectionTextOperator.deleteCommittedCodePoint(inputConnection);
+        InputConnectionTextOperator.deleteCommittedGrapheme(inputConnection);
     }
 
     private int wordDeleteCount(InputConnection inputConnection) {
@@ -970,22 +1110,7 @@ public final class S3KeyboardService extends InputMethodService {
             return 0;
         }
         CharSequence beforeCursor = inputConnection.getTextBeforeCursor(64, 0);
-        if (beforeCursor == null || beforeCursor.length() == 0) {
-            return 0;
-        }
-        int index = beforeCursor.length();
-        while (index > 0 && Character.isWhitespace(beforeCursor.charAt(index - 1))) {
-            index--;
-        }
-        while (index > 0 && isWordDeleteCharacter(beforeCursor.charAt(index - 1))) {
-            index--;
-        }
-        int count = beforeCursor.length() - index;
-        return Math.max(0, count);
-    }
-
-    private static boolean isWordDeleteCharacter(char ch) {
-        return Character.isLetterOrDigit(ch) || ch == '\'' || ch == '_' || ch == '-';
+        return EditorTextBoundaryPolicy.trailingWordCodePointCount(beforeCursor);
     }
 
     void moveCursor(InputConnection inputConnection, boolean right) {
@@ -1010,6 +1135,8 @@ public final class S3KeyboardService extends InputMethodService {
     }
 
     private boolean isComposingSelectionMismatch(
+            int oldSelStart,
+            int oldSelEnd,
             int newSelStart,
             int newSelEnd,
             int candidatesStart,
@@ -1018,7 +1145,7 @@ public final class S3KeyboardService extends InputMethodService {
             return true;
         }
         if (candidatesStart < 0 || candidatesEnd < 0) {
-            return false;
+            return oldSelStart != newSelStart || oldSelEnd != newSelEnd;
         }
         return newSelStart < candidatesStart || newSelStart != candidatesEnd;
     }
@@ -1032,6 +1159,13 @@ public final class S3KeyboardService extends InputMethodService {
 
     void commitCurrent(InputConnection inputConnection) {
         InputConnectionTextOperator.commitCurrent(inputConnection, automata, commitOnlyEditor);
+        pendingOwnComposingSelectionUpdates = 0;
+    }
+
+    private void releaseCurrentCompositionForExternalCursorMove(InputConnection inputConnection) {
+        InputConnectionTextOperator.finishComposing(inputConnection);
+        automata.reset();
+        commitOnlyEditor.reset();
         pendingOwnComposingSelectionUpdates = 0;
     }
 
@@ -1069,6 +1203,9 @@ public final class S3KeyboardService extends InputMethodService {
 
     void openOptions(InputConnection inputConnection) {
         commitCurrent(inputConnection);
+        if (inputView != null) {
+            inputView.cancelActiveGestureSession();
+        }
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
@@ -1091,17 +1228,32 @@ public final class S3KeyboardService extends InputMethodService {
         if (inputRoot == null) {
             return;
         }
+        if (inputView != null) {
+            inputView.cancelActiveGestureSession();
+        }
         if (quickSettingsPopup != null && quickSettingsPopup.isShowing()) {
             dismissQuickSettings();
             return;
         }
         View panel = quickSettingsPanelController.createPanel();
+        int popupWidth = Math.max(
+                1,
+                getResources().getDisplayMetrics().widthPixels - SettingsRowBuilder.dp(this, 24));
+        panel.measure(
+                View.MeasureSpec.makeMeasureSpec(popupWidth, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int maximumHeight = Math.max(
+                1,
+                getResources().getDisplayMetrics().heightPixels - SettingsRowBuilder.dp(this, 48));
+        int popupHeight = Math.max(1, Math.min(panel.getMeasuredHeight(), maximumHeight));
+        ScrollView panelScroll = new ScrollView(this);
+        panelScroll.setFillViewport(false);
+        panelScroll.setVerticalScrollBarEnabled(panel.getMeasuredHeight() > maximumHeight);
+        panelScroll.addView(panel, SettingsRowBuilder.frameMatchWrap());
         quickSettingsPopup = new PopupWindow(
-                panel,
-                Math.max(
-                        SettingsRowBuilder.dp(this, 280),
-                        getResources().getDisplayMetrics().widthPixels - SettingsRowBuilder.dp(this, 24)),
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                panelScroll,
+                popupWidth,
+                popupHeight,
                 true);
         quickSettingsPopup.setOutsideTouchable(true);
         quickSettingsPopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -1162,6 +1314,16 @@ public final class S3KeyboardService extends InputMethodService {
                 getString(settings.remoteModeEnabled ? R.string.state_on : R.string.state_off));
     }
 
+    private boolean singleTapCommitModeEnabled() {
+        return KeyboardPreferences.loadSingleTapCommitModeEnabled(this);
+    }
+
+    private String singleTapCommitModeToggleLabel() {
+        return getString(
+                R.string.one_finger_quick_toggle_format,
+                getString(singleTapCommitModeEnabled() ? R.string.state_on : R.string.state_off));
+    }
+
     private void toggleRemoteMode() {
         settings = withSessionRuntimeState(settings.withRemoteOptions(
                 !settings.remoteModeEnabled,
@@ -1172,9 +1334,21 @@ public final class S3KeyboardService extends InputMethodService {
         if (remoteCompatibilityPanelController != null) {
             remoteCompatibilityPanelController.reset();
         }
-        KeyboardPreferences.saveSettings(this, settings);
+        KeyboardPreferences.saveRemoteOptions(
+                this,
+                settings.remoteModeEnabled,
+                settings.remoteKeyPreset,
+                settings.remoteImeShortcut);
         applyCurrentSettingsToInputView();
         updateToolbarVisibility();
+        dismissQuickSettings();
+    }
+
+    private void toggleSingleTapCommitMode() {
+        KeyboardPreferences.saveSingleTapCommitModeEnabled(this, !singleTapCommitModeEnabled());
+        if (inputView != null) {
+            inputView.setSettings(settings);
+        }
         dismissQuickSettings();
     }
 
@@ -1192,7 +1366,10 @@ public final class S3KeyboardService extends InputMethodService {
         settings = withSessionRuntimeState(settings.keyboardMode == KeyboardMode.ENGLISH
                 ? settings.withEnglishNumberRow(!settings.showEnglishNumberRow)
                 : settings.withHangulNumberRow(!settings.showHangulNumberRow));
-        KeyboardPreferences.saveSettings(this, settings);
+        KeyboardPreferences.saveNumberRowVisibility(
+                this,
+                settings.showHangulNumberRow,
+                settings.showEnglishNumberRow);
         applyCurrentSettingsToInputView();
         Toast.makeText(this, numberRowToggleLabel(), Toast.LENGTH_SHORT).show();
         dismissQuickSettings();
@@ -1228,6 +1405,8 @@ public final class S3KeyboardService extends InputMethodService {
 
     @Override
     public void onDestroy() {
+        mainHandler.removeCallbacksAndMessages(null);
+        pendingVoiceInput = null;
         dismissPreviewPopup();
         dismissQuickSettings();
         removeClipboardListener();
@@ -1236,4 +1415,5 @@ public final class S3KeyboardService extends InputMethodService {
         }
         super.onDestroy();
     }
+
 }

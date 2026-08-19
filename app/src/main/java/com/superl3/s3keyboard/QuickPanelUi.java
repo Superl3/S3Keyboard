@@ -38,9 +38,11 @@ final class QuickPanelUi {
         Button button = SettingsRowBuilder.button(context, text, false, listener);
         button.setAllCaps(false);
         button.setTextSize(11);
+        button.setMaxLines(2);
         button.setGravity(Gravity.CENTER);
-        button.setMinHeight(dp(context, 38));
-        button.setPadding(dp(context, 8), 0, dp(context, 8), 0);
+        button.setMinHeight(dp(context, 48));
+        button.setMaxHeight(dp(context, 48));
+        button.setPadding(dp(context, 6), 0, dp(context, 6), 0);
         SettingsUiPalette ui = SettingsUiPalette.from(context);
         button.setTextColor(ui.controlText);
         GradientDrawable background = new GradientDrawable();

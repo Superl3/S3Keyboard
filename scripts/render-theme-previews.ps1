@@ -2053,7 +2053,10 @@ function Draw-Key {
         [float] $W,
         [float] $H,
         [float] $Radius,
-        [System.Drawing.Font] $Font
+        [System.Drawing.Font] $Font,
+        [System.Drawing.Font] $HintFont,
+        [object] $Hints,
+        [string] $Layout = "dingul"
     )
 
     $border = Convert-ThemeColor $Theme.colors.border "#696969"
@@ -2094,7 +2097,9 @@ function Draw-Key {
                     -Radius ([Math]::Max(0, $Radius - $inset))
         }
         $icon = Get-PreviewIconName $Label
+        $hideHints = $false
         if (Test-DotLegendLabel -Theme $Theme -Label $Label) {
+            $hideHints = $true
             $diameter = Get-GlyphDotDiameter -H $H
             if ($Label -eq "." -or $Label -eq "/") {
                 $cx = $X + $W / 2.0
@@ -2109,15 +2114,38 @@ function Draw-Key {
                         -Diameter $diameter
             }
         } elseif (-not [string]::IsNullOrWhiteSpace($icon) -and (Draw-KeyDisplayPackPreview -Graphics $Graphics -Theme $Theme -Icon $icon -Color $textColor -X $X -Y $Y -W $W -H $H)) {
+            $hideHints = $true
             # rendered by key display pack
         } elseif ([string]::IsNullOrWhiteSpace($icon) -and (Draw-LabelDisplayPackPreview -Graphics $Graphics -Theme $Theme -Label $Label -Color $textColor -X $X -Y $Y -W $W -H $H)) {
+            $hideHints = $true
             # rendered by key display pack
         } elseif (-not [string]::IsNullOrWhiteSpace($icon) -and (Draw-PackPreviewIcon -Graphics $Graphics -Theme $Theme -Icon $icon -Color $textColor -X $X -Y $Y -W $W -H $H)) {
+            $hideHints = $true
             # rendered by icon pack
         } elseif ([string]::IsNullOrWhiteSpace($icon)) {
-            Draw-CenteredText -Graphics $Graphics -Text $Label -Font $Font -Brush $textBrush -X $X -Y $Y -W $W -H $H
+            $mainY = $Y
+            $mainH = $H
+            $englishAlpha = $Layout -eq "qwerty" -and $Label -match '^[A-Za-z]$'
+            if ($englishAlpha -and $null -ne $Hints) {
+                $mainY = $Y + $H * 0.06
+                $mainH = $H * 0.60
+            }
+            Draw-CenteredText -Graphics $Graphics -Text $Label -Font $Font -Brush $textBrush -X $X -Y $mainY -W $W -H $mainH
         } else {
             Draw-PreviewIcon -Graphics $Graphics -Icon $icon -Color $textColor -X $X -Y $Y -W $W -H $H
+        }
+        if (-not $hideHints) {
+            Draw-KeyHints `
+                    -Graphics $Graphics `
+                    -Hints $Hints `
+                    -Layout $Layout `
+                    -TextColor $textColor `
+                    -Fill $fill `
+                    -X $X `
+                    -Y $Y `
+                    -W $W `
+                    -H $H `
+                    -Font $HintFont
         }
     } finally {
         $fillBrush.Dispose()
@@ -2147,6 +2175,89 @@ function Draw-KeyboardBackground {
     }
 }
 
+function Draw-PreviewHintText {
+    param(
+        [System.Drawing.Graphics] $Graphics,
+        [string] $Text,
+        [System.Drawing.Font] $Font,
+        [System.Drawing.Brush] $Brush,
+        [float] $CenterX,
+        [float] $CenterY,
+        [float] $BoxW,
+        [float] $BoxH
+    )
+    if ([string]::IsNullOrWhiteSpace($Text)) {
+        return
+    }
+    Draw-CenteredText `
+            -Graphics $Graphics `
+            -Text $Text `
+            -Font $Font `
+            -Brush $Brush `
+            -X ($CenterX - $BoxW / 2.0) `
+            -Y ($CenterY - $BoxH / 2.0) `
+            -W $BoxW `
+            -H $BoxH
+}
+
+function Draw-KeyHints {
+    param(
+        [System.Drawing.Graphics] $Graphics,
+        [object] $Hints,
+        [string] $Layout,
+        [System.Drawing.Color] $TextColor,
+        [System.Drawing.Color] $Fill,
+        [float] $X,
+        [float] $Y,
+        [float] $W,
+        [float] $H,
+        [System.Drawing.Font] $Font
+    )
+    if ($null -eq $Hints -or $null -eq $Font) {
+        return
+    }
+    $up = [string]$Hints["Up"]
+    $down = [string]$Hints["Down"]
+    $left = [string]$Hints["Left"]
+    $right = [string]$Hints["Right"]
+    if ([string]::IsNullOrWhiteSpace($up) `
+            -and [string]::IsNullOrWhiteSpace($down) `
+            -and [string]::IsNullOrWhiteSpace($left) `
+            -and [string]::IsNullOrWhiteSpace($right)) {
+        return
+    }
+
+    $hintColor = Blend-ThemeColor -Foreground $TextColor -Background $Fill -ForegroundAmount 0.68
+    $hintBrush = [System.Drawing.SolidBrush]::new($hintColor)
+    try {
+        $boxW = [Math]::Max(12, [Math]::Min(32, $W * 0.38))
+        $boxH = [Math]::Max(9, $H * 0.24)
+        if ($Layout -eq "qwerty") {
+            Draw-PreviewHintText -Graphics $Graphics -Text $up -Font $Font -Brush $hintBrush `
+                    -CenterX ($X + $W / 2.0) -CenterY ($Y + $H * 0.17) -BoxW $boxW -BoxH $boxH
+            $lowerY = $Y + $H * 0.76
+            Draw-PreviewHintText -Graphics $Graphics -Text $left -Font $Font -Brush $hintBrush `
+                    -CenterX ($X + $W * 0.30) -CenterY $lowerY -BoxW $boxW -BoxH $boxH
+            Draw-PreviewHintText -Graphics $Graphics -Text $down -Font $Font -Brush $hintBrush `
+                    -CenterX ($X + $W / 2.0) -CenterY $lowerY -BoxW $boxW -BoxH $boxH
+            Draw-PreviewHintText -Graphics $Graphics -Text $right -Font $Font -Brush $hintBrush `
+                    -CenterX ($X + $W * 0.70) -CenterY $lowerY -BoxW $boxW -BoxH $boxH
+            return
+        }
+
+        Draw-PreviewHintText -Graphics $Graphics -Text $up -Font $Font -Brush $hintBrush `
+                -CenterX ($X + $W / 2.0) -CenterY ($Y + $H * 0.16) -BoxW $boxW -BoxH $boxH
+        Draw-PreviewHintText -Graphics $Graphics -Text $down -Font $Font -Brush $hintBrush `
+                -CenterX ($X + $W / 2.0) -CenterY ($Y + $H * 0.84) -BoxW $boxW -BoxH $boxH
+        Draw-PreviewHintText -Graphics $Graphics -Text $left -Font $Font -Brush $hintBrush `
+                -CenterX ($X + $W * 0.18) -CenterY ($Y + $H / 2.0) -BoxW $boxW -BoxH $boxH
+        Draw-PreviewHintText -Graphics $Graphics -Text $right -Font $Font -Brush $hintBrush `
+                -CenterX ($X + $W * 0.82) -CenterY ($Y + $H / 2.0) -BoxW $boxW -BoxH $boxH
+    } finally {
+        $hintBrush.Dispose()
+    }
+}
+
 function Draw-QwertySample {
     param([System.Drawing.Graphics] $Graphics, [object] $Theme, [float] $X, [float] $Y, [float] $W, [float] $H)
     Draw-KeyboardBackground -Graphics $Graphics -Theme $Theme -X $X -Y $Y -W $W -H $H
@@ -2158,18 +2269,23 @@ function Draw-QwertySample {
     $bottomPadding = 0
     $bottomRowTopPadding = 0
     $font = New-ThemeFont -Theme $Theme -BaseSize 11 -Primary $true
+    $hintFont = New-ThemeFont -Theme $Theme -BaseSize 6.2 -Primary $false
     try {
         $rowH = ($H - 40 - $bottomPadding - $bottomRowTopPadding) / 5
         $unit = ($W - 36 - $leftPadding - $rightPadding) / 20
         $startX = $X + 18 + $leftPadding
         $rowY = $Y + 18
         $rowIndex = 0
+        $doubleQuote = [string][char]0x22
+        $heart = [string][char]0x2665
+        $leftArrow = [string][char]0x2190
+        $rightArrow = [string][char]0x2192
         $rows = @(
-            @(@("1",2,"number"), @("2",2,"number"), @("3",2,"number"), @("4",2,"number"), @("5",2,"number"), @("6",2,"number"), @("7",2,"number"), @("8",2,"number"), @("9",2,"number"), @("0",2,"number")),
-            @(@("q",2,"normal"), @("w",2,"normal"), @("e",2,"pressed"), @("r",2,"normal"), @("t",2,"normal"), @("y",2,"normal"), @("u",2,"normal"), @("i",2,"normal"), @("o",2,"normal"), @("p",2,"normal")),
-            @(@("a",2,"normal"), @("s",2,"normal"), @("d",2,"normal"), @("f",2,"normal"), @("g",2,"normal"), @("h",2,"normal"), @("j",2,"normal"), @("k",2,"normal"), @("l",2,"normal")),
-            @(@("shift",3,"modifier"), @("z",2,"normal"), @("x",2,"normal"), @("c",2,"normal"), @("v",2,"normal"), @("b",2,"normal"), @("n",2,"normal"), @("m",2,"normal"), @("bksp",3,"modifier")),
-            @(@("settings",3,"modifier"), @("reserved",2,"modifier"), @("space",10,"normal"), @("language",2,"modifier"), @("enter",3,"modifier"))
+            @(@("1",2,"number",$null,"!",$null,$null), @("2",2,"number",$null,"@",$null,$null), @("3",2,"number",$null,"#",$null,$null), @("4",2,"number",$null,'$',$null,$null), @("5",2,"number",$null,"%",$null,$null), @("6",2,"number",$null,"^",$null,$null), @("7",2,"number",$null,"&",$null,$null), @("8",2,"number",$null,"*",$null,$null), @("9",2,"number",$null,"(",$null,$null), @("0",2,"number",$null,")",$null,$null)),
+            @(@("q",2,"normal",$null,"1",$null,$null), @("w",2,"normal",$null,"2",$null,$null), @("e",2,"pressed",$null,"3",$null,$null), @("r",2,"normal",$null,"4",$null,$null), @("t",2,"normal",$null,"5",$null,$null), @("y",2,"normal",$null,"6",$null,$null), @("u",2,"normal",$null,"7",$null,$null), @("i",2,"normal",$null,"8",$null,$null), @("o",2,"normal",$null,"9",$null,$null), @("p",2,"normal",$null,"0",$null,$null)),
+            @(@("a",2,"normal",$null,"@",$null,$null), @("s",2,"normal",$null,$null,"#","%"), @("d",2,"normal",$null,"/",$null,$null), @("f",2,"normal",$null,"*",$null,$null), @("g",2,"normal",$null,$null,"~","^"), @("h",2,"normal",$null,$null,"_","-"), @("j",2,"normal",$null,$null,"+","="), @("k",2,"normal",$null,$null,"<",">"), @("l",2,"normal",$null,$heart,$null,$null)),
+            @(@("shift",3,"modifier",$null,$null,$null,$null), @("z",2,"normal",$null,$null,"(",")"), @("x",2,"normal",$null,$null,"[","]"), @("c",2,"normal",$null,$null,";",":"), @("v",2,"normal",$null,$null,"'",$doubleQuote), @("b",2,"normal",$null,$null,"&","|"), @("n",2,"normal",$null,"!",$null,$null), @("m",2,"normal",$null,"?",$null,$null), @("bksp",3,"modifier",$null,$null,$null,$null)),
+            @(@("settings",3,"modifier",$null,$null,$null,$null), @("reserved",2,"modifier",$null,$null,$null,$null), @("space",10,"normal",".",",",$leftArrow,$rightArrow), @("language",2,"modifier",$null,$null,",","."), @("enter",3,"modifier",$null,$null,$null,$null))
         )
 
         foreach ($row in $rows) {
@@ -2196,6 +2312,12 @@ function Draw-QwertySample {
                 if ($role -eq "number") {
                     $role = Get-NumberRowRole -Theme $Theme -Label $label
                 }
+                $hints = @{
+                    Up = if ($key.Count -gt 3) { $key[3] } else { $null }
+                    Down = if ($key.Count -gt 4) { $key[4] } else { $null }
+                    Left = if ($key.Count -gt 5) { $key[5] } else { $null }
+                    Right = if ($key.Count -gt 6) { $key[6] } else { $null }
+                }
                 $role = Resolve-PreviewRole -Theme $Theme -Layout "qwerty" -Label $label -BaseRole $role
                 $keyX = $xOffset + $gap / 2
                 $keyW = [int]$key[1] * $unit - $gap
@@ -2213,7 +2335,8 @@ function Draw-QwertySample {
                 }
                 Draw-Key -Graphics $Graphics -Theme $Theme -Label $label -Role $role `
                     -X $keyX -Y ($rowY + $gap / 2) `
-                    -W $keyW -H ($rowH - $gap) -Radius $radius -Font $font
+                    -W $keyW -H ($rowH - $gap) -Radius $radius -Font $font `
+                    -HintFont $hintFont -Hints $hints -Layout "qwerty"
                 $xOffset += [int]$key[1] * $unit
                 $keyIndex++
             }
@@ -2222,6 +2345,7 @@ function Draw-QwertySample {
         }
     } finally {
         $font.Dispose()
+        $hintFont.Dispose()
     }
 }
 
@@ -2237,8 +2361,9 @@ function Draw-DingulSample {
     $bottomPadding = 0
     $bottomRowTopPadding = 0
     $font = New-ThemeFont -Theme $Theme -BaseSize 11 -Primary $true
+    $hintFont = New-ThemeFont -Theme $Theme -BaseSize 6.4 -Primary $false
     try {
-        $rowH = ($H - 32 - $bottomPadding - $bottomRowTopPadding) / 6
+        $rowH = ($H - 32 - $bottomPadding - $bottomRowTopPadding) / 5
         $unit = ($W - 36 - $leftPadding - $rightPadding - $mainSpecialGap) / 300
         $bottomUnit = ($W - 36 - $leftPadding - $rightPadding) / 300
         $startX = $X + 18 + $leftPadding
@@ -2256,14 +2381,44 @@ function Draw-DingulSample {
         $ae = [string][char]0x3150
         $j = [string][char]0x3148
         $hieut = [string][char]0x314E
+        $gg = [string][char]0x3132
+        $digeut = [string][char]0x3137
+        $dd = [string][char]0x3138
+        $bieup = [string][char]0x3142
+        $bb = [string][char]0x3143
+        $ss = [string][char]0x3146
+        $jj = [string][char]0x3149
+        $chieut = [string][char]0x314A
+        $kieuk = [string][char]0x314B
+        $tieut = [string][char]0x314C
+        $pieup = [string][char]0x314D
+        $aVowel = [string][char]0x314F
+        $ya = [string][char]0x3151
+        $eo = [string][char]0x3153
+        $eVowel = [string][char]0x3154
+        $yeo = [string][char]0x3155
+        $oVowel = [string][char]0x3157
+        $wa = [string][char]0x3158
+        $wae = [string][char]0x3159
+        $oe = [string][char]0x315A
+        $yo = [string][char]0x315B
+        $uVowel = [string][char]0x315C
+        $wo = [string][char]0x315D
+        $we = [string][char]0x315E
+        $wi = [string][char]0x315F
+        $yu = [string][char]0x3160
+        $heart = [string][char]0x2665
+        $doubleQuote = [string][char]0x22
+        $backtickGlyph = [string][char]0x60
+        $leftArrow = [string][char]0x2190
+        $rightArrow = [string][char]0x2192
 
         $rows = @(
-            @(@("1",30,"number"), @("2",30,"number"), @("3",30,"number"), @("4",30,"number"), @("5",30,"number"), @("6",30,"number"), @("7",30,"number"), @("8",30,"number"), @("9",30,"number"), @("0",30,"number")),
-            @(@($g,86,"normal"), @($n,86,"normal"), @($ui,86,"normal"), @("bksp",42,"modifier")),
-            @(@($r,86,"normal"), @($m,86,"normal"), @("$i.",86,"normal"), @("?",42,"normal")),
-            @(@($s,86,"normal"), @($o,86,"pressed"), @("$eu$ae",86,"normal"), @(".",42,"modifier")),
-            @(@($j,86,"normal"), @($hieut,86,"normal"), @("enter",86,"modifier"), @("/",42,"modifier")),
-            @(@("settings",45,"modifier"), @("reserved",30,"modifier"), @("space",150,"normal"), @("language",30,"modifier"), @("enter",45,"modifier"))
+            @(@($g,86,"normal",$gg,"#",$kieuk,$kieuk), @($n,86,"normal",$dd,$digeut,$tieut,$tieut), @($ui,86,"normal",$oe,$wi,$wo,$wa), @("bksp",42,"modifier",$null,$null,$null,$null)),
+            @(@($r,86,"normal","^","~","=","-"), @($m,86,"normal",$bb,$bieup,$pieup,$pieup), @("$i.",86,"normal",$oVowel,$uVowel,$eo,$aVowel), @("?",42,"normal","!","*","+",$null)),
+            @(@($s,86,"normal",$ss,"2","1","3"), @($o,86,"pressed",$heart,"5","4","6"), @("$eu$ae",86,"normal",$wae,$we,$eVowel,$ae), @(".",42,"modifier",$doubleQuote,$backtickGlyph,",",$null)),
+            @(@($j,86,"normal",$jj,"~",$chieut,$chieut), @($hieut,86,"normal","0","8","7","9"), @("enter",86,"modifier",$null,$null,$null,$null), @("/",42,"modifier",":",";","@",$null)),
+            @(@("settings",45,"modifier",$null,$null,$null,$null), @("reserved",30,"modifier",$null,$null,$null,$null), @("space",150,"normal",".com",$null,$leftArrow,$rightArrow), @("language",30,"modifier",$null,$null,",","."), @("enter",45,"modifier",$null,$null,$null,$null))
         )
 
         $rowIndex = 0
@@ -2272,9 +2427,6 @@ function Draw-DingulSample {
                 $rowY += $bottomRowTopPadding
             }
             $activeUnit = if ($rowIndex -eq ($rows.Count - 1)) { $bottomUnit } else { $unit }
-            if ($rowIndex -eq 0) {
-                $activeUnit = $bottomUnit
-            }
             $xOffset = $startX
             $isBottomRow = $rowIndex -eq ($rows.Count - 1)
             $spaceIndex = -1
@@ -2290,6 +2442,12 @@ function Draw-DingulSample {
                 $role = [string]$key[2]
                 if ($role -eq "number") {
                     $role = Get-NumberRowRole -Theme $Theme -Label $label
+                }
+                $hints = @{
+                    Up = if ($key.Count -gt 3) { $key[3] } else { $null }
+                    Down = if ($key.Count -gt 4) { $key[4] } else { $null }
+                    Left = if ($key.Count -gt 5) { $key[5] } else { $null }
+                    Right = if ($key.Count -gt 6) { $key[6] } else { $null }
                 }
                 $role = Resolve-PreviewRole -Theme $Theme -Layout "dingul" -Label $label -BaseRole $role
                 $keyX = $xOffset + $gap / 2
@@ -2308,9 +2466,10 @@ function Draw-DingulSample {
                 }
                 Draw-Key -Graphics $Graphics -Theme $Theme -Label $label -Role $role `
                     -X $keyX -Y ($rowY + $gap / 2) `
-                    -W $keyW -H ($rowH - $gap) -Radius $radius -Font $font
+                    -W $keyW -H ($rowH - $gap) -Radius $radius -Font $font `
+                    -HintFont $hintFont -Hints $hints -Layout "dingul"
                 $xOffset += [int]$key[1] * $activeUnit
-                if ($rowIndex -gt 0 -and $rowIndex -lt ($rows.Count - 1) -and $keyIndex -eq 2) {
+                if ($rowIndex -lt ($rows.Count - 1) -and $keyIndex -eq 2) {
                     $xOffset += $mainSpecialGap
                 }
                 $keyIndex++
@@ -2320,6 +2479,7 @@ function Draw-DingulSample {
         }
     } finally {
         $font.Dispose()
+        $hintFont.Dispose()
     }
 }
 
@@ -2330,27 +2490,29 @@ function Draw-ThemeCard {
     $titleBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml("#111827"))
     $metaBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml("#6B7280"))
     $titleFont = [System.Drawing.Font]::new("Segoe UI", 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Point)
-    $labelFont = [System.Drawing.Font]::new("Segoe UI", 9, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Point)
+    $metaFont = [System.Drawing.Font]::new("Segoe UI", 9, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Point)
     try {
         Draw-RoundRect -Graphics $Graphics -Brush $cardBrush -Pen $cardPen -X $X -Y $Y -W $W -H $H -Radius 18
         $Graphics.DrawString([string]$Theme.name, $titleFont, $titleBrush, $X + 24, $Y + 18)
+        if (-not [string]::IsNullOrWhiteSpace([string]$Theme.author)) {
+            $Graphics.DrawString([string]$Theme.author, $metaFont, $metaBrush, $X + 25, $Y + 47)
+        }
         $hangulHeight = 260
-        $englishHeight = 186
-        $heightRatio = [Math]::Max(1.18, [Math]::Min(1.35, $hangulHeight / [Math]::Max(1, $englishHeight)))
-        $qwertyPreviewH = 190
+        $englishHeight = 235
+        $heightRatio = $hangulHeight / [Math]::Max(1, $englishHeight)
+        $qwertyPreviewH = 220
         $dingulPreviewH = [Math]::Round($qwertyPreviewH * $heightRatio)
-        $Graphics.DrawString("QWERTY preview - e = pressed state", $labelFont, $metaBrush, $X + 24, $Y + 58)
-        Draw-QwertySample -Graphics $Graphics -Theme $Theme -X ($X + 24) -Y ($Y + 82) -W ($W - 48) -H $qwertyPreviewH
-        $dingulLabelY = $Y + 82 + $qwertyPreviewH + 20
-        $Graphics.DrawString("Dingul preview - number row + semantic accent policy", $labelFont, $metaBrush, $X + 24, $dingulLabelY)
-        Draw-DingulSample -Graphics $Graphics -Theme $Theme -X ($X + 24) -Y ($dingulLabelY + 24) -W ($W - 48) -H $dingulPreviewH
+        $qwertyY = $Y + 72
+        Draw-QwertySample -Graphics $Graphics -Theme $Theme -X ($X + 24) -Y $qwertyY -W ($W - 48) -H $qwertyPreviewH
+        Draw-DingulSample -Graphics $Graphics -Theme $Theme -X ($X + 24) `
+                -Y ($qwertyY + $qwertyPreviewH + 8) -W ($W - 48) -H $dingulPreviewH
     } finally {
         $cardBrush.Dispose()
         $cardPen.Dispose()
         $titleBrush.Dispose()
         $metaBrush.Dispose()
         $titleFont.Dispose()
-        $labelFont.Dispose()
+        $metaFont.Dispose()
     }
 }
 
@@ -2403,6 +2565,23 @@ $themes = foreach ($file in $themeFiles) {
     Get-Content -Raw -Encoding UTF8 -LiteralPath $file.FullName | ConvertFrom-Json
 }
 
+$previewFileNames = @($themes | ForEach-Object {
+    $safeName = ([string]$_.name).ToLowerInvariant() -replace "[^a-z0-9]+", "-"
+    $safeName = $safeName.Trim("-")
+    "$safeName.png"
+})
+$duplicatePreviewNames = @($previewFileNames | Group-Object | Where-Object { $_.Count -gt 1 })
+if ($duplicatePreviewNames.Count -gt 0) {
+    throw "Theme names produce duplicate preview filenames: $($duplicatePreviewNames.Name -join ', ')"
+}
+$expectedPreviewFiles = @("theme-preview-grid.png") + $previewFileNames
+$existingGridPath = Join-Path $OutputDir "theme-preview-grid.png"
+if (Test-Path -LiteralPath $existingGridPath) {
+    Get-ChildItem -LiteralPath $OutputDir -File -Filter "*.png" |
+        Where-Object { $expectedPreviewFiles -notcontains $_.Name } |
+        Remove-Item -Force
+}
+
 $cols = 2
 $cardW = 820
 $cardH = 640
@@ -2435,9 +2614,8 @@ try {
     $bitmap.Dispose()
 }
 
-foreach ($theme in $themes) {
-    $safeName = ([string]$theme.name).ToLowerInvariant() -replace "[^a-z0-9]+", "-"
-    $safeName = $safeName.Trim("-")
+for ($themeIndex = 0; $themeIndex -lt $themes.Count; $themeIndex++) {
+    $theme = $themes[$themeIndex]
     $singleBitmap = [System.Drawing.Bitmap]::new($cardW, $cardH)
     $singleGraphics = [System.Drawing.Graphics]::FromImage($singleBitmap)
     try {
@@ -2445,7 +2623,9 @@ foreach ($theme in $themes) {
         $singleGraphics.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::ClearTypeGridFit
         $singleGraphics.Clear([System.Drawing.ColorTranslator]::FromHtml("#F6F7F9"))
         Draw-ThemeCard -Graphics $singleGraphics -Theme $theme -X 0 -Y 0 -W $cardW -H $cardH
-        $singleBitmap.Save((Join-Path $OutputDir "$safeName.png"), [System.Drawing.Imaging.ImageFormat]::Png)
+        $singleBitmap.Save(
+            (Join-Path $OutputDir $previewFileNames[$themeIndex]),
+            [System.Drawing.Imaging.ImageFormat]::Png)
     } finally {
         $singleGraphics.Dispose()
         $singleBitmap.Dispose()

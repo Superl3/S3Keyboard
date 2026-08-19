@@ -10,6 +10,7 @@ final class KeyboardPreferences {
     static final String KEYBOARD_MODE_LAST = "keyboard_mode_last";
     static final String HANGUL_LAYOUT_PROFILE = "hangul_layout_profile";
     static final String ENGLISH_LAYOUT_PROFILE = "english_layout_profile";
+    static final String DINGUL_DOT_ENTER_KEY_ENABLED = "dingul_dot_enter_key_enabled";
     static final String HANDEDNESS_MODE = "handedness_mode";
     static final String LEFT_MARGIN_DP = "left_margin_dp";
     static final String RIGHT_MARGIN_DP = "right_margin_dp";
@@ -113,7 +114,6 @@ final class KeyboardPreferences {
     static final String INPUT_ASSISTANCE_MODE = "input_assistance_mode";
     static final String SHOW_CURRENT_APP_PROFILE = "show_current_app_profile";
     static final String SPACEBAR_CURSOR_DEAD_ZONE_DP = "spacebar_cursor_dead_zone_dp";
-    static final String FLOATING_MODE_ENABLED = "floating_mode_enabled";
     static final String ERGONOMIC_MAIN_KEY_CENTERING_ENABLED = "ergonomic_main_key_centering_enabled";
     static final String ERGONOMIC_COMPACT_FUNCTION_RAIL_ENABLED = "ergonomic_compact_function_rail_enabled";
     static final String ERGONOMIC_HITBOX_ENABLED = "ergonomic_hitbox_enabled";
@@ -144,10 +144,10 @@ final class KeyboardPreferences {
     static final int DEFAULT_SPACEBAR_CURSOR_DEAD_ZONE_DP = 26;
     static final int MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP = 12;
     static final int MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP = 48;
-    static final int DEFAULT_SINGLE_TAP_START_HOLD_MS = 520;
-    static final int DEFAULT_SINGLE_TAP_COMMIT_HOLD_MS = 420;
-    static final int MIN_SINGLE_TAP_HOLD_MS = 180;
-    static final int MAX_SINGLE_TAP_HOLD_MS = 900;
+    static final int DEFAULT_SINGLE_TAP_START_HOLD_MS = 300;
+    static final int DEFAULT_SINGLE_TAP_COMMIT_HOLD_MS = 140;
+    static final int MIN_SINGLE_TAP_HOLD_MS = 100;
+    static final int MAX_SINGLE_TAP_HOLD_MS = 700;
 
     private KeyboardPreferences() {
     }
@@ -453,6 +453,16 @@ final class KeyboardPreferences {
                 .apply();
     }
 
+    static void saveNumberRowVisibility(
+            Context context,
+            boolean showHangulNumberRow,
+            boolean showEnglishNumberRow) {
+        prefs(context).edit()
+                .putBoolean(SHOW_HANGUL_NUMBER_ROW, showHangulNumberRow)
+                .putBoolean(SHOW_ENGLISH_NUMBER_ROW, showEnglishNumberRow)
+                .apply();
+    }
+
     static boolean loadRemoteAutoModeEnabled(Context context) {
         return prefs(context).getBoolean(REMOTE_AUTO_MODE_ENABLED, true);
     }
@@ -702,7 +712,10 @@ final class KeyboardPreferences {
                         prefs.getString(
                                 ENGLISH_LAYOUT_PROFILE,
                                 KeyboardLayoutProfiles.DEFAULT_ENGLISH.preferenceValue),
-                        KeyboardLayoutProfiles.DEFAULT_ENGLISH));
+                        KeyboardLayoutProfiles.DEFAULT_ENGLISH),
+                prefs.getBoolean(
+                        DINGUL_DOT_ENTER_KEY_ENABLED,
+                        KeyboardLayoutProfiles.DEFAULT_DINGUL_DOT_ENTER_KEY_ENABLED));
     }
 
     static void saveHangulLayoutProfile(Context context, KeyboardLayoutProfile profile) {
@@ -717,6 +730,10 @@ final class KeyboardPreferences {
                 context,
                 ENGLISH_LAYOUT_PROFILE,
                 (profile == null ? KeyboardLayoutProfiles.DEFAULT_ENGLISH : profile).preferenceValue);
+    }
+
+    static void saveDingulDotEnterKeyEnabled(Context context, boolean enabled) {
+        saveBoolean(context, DINGUL_DOT_ENTER_KEY_ENABLED, enabled);
     }
 
     static String loadSelectedThemeId(Context context) {
@@ -886,14 +903,6 @@ final class KeyboardPreferences {
                 valueDp,
                 MIN_SPACEBAR_CURSOR_DEAD_ZONE_DP,
                 MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP);
-    }
-
-    static boolean loadFloatingModeEnabled(Context context) {
-        return prefs(context).getBoolean(FLOATING_MODE_ENABLED, false);
-    }
-
-    static void saveFloatingModeEnabled(Context context, boolean enabled) {
-        saveBoolean(context, FLOATING_MODE_ENABLED, enabled);
     }
 
     static void saveHapticTickGapMs(Context context, int gapMs) {

@@ -1,9 +1,6 @@
 package com.superl3.s3keyboard;
 
 import android.app.Activity;
-import android.content.Intent;
-import android.provider.Settings;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 
 import java.util.function.BooleanSupplier;
@@ -30,7 +27,7 @@ final class AndroidImeSettingsController {
                 R.string.open_input_settings,
                 R.drawable.ic_keyboard_settings,
                 12,
-                v -> activity.startActivity(new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)));
+                v -> AndroidImeActions.openInputSettings(activity));
 
         SettingsRowBuilder.iconButtonRow(
                 activity,
@@ -38,12 +35,13 @@ final class AndroidImeSettingsController {
                 R.string.show_input_picker,
                 R.drawable.ic_keyboard_keyboard,
                 12,
-                v -> {
-                    InputMethodManager imm = activity.getSystemService(InputMethodManager.class);
-                    if (imm != null) {
-                        imm.showInputMethodPicker();
-                    }
-                });
+                v -> AndroidImeActions.showInputPicker(activity));
+
+        SettingsRowBuilder.bodyLabelRow(
+                activity,
+                root,
+                BuildInfoProvider.summary(activity),
+                16);
 
         if (debuggableBuild.getAsBoolean()) {
             debugOverlaySettingsController =

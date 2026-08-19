@@ -16,14 +16,14 @@ import org.junit.Test;
 
 public final class InputConnectionTextOperatorTest {
     @Test
-    public void deleteCommittedCodePointFinishesComposingAroundDelete() {
+    public void deleteCommittedGraphemeFinishesComposingAroundDelete() {
         FakeConnection fake = new FakeConnection();
 
-        InputConnectionTextOperator.deleteCommittedCodePoint(fake.connection());
+        InputConnectionTextOperator.deleteCommittedGrapheme(fake.connection());
 
         assertEquals("finishComposingText", fake.calls.get(0));
-        assertTrue(fake.calls.get(1).startsWith("deleteSurroundingText"));
-        assertEquals("finishComposingText", fake.calls.get(2));
+        assertTrue(fake.calls.contains("deleteSurroundingText:1:0"));
+        assertEquals("finishComposingText", fake.calls.get(fake.calls.size() - 1));
     }
 
     @Test
@@ -33,8 +33,8 @@ public final class InputConnectionTextOperatorTest {
         InputConnectionTextOperator.deleteBeforeCursorCodePoint(fake.connection());
         InputConnectionTextOperator.finishComposing(fake.connection());
 
-        assertTrue(fake.calls.get(0).startsWith("deleteSurroundingText"));
-        assertEquals("finishComposingText", fake.calls.get(1));
+        assertTrue(fake.calls.contains("deleteSurroundingText:1:0"));
+        assertEquals("finishComposingText", fake.calls.get(fake.calls.size() - 1));
     }
 
     @Test
@@ -104,13 +104,100 @@ public final class InputConnectionTextOperatorTest {
         assertEquals("finishComposingText", fake.calls.get(0));
         assertEquals("commitText", fake.calls.get(1));
         assertEquals("finishComposingText", fake.calls.get(2));
-        assertTrue(fake.calls.get(3).startsWith("deleteSurroundingText"));
+        assertTrue(fake.calls.contains("deleteSurroundingText:2:0"));
         assertEquals("x", fake.committedText.get(0));
+    }
+
+    @Test
+    public void finalTextCommitReportsWhetherTheEditorAcceptedIt() {
+        FakeConnection accepted = new FakeConnection();
+        FakeConnection rejected = new FakeConnection();
+        rejected.commitTextResult = false;
+
+        assertTrue(InputConnectionTextOperator.commitText(accepted.connection(), "voice"));
+        assertFalse(InputConnectionTextOperator.commitText(rejected.connection(), "voice"));
+        assertFalse(InputConnectionTextOperator.commitText(null, "voice"));
+        assertFalse(InputConnectionTextOperator.commitText(accepted.connection(), ""));
+    }
+
+    @Test
+    public void legacyDeleteConvertsCodePointsToUtf16Units() {
+        assertEquals(2, EditorTextBoundaryPolicy.trailingCodePointUtf16UnitCount("a😀", 1));
+        assertEquals(3, EditorTextBoundaryPolicy.trailingCodePointUtf16UnitCount("a😀", 2));
+        assertEquals(1, EditorTextBoundaryPolicy.trailingCodePointUtf16UnitCount("가", 1));
+        assertEquals(1, EditorTextBoundaryPolicy.trailingCodePointUtf16UnitCount(null, 1));
+        assertEquals(0, EditorTextBoundaryPolicy.trailingCodePointUtf16UnitCount("a", 0));
+    }
+
+    @Test
+    public void committedDeleteKeepsExtendedGraphemeClustersIntact() {
+        String tonedThumb = "\uD83D\uDC4D\uD83C\uDFFD";
+        String family = "\uD83D\uDC69\u200D\uD83D\uDC69\u200D\uD83D\uDC67\u200D\uD83D\uDC66";
+        String flag = "\uD83C\uDDFA\uD83C\uDDF8";
+        String threeIndicators = "\uD83C\uDDFA\uD83C\uDDF8\uD83C\uDDE8";
+
+        assertEquals(tonedThumb.length(),
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount("a" + tonedThumb));
+        assertEquals(family.length(),
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount(family));
+        assertEquals(flag.length(),
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount(flag));
+        assertEquals(2,
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount(threeIndicators));
+        assertEquals(3,
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount("1\uFE0F\u20E3"));
+        assertEquals(2,
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount("a\u0301"));
+        assertEquals(2,
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount("\r\n"));
+        assertEquals(3,
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount("\u1100\u1161\u11A8"));
+        assertEquals(1,
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount("abc"));
+        assertEquals(0,
+                EditorTextBoundaryPolicy.trailingGraphemeUtf16UnitCount(null));
+    }
+
+    @Test
+    public void committedDeleteUsesTheWholeTrailingGraphemeWidth() {
+        FakeConnection fake = new FakeConnection();
+        fake.beforeCursor = "\uD83D\uDC4D\uD83C\uDFFD";
+
+        InputConnectionTextOperator.deleteCommittedGrapheme(fake.connection());
+
+        assertTrue(fake.calls.contains("deleteSurroundingText:4:0"));
+    }
+
+    @Test
+    public void committedDeleteReplacesSelectionBeforeLookingBehindCursor() {
+        FakeConnection fake = new FakeConnection();
+        fake.selectedText = "selected";
+
+        InputConnectionTextOperator.deleteCommittedGrapheme(fake.connection());
+
+        assertTrue(fake.calls.contains("getSelectedText"));
+        assertTrue(fake.calls.contains("commitText"));
+        assertFalse(fake.calls.contains("getTextBeforeCursor"));
+        assertEquals("", fake.committedText.get(0));
+    }
+
+    @Test
+    public void selectionDetectionDistinguishesRangeFromCollapsedCursor() {
+        FakeConnection selected = new FakeConnection();
+        selected.selectedText = "range";
+        FakeConnection collapsed = new FakeConnection();
+        collapsed.selectedText = "";
+
+        assertTrue(InputConnectionTextOperator.hasSelection(selected.connection()));
+        assertFalse(InputConnectionTextOperator.hasSelection(collapsed.connection()));
+        assertFalse(InputConnectionTextOperator.hasSelection(null));
     }
 
     private static final class FakeConnection implements InvocationHandler {
         String beforeCursor;
         String afterCursor;
+        String selectedText;
+        boolean commitTextResult = true;
         final List<String> calls = new ArrayList<>();
         final List<String> committedText = new ArrayList<>();
         final List<String> composingText = new ArrayList<>();
@@ -140,6 +227,9 @@ public final class InputConnectionTextOperatorTest {
                 case "getTextAfterCursor":
                     calls.add("getTextAfterCursor");
                     return afterCursor;
+                case "getSelectedText":
+                    calls.add("getSelectedText");
+                    return selectedText;
                 case "setComposingText":
                     calls.add("setComposingText");
                     composingText.add(String.valueOf(args[0]));
@@ -147,7 +237,7 @@ public final class InputConnectionTextOperatorTest {
                 case "commitText":
                     calls.add("commitText");
                     committedText.add(String.valueOf(args[0]));
-                    return true;
+                    return commitTextResult;
                 default:
                     return defaultValue(method.getReturnType());
             }

@@ -150,6 +150,52 @@ public final class ThemeClipboardImportControllerTest {
         assertEquals(false, runtime.dismissed);
     }
 
+    @Test
+    public void sessionOnlyModeRemoteAndForcedNumberRowAreNotPersistedWithTheme() {
+        KeyboardSettings persisted = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.HANGUL)
+                .withRemoteOptions(false, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT)
+                .withHangulNumberRow(false)
+                .withEnglishNumberRow(false)
+                .withEnterKeyLabel("Persisted");
+        KeyboardSettings runtime = persisted
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.WIN_SPACE)
+                .withRuntimeNumberRowForced(true)
+                .withEnterKeyLabel("Runtime");
+        KeyboardSettings theme = KeyboardSettings.defaults().withKeyRoundness(12);
+        FakeRuntime target = new FakeRuntime();
+        FakeSettingsStore store = new FakeSettingsStore();
+        ThemeClipboardImportController controller = new ThemeClipboardImportController(
+                () -> persisted,
+                () -> runtime,
+                () -> "Search",
+                () -> true,
+                target::applyImportedSettings,
+                target::dismissQuickSettings,
+                () -> KeyboardThemeJson.exportTheme(theme, "Round", "test", null),
+                store,
+                messageResId -> { });
+
+        controller.importFromClipboard();
+
+        assertEquals(KeyboardMode.HANGUL, store.saved.keyboardMode);
+        assertEquals(false, store.saved.remoteModeEnabled);
+        assertEquals(false, store.saved.forceNumberRow);
+        assertEquals(false, store.saved.showHangulNumberRow);
+        assertEquals(false, store.saved.showEnglishNumberRow);
+        assertEquals("Persisted", store.saved.enterKeyLabel);
+        assertEquals(12, store.saved.keyRoundnessDp);
+
+        assertEquals(KeyboardMode.ENGLISH, target.applied.keyboardMode);
+        assertEquals(true, target.applied.remoteModeEnabled);
+        assertEquals(RemoteImeShortcut.WIN_SPACE, target.applied.remoteImeShortcut);
+        assertEquals(true, target.applied.forceNumberRow);
+        assertEquals(true, target.applied.showNumberRow);
+        assertEquals("Search", target.applied.enterKeyLabel);
+        assertEquals(12, target.applied.keyRoundnessDp);
+    }
+
     private static final class FakeRuntime {
         KeyboardSettings applied;
         boolean dismissed;
