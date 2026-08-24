@@ -28,6 +28,8 @@ public final class MainActivity extends Activity {
     private DisplayStyleSettingsController displayStyleSettingsController;
     private MotionEffectSettingsController motionEffectSettingsController;
     private boolean demoShowKeyboard;
+    private boolean demoOverlayTestbed;
+    private boolean demoWearTestbed;
     private DemoFieldProfile demoFieldProfile = DemoFieldProfile.STANDARD;
     private SettingsHubController settingsHubController;
     private SettingsWizardController settingsWizardController;
@@ -40,11 +42,17 @@ public final class MainActivity extends Activity {
             getActionBar().hide();
         }
         loadCurrentPreferences();
-        getWindow().setSoftInputMode(demoShowKeyboard
+        int softInputMode = demoShowKeyboard
                 ? WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
-                : WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                : WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
+        if (demoOverlayTestbed) {
+            softInputMode |= WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
+        }
+        getWindow().setSoftInputMode(softInputMode);
         setContentView(createContentView());
-        settingsWizardController.restoreState(savedInstanceState);
+        if (settingsWizardController != null) {
+            settingsWizardController.restoreState(savedInstanceState);
+        }
         syncControls();
     }
 
@@ -88,6 +96,8 @@ public final class MainActivity extends Activity {
         settings = result.settings;
         demoFieldProfile = result.fieldProfile;
         demoShowKeyboard = result.showKeyboard;
+        demoOverlayTestbed = result.overlayTestbed;
+        demoWearTestbed = result.wearTestbed;
     }
 
     private void loadCurrentPreferences() {
@@ -98,6 +108,12 @@ public final class MainActivity extends Activity {
     }
 
     private View createContentView() {
+        if (demoOverlayTestbed) {
+            return TransparentOverlayTestbedView.create(this, demoShowKeyboard);
+        }
+        if (demoWearTestbed) {
+            return new WearOnePressTestbedView(this);
+        }
         int padding = SettingsRowBuilder.dp(this, 16);
         SettingsUiPalette ui = SettingsUiPalette.from(this);
         LinearLayout page = SettingsRowBuilder.vertical(this);

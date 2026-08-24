@@ -49,6 +49,11 @@ The debug APK is written to:
 app\build\outputs\apk\debug\app-debug.apk
 ```
 
+Closed-beta release builds require the four signing properties documented in
+the README. `S3_VERSION_CODE` and `S3_VERSION_NAME` can be supplied as Gradle
+properties for each release. The release script fails when signing is missing
+and verifies every generated APK with `apksigner` before reporting success.
+
 ## Wireless ADB Install
 
 Pairing and connect ports can differ on Android wireless debugging. Pair with the
@@ -171,10 +176,13 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   fields, not only the current code-point fields.
 - `ImeConnectionDispatcher` owns testable `InputConnection` transport decisions
   for Enter fallback, raw ASCII key dispatch, and soft-key event generation.
-  Raw ASCII/newline dispatch should prefer soft key events but fall back to
-  `commitText` if the sender is missing, rejects the event, or accepts only a
-  partial down/up sequence, so text does not silently disappear in custom
-  editors. Cursor movement also belongs here so boundary checks and soft D-pad
+  Normal Enter is send-first: it requests the resolved editor action and does
+  not fall back to an ambiguous soft Enter key that a multiline editor could
+  reinterpret as newline. A newline is a separate explicit command emitted by
+  long-pressing the non-remote Enter key.
+  Raw text import keeps its own key-event-to-`commitText` fallback so imported
+  text does not silently disappear in custom editors. Cursor movement also
+  belongs here so boundary checks and soft D-pad
   dispatch do not drift back into `S3KeyboardService`. Keep service-level
   command routing separate from this helper so WebView/custom editor fallback
   behavior can stay covered by JVM tests.
@@ -192,9 +200,8 @@ adb -s <device-ip>:<connect-port> uninstall com.superl3.s3keyboard
   `finishComposingText` directly.
 - `InputConnectionSequenceTest` verifies the higher-level editor sequence:
   composing text updates, commit-current finishing, stale-composing cleanup
-  around delete, rejected `performEditorAction`, soft Enter `sendKeyEvent`
-  fallback, and the final newline commit fallback when the soft sender rejects
-  Enter. Update it when changing IME transport order.
+  around delete, rejected `performEditorAction` without ambiguous key fallback,
+  and explicit newline commits. Update it when changing IME transport order.
 - `KeyboardCommandRouter` maps raw key gesture strings to local command routes.
   `KeyboardCommandDispatcher` owns the route-to-callback dispatch table, and
   `S3KeyboardCommandTarget` owns the route callback implementation that bridges
@@ -545,3 +552,77 @@ Use this checklist on a real device after installing a debug APK:
   centering option is enabled.
 - Confirm QWERTY mode keeps its previous layout and is not centered or compacted
   by Dingul ergonomics settings.
+
+## Transparent IME Overlay Testbed
+
+Run the emulator testbed with:
+
+```powershell
+rtk powershell -ExecutionPolicy Bypass -File .\scripts\demo-transparent-overlay.ps1
+```
+
+The script builds and installs the debug APK, selects the S3 IME, opens a fixed
+test editor, and captures before/after screenshots under
+`artifacts/transparent-overlay`. It fails if the host viewport or TextBox moves,
+the visible IME is not S3Keyboard, fullscreen overlay mode is inactive, or
+Android's extracted editor remains visible. The test Activity deliberately asks
+for `adjustResize`, so unchanged host geometry verifies the IME policy rather
+than an Activity-specific workaround. The implementation uses the trusted input
+method window and does not request `SYSTEM_ALERT_WINDOW`.
+
+Use `-OverlayStyle translucent_keys` for translucent keycaps or
+`-OverlayStyle extreme_floating` for compact floating keycaps that keep every
+main legend or icon enclosed while exposing more of the host screen. The
+pipeline also enables the production watch radial IME, captures its key-selection
+and action-selection states, and verifies that a selected consonant reaches the
+host editor.
+
+### Watch radial input
+
+`시계형 입력` is an experimental Hangul Dingul input surface inside the same
+transparent IME window. It is disabled by default and can be enabled from the
+continuous-input settings or Quick Settings. QWERTY, Remote mode, and
+number/password replacement pads keep the existing keyboard.
+
+The interaction has two explicit steps. Consonants and commands use the compact
+eight-position ring. The vowel page preserves the original Dingul vertical
+spine in the order `ㅢ`, `ㅣ.`, `ㅡㅐ`, `..`, rather than redistributing those
+keys around the ring. After choosing a key, tap the center for its tap value or
+slide from the center for its directional value. Space and Backspace remain
+visible as fixed bottom controls on every page and in both selection steps.
+
+The radial surface sends text and commands through `KeyboardCommandDispatcher`,
+so Hangul composition, contextual vowels, deletion, space, Enter, language
+switching, and reserved phrases use the standard `InputConnection` path. The
+automata state recommends the consonant or vowel page after each text input.
+
+The generated `watch-radial-ime-stage-1.png`,
+`watch-radial-ime-stage-2.png`, and `watch-radial-ime-committed.png` files are
+local artifacts and must not be staged.
+
+## Rendering Performance
+
+The keyboard keys are drawn by one custom `HangulKeyboardView`. Preview bubbles
+are drawn by one `PreviewOverlayCanvasView` hosted in one non-touchable popup.
+Preview render states and popup location buffers are pooled, animation frames
+invalidate only the active key region, and popup geometry is updated only when
+its position or dimensions change. Released previews advance with a 1x1 keyboard
+dirty region because their pixels are rendered in the separate overlay.
+
+The transparent input presentation still creates a translucent IME surface above
+the editor, so measure its composition cost separately from Canvas drawing. Run
+the same typing sequence with normal/transparent presentation and preview on/off:
+
+```powershell
+rtk powershell -ExecutionPolicy Bypass -File .\scripts\profile-ime-rendering.ps1 -TransportId <id>
+```
+
+The IME deliberately registers no Android system-gesture exclusion rectangles.
+Left and right edge swipes therefore remain available for system Back navigation,
+including while transparent overlay and watch input surfaces are active.
+
+For complete diagnosis, record a Perfetto trace and inspect the IME UI thread,
+RenderThread, SurfaceFlinger composition, GPU completion, and garbage collection.
+Do not allocate views, layout parameters, gradients, paths, or coordinate arrays
+per animation frame, and do not restore full-view invalidation for a single-key
+animation.

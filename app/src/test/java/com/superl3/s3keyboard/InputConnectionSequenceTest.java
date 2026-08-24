@@ -58,8 +58,7 @@ public final class InputConnectionSequenceTest {
         assertTrue("delete must happen before editor-action fallback", performIndex > 5);
         assertTrue("delete call missing before editor-action fallback", hasDeleteBetween(fake.calls, 4, performIndex));
         assertEquals("finishComposingText", fake.calls.get(performIndex - 1));
-        assertEquals("sendKeyEvent", fake.calls.get(performIndex + 1));
-        assertEquals("sendKeyEvent", fake.calls.get(performIndex + 2));
+        assertEquals(performIndex + 1, fake.calls.size());
     }
 
     @Test

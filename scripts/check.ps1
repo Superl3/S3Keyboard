@@ -22,5 +22,12 @@ if ($BrokenText.Count -gt 0) {
     throw "Potential mojibake detected in user-facing source text."
 }
 & node (Join-Path $Root "tools\sync-themes.mjs") --check --report
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
 & (Join-Path $PSScriptRoot "audit-settings-usage.ps1") -FailOnUnused
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
 & (Join-Path $Root "gradlew.bat") --no-daemon testDebugUnitTest lintDebug assembleDebug
+exit $LASTEXITCODE

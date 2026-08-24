@@ -20,6 +20,7 @@ final class OneFingerInputSession<K> {
     K candidateSlot;
     K holdCommitSlot;
     K lastCommittedSlot;
+    GestureAction lastCommittedAction = GestureAction.TAP;
     final GestureState gestureState = new GestureState();
     float downX;
     float downY;
@@ -91,12 +92,17 @@ final class OneFingerInputSession<K> {
     }
 
     void markCommitted(K keySlot) {
+        markCommitted(keySlot, GestureAction.TAP);
+    }
+
+    void markCommitted(K keySlot, GestureAction action) {
         clearPending();
         clearCandidateAnchor();
         state = State.COMMITTED_FREE_ROAM;
         targetSlot = null;
         candidateSlot = null;
         lastCommittedSlot = keySlot;
+        lastCommittedAction = action == null ? GestureAction.TAP : action;
         holdCommitSlot = null;
         hasCommitted = true;
         lastCommittedReentryBlocked = keySlot != null;

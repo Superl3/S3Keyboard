@@ -110,7 +110,7 @@ public final class KeyboardAccessibilityLayoutTest {
                 KeyboardAccessibilityAudit.advisoryAudit(slots);
         assertFalse(advisories.isEmpty());
         for (KeyboardAccessibilityAudit.Issue advisory : advisories) {
-            assertEquals("recommended touch target below 40dp", advisory.reason);
+            assertEquals("recommended touch target below 48dp", advisory.reason);
         }
     }
 
@@ -132,7 +132,7 @@ public final class KeyboardAccessibilityLayoutTest {
                 KeyboardAccessibilityAudit.advisoryAudit(slots);
         assertFalse(advisories.isEmpty());
         for (KeyboardAccessibilityAudit.Issue advisory : advisories) {
-            assertEquals("recommended touch target below 40dp", advisory.reason);
+            assertEquals("recommended touch target below 48dp", advisory.reason);
         }
     }
 

@@ -45,12 +45,40 @@ public final class ImeActionLabelResolverTest {
     }
 
     @Test
-    public void multilineWithoutEnterActionUsesNewline() {
+    public void multilineWithoutEnterActionPrefersSend() {
         ResolvedImeAction action = ImeActionLabelResolver.resolve(
                 EditorInfo.IME_ACTION_NONE,
                 InputType.TYPE_TEXT_FLAG_MULTI_LINE);
 
-        assertEquals(R.string.ime_action_newline, action.labelResId);
-        assertFalse(action.performEditorAction);
+        assertEquals(R.string.ime_action_send, action.labelResId);
+        assertTrue(action.performEditorAction);
+        assertEquals(EditorInfo.IME_ACTION_SEND, action.editorActionId);
+        assertFalse(action.commitNewline);
+    }
+
+    @Test
+    public void singleLineWithoutExplicitActionPrefersSend() {
+        ResolvedImeAction none = ImeActionLabelResolver.resolve(EditorInfo.IME_ACTION_NONE, 0);
+        ResolvedImeAction unspecified = ImeActionLabelResolver.resolve(
+                EditorInfo.IME_ACTION_UNSPECIFIED,
+                0);
+
+        assertEquals(R.string.ime_action_send, none.labelResId);
+        assertTrue(none.performEditorAction);
+        assertFalse(none.commitNewline);
+        assertEquals(EditorInfo.IME_ACTION_SEND, none.editorActionId);
+        assertEquals(R.string.ime_action_send, unspecified.labelResId);
+        assertTrue(unspecified.performEditorAction);
+        assertFalse(unspecified.commitNewline);
+    }
+
+    @Test
+    public void missingEditorInfoUsesSendPreferredDefault() {
+        ResolvedImeAction action = ImeActionLabelResolver.resolve((EditorInfo) null);
+
+        assertEquals(R.string.ime_action_send, action.labelResId);
+        assertTrue(action.performEditorAction);
+        assertEquals(EditorInfo.IME_ACTION_SEND, action.editorActionId);
+        assertFalse(action.commitNewline);
     }
 }

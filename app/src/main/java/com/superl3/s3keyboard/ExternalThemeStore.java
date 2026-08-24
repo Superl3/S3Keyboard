@@ -20,6 +20,8 @@ import java.util.Locale;
 
 final class ExternalThemeStore {
     static final String EXTERNAL_THEME_PREFIX = "external-theme:";
+    static final int MAX_THEME_FILES = 128;
+    static final long MAX_THEME_FILE_BYTES = 1024L * 1024L;
 
     private static final String PREF_NAME = "keyboard_external_themes";
     private static final String KEY_DIRECTORY_PATH = "external_theme_directory_path";
@@ -82,7 +84,9 @@ final class ExternalThemeStore {
         Arrays.sort(files, Comparator.comparing(File::getName, String.CASE_INSENSITIVE_ORDER));
 
         List<UserThemeStore.UserTheme> themes = new ArrayList<>();
-        for (File file : files) {
+        int fileCount = Math.min(files.length, MAX_THEME_FILES);
+        for (int i = 0; i < fileCount; i++) {
+            File file = files[i];
             UserThemeStore.UserTheme theme = themeFromFile(file);
             if (theme != null) {
                 themes.add(theme);
@@ -105,6 +109,9 @@ final class ExternalThemeStore {
 
     private static UserThemeStore.UserTheme themeFromFile(File file) {
         try {
+            if (file == null || file.length() < 0 || file.length() > MAX_THEME_FILE_BYTES) {
+                return null;
+            }
             String json = readUtf8(file);
             KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
             JSONObject object = new JSONObject(json);
@@ -127,6 +134,9 @@ final class ExternalThemeStore {
             byte[] buffer = new byte[4096];
             int read;
             while ((read = input.read(buffer)) != -1) {
+                if (output.size() + read > MAX_THEME_FILE_BYTES) {
+                    throw new IOException("External theme exceeds the size limit.");
+                }
                 output.write(buffer, 0, read);
             }
             return output.toString("UTF-8");

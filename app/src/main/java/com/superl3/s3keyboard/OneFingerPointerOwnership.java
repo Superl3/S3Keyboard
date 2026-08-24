@@ -50,4 +50,8 @@ final class OneFingerPointerOwnership {
     int suppressedPointerCount() {
         return suppressedPointerIds.size();
     }
+
+    boolean isDrainingSuppressedPointers() {
+        return ownerPointerId == -1 && !suppressedPointerIds.isEmpty();
+    }
 }

@@ -51,8 +51,8 @@ final class PreviewBubbleDrawable extends Drawable {
     private final int cornerPx;
     private final int tailHeightPx;
     private final int borderWidthPx;
-    private final float commitGlowAlpha;
-    private final float inputImpactAlpha;
+    private float commitGlowAlpha;
+    private float inputImpactAlpha;
     private int alpha = 255;
 
     PreviewBubbleDrawable(
@@ -79,6 +79,30 @@ final class PreviewBubbleDrawable extends Drawable {
         configureFillPaint(tailPaint);
         configureStrokePaint(tailStrokePaint, Math.max(1f, this.borderWidthPx * 0.75f));
         tailStrokePaint.setColor(borderColor);
+    }
+
+    boolean matchesStyle(
+            int backgroundColor,
+            int borderColor,
+            int borderWidthPx,
+            int cornerPx,
+            int tailHeightPx) {
+        return this.backgroundColor == backgroundColor
+                && this.borderColor == borderColor
+                && this.borderWidthPx == Math.max(0, borderWidthPx)
+                && this.cornerPx == Math.max(0, cornerPx)
+                && this.tailHeightPx == Math.max(0, tailHeightPx);
+    }
+
+    void updateAnimation(float commitGlowAlpha, float inputImpactAlpha) {
+        float nextCommitGlow = clampUnit(commitGlowAlpha);
+        float nextInputImpact = clampUnit(inputImpactAlpha);
+        if (this.commitGlowAlpha == nextCommitGlow && this.inputImpactAlpha == nextInputImpact) {
+            return;
+        }
+        this.commitGlowAlpha = nextCommitGlow;
+        this.inputImpactAlpha = nextInputImpact;
+        invalidateSelf();
     }
 
     @Override

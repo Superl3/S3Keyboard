@@ -9,6 +9,10 @@ final class DemoSettingsIntentOverrides {
     private static final String EXTRA_HANGUL_SPECIAL_COLUMN_PERCENT = "hangul_special_column_percent";
     private static final String EXTRA_HANGUL_MAIN_KEY_UNITS = "hangul_main_key_units";
     private static final String EXTRA_DEMO_SHOW_KEYBOARD = "demo_show_keyboard";
+    private static final String EXTRA_DEMO_OVERLAY_TESTBED = "demo_overlay_testbed";
+    private static final String EXTRA_DEMO_WEAR_TESTBED = "demo_wear_testbed";
+    private static final String EXTRA_DEMO_OVERLAY_STYLE = "demo_overlay_style";
+    private static final String EXTRA_DEMO_WATCH_RADIAL_INPUT = "demo_watch_radial_input";
     private static final String EXTRA_KEY_IDLE_COLOR = "key_idle_color";
     private static final String EXTRA_KEY_PRESSED_COLOR = "key_pressed_color";
     private static final String EXTRA_KEYBOARD_BACKGROUND_COLOR = "keyboard_background_color";
@@ -46,24 +50,43 @@ final class DemoSettingsIntentOverrides {
             boolean debuggableBuild) {
         KeyboardSettings baseSettings = RuntimeDefaults.keyboardSettings(settings);
         if (intent == null) {
-            return new Result(baseSettings, fieldProfile, showKeyboard);
+            return new Result(baseSettings, fieldProfile, showKeyboard, false, false);
         }
 
         boolean debugDemoIntent = debuggableBuild
                 && intent.getBooleanExtra(EXTRA_DEMO_SETTINGS, false);
         boolean nextShowKeyboard = debugDemoIntent
                 && intent.getBooleanExtra(EXTRA_DEMO_SHOW_KEYBOARD, showKeyboard);
+        boolean overlayTestbed = debugDemoIntent
+                && intent.getBooleanExtra(EXTRA_DEMO_OVERLAY_TESTBED, false);
+        boolean wearTestbed = debugDemoIntent
+                && intent.getBooleanExtra(EXTRA_DEMO_WEAR_TESTBED, false);
+        if (debugDemoIntent && intent.hasExtra(EXTRA_DEMO_WATCH_RADIAL_INPUT)) {
+            KeyboardPreferences.saveWatchRadialInputEnabled(
+                    context,
+                    intent.getBooleanExtra(EXTRA_DEMO_WATCH_RADIAL_INPUT, false));
+        }
         DemoFieldProfile nextFieldProfile = fieldProfile;
         if (debugDemoIntent && intent.hasExtra(EXTRA_DEMO_FIELD_PROFILE)) {
             nextFieldProfile = DemoFieldProfile.fromName(intent.getStringExtra(EXTRA_DEMO_FIELD_PROFILE));
         }
         if (!debugDemoIntent || !hasDemoSettingOverride(intent)) {
-            return new Result(baseSettings, nextFieldProfile, nextShowKeyboard);
+            return new Result(
+                    baseSettings,
+                    nextFieldProfile,
+                    nextShowKeyboard,
+                    overlayTestbed,
+                    wearTestbed);
         }
 
         KeyboardSettings nextSettings = applySettingsOverride(context, intent, baseSettings);
         KeyboardPreferences.saveSettings(context, nextSettings);
-        return new Result(nextSettings, nextFieldProfile, nextShowKeyboard);
+        return new Result(
+                nextSettings,
+                nextFieldProfile,
+                nextShowKeyboard,
+                overlayTestbed,
+                wearTestbed);
     }
 
     private static KeyboardSettings applySettingsOverride(
@@ -71,6 +94,12 @@ final class DemoSettingsIntentOverrides {
             Intent intent,
             KeyboardSettings settings) {
         KeyboardSettings next = settings;
+        if (intent.hasExtra(EXTRA_DEMO_OVERLAY_STYLE)) {
+            KeyboardPreferences.saveTransparentOverlayStyle(
+                    context,
+                    TransparentOverlayStyle.fromPreference(
+                            intent.getStringExtra(EXTRA_DEMO_OVERLAY_STYLE)));
+        }
         String themePresetId = intent.getStringExtra(EXTRA_THEME_PRESET_ID);
         KeyboardThemePreset themePreset = KeyboardThemePreset.find(themePresetId);
         if (themePreset != null) {
@@ -161,7 +190,8 @@ final class DemoSettingsIntentOverrides {
                 || intent.hasExtra(EXTRA_SHOW_HANGUL_NUMBER_ROW)
                 || intent.hasExtra(EXTRA_SHOW_ENGLISH_NUMBER_ROW)
                 || intent.hasExtra(EXTRA_DEMO_FIELD_PROFILE)
-                || intent.hasExtra(EXTRA_THEME_PRESET_ID);
+                || intent.hasExtra(EXTRA_THEME_PRESET_ID)
+                || intent.hasExtra(EXTRA_DEMO_OVERLAY_STYLE);
     }
 
     private static int colorExtra(Intent intent, String name, int fallback) {
@@ -184,11 +214,20 @@ final class DemoSettingsIntentOverrides {
         final KeyboardSettings settings;
         final DemoFieldProfile fieldProfile;
         final boolean showKeyboard;
+        final boolean overlayTestbed;
+        final boolean wearTestbed;
 
-        Result(KeyboardSettings settings, DemoFieldProfile fieldProfile, boolean showKeyboard) {
+        Result(
+                KeyboardSettings settings,
+                DemoFieldProfile fieldProfile,
+                boolean showKeyboard,
+                boolean overlayTestbed,
+                boolean wearTestbed) {
             this.settings = RuntimeDefaults.keyboardSettings(settings);
             this.fieldProfile = fieldProfile == null ? DemoFieldProfile.STANDARD : fieldProfile;
             this.showKeyboard = showKeyboard;
+            this.overlayTestbed = overlayTestbed;
+            this.wearTestbed = wearTestbed;
         }
     }
 }

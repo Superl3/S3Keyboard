@@ -20,6 +20,9 @@ final class QuickSettingsPanelController {
     private final Supplier<String> singleTapCommitModeToggleLabel;
     private final BooleanSupplier singleTapCommitModeEnabled;
     private final Runnable singleTapCommitModeToggler;
+    private final Supplier<String> watchRadialInputToggleLabel;
+    private final BooleanSupplier watchRadialInputEnabled;
+    private final Runnable watchRadialInputToggler;
     private final Supplier<String> numberRowToggleLabel;
     private final BooleanSupplier activeNumberRowVisible;
     private final Runnable activeNumberRowToggler;
@@ -38,6 +41,9 @@ final class QuickSettingsPanelController {
             Supplier<String> singleTapCommitModeToggleLabel,
             BooleanSupplier singleTapCommitModeEnabled,
             Runnable singleTapCommitModeToggler,
+            Supplier<String> watchRadialInputToggleLabel,
+            BooleanSupplier watchRadialInputEnabled,
+            Runnable watchRadialInputToggler,
             Supplier<String> numberRowToggleLabel,
             BooleanSupplier activeNumberRowVisible,
             Runnable activeNumberRowToggler,
@@ -55,6 +61,10 @@ final class QuickSettingsPanelController {
                 RuntimeDefaults.emptyStringSupplier(singleTapCommitModeToggleLabel);
         this.singleTapCommitModeEnabled = RuntimeDefaults.booleanSupplier(singleTapCommitModeEnabled);
         this.singleTapCommitModeToggler = RuntimeDefaults.runnable(singleTapCommitModeToggler);
+        this.watchRadialInputToggleLabel =
+                RuntimeDefaults.emptyStringSupplier(watchRadialInputToggleLabel);
+        this.watchRadialInputEnabled = RuntimeDefaults.booleanSupplier(watchRadialInputEnabled);
+        this.watchRadialInputToggler = RuntimeDefaults.runnable(watchRadialInputToggler);
         this.numberRowToggleLabel = RuntimeDefaults.emptyStringSupplier(numberRowToggleLabel);
         this.activeNumberRowVisible = RuntimeDefaults.booleanSupplier(activeNumberRowVisible);
         this.activeNumberRowToggler = RuntimeDefaults.runnable(activeNumberRowToggler);
@@ -114,6 +124,16 @@ final class QuickSettingsPanelController {
                         singleTapCommitModeToggleLabel.get(),
                         singleTapCommitModeEnabled.getAsBoolean(),
                         v -> singleTapCommitModeToggler.run()),
+                8);
+
+        QuickPanelUi.addWithTop(
+                context,
+                panel,
+                QuickPanelUi.quickButton(
+                        context,
+                        watchRadialInputToggleLabel.get(),
+                        watchRadialInputEnabled.getAsBoolean(),
+                        v -> watchRadialInputToggler.run()),
                 8);
 
         QuickPanelUi.addWithTop(

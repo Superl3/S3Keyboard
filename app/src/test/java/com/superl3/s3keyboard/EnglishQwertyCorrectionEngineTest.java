@@ -62,4 +62,21 @@ public final class EnglishQwertyCorrectionEngineTest {
 
         assertTrue(candidates.isEmpty());
     }
+
+    @Test
+    public void knownWordDoesNotProduceDistractingAlternatives() {
+        assertTrue(EnglishQwertyCorrectionEngine.DEFAULT.suggest("test", 3).isEmpty());
+        assertTrue(EnglishQwertyCorrectionEngine.DEFAULT.suggest("keyboard", 3).isEmpty());
+    }
+
+    @Test
+    public void validWordIsNotAggressivelyAutoCorrected() {
+        assertEquals(null, EnglishQwertyCorrectionEngine.DEFAULT.autoCorrection("goof"));
+    }
+
+    @Test
+    public void acceptsInternalApostropheAsPartOfAWord() {
+        assertEquals("you're", EnglishQwertyCorrectionEngine.normalizeWord("You're"));
+        assertTrue(EnglishQwertyCorrectionEngine.DEFAULT.suggest("you're", 3).isEmpty());
+    }
 }

@@ -3,7 +3,12 @@ package com.superl3.s3keyboard;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -21,10 +26,12 @@ import java.util.List;
 final class ClipboardStore {
     private static final String PREF_NAME = "keyboard_preferences";
     static final String KEY_ENTRIES = "entries";
+    static final String KEY_ENTRIES_V2 = "clipboard_entries_v2";
     private static final String KEY_ENABLED = KeyboardPreferences.CLIPBOARD_HISTORY_ENABLED;
     private static final String SEPARATOR = "\u001F"; // Unit separator
     static final int MAX_ENTRIES = 10;
     static final int MAX_ENTRY_LENGTH = 4096;
+    static final long MAX_ENTRY_AGE_MS = 7L * 24L * 60L * 60L * 1000L;
 
     private final SharedPreferences preferences;
 
@@ -58,9 +65,10 @@ final class ClipboardStore {
         if (storable == null || !isEnabled()) {
             return;
         }
-        List<String> entries = load();
-        entries.remove(storable);
-        entries.add(0, storable);
+        long now = System.currentTimeMillis();
+        List<Entry> entries = load(now);
+        removeText(entries, storable);
+        entries.add(0, new Entry(storable, now));
         while (entries.size() > MAX_ENTRIES) {
             entries.remove(entries.size() - 1);
         }
@@ -74,15 +82,20 @@ final class ClipboardStore {
         if (!isEnabled()) {
             return new ArrayList<>();
         }
-        return load();
+        List<Entry> stored = load(System.currentTimeMillis());
+        List<String> entries = new ArrayList<>(stored.size());
+        for (Entry entry : stored) {
+            entries.add(entry.text);
+        }
+        return entries;
     }
 
     /**
      * Removes a single entry from the history.
      */
     void remove(String text) {
-        List<String> entries = load();
-        entries.remove(text);
+        List<Entry> entries = load(System.currentTimeMillis());
+        removeText(entries, text);
         save(entries);
     }
 
@@ -90,12 +103,26 @@ final class ClipboardStore {
      * Clears all clipboard history.
      */
     void clear() {
-        preferences.edit().remove(KEY_ENTRIES).apply();
+        preferences.edit().remove(KEY_ENTRIES).remove(KEY_ENTRIES_V2).apply();
     }
 
-    private List<String> load() {
-        String raw = preferences.getString(KEY_ENTRIES, "");
-        List<String> entries = new ArrayList<>();
+    private List<Entry> load(long now) {
+        List<Entry> entries = decodeV2(preferences.getString(KEY_ENTRIES_V2, ""));
+        boolean migrated = false;
+        if (entries.isEmpty()) {
+            entries = decodeLegacy(preferences.getString(KEY_ENTRIES, ""), now);
+            migrated = !entries.isEmpty();
+        }
+        int previousSize = entries.size();
+        entries = pruneExpired(entries, now);
+        if (migrated || entries.size() != previousSize) {
+            save(entries);
+        }
+        return entries;
+    }
+
+    private List<Entry> decodeLegacy(String raw, long now) {
+        List<Entry> entries = new ArrayList<>();
         if (raw == null || raw.isEmpty()) {
             return entries;
         }
@@ -103,7 +130,7 @@ final class ClipboardStore {
         for (String part : parts) {
             String storable = storableEntry(part);
             if (storable != null) {
-                entries.add(storable);
+                entries.add(new Entry(storable, now));
                 if (entries.size() >= MAX_ENTRIES) {
                     break;
                 }
@@ -112,24 +139,82 @@ final class ClipboardStore {
         return entries;
     }
 
-    private void save(List<String> entries) {
-        StringBuilder sb = new StringBuilder();
+    private List<Entry> decodeV2(String raw) {
+        List<Entry> entries = new ArrayList<>();
+        if (raw == null || raw.isEmpty()) {
+            return entries;
+        }
+        try {
+            JSONArray array = new JSONArray(raw);
+            for (int i = 0; i < array.length() && entries.size() < MAX_ENTRIES; i++) {
+                JSONObject object = array.optJSONObject(i);
+                if (object == null) {
+                    continue;
+                }
+                String text = storableEntry(object.optString("text", ""));
+                long createdAt = object.optLong("createdAt", 0L);
+                if (text != null && createdAt > 0L) {
+                    entries.add(new Entry(text, createdAt));
+                }
+            }
+        } catch (JSONException ignored) {
+            entries.clear();
+        }
+        return entries;
+    }
+
+    private void save(List<Entry> entries) {
+        JSONArray array = new JSONArray();
         int written = 0;
-        for (String entry : entries) {
-            String storable = storableEntry(entry);
+        for (Entry entry : entries) {
+            String storable = storableEntry(entry.text);
             if (storable == null) {
                 continue;
             }
-            if (written > 0) {
-                sb.append(SEPARATOR);
+            try {
+                JSONObject object = new JSONObject();
+                object.put("text", storable);
+                object.put("createdAt", entry.createdAtMs);
+                array.put(object);
+            } catch (JSONException ignored) {
+                continue;
             }
-            sb.append(storable);
             written++;
             if (written >= MAX_ENTRIES) {
                 break;
             }
         }
-        preferences.edit().putString(KEY_ENTRIES, sb.toString()).apply();
+        preferences.edit()
+                .putString(KEY_ENTRIES_V2, array.toString())
+                .remove(KEY_ENTRIES)
+                .apply();
+    }
+
+    static List<Entry> pruneExpired(List<Entry> entries, long now) {
+        List<Entry> retained = new ArrayList<>();
+        if (entries == null) {
+            return retained;
+        }
+        for (Entry entry : entries) {
+            if (entry != null
+                    && entry.createdAtMs <= now
+                    && now - entry.createdAtMs <= MAX_ENTRY_AGE_MS) {
+                retained.add(entry);
+                if (retained.size() >= MAX_ENTRIES) {
+                    break;
+                }
+            }
+        }
+        return retained;
+    }
+
+    private static void removeText(List<Entry> entries, String text) {
+        Iterator<Entry> iterator = entries.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().text.equals(text)) {
+                iterator.remove();
+            }
+        }
     }
 
     static String storableEntry(String text) {
@@ -137,5 +222,15 @@ final class ClipboardStore {
             return null;
         }
         return text.replace(SEPARATOR, " ");
+    }
+
+    static final class Entry {
+        final String text;
+        final long createdAtMs;
+
+        Entry(String text, long createdAtMs) {
+            this.text = text;
+            this.createdAtMs = createdAtMs;
+        }
     }
 }

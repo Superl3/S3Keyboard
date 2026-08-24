@@ -9,6 +9,47 @@ import org.junit.Test;
 
 public final class SingleTapCommitModePolicyTest {
     @Test
+    public void directionalConsonantCanUseOneDwellForSameKeyTapContinuation() {
+        GestureKey nieun = new GestureKey("ㄴ", "ㄴ", "ㄸ", "ㄷ", "ㅌ", "ㅌ", null);
+
+        assertTrue(SingleTapCommitModePolicy.usesDirectSameKeyTapAfterSlide(
+                true,
+                KeyboardMode.HANGUL,
+                true,
+                nieun,
+                true,
+                GestureAction.LEFT));
+        assertFalse(SingleTapCommitModePolicy.usesDirectSameKeyTapAfterSlide(
+                true,
+                KeyboardMode.HANGUL,
+                true,
+                nieun,
+                true,
+                GestureAction.TAP));
+    }
+
+    @Test
+    public void sameKeyTapShortcutDoesNotAffectVowelsOrQwerty() {
+        GestureKey vowel = new GestureKey("ㅣ.", "__dingul_center_vowel__", "ㅗ", "ㅜ", "ㅓ", "ㅏ", null);
+        GestureKey latin = new GestureKey("a", "a", "A", null, null, null, null);
+
+        assertFalse(SingleTapCommitModePolicy.usesDirectSameKeyTapAfterSlide(
+                true,
+                KeyboardMode.HANGUL,
+                true,
+                vowel,
+                true,
+                GestureAction.RIGHT));
+        assertFalse(SingleTapCommitModePolicy.usesDirectSameKeyTapAfterSlide(
+                true,
+                KeyboardMode.ENGLISH,
+                true,
+                latin,
+                true,
+                GestureAction.UP));
+    }
+
+    @Test
     public void dingulSlideInputUsesOneShotHoldCommitInSingleTapMode() {
         GestureKey giyeok = new GestureKey("\u3131", "\u3131", "\u3132", "#", "\u314B", "\u314B", null);
 

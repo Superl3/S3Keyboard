@@ -79,6 +79,46 @@ final class KeyboardLayoutFactory {
         return rows;
     }
 
+    static List<GestureKey> watchRadialKeys(WatchRadialPage page) {
+        WatchRadialPage safePage = page == null ? WatchRadialPage.CONSONANTS : page;
+        List<KeyboardRow> rows = hangulRows(
+                KeyboardSettings.DEFAULT_HANGUL_SPECIAL_COLUMN_PERCENT,
+                false);
+        List<GestureKey> keys = new ArrayList<>(8);
+        if (safePage == WatchRadialPage.CONSONANTS) {
+            for (KeyboardRow row : rows) {
+                keys.add(row.keys.get(0));
+                keys.add(row.keys.get(1));
+            }
+            return Collections.unmodifiableList(keys);
+        }
+        if (safePage == WatchRadialPage.VOWELS) {
+            for (KeyboardRow row : rows) {
+                keys.add(row.keys.get(2));
+            }
+            for (int rowIndex = 1; rowIndex < rows.size(); rowIndex++) {
+                keys.add(rows.get(rowIndex).keys.get(3));
+            }
+            return Collections.unmodifiableList(keys);
+        }
+        keys.add(GestureKey.command("입력", KeyboardCommands.CMD_ENTER, 1));
+        keys.add(GestureKey.command("한/영", KeyboardCommands.CMD_TOGGLE_LANGUAGE, 1));
+        keys.add(GestureKey.command("예약", KeyboardCommands.CMD_RESERVED_PHRASES, 1));
+        keys.add(GestureKey.command("옵션", KeyboardCommands.CMD_OPEN_OPTIONS, 1));
+        keys.add(GestureKey.command("클립", KeyboardCommands.CMD_CLIPBOARD_PANEL, 1));
+        keys.add(GestureKey.command("숨김", KeyboardCommands.CMD_HIDE, 1));
+        keys.add(GestureKey.command("음성", KeyboardCommands.CMD_VOICE_INPUT, 1));
+        keys.add(GestureKey.command("취소", KeyboardCommands.CMD_UNDO, 1));
+        return Collections.unmodifiableList(keys);
+    }
+
+    static List<GestureKey> watchPersistentUtilityKeys() {
+        List<GestureKey> keys = new ArrayList<>(2);
+        keys.add(GestureKey.command("공백", KeyboardCommands.CMD_SPACE, 1));
+        keys.add(GestureKey.command("삭제", KeyboardCommands.CMD_DELETE, 1));
+        return Collections.unmodifiableList(keys);
+    }
+
     private static KeyboardSurface effectiveSurface(KeyboardSettings settings, KeyboardSurface surface) {
         if (settings.remoteModeEnabled) {
             return KeyboardSurface.NORMAL;
@@ -237,7 +277,12 @@ final class KeyboardLayoutFactory {
     }
 
     private static GestureKey enterKey(int widthUnits) {
-        return GestureKey.command("Enter", KeyboardCommands.CMD_ENTER, null, widthUnits, KeyIcon.ENTER);
+        return GestureKey.command(
+                "Enter",
+                KeyboardCommands.CMD_ENTER,
+                KeyboardCommands.CMD_NEWLINE,
+                widthUnits,
+                KeyIcon.ENTER);
     }
 
     private static List<KeyboardRow> hangulRows(int specialColumnPercent, boolean dotEnterKeyEnabled) {
@@ -538,7 +583,7 @@ final class KeyboardLayoutFactory {
                 GestureKey.command(
                         settings.enterKeyLabel,
                         KeyboardCommands.CMD_ENTER,
-                        null,
+                        KeyboardCommands.CMD_NEWLINE,
                         3,
                         KeyIcon.enterForLabel(settings.enterKeyLabel)));
 

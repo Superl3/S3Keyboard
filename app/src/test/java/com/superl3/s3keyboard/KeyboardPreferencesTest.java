@@ -1,11 +1,30 @@
 package com.superl3.s3keyboard;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
 public final class KeyboardPreferencesTest {
+    @Test
+    public void transparentOverlayInputDefaultsOnDuringExperimentalPhase() {
+        assertTrue(KeyboardPreferences.DEFAULT_TRANSPARENT_OVERLAY_INPUT_ENABLED);
+        assertTrue(TransparentOverlayStyle.fromPreference(null)
+                == TransparentOverlayStyle.TRANSLUCENT_KEYS);
+        assertTrue(TransparentOverlayStyle.fromPreference("extreme_floating")
+                == TransparentOverlayStyle.EXTREME_FLOATING);
+        assertFalse(KeyboardPreferences.DEFAULT_WATCH_RADIAL_INPUT_ENABLED);
+    }
+
+    @Test
+    public void englishAssistancePreferencesUseIndependentStableKeys() {
+        assertEquals("english_suggestions_enabled", KeyboardPreferences.ENGLISH_SUGGESTIONS_ENABLED);
+        assertEquals(
+                "english_auto_correction_enabled",
+                KeyboardPreferences.ENGLISH_AUTO_CORRECTION_ENABLED);
+    }
+
     @Test
     public void defaultRemoteAutoModePackagesIncludeCommonRemoteDesktopApps() {
         assertTrue(KeyboardPreferences.packageListContains(

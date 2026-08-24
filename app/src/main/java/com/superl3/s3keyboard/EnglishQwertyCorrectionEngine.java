@@ -25,11 +25,13 @@ final class EnglishQwertyCorrectionEngine {
             .thenComparingInt(candidate -> candidate.text.length());
 
     private final String[] words;
+    private final Set<String> vocabulary;
     private final Map<String, String> exactCorrections;
     private final Map<Character, Set<Character>> adjacentKeys;
 
     EnglishQwertyCorrectionEngine(String[] words) {
         this.words = words == null ? new String[0] : words.clone();
+        this.vocabulary = normalizedVocabulary(this.words);
         this.exactCorrections = exactCorrections();
         this.adjacentKeys = qwertyAdjacency();
     }
@@ -37,6 +39,11 @@ final class EnglishQwertyCorrectionEngine {
     List<Candidate> suggest(String currentWord, int maxCandidates) {
         String normalized = normalizeWord(currentWord);
         if (normalized == null || normalized.length() < 2 || maxCandidates <= 0) {
+            return Collections.emptyList();
+        }
+        // A tiny fallback dictionary cannot provide useful next-word prediction. If the typed
+        // word is already known, showing nearby words is noise rather than a correction.
+        if (vocabulary.contains(normalized)) {
             return Collections.emptyList();
         }
         List<Candidate> candidates = new ArrayList<>();
@@ -51,7 +58,7 @@ final class EnglishQwertyCorrectionEngine {
                 continue;
             }
             float score = score(normalized, candidate);
-            if (score >= 0.70f) {
+            if (score >= 0.82f) {
                 candidates.add(new Candidate(applyCase(currentWord, candidate), score, false));
             }
         }
@@ -108,7 +115,7 @@ final class EnglishQwertyCorrectionEngine {
             }
             adjacentSubstitutions++;
         }
-        return adjacentSubstitutions > 0 && adjacentSubstitutions <= 2;
+        return adjacentSubstitutions == 1;
     }
 
     private static boolean isTransposition(String source, String candidate) {
@@ -170,11 +177,34 @@ final class EnglishQwertyCorrectionEngine {
         String normalized = word.toLowerCase(Locale.US);
         for (int i = 0; i < normalized.length(); i++) {
             char ch = normalized.charAt(i);
-            if (ch < 'a' || ch > 'z') {
+            if ((ch < 'a' || ch > 'z') && !isInternalApostrophe(normalized, i)) {
                 return null;
             }
         }
         return normalized;
+    }
+
+    private static boolean isInternalApostrophe(String word, int index) {
+        return word.charAt(index) == '\''
+                && index > 0
+                && index < word.length() - 1
+                && isAsciiLetter(word.charAt(index - 1))
+                && isAsciiLetter(word.charAt(index + 1));
+    }
+
+    private static boolean isAsciiLetter(char ch) {
+        return ch >= 'a' && ch <= 'z';
+    }
+
+    private static Set<String> normalizedVocabulary(String[] words) {
+        Set<String> vocabulary = new HashSet<>();
+        for (String word : words) {
+            String normalized = normalizeWord(word);
+            if (normalized != null) {
+                vocabulary.add(normalized);
+            }
+        }
+        return vocabulary;
     }
 
     static String applyCase(String source, String candidate) {
@@ -216,7 +246,6 @@ final class EnglishQwertyCorrectionEngine {
         corrections.put("ypu", "you");
         corrections.put("yuo", "you");
         corrections.put("gppd", "good");
-        corrections.put("goof", "good");
         corrections.put("hellp", "hello");
         corrections.put("helo", "hello");
         corrections.put("keybaord", "keyboard");
@@ -224,6 +253,10 @@ final class EnglishQwertyCorrectionEngine {
         corrections.put("qwertu", "qwerty");
         corrections.put("recieve", "receive");
         corrections.put("seperate", "separate");
+        corrections.put("becuase", "because");
+        corrections.put("definately", "definitely");
+        corrections.put("tommorow", "tomorrow");
+        corrections.put("wierd", "weird");
         return corrections;
     }
 

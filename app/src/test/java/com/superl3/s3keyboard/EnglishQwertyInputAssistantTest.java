@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.view.inputmethod.InputConnection;
@@ -41,6 +42,7 @@ public final class EnglishQwertyInputAssistantTest {
     public void autoCorrectsCurrentWordThroughInputConnection() {
         EnglishQwertyInputAssistant assistant = new EnglishQwertyInputAssistant();
         FakeConnection fake = new FakeConnection();
+        fake.beforeCursor = "teh";
         assistant.recordCommittedText("t");
         assistant.recordCommittedText("e");
         assistant.recordCommittedText("h");
@@ -50,6 +52,20 @@ public final class EnglishQwertyInputAssistantTest {
         assertEquals("deleteSurroundingText:3:0", fake.calls.get(0));
         assertEquals("commitText:the", fake.calls.get(1));
         assertEquals("the", assistant.currentWord());
+    }
+
+    @Test
+    public void refusesToReplaceWhenEditorWordChangedBehindAssistant() {
+        EnglishQwertyInputAssistant assistant = new EnglishQwertyInputAssistant();
+        FakeConnection fake = new FakeConnection();
+        fake.beforeCursor = "other";
+        assistant.recordCommittedText("t");
+        assistant.recordCommittedText("e");
+        assistant.recordCommittedText("h");
+
+        assertFalse(assistant.replaceCurrentWord(fake.connection(), "the"));
+        assertTrue(fake.calls.isEmpty());
+        assertEquals("other", assistant.currentWord());
     }
 
     @Test
@@ -72,6 +88,21 @@ public final class EnglishQwertyInputAssistantTest {
         assistant.recordCommittedText(".");
 
         assertEquals("", assistant.currentWord());
+    }
+
+    @Test
+    public void apostropheKeepsContractionAsOneWord() {
+        EnglishQwertyInputAssistant assistant = new EnglishQwertyInputAssistant();
+
+        assistant.recordCommittedText("y");
+        assistant.recordCommittedText("o");
+        assistant.recordCommittedText("u");
+        assertTrue(assistant.continuesCurrentWord("'"));
+        assistant.recordCommittedText("'");
+        assistant.recordCommittedText("r");
+        assistant.recordCommittedText("e");
+
+        assertEquals("you're", assistant.currentWord());
     }
 
     private static final class FakeConnection implements InvocationHandler {

@@ -9,6 +9,16 @@ import java.util.Map;
 import org.junit.Test;
 
 public final class KeyboardThemeJsonTest {
+    @Test(expected = IllegalArgumentException.class)
+    public void rejectsExcessivelyNestedThemeLayers() {
+        String nested = "{\"schemaVersion\":1}";
+        for (int i = 0; i <= KeyboardThemeJson.MAX_THEME_LAYER_DEPTH; i++) {
+            nested = "{\"schemaVersion\":1,\"layers\":[" + nested + "]}";
+        }
+
+        KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), nested);
+    }
+
     @Test
     public void nullSettingsUseDefaultThemeBaseForImportAndExport() {
         String exported = KeyboardThemeJson.exportTheme(null, "Defaults", "local", null);

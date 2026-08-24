@@ -41,6 +41,32 @@ public final class ExternalThemeStoreTest {
         assertEquals(0, loaded.length);
     }
 
+    @Test
+    public void oversizedThemeIsIgnoredBeforeParsing() throws Exception {
+        File themes = folder.newFolder("large-themes");
+        File oversized = new File(themes, "oversized.json");
+        FileOutputStream output = new FileOutputStream(oversized);
+        try {
+            output.write(new byte[(int) ExternalThemeStore.MAX_THEME_FILE_BYTES + 1]);
+        } finally {
+            output.close();
+        }
+
+        assertEquals(0, ExternalThemeStore.loadFromDirectory(themes).length);
+    }
+
+    @Test
+    public void directoryScanHasABoundedFileCount() throws Exception {
+        File themes = folder.newFolder("many-themes");
+        for (int i = 0; i < ExternalThemeStore.MAX_THEME_FILES + 5; i++) {
+            write(new File(themes, String.format("%03d.json", i)),
+                    "{\"schemaVersion\":1,\"name\":\"Theme " + i + "\"}");
+        }
+
+        assertEquals(ExternalThemeStore.MAX_THEME_FILES,
+                ExternalThemeStore.loadFromDirectory(themes).length);
+    }
+
     private static void write(File file, String value) throws Exception {
         OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
         try {

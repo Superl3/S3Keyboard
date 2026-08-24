@@ -19,6 +19,8 @@ final class KeyboardCommandRouter {
                 return KeyboardCommandRoute.SPACE;
             case KeyboardCommands.CMD_ENTER:
                 return KeyboardCommandRoute.ENTER;
+            case KeyboardCommands.CMD_NEWLINE:
+                return KeyboardCommandRoute.NEWLINE;
             case KeyboardCommands.CMD_MOVE_LEFT:
                 return KeyboardCommandRoute.MOVE_LEFT;
             case KeyboardCommands.CMD_MOVE_RIGHT:

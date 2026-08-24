@@ -48,6 +48,15 @@ public final class InputConnectionTextOperatorTest {
     }
 
     @Test
+    public void unavailableSurroundingTextIsNotTreatedAsConfirmedBoundary() {
+        FakeConnection fake = new FakeConnection();
+
+        assertFalse(InputConnectionTextOperator.isCursorAtBoundary(fake.connection(), false));
+        assertFalse(InputConnectionTextOperator.isCursorAtBoundary(fake.connection(), true));
+        assertTrue(InputConnectionTextOperator.isCursorAtBoundary(null, true));
+    }
+
+    @Test
     public void updateComposingUsesComposingTextWhenAutomataHasDraft() {
         FakeConnection fake = new FakeConnection();
         HangulAutomata automata = new HangulAutomata();

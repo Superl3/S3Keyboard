@@ -66,6 +66,14 @@ public final class HangulKeyboardView extends View
     };
     private static final int MAX_RECENT_TEXT_TOUCH_SAMPLES = 8;
     private static final long DELETE_CORRECTION_WINDOW_MS = 6000L;
+    private static final int OVERLAY_KEY_FACE_ALPHA = 196;
+    private static final int OVERLAY_KEY_PRESSED_ALPHA = 224;
+    private static final int OVERLAY_KEY_DEPTH_ALPHA = 168;
+    private static final int OVERLAY_KEY_BORDER_ALPHA = 188;
+    private static final float[] KEY_GRADIENT_STOPS_LINEAR = { 0f, 0.5f, 1f };
+    private static final float[] KEY_GRADIENT_STOPS_TOP_GLOW = { 0f, 0.30f, 1f };
+    private static final float[] KEY_GRADIENT_STOPS_BOTTOM_SHADE = { 0f, 0.62f, 1f };
+    private static final float[] KEY_GRADIENT_STOPS_SOFT = { 0f, 0.42f, 1f };
 
     private final List<KeySlot> keySlots = new ArrayList<>();
     private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -78,6 +86,16 @@ public final class HangulKeyboardView extends View
     private final Paint depthPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint overlayTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF keySurfaceScratch = new RectF();
+    private final RectF keyDepthScratch = new RectF();
+    private final RectF extremeFloatingFaceScratch = new RectF();
+    private final RectF animationDirtyScratch = new RectF();
+    private final RectF touchDirtyScratch = new RectF();
+    private final RectF moveDirtyScratch = new RectF();
+    private final Rect drawClipScratch = new Rect();
+    private LinearGradient panelGradientShader;
+    private LinearGradient panelBlurShader;
+    private LinearGradient panelMetallicShader;
     private final KeyboardDebugOverlayRenderer debugOverlayRenderer = new KeyboardDebugOverlayRenderer();
     private final KeyboardIconRegistry iconRegistry;
     private final List<TouchState> activeTouches = new ArrayList<>();
@@ -86,6 +104,8 @@ public final class HangulKeyboardView extends View
     private final List<PendingTouchOutput> pendingTouchOutputs = new ArrayList<>();
     private final List<TouchSample> recentTextTouchSamples = new ArrayList<>();
     private final List<PreviewBubbleAnimation> releasedPreviewBubbles = new ArrayList<>();
+    private final List<PreviewOverlaySpec> previewOverlaySpecs = new ArrayList<>(4);
+    private final List<PreviewOverlaySpec> previewOverlaySpecPool = new ArrayList<>(4);
     private final KeyboardVirtualKeyAccessibilityProvider accessibilityNodeProvider =
             new KeyboardVirtualKeyAccessibilityProvider(this, this);
     private final KeyboardFeedback feedback = new KeyboardFeedback(this);
@@ -93,6 +113,9 @@ public final class HangulKeyboardView extends View
     private final boolean previewOnly;
 
     private KeyboardSettings settings = KeyboardSettings.defaults();
+    private boolean transparentOverlayPresentation;
+    private TransparentOverlayStyle transparentOverlayStyle =
+            TransparentOverlayStyle.TRANSLUCENT_KEYS;
     private KeyboardLayoutProfiles layoutProfiles = KeyboardLayoutProfiles.defaults();
     private KeyboardSurface keyboardSurface = KeyboardSurface.NORMAL;
     private List<KeyboardRow> rows = Collections.emptyList();
@@ -201,6 +224,7 @@ public final class HangulKeyboardView extends View
         KeyboardSettings previousSettings = this.settings;
         boolean previousOneFingerModeEnabled = singleTapCommitModeEnabled;
         this.settings = RuntimeDefaults.keyboardSettings(settings);
+        clearRenderShaderCache();
         boolean rebuildRows = rows.isEmpty() || layoutModelChanged(previousSettings, this.settings);
         if (previewOnly) {
             motionEffectLevel = MotionEffectLevel.OFF;
@@ -259,6 +283,28 @@ public final class HangulKeyboardView extends View
         updateAccessibilitySummary();
         invalidate();
         settingsInitialized = true;
+    }
+
+    void setTransparentOverlayPresentation(boolean enabled) {
+        if (transparentOverlayPresentation == enabled) {
+            return;
+        }
+        transparentOverlayPresentation = enabled;
+        clearRenderShaderCache();
+        invalidate();
+    }
+
+    void setTransparentOverlayStyle(TransparentOverlayStyle style) {
+        TransparentOverlayStyle safeStyle = style == null
+                ? TransparentOverlayStyle.TRANSLUCENT_KEYS
+                : style;
+        if (transparentOverlayStyle == safeStyle) {
+            return;
+        }
+        transparentOverlayStyle = safeStyle;
+        clearRenderShaderCache();
+        hidePreviewPopup();
+        invalidate();
     }
 
     private void rebuildRowsForModelChange() {
@@ -393,6 +439,7 @@ public final class HangulKeyboardView extends View
     @Override
     protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
         super.onSizeChanged(width, height, oldWidth, oldHeight);
+        clearRenderShaderCache();
         layoutKeys(width, height);
         updateSystemGestureExclusion(width, height);
     }
@@ -416,27 +463,44 @@ public final class HangulKeyboardView extends View
     @Override
     protected void onDraw(Canvas canvas) {
         drawKeyboardPanel(canvas);
+        canvas.getClipBounds(drawClipScratch);
+        float cullPad = renderDp(Math.max(6, settings.keyDepthDp + 4));
         for (KeySlot keySlot : keySlots) {
+            if (!intersectsDrawClip(keySlot.visualBounds(), cullPad)) {
+                continue;
+            }
             drawKey(canvas, keySlot);
         }
         drawOneFingerSelectionFeedback(canvas);
         drawModeTransition(canvas);
         drawDebugKeyBoundsOverlay(canvas);
-        updatePreviewBubbles();
         scheduleNextAnimationFrameIfNeeded();
     }
 
+    private boolean intersectsDrawClip(RectF bounds, float pad) {
+        return bounds.right + pad >= drawClipScratch.left
+                && bounds.left - pad <= drawClipScratch.right
+                && bounds.bottom + pad >= drawClipScratch.top
+                && bounds.top - pad <= drawClipScratch.bottom;
+    }
+
     private void drawKeyboardPanel(Canvas canvas) {
+        if (transparentOverlayPresentation) {
+            return;
+        }
         keyPaint.setShader(null);
         if (settings.visualEffects.panelGradientEnabled) {
-            keyPaint.setShader(new LinearGradient(
-                    0,
-                    0,
-                    0,
-                    Math.max(1, getHeight()),
-                    settings.visualEffects.panelGradientStartColor,
-                    settings.visualEffects.panelGradientEndColor,
-                    Shader.TileMode.CLAMP));
+            if (panelGradientShader == null) {
+                panelGradientShader = new LinearGradient(
+                        0,
+                        0,
+                        0,
+                        Math.max(1, getHeight()),
+                        settings.visualEffects.panelGradientStartColor,
+                        settings.visualEffects.panelGradientEndColor,
+                        Shader.TileMode.CLAMP);
+            }
+            keyPaint.setShader(panelGradientShader);
         } else {
             keyPaint.setColor(settings.keyboardBackgroundColor);
         }
@@ -455,18 +519,21 @@ public final class HangulKeyboardView extends View
     private void drawPanelBlurWash(Canvas canvas) {
         int radius = renderDp(settings.visualEffects.blurRadiusDp);
         int alpha = Math.min(92, 28 + radius * 2);
-        keyPaint.setShader(new LinearGradient(
-                0,
-                0,
-                0,
-                Math.max(1, getHeight()),
-                new int[] {
-                        withAlpha(lightenColor(settings.keyboardBackgroundColor, 1.16f), alpha),
-                        withAlpha(settings.keyboardBackgroundColor, Math.max(12, alpha / 3)),
-                        withAlpha(darkenColor(settings.keyboardBackgroundColor, 0.76f), Math.max(18, alpha / 2))
-                },
-                new float[] { 0f, 0.46f, 1f },
-                Shader.TileMode.CLAMP));
+        if (panelBlurShader == null) {
+            panelBlurShader = new LinearGradient(
+                    0,
+                    0,
+                    0,
+                    Math.max(1, getHeight()),
+                    new int[] {
+                            withAlpha(lightenColor(settings.keyboardBackgroundColor, 1.16f), alpha),
+                            withAlpha(settings.keyboardBackgroundColor, Math.max(12, alpha / 3)),
+                            withAlpha(darkenColor(settings.keyboardBackgroundColor, 0.76f), Math.max(18, alpha / 2))
+                    },
+                    new float[] { 0f, 0.46f, 1f },
+                    Shader.TileMode.CLAMP);
+        }
+        keyPaint.setShader(panelBlurShader);
         canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
         keyPaint.setShader(null);
     }
@@ -475,19 +542,22 @@ public final class HangulKeyboardView extends View
         int strength = settings.visualEffects.metallicStrengthPercent;
         int lightAlpha = Math.min(120, 18 + strength);
         int darkAlpha = Math.min(96, 10 + strength / 2);
-        keyPaint.setShader(new LinearGradient(
-                0,
-                0,
-                Math.max(1, getWidth()),
-                Math.max(1, getHeight()),
-                new int[] {
-                        withAlpha(0xFFFFFFFF, lightAlpha),
-                        withAlpha(0xFFFFFFFF, Math.max(8, lightAlpha / 3)),
-                        withAlpha(0xFF000000, darkAlpha),
-                        withAlpha(0xFFFFFFFF, Math.max(8, lightAlpha / 4))
-                },
-                new float[] { 0f, 0.28f, 0.62f, 1f },
-                Shader.TileMode.CLAMP));
+        if (panelMetallicShader == null) {
+            panelMetallicShader = new LinearGradient(
+                    0,
+                    0,
+                    Math.max(1, getWidth()),
+                    Math.max(1, getHeight()),
+                    new int[] {
+                            withAlpha(0xFFFFFFFF, lightAlpha),
+                            withAlpha(0xFFFFFFFF, Math.max(8, lightAlpha / 3)),
+                            withAlpha(0xFF000000, darkAlpha),
+                            withAlpha(0xFFFFFFFF, Math.max(8, lightAlpha / 4))
+                    },
+                    new float[] { 0f, 0.28f, 0.62f, 1f },
+                    Shader.TileMode.CLAMP);
+        }
+        keyPaint.setShader(panelMetallicShader);
         canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
         keyPaint.setShader(null);
     }
@@ -683,10 +753,42 @@ public final class HangulKeyboardView extends View
         if (!needsFrame) {
             return;
         }
-        postInvalidateOnAnimation();
+        postAnimationInvalidation();
         if (motionEnabled) {
             updatePreviewPopup();
         }
+    }
+
+    private void postAnimationInvalidation() {
+        if (modeTransitionStartMs >= 0 || debugKeyBoundsOverlayEnabled) {
+            postInvalidateOnAnimation();
+            return;
+        }
+        boolean hasDirtyBounds = false;
+        animationDirtyScratch.setEmpty();
+        for (TouchState state : activeTouches) {
+            hasDirtyBounds = unionKeySlotBounds(animationDirtyScratch, state.keySlot, hasDirtyBounds);
+            hasDirtyBounds = unionKeySlotBounds(
+                    animationDirtyScratch,
+                    state.oneFinger.targetSlot,
+                    hasDirtyBounds);
+            hasDirtyBounds = unionKeySlotBounds(
+                    animationDirtyScratch,
+                    state.oneFinger.candidateSlot,
+                    hasDirtyBounds);
+        }
+        if (!hasDirtyBounds) {
+            // Released previews live in a separate overlay. A tiny dirty region keeps their
+            // animation clock moving without re-recording every keyboard key.
+            postInvalidateOnAnimation(0, 0, 1, 1);
+            return;
+        }
+        float pad = renderDp(Math.max(8, settings.keyDepthDp + 6));
+        int left = Math.max(0, (int) Math.floor(animationDirtyScratch.left - pad));
+        int top = Math.max(0, (int) Math.floor(animationDirtyScratch.top - pad));
+        int right = Math.min(getWidth(), (int) Math.ceil(animationDirtyScratch.right + pad));
+        int bottom = Math.min(getHeight(), (int) Math.ceil(animationDirtyScratch.bottom + pad));
+        postInvalidateOnAnimation(left, top, Math.max(left + 1, right), Math.max(top + 1, bottom));
     }
 
     private boolean hasPendingOneFingerFeedback() {
@@ -767,15 +869,16 @@ public final class HangulKeyboardView extends View
             }
         }
         updatePreviewPopup();
-        invalidate();
+        invalidateTouchState(state);
         return true;
     }
 
     private boolean handleMove(MotionEvent event) {
         if (activeTouches.isEmpty()) {
-            return false;
+            return oneFingerPointerOwnership.isDrainingSuppressedPointers();
         }
 
+        boolean hasDirtyBounds = collectActiveTouchBounds(moveDirtyScratch);
         boolean handled = false;
         for (int i = 0; i < event.getPointerCount(); i++) {
             TouchState state = findTouchState(event.getPointerId(i));
@@ -786,7 +889,8 @@ public final class HangulKeyboardView extends View
         }
         if (handled) {
             updatePreviewPopup();
-            invalidate();
+            hasDirtyBounds = collectActiveTouchBounds(moveDirtyScratch, hasDirtyBounds);
+            invalidateTouchBounds(moveDirtyScratch, hasDirtyBounds);
         }
         return handled;
     }
@@ -954,7 +1058,7 @@ public final class HangulKeyboardView extends View
                 emitValue(state.keySlot.key.valueFor(GestureAction.LONG_PRESS));
             }
             updatePreviewPopup();
-            invalidate();
+            invalidateTouchState(state);
         };
         postDelayed(state.longPressRunnable, delayMs);
     }
@@ -1018,7 +1122,7 @@ public final class HangulKeyboardView extends View
                 "action=" + action + " value=" + codePoints(value) + " haptic=" + haptic,
                 state.oneFinger.currentX,
                 state.oneFinger.currentY);
-        state.oneFinger.markCommitted(keySlot);
+        state.oneFinger.markCommitted(keySlot, action);
         state.activeAction = action == null ? GestureAction.TAP : action;
         rememberDebugTouch(state, state.activeAction, keySlot);
         if (haptic) {
@@ -1030,7 +1134,7 @@ public final class HangulKeyboardView extends View
         }
         startOneFingerRepeatIfNeeded(state, keySlot, value);
         updatePreviewPopup();
-        invalidate();
+        invalidateTouchState(state);
     }
 
     private boolean updateSingleInputContinuation(TouchState state, float x, float y) {
@@ -1166,7 +1270,7 @@ public final class HangulKeyboardView extends View
         state.previewBubble = null;
         scheduleOneFingerCandidateSelection(state, target);
         updatePreviewPopup();
-        invalidate();
+        invalidateTouchState(state);
     }
 
     private void scheduleOneFingerCandidateSelection(TouchState state, KeySlot keySlot) {
@@ -1195,6 +1299,16 @@ public final class HangulKeyboardView extends View
                     null,
                     state.oneFinger.currentX,
                     state.oneFinger.currentY);
+            if (usesDirectSameKeyTapAfterSlide(state, keySlot)) {
+                feedback.tapClick();
+                commitOneFingerSelection(
+                        state,
+                        keySlot,
+                        GestureAction.TAP,
+                        keySlot.key.mappedValueFor(GestureAction.TAP),
+                        false);
+                return;
+            }
             state.oneFinger.selectHoveredCandidate(
                     keySlot,
                     SystemClock.uptimeMillis(),
@@ -1209,9 +1323,22 @@ public final class HangulKeyboardView extends View
                     keySlot.key.valueFor(GestureAction.TAP),
                     singleTapStartHoldMs);
             updatePreviewPopup();
-            invalidate();
+            invalidateTouchState(state);
         };
         postDelayed(state.singleInputCandidateSelectRunnable, singleTapCommitHoldMs);
+    }
+
+    private boolean usesDirectSameKeyTapAfterSlide(TouchState state, KeySlot keySlot) {
+        return state != null
+                && keySlot != null
+                && state.oneFinger.lastCommittedSlot == keySlot
+                && SingleTapCommitModePolicy.usesDirectSameKeyTapAfterSlide(
+                        singleTapCommitModeEnabled,
+                        settings.keyboardMode,
+                        activeLayoutIsDingul(),
+                        keySlot.key,
+                        keySlot.dingulMainKey,
+                        state.oneFinger.lastCommittedAction);
     }
 
     private void clearOneFingerCandidate(TouchState state) {
@@ -1678,6 +1805,7 @@ public final class HangulKeyboardView extends View
     }
 
     private void clearTouchState() {
+        boolean hasDirtyBounds = collectActiveTouchBounds(touchDirtyScratch);
         for (TouchState state : new ArrayList<>(activeTouches)) {
             cancelLongPressTimer(state);
             cancelSingleInputHoldCommit(state);
@@ -1693,7 +1821,7 @@ public final class HangulKeyboardView extends View
         previewPointerId = -1;
         repeatController.stop();
         hidePreviewPopup();
-        invalidate();
+        invalidateTouchBounds(touchDirtyScratch, hasDirtyBounds);
     }
 
     private void removeTouchState(int pointerId) {
@@ -1704,6 +1832,8 @@ public final class HangulKeyboardView extends View
     }
 
     private void removeTouchState(TouchState state, boolean stopRepeat) {
+        touchDirtyScratch.setEmpty();
+        boolean hasDirtyBounds = unionTouchStateBounds(touchDirtyScratch, state, false);
         cancelLongPressTimer(state);
         cancelSingleInputHoldCommit(state);
         cancelSingleInputCandidateSelection(state);
@@ -1717,7 +1847,59 @@ public final class HangulKeyboardView extends View
             repeatController.stop(state);
         }
         updatePreviewPopup();
-        invalidate();
+        invalidateTouchBounds(touchDirtyScratch, hasDirtyBounds);
+    }
+
+    private void invalidateTouchState(TouchState state) {
+        touchDirtyScratch.setEmpty();
+        boolean hasDirtyBounds = unionTouchStateBounds(touchDirtyScratch, state, false);
+        invalidateTouchBounds(touchDirtyScratch, hasDirtyBounds);
+    }
+
+    private boolean collectActiveTouchBounds(RectF output) {
+        output.setEmpty();
+        return collectActiveTouchBounds(output, false);
+    }
+
+    private boolean collectActiveTouchBounds(RectF output, boolean hasDirtyBounds) {
+        boolean result = hasDirtyBounds;
+        for (TouchState state : activeTouches) {
+            result = unionTouchStateBounds(output, state, result);
+        }
+        return result;
+    }
+
+    private boolean unionTouchStateBounds(RectF output, TouchState state, boolean hasDirtyBounds) {
+        if (state == null) {
+            return hasDirtyBounds;
+        }
+        boolean result = unionKeySlotBounds(output, state.keySlot, hasDirtyBounds);
+        result = unionKeySlotBounds(output, state.oneFinger.targetSlot, result);
+        return unionKeySlotBounds(output, state.oneFinger.candidateSlot, result);
+    }
+
+    private boolean unionKeySlotBounds(RectF output, KeySlot keySlot, boolean hasDirtyBounds) {
+        if (keySlot == null) {
+            return hasDirtyBounds;
+        }
+        if (!hasDirtyBounds) {
+            output.set(keySlot.visualBounds());
+            return true;
+        }
+        output.union(keySlot.visualBounds());
+        return true;
+    }
+
+    private void invalidateTouchBounds(RectF bounds, boolean hasDirtyBounds) {
+        if (!hasDirtyBounds) {
+            return;
+        }
+        float pad = renderDp(Math.max(8, settings.keyDepthDp + 6));
+        int left = Math.max(0, (int) Math.floor(bounds.left - pad));
+        int top = Math.max(0, (int) Math.floor(bounds.top - pad));
+        int right = Math.min(getWidth(), (int) Math.ceil(bounds.right + pad));
+        int bottom = Math.min(getHeight(), (int) Math.ceil(bounds.bottom + pad));
+        invalidate(left, top, Math.max(left + 1, right), Math.max(top + 1, bottom));
     }
 
     private TouchState findTouchState(int pointerId) {
@@ -2091,7 +2273,18 @@ public final class HangulKeyboardView extends View
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || width <= 0 || height <= 0) {
             return;
         }
-        setSystemGestureExclusionRects(Collections.singletonList(new Rect(0, 0, width, height)));
+        // Edge swipes belong to Android navigation. Keys still receive taps and gestures that
+        // begin outside the system edge band, but the IME never opts out of Back navigation.
+        setSystemGestureExclusionRects(Collections.emptyList());
+    }
+
+    private void clearRenderShaderCache() {
+        panelGradientShader = null;
+        panelBlurShader = null;
+        panelMetallicShader = null;
+        for (KeySlot slot : keySlots) {
+            slot.idleFaceShader = null;
+        }
     }
 
     private void drawKey(Canvas canvas, KeySlot keySlot) {
@@ -2104,12 +2297,23 @@ public final class HangulKeyboardView extends View
         boolean remoteModifierLocked = isRemoteMetaLocked(key);
         boolean englishLetterKey = isEnglishLetterKey(key);
         RectF visualBounds = keySlot.visualBounds();
-        RectF surfaceBounds = keySurfaceBounds(visualBounds, pressProgress);
-        drawKeyDepth(canvas, keySlot, visualBounds, pressProgress);
+        boolean extremeFloating = usesExtremeFloatingOverlay();
+        RectF faceBounds = extremeFloating
+                ? extremeFloatingFaceBounds(keySlot, visualBounds, extremeFloatingFaceScratch)
+                : visualBounds;
+        RectF surfaceBounds = keySurfaceBounds(faceBounds, pressProgress, keySurfaceScratch);
+        drawKeyDepth(canvas, keySlot, faceBounds, pressProgress);
         int faceColor = active || shiftOnceActive
                 ? settings.keyPressedColor
                 : baseColorForKey(keySlot);
-        drawKeyFace(canvas, surfaceBounds, faceColor, pressProgress);
+        if (transparentOverlayPresentation) {
+            faceColor = withAlpha(
+                    faceColor,
+                    active || shiftOnceActive
+                            ? OVERLAY_KEY_PRESSED_ALPHA
+                            : OVERLAY_KEY_FACE_ALPHA);
+        }
+        drawKeyFace(canvas, keySlot, surfaceBounds, faceColor, pressProgress);
         drawBorderShape(canvas, surfaceBounds);
         drawHitSlopResolveCue(canvas, touchState, surfaceBounds);
 
@@ -2138,6 +2342,7 @@ public final class HangulKeyboardView extends View
         }
 
         if (shouldShowSlideHints()
+                && !extremeFloating
                 && (displayOverride == null || settings.remoteModeEnabled)
                 && !drawsCustomModifierGlyph(key, icon)
                 && shouldDrawSlideHintsForKey(key, icon)) {
@@ -3473,7 +3678,9 @@ public final class HangulKeyboardView extends View
         if (strokeWidth <= 0f) {
             return;
         }
-        borderPaint.setColor(settings.borderColor);
+        borderPaint.setColor(transparentOverlayPresentation
+                ? withAlpha(settings.borderColor, OVERLAY_KEY_BORDER_ALPHA)
+                : settings.borderColor);
         borderPaint.setStrokeWidth(strokeWidth);
         RectF borderBounds = new RectF(bounds);
         float inset = strokeWidth / 2f;
@@ -3484,7 +3691,33 @@ public final class HangulKeyboardView extends View
         drawKeyShape(canvas, borderBounds, borderPaint);
     }
 
-    private void drawKeyFace(Canvas canvas, RectF bounds, int faceColor, float pressProgress) {
+    private RectF extremeFloatingFaceBounds(KeySlot keySlot, RectF bounds, RectF output) {
+        float width = ExtremeFloatingKeycapGeometry.width(
+                bounds.width(),
+                renderDp(34),
+                keySlot.compactSpecialColumn);
+        float height = ExtremeFloatingKeycapGeometry.height(bounds.height(), renderDp(34));
+        float halfWidth = width / 2f;
+        float halfHeight = height / 2f;
+        output.set(
+                bounds.centerX() - halfWidth,
+                bounds.centerY() - halfHeight,
+                bounds.centerX() + halfWidth,
+                bounds.centerY() + halfHeight);
+        return output;
+    }
+
+    private boolean usesExtremeFloatingOverlay() {
+        return transparentOverlayPresentation
+                && transparentOverlayStyle == TransparentOverlayStyle.EXTREME_FLOATING;
+    }
+
+    private void drawKeyFace(
+            Canvas canvas,
+            KeySlot keySlot,
+            RectF bounds,
+            int faceColor,
+            float pressProgress) {
         keyPaint.setStyle(Paint.Style.FILL);
         if (!shouldDrawKeyFaceGradient()) {
             keyPaint.setShader(null);
@@ -3492,15 +3725,24 @@ public final class HangulKeyboardView extends View
             drawKeyShape(canvas, bounds, keyPaint);
             return;
         }
-        int[] colors = keyFaceGradientColors(faceColor, pressProgress);
-        keyPaint.setShader(new LinearGradient(
-                0,
-                bounds.top,
-                0,
-                bounds.bottom,
-                colors,
-                keyFaceGradientStops(),
-                Shader.TileMode.CLAMP));
+        LinearGradient shader;
+        if (pressProgress <= 0f && keySlot.idleFaceShader != null) {
+            shader = keySlot.idleFaceShader;
+        } else {
+            int[] colors = keyFaceGradientColors(faceColor, pressProgress);
+            shader = new LinearGradient(
+                    0,
+                    bounds.top,
+                    0,
+                    bounds.bottom,
+                    colors,
+                    keyFaceGradientStops(),
+                    Shader.TileMode.CLAMP);
+            if (pressProgress <= 0f) {
+                keySlot.idleFaceShader = shader;
+            }
+        }
+        keyPaint.setShader(shader);
         drawKeyShape(canvas, bounds, keyPaint);
         keyPaint.setShader(null);
     }
@@ -3512,13 +3754,15 @@ public final class HangulKeyboardView extends View
                 && settings.visualEffects.keyFaceGradientStrengthPercent > 0;
     }
 
-    private RectF keySurfaceBounds(RectF bounds, float pressProgress) {
+    private RectF keySurfaceBounds(RectF bounds, float pressProgress, RectF output) {
         if (!settings.keyDepthEnabled || settings.keyDepthDp <= 0) {
-            return new RectF(bounds);
+            output.set(bounds);
+            return output;
         }
         float pressOffset = Math.min(renderDp(settings.keyDepthDp) * 0.60f, bounds.height() * 0.06f)
                 * pressProgress;
-        return new RectF(bounds.left, bounds.top + pressOffset, bounds.right, bounds.bottom + pressOffset);
+        output.set(bounds.left, bounds.top + pressOffset, bounds.right, bounds.bottom + pressOffset);
+        return output;
     }
 
     private void drawKeyDepth(Canvas canvas, KeySlot keySlot, RectF bounds, float pressProgress) {
@@ -3532,9 +3776,12 @@ public final class HangulKeyboardView extends View
         if (depth <= 0f) {
             return;
         }
-        RectF depthBounds = new RectF(bounds.left, bounds.top + depth, bounds.right, bounds.bottom + depth);
-        depthPaint.setColor(depthColor(keySlot, pressProgress));
-        drawKeyShape(canvas, depthBounds, depthPaint);
+        keyDepthScratch.set(bounds.left, bounds.top + depth, bounds.right, bounds.bottom + depth);
+        int color = depthColor(keySlot, pressProgress);
+        depthPaint.setColor(transparentOverlayPresentation
+                ? withAlpha(color, OVERLAY_KEY_DEPTH_ALPHA)
+                : color);
+        drawKeyShape(canvas, keyDepthScratch, depthPaint);
     }
 
     private int baseColorForKey(KeySlot keySlot) {
@@ -3581,15 +3828,15 @@ public final class HangulKeyboardView extends View
     private float[] keyFaceGradientStops() {
         String curve = settings.visualEffects.keyFaceGradientCurve;
         if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_LINEAR.equals(curve)) {
-            return new float[] { 0f, 0.5f, 1f };
+            return KEY_GRADIENT_STOPS_LINEAR;
         }
         if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_TOP_GLOW.equals(curve)) {
-            return new float[] { 0f, 0.30f, 1f };
+            return KEY_GRADIENT_STOPS_TOP_GLOW;
         }
         if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE.equals(curve)) {
-            return new float[] { 0f, 0.62f, 1f };
+            return KEY_GRADIENT_STOPS_BOTTOM_SHADE;
         }
-        return new float[] { 0f, 0.42f, 1f };
+        return KEY_GRADIENT_STOPS_SOFT;
     }
 
     private int blendColor(int foreground, int background, float foregroundAmount) {
@@ -3731,36 +3978,53 @@ public final class HangulKeyboardView extends View
     }
 
     private void updatePreviewBubbles() {
-        if (!settings.showBeginnerTooltipPreview) {
+        if (!settings.showBeginnerTooltipPreview || usesExtremeFloatingOverlay()) {
             releasedPreviewBubbles.clear();
             hidePreviewPopup();
             return;
         }
         long nowMs = SystemClock.uptimeMillis();
         pruneReleasedPreviewBubbles(nowMs);
-        List<PreviewOverlaySpec> specs = new ArrayList<>();
+        previewOverlaySpecs.clear();
+        int specIndex = 0;
         for (PreviewBubbleAnimation bubble : releasedPreviewBubbles) {
-            PreviewOverlaySpec spec = previewBubbleSpec(bubble, nowMs);
+            PreviewOverlaySpec spec = previewBubbleSpec(
+                    bubble,
+                    nowMs,
+                    pooledPreviewOverlaySpec(specIndex++));
             if (spec != null) {
-                specs.add(spec);
+                previewOverlaySpecs.add(spec);
             }
         }
         for (TouchState state : activeTouches) {
             PreviewBubbleAnimation bubble = previewBubbleForTouch(state, nowMs);
             if (bubble != null) {
-                PreviewOverlaySpec spec = previewBubbleSpec(bubble, nowMs);
+                PreviewOverlaySpec spec = previewBubbleSpec(
+                        bubble,
+                        nowMs,
+                        pooledPreviewOverlaySpec(specIndex++));
                 if (spec != null) {
-                    specs.add(spec);
+                    previewOverlaySpecs.add(spec);
                 }
             }
         }
         if (previewOverlayListener == null) {
             return;
         }
-        previewOverlayListener.accept(specs);
+        previewOverlayListener.accept(previewOverlaySpecs);
     }
 
-    private PreviewOverlaySpec previewBubbleSpec(PreviewBubbleAnimation bubble, long nowMs) {
+    private PreviewOverlaySpec pooledPreviewOverlaySpec(int index) {
+        while (previewOverlaySpecPool.size() <= index) {
+            previewOverlaySpecPool.add(new PreviewOverlaySpec());
+        }
+        return previewOverlaySpecPool.get(index);
+    }
+
+    private PreviewOverlaySpec previewBubbleSpec(
+            PreviewBubbleAnimation bubble,
+            long nowMs,
+            PreviewOverlaySpec output) {
         overlayTextPaint.setTextSize(overlayTextSizeFor(bubble.label));
         overlayTextPaint.setTypeface(KeyboardTypefaceCatalog.typefaceFor(
                 getContext(),
@@ -3786,7 +4050,7 @@ public final class HangulKeyboardView extends View
         if (alpha <= 0f) {
             return null;
         }
-        return new PreviewOverlaySpec(
+        return output.set(
                 bubble.label,
                 x,
                 y,
@@ -5114,6 +5378,9 @@ public final class HangulKeyboardView extends View
         final float visualGap;
         final int bottomSpaceDirection;
         final boolean dingulMainKey;
+        private final RectF resolvedVisualBounds;
+        private final RectF resolvedHitBounds;
+        LinearGradient idleFaceShader;
 
         KeySlot(
                 GestureKey key,
@@ -5140,6 +5407,8 @@ public final class HangulKeyboardView extends View
             this.visualGap = Math.max(0f, visualGap);
             this.bottomSpaceDirection = bottomSpaceDirection;
             this.dingulMainKey = dingulMainKey;
+            this.resolvedVisualBounds = calculateVisualBounds();
+            this.resolvedHitBounds = calculateHitBounds();
         }
 
         @Override
@@ -5148,6 +5417,10 @@ public final class HangulKeyboardView extends View
         }
 
         RectF visualBounds() {
+            return resolvedVisualBounds;
+        }
+
+        private RectF calculateVisualBounds() {
             float insetY = Math.min(visualGap / 2f, bounds.height() * 0.18f);
             float insetX = Math.min(visualGap, bounds.width() * 0.32f);
             float left = bounds.left;
@@ -5165,6 +5438,10 @@ public final class HangulKeyboardView extends View
         }
 
         RectF hitBounds() {
+            return resolvedHitBounds;
+        }
+
+        private RectF calculateHitBounds() {
             float insetX = Math.max(0f, visualGap / 2f);
             if (usesDirectionalRailSlop()) {
                 return new RectF(

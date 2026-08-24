@@ -140,6 +140,21 @@ final class SingleTapCommitModePolicy {
                 && !KeyboardCommands.CMD_DELETE.equals(key.tap);
     }
 
+    static boolean usesDirectSameKeyTapAfterSlide(
+            boolean enabled,
+            KeyboardMode keyboardMode,
+            boolean activeLayoutIsDingul,
+            GestureKey key,
+            boolean dingulMainKey,
+            GestureAction lastCommittedAction) {
+        return enabled
+                && keyboardMode == KeyboardMode.HANGUL
+                && activeLayoutIsDingul
+                && dingulMainKey
+                && isDirectionalAction(lastCommittedAction)
+                && isHangulConsonantTap(key);
+    }
+
     private static boolean isInputRepeatKey(GestureKey key) {
         return key != null
                 && (isRepeatableInputText(key.tap)
@@ -155,6 +170,20 @@ final class SingleTapCommitModePolicy {
     private static boolean isCursorMove(String value) {
         return KeyboardCommands.CMD_MOVE_LEFT.equals(value)
                 || KeyboardCommands.CMD_MOVE_RIGHT.equals(value);
+    }
+
+    private static boolean isDirectionalAction(GestureAction action) {
+        return action == GestureAction.UP
+                || action == GestureAction.DOWN
+                || action == GestureAction.LEFT
+                || action == GestureAction.RIGHT;
+    }
+
+    private static boolean isHangulConsonantTap(GestureKey key) {
+        return key != null
+                && key.tap != null
+                && key.tap.length() == 1
+                && HangulAutomata.isInitialConsonant(key.tap.charAt(0));
     }
 
     private static boolean isDingulSpecialKey(GestureKey key) {

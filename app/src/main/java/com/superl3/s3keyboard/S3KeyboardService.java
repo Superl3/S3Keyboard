@@ -13,6 +13,8 @@ import android.provider.Settings;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
@@ -41,6 +43,7 @@ public final class S3KeyboardService extends InputMethodService {
     private EditorInputPolicy editorPolicy = EditorInputPolicy.DEFAULT;
     private AppInputProfile appInputProfile = AppInputProfile.STANDARD;
     private HangulKeyboardView inputView;
+    private WatchRadialKeyboardView watchRadialInputView;
     private FrameLayout inputRoot;
     private PreviewOverlayController previewOverlayController;
     private EnglishSuggestionStripController suggestionStripController;
@@ -55,6 +58,13 @@ public final class S3KeyboardService extends InputMethodService {
             () -> settings.remoteImeShortcut,
             (pendingMetaState, lockedMetaState) -> updateShiftStateView());
     private boolean remoteModeAutoActivated;
+    private boolean englishSuggestionsEnabled = true;
+    private boolean englishAutoCorrectionEnabled = true;
+    private boolean transparentOverlayInputEnabled;
+    private boolean watchRadialInputEnabled;
+    private boolean watchRadialInputVisible;
+    private TransparentOverlayStyle transparentOverlayStyle =
+            TransparentOverlayStyle.TRANSLUCENT_KEYS;
     private String currentEditorPackageName = "";
     private InputConnection commandDispatchInputConnection;
     private int pendingOwnComposingSelectionUpdates;
@@ -70,6 +80,9 @@ public final class S3KeyboardService extends InputMethodService {
         dismissPreviewPopup();
         settings = withSessionRuntimeState(KeyboardPreferences.load(this));
         layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
+        transparentOverlayInputEnabled = KeyboardPreferences.loadTransparentOverlayInputEnabled(this);
+        transparentOverlayStyle = KeyboardPreferences.loadTransparentOverlayStyle(this);
+        watchRadialInputEnabled = KeyboardPreferences.loadWatchRadialInputEnabled(this);
 
         clipboardPanelController = new ClipboardPanelController(
                 this,
@@ -78,6 +91,7 @@ public final class S3KeyboardService extends InputMethodService {
                 this::commitClipboardText);
 
         inputRoot = new FrameLayout(this);
+        inputRoot.setBackgroundColor(Color.TRANSPARENT);
         inputRoot.setClipChildren(false);
         inputRoot.setClipToPadding(false);
 
@@ -86,10 +100,25 @@ public final class S3KeyboardService extends InputMethodService {
         inputView = new HangulKeyboardView(this);
         inputView.setKeyboardSurface(editorPolicy.surface);
         inputView.setSettings(settings);
+        inputView.setTransparentOverlayPresentation(transparentOverlayInputEnabled);
+        inputView.setTransparentOverlayStyle(transparentOverlayStyle);
         inputView.setRedactTypingEventText(!editorPolicy.allowTextConveniences);
         updateShiftStateView();
         inputView.setOnKeyGestureListener(this::onKeyGesture);
         inputView.setOnPreviewOverlayListener(this::showPreviewOverlays);
+
+        watchRadialInputView = new WatchRadialKeyboardView(this);
+        watchRadialInputView.setSettings(settings);
+        watchRadialInputView.setOnKeyGestureListener(this::onKeyGesture);
+        watchRadialInputView.setPreferredPageSupplier(this::preferredWatchRadialPage);
+
+        FrameLayout keyboardSurfaceContainer = new FrameLayout(this);
+        FrameLayout.LayoutParams surfaceParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM);
+        keyboardSurfaceContainer.addView(inputView, surfaceParams);
+        keyboardSurfaceContainer.addView(watchRadialInputView, surfaceParams);
 
         suggestionStripController = new EnglishSuggestionStripController(
                 this,
@@ -97,7 +126,7 @@ public final class S3KeyboardService extends InputMethodService {
 
         mainContainer.addView(clipboardPanelController.createToolbar(), SettingsRowBuilder.matchWrap());
         mainContainer.addView(suggestionStripController.createView(), SettingsRowBuilder.matchWrap());
-        mainContainer.addView(inputView, SettingsRowBuilder.matchWrap());
+        mainContainer.addView(keyboardSurfaceContainer, SettingsRowBuilder.matchWrap());
 
         inputRoot.addView(mainContainer, SettingsRowBuilder.frameMatchWrap());
 
@@ -107,9 +136,46 @@ public final class S3KeyboardService extends InputMethodService {
 
         initializePanelControllers();
 
+        updateInputSurfaceVisibility();
         updateToolbarVisibility();
         updateClipboardListener();
         return inputRoot;
+    }
+
+    @Override
+    public boolean onEvaluateFullscreenMode() {
+        return KeyboardPreferences.loadTransparentOverlayInputEnabled(this)
+                || KeyboardPreferences.loadWatchRadialInputEnabled(this);
+    }
+
+    @Override
+    public void onUpdateExtractingVisibility(EditorInfo editorInfo) {
+        // Fullscreen is used only as a transparent overlay. The host application's editor is
+        // the source of truth, so Android's mirrored extract editor must never be shown.
+        setExtractViewShown(false);
+    }
+
+    @Override
+    public void onConfigureWindow(Window window, boolean isFullscreen, boolean isCandidatesOnly) {
+        super.onConfigureWindow(window, isFullscreen, isCandidatesOnly);
+        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+        window.setDimAmount(0f);
+    }
+
+    @Override
+    public void onComputeInsets(Insets outInsets) {
+        super.onComputeInsets(outInsets);
+        if (transparentOverlayInputEnabled || watchRadialInputEnabled) {
+            // Fullscreen already prevents legacy adjustResize, but the default visible inset still
+            // starts at the input frame. Some clients use that value to add their own IME padding.
+            // Report no occupied content or visible area while keeping the full frame touchable.
+            View decorView = getWindow().getWindow().getDecorView();
+            int windowHeight = decorView.getHeight();
+            outInsets.contentTopInsets = windowHeight;
+            outInsets.visibleTopInsets = windowHeight;
+            outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_FRAME;
+        }
     }
 
     private void initializePanelControllers() {
@@ -150,6 +216,9 @@ public final class S3KeyboardService extends InputMethodService {
                 this::singleTapCommitModeToggleLabel,
                 this::singleTapCommitModeEnabled,
                 this::toggleSingleTapCommitMode,
+                this::watchRadialInputToggleLabel,
+                this::watchRadialInputEnabled,
+                this::toggleWatchRadialInput,
                 this::numberRowToggleLabel,
                 this::activeNumberRowVisible,
                 this::toggleActiveNumberRow,
@@ -219,6 +288,7 @@ public final class S3KeyboardService extends InputMethodService {
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
+        updateTransparentOverlayPresentation();
         loadSettingsForEditor(info);
         if (inputView != null) {
             inputView.setRedactTypingEventText(!editorPolicy.allowTextConveniences);
@@ -232,6 +302,7 @@ public final class S3KeyboardService extends InputMethodService {
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting) {
         super.onStartInput(attribute, restarting);
+        updateTransparentOverlayPresentation();
         loadSettingsForEditor(attribute);
         updateToolbarVisibility();
         updateClipboardListener();
@@ -243,6 +314,9 @@ public final class S3KeyboardService extends InputMethodService {
         englishShiftState.reset();
         qwertyInputAssistant.reset();
         remoteInputController.reset();
+        if (watchRadialInputView != null) {
+            watchRadialInputView.resetSession();
+        }
         if (inputView != null) {
             inputView.setRedactTypingEventText(!editorPolicy.allowTextConveniences);
             applyCurrentSettingsToInputView();
@@ -272,6 +346,9 @@ public final class S3KeyboardService extends InputMethodService {
         qwertyInputAssistant.reset();
         remoteInputController.reset();
         remoteModeAutoActivated = false;
+        if (watchRadialInputView != null) {
+            watchRadialInputView.resetSession();
+        }
         if (remoteCompatibilityPanelController != null) {
             remoteCompatibilityPanelController.reset();
         }
@@ -368,6 +445,7 @@ public final class S3KeyboardService extends InputMethodService {
 
     private boolean qwertyAssistanceActive() {
         return settings.keyboardMode == KeyboardMode.ENGLISH
+                && (englishSuggestionsEnabled || englishAutoCorrectionEnabled)
                 && !settings.remoteModeEnabled
                 && layoutProfiles.activeIsQwerty(KeyboardMode.ENGLISH)
                 && editorPolicy.allowTextConveniences
@@ -378,6 +456,14 @@ public final class S3KeyboardService extends InputMethodService {
     private boolean qwertyAssistanceActive(InputConnection inputConnection) {
         return qwertyAssistanceActive()
                 && !InputConnectionTextOperator.hasSelection(inputConnection);
+    }
+
+    private boolean qwertySuggestionsActive() {
+        return englishSuggestionsEnabled && qwertyAssistanceActive();
+    }
+
+    private boolean qwertyAutoCorrectionActive(InputConnection inputConnection) {
+        return englishAutoCorrectionEnabled && qwertyAssistanceActive(inputConnection);
     }
 
     private void refreshQwertyAssistantFromEditor() {
@@ -394,14 +480,16 @@ public final class S3KeyboardService extends InputMethodService {
         if (suggestionStripController != null) {
             suggestionStripController.update(
                     settings,
-                    qwertyAssistanceActive(),
+                    qwertySuggestionsActive(),
                     qwertyInputAssistant.suggestions());
         }
     }
 
     private void acceptEnglishSuggestion(String suggestion) {
         InputConnection inputConnection = getCurrentInputConnection();
-        if (inputConnection == null || !qwertyAssistanceActive(inputConnection)) {
+        if (inputConnection == null
+                || !qwertySuggestionsActive()
+                || InputConnectionTextOperator.hasSelection(inputConnection)) {
             return;
         }
         qwertyInputAssistant.replaceCurrentWord(inputConnection, suggestion);
@@ -762,7 +850,8 @@ public final class S3KeyboardService extends InputMethodService {
     private void inputEnglishText(InputConnection inputConnection, String text) {
         String committedText = englishShiftState.applyToInput(text);
         boolean assistanceActive = qwertyAssistanceActive(inputConnection);
-        if (assistanceActive && !isAsciiLetters(committedText)) {
+        if (qwertyAutoCorrectionActive(inputConnection)
+                && !qwertyInputAssistant.continuesCurrentWord(committedText)) {
             qwertyInputAssistant.autoCorrectCurrentWord(inputConnection);
         }
         InputConnectionTextOperator.commitText(inputConnection, committedText);
@@ -915,6 +1004,8 @@ public final class S3KeyboardService extends InputMethodService {
 
     private void loadSettingsForEditor(EditorInfo info) {
         KeyboardSettings storedSettings = KeyboardPreferences.load(this);
+        englishSuggestionsEnabled = KeyboardPreferences.loadEnglishSuggestionsEnabled(this);
+        englishAutoCorrectionEnabled = KeyboardPreferences.loadEnglishAutoCorrectionEnabled(this);
         layoutProfiles = KeyboardPreferences.loadLayoutProfiles(this);
         boolean remotePackageMatched = KeyboardPreferences.shouldAutoEnableRemoteMode(
                 this,
@@ -942,7 +1033,7 @@ public final class S3KeyboardService extends InputMethodService {
 
     void commitSpace(InputConnection inputConnection) {
         commitCurrent(inputConnection);
-        if (qwertyAssistanceActive(inputConnection)) {
+        if (qwertyAutoCorrectionActive(inputConnection)) {
             qwertyInputAssistant.autoCorrectCurrentWord(inputConnection);
         }
         if (settings.remoteModeEnabled) {
@@ -975,7 +1066,7 @@ public final class S3KeyboardService extends InputMethodService {
 
     void performEnter(InputConnection inputConnection) {
         commitCurrent(inputConnection);
-        if (qwertyAssistanceActive(inputConnection)) {
+        if (qwertyAutoCorrectionActive(inputConnection)) {
             qwertyInputAssistant.autoCorrectCurrentWord(inputConnection);
         }
         ImeConnectionDispatcher.performEnter(
@@ -985,6 +1076,16 @@ public final class S3KeyboardService extends InputMethodService {
                 settings.remoteModeEnabled,
                 (keyCode, metaState) -> sendSoftKey(inputConnection, keyCode, metaState),
                 (keyCode, metaState) -> remoteInputController.sendKey(inputConnection, keyCode, metaState));
+        qwertyInputAssistant.reset();
+        updateSuggestionStrip();
+    }
+
+    void commitExplicitNewline(InputConnection inputConnection) {
+        commitCurrent(inputConnection);
+        if (qwertyAutoCorrectionActive(inputConnection)) {
+            qwertyInputAssistant.autoCorrectCurrentWord(inputConnection);
+        }
+        ImeConnectionDispatcher.commitExplicitNewline(inputConnection);
         qwertyInputAssistant.reset();
         updateSuggestionStrip();
     }
@@ -1324,6 +1425,16 @@ public final class S3KeyboardService extends InputMethodService {
                 getString(singleTapCommitModeEnabled() ? R.string.state_on : R.string.state_off));
     }
 
+    private boolean watchRadialInputEnabled() {
+        return KeyboardPreferences.loadWatchRadialInputEnabled(this);
+    }
+
+    private String watchRadialInputToggleLabel() {
+        return getString(
+                R.string.watch_radial_quick_toggle_format,
+                getString(watchRadialInputEnabled() ? R.string.state_on : R.string.state_off));
+    }
+
     private void toggleRemoteMode() {
         settings = withSessionRuntimeState(settings.withRemoteOptions(
                 !settings.remoteModeEnabled,
@@ -1349,6 +1460,15 @@ public final class S3KeyboardService extends InputMethodService {
         if (inputView != null) {
             inputView.setSettings(settings);
         }
+        dismissQuickSettings();
+    }
+
+    private void toggleWatchRadialInput() {
+        watchRadialInputEnabled = !watchRadialInputEnabled();
+        KeyboardPreferences.saveWatchRadialInputEnabled(this, watchRadialInputEnabled);
+        updateFullscreenMode();
+        updateTransparentOverlayPresentation();
+        applyCurrentSettingsToInputView();
         dismissQuickSettings();
     }
 
@@ -1383,18 +1503,87 @@ public final class S3KeyboardService extends InputMethodService {
             inputView.setKeyboardSurface(editorPolicy.surface);
             inputView.setLayoutProfiles(layoutProfiles);
             inputView.setSettings(settings);
+            inputView.setTransparentOverlayPresentation(
+                    transparentOverlayInputEnabled || watchRadialInputEnabled);
+            inputView.setTransparentOverlayStyle(transparentOverlayStyle);
             updateShiftStateView();
         }
+        if (watchRadialInputView != null) {
+            watchRadialInputView.setSettings(settings);
+        }
+        updateInputSurfaceVisibility();
         if (previewOverlayController != null) {
             previewOverlayController.setSettings(settings);
         }
         updateSuggestionStrip();
     }
 
-    private void showPreviewOverlays(List<PreviewOverlaySpec> specs) {
-        if (previewOverlayController != null) {
-            previewOverlayController.show(inputView, specs);
+    private void updateTransparentOverlayPresentation() {
+        transparentOverlayInputEnabled =
+                KeyboardPreferences.loadTransparentOverlayInputEnabled(this);
+        transparentOverlayStyle = KeyboardPreferences.loadTransparentOverlayStyle(this);
+        watchRadialInputEnabled = KeyboardPreferences.loadWatchRadialInputEnabled(this);
+        if (transparentOverlayStyle == TransparentOverlayStyle.EXTREME_FLOATING) {
+            dismissPreviewPopup();
         }
+        if (transparentOverlayInputEnabled || watchRadialInputEnabled) {
+            setExtractViewShown(false);
+        }
+        if (inputRoot != null) {
+            inputRoot.setBackgroundColor(Color.TRANSPARENT);
+        }
+        if (inputView != null) {
+            inputView.setTransparentOverlayPresentation(
+                    transparentOverlayInputEnabled || watchRadialInputEnabled);
+            inputView.setTransparentOverlayStyle(transparentOverlayStyle);
+        }
+        updateInputSurfaceVisibility();
+    }
+
+    private boolean watchRadialInputActive() {
+        return WatchRadialInputPolicy.isActive(
+                watchRadialInputEnabled,
+                settings,
+                layoutProfiles,
+                editorPolicy.surface);
+    }
+
+    private void updateInputSurfaceVisibility() {
+        boolean watchActive = watchRadialInputActive();
+        if (inputView != null) {
+            inputView.setVisibility(watchActive ? View.GONE : View.VISIBLE);
+        }
+        if (watchRadialInputView != null) {
+            watchRadialInputView.setVisibility(watchActive ? View.VISIBLE : View.GONE);
+            if (watchActive) {
+                watchRadialInputView.setSettings(settings);
+                if (!watchRadialInputVisible) {
+                    watchRadialInputView.resetSession();
+                }
+            }
+        }
+        watchRadialInputVisible = watchActive;
+        if (watchActive) {
+            dismissPreviewPopup();
+        }
+    }
+
+    private WatchRadialPage preferredWatchRadialPage() {
+        return automata.prefersVowelInput()
+                ? WatchRadialPage.VOWELS
+                : WatchRadialPage.CONSONANTS;
+    }
+
+    private void showPreviewOverlays(List<PreviewOverlaySpec> specs) {
+        if (previewOverlayController == null) {
+            return;
+        }
+        if (watchRadialInputActive()
+                || transparentOverlayStyle == TransparentOverlayStyle.EXTREME_FLOATING) {
+            previewOverlayController.dismiss();
+            return;
+        }
+        previewOverlayController.show(inputView, specs);
     }
 
     private void dismissPreviewPopup() {

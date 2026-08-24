@@ -63,6 +63,17 @@ public final class OneFingerInputSessionTest {
     }
 
     @Test
+    public void commitRemembersWhetherTheLastInputWasDirectional() {
+        OneFingerInputSession<String> session = new OneFingerInputSession<>();
+        session.selectKey("nieun", 10f, 20f);
+
+        session.markCommitted("nieun", GestureAction.LEFT);
+
+        assertEquals(GestureAction.LEFT, session.lastCommittedAction);
+        assertEquals("nieun", session.lastCommittedSlot);
+    }
+
+    @Test
     public void postCommitAnchorUsesTheActualPointerPositionAtCommitTimeNotTheKeyCenter() {
         OneFingerInputSession<String> session = new OneFingerInputSession<>();
         session.selectKey("giyeok", 10f, 20f);

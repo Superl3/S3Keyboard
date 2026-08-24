@@ -87,6 +87,41 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void imeUsesTransparentFullscreenWithoutExtractedEditorText() throws Exception {
+        String service = readWorkspaceFile(
+                "app/src/main/java/com/superl3/s3keyboard/S3KeyboardService.java");
+        String manifest = readWorkspaceFile("app/src/main/AndroidManifest.xml");
+        String styles = readWorkspaceFile("app/src/main/res/values/styles.xml");
+
+        assertTrue(service.contains("boolean onEvaluateFullscreenMode()"));
+        assertTrue(service.contains("loadTransparentOverlayInputEnabled(this)"));
+        assertTrue(service.contains("setExtractViewShown(false)"));
+        assertTrue(service.contains("void onUpdateExtractingVisibility(EditorInfo editorInfo)"));
+        assertTrue(service.contains("outInsets.contentTopInsets = windowHeight"));
+        assertTrue(service.contains("outInsets.visibleTopInsets = windowHeight"));
+        assertTrue(service.contains("Insets.TOUCHABLE_INSETS_FRAME"));
+        assertTrue(manifest.contains("android:theme=\"@style/TransparentInputMethodTheme\""));
+        assertTrue(styles.contains("name=\"TransparentInputMethodTheme\""));
+        assertFalse(manifest.contains("android.permission.SYSTEM_ALERT_WINDOW"));
+    }
+
+    @Test
+    public void debugOverlayTestbedExposesStableGeometryMarkers() throws Exception {
+        String testbed = javaSource("TransparentOverlayTestbedView");
+        String overrides = javaSource("DemoSettingsIntentOverrides");
+
+        assertTrue(testbed.contains("OverlayImeTestbed"));
+        assertTrue(testbed.contains("overlay_test_textbox"));
+        assertTrue(testbed.contains("overlay_test_behind_keyboard"));
+        assertTrue(testbed.contains("TestBackdropView"));
+        assertTrue(overrides.contains("demo_overlay_testbed"));
+        assertTrue(overrides.contains("demo_wear_testbed"));
+        assertTrue(overrides.contains("debugDemoIntent"));
+        assertTrue(javaSource("WearOnePressTestbedView").contains("wear_one_press_surface"));
+        assertTrue(javaSource("HangulKeyboardView").contains("usesExtremeFloatingOverlay()"));
+    }
+
+    @Test
     public void manifestUsesStringResourcesForUserVisibleLabels() throws Exception {
         String manifest = readWorkspaceFile("app/src/main/AndroidManifest.xml");
         String strings = readWorkspaceFile("app/src/main/res/values/strings.xml");
@@ -268,9 +303,13 @@ public final class ProductionReadinessConfigTest {
     public void releaseBuildHasClosedBetaHardeningDecisions() throws Exception {
         String buildGradle = readWorkspaceFile("app/build.gradle");
         String checkScript = readWorkspaceFile("scripts/check.ps1");
+        String buildRelease = readWorkspaceFile("scripts/build-release.ps1");
 
-        assertTrue(buildGradle.contains("versionCode 1"));
-        assertTrue(buildGradle.contains("versionName \"0.1.0\""));
+        assertTrue(buildGradle.contains("S3_VERSION_CODE"));
+        assertTrue(buildGradle.contains("S3_VERSION_NAME"));
+        assertTrue(buildGradle.contains("verifyClosedBetaSigning"));
+        assertTrue(buildRelease.contains("apksigner.bat"));
+        assertTrue(buildRelease.contains("verify --verbose"));
         assertTrue(buildGradle.contains("minifyEnabled true"));
         assertTrue(buildGradle.contains("shrinkResources true"));
         assertTrue(buildGradle.contains("HANGUL_IME_KEYSTORE"));
@@ -400,6 +439,7 @@ public final class ProductionReadinessConfigTest {
     public void previewOverlayTransportStaysDecoupledFromKeyboardViewInternals() throws Exception {
         String service = javaSource("S3KeyboardService");
         String controller = javaSource("PreviewOverlayController");
+        String canvasView = javaSource("PreviewOverlayCanvasView");
         String view = javaSource("HangulKeyboardView");
         String spec = javaSource("PreviewOverlaySpec");
 
@@ -418,24 +458,32 @@ public final class ProductionReadinessConfigTest {
                 "HangulKeyboardView.PreviewOverlaySpec",
                 "void show(View anchor, PreviewOverlaySpec spec)",
                 "Collections.singletonList(",
-                "private int dp(",
-                "private float dpFloat(",
-                "Typeface.create(",
-                "settings == null ? KeyboardSettings.defaults() : settings");
+                "new TextView(",
+                "FrameLayout.LayoutParams",
+                "GradientDrawable",
+                "popup.update(popupX, popupY, popupWidth, popupHeight);\n        } else");
         assertContainsAll(
                 view,
                 "Consumer<List<PreviewOverlaySpec>> previewOverlayListener",
                 "private static final int MAX_RELEASED_PREVIEW_BUBBLES = 2",
-                "previewOverlayListener.accept(specs)",
+                "previewOverlayListener.accept(previewOverlaySpecs)",
                 "previewOverlayListener.accept(Collections.emptyList())",
                 "for (PreviewBubbleAnimation bubble : releasedPreviewBubbles)",
                 "for (TouchState state : activeTouches)",
                 "state.previewGeneration != previewGestureGeneration",
                 "while (releasedPreviewBubbles.size() > MAX_RELEASED_PREVIEW_BUBBLES)",
                 "pruneReleasedPreviewBubbles(nowMs)",
-                "previewBubbleSpec(bubble, nowMs)",
-                "private PreviewOverlaySpec previewBubbleSpec(PreviewBubbleAnimation bubble, long nowMs)",
-                "private void pruneReleasedPreviewBubbles(long nowMs)");
+                "pooledPreviewOverlaySpec(specIndex++)",
+                "private PreviewOverlaySpec previewBubbleSpec(",
+                "private PreviewOverlaySpec pooledPreviewOverlaySpec(int index)",
+                "private void pruneReleasedPreviewBubbles(long nowMs)",
+                "previewOverlaySpecs.clear()",
+                "private void postAnimationInvalidation()",
+                "postInvalidateOnAnimation(0, 0, 1, 1)",
+                "private boolean intersectsDrawClip(RectF bounds, float pad)",
+                "private void invalidateTouchState(TouchState state)",
+                "private void invalidateTouchBounds(RectF bounds, boolean hasDirtyBounds)",
+                "collectActiveTouchBounds(moveDirtyScratch)");
         assertContainsAll(
                 service,
                 "inputView.setOnPreviewOverlayListener(this::showPreviewOverlays)",
@@ -443,26 +491,32 @@ public final class ProductionReadinessConfigTest {
         assertContainsAll(
                 controller,
                 "SettingsRowBuilder.dp(context,",
-                "private void applyTextStyle(",
-                "private void applyTransform(",
-                "private void applyBackground(",
-                "private float shadowRadiusDp(PreviewOverlaySpec spec)",
-                "private float shadowDyDp(PreviewOverlaySpec spec)",
-                "private float translationYDp(PreviewOverlaySpec spec)",
-                "private float elevationDp(PreviewOverlaySpec spec)",
-                "private float translationZDp(PreviewOverlaySpec spec)",
-                "private float textPop(PreviewOverlaySpec spec)",
-                "overlay.setElevation(SettingsRowBuilder.dp(context, ELEVATION_BASE_DP))",
-                "overlay.setTranslationZ(SettingsRowBuilder.dp(context, TRANSLATION_Z_BASE_DP))",
-                "KeyboardTypefaceCatalog.typefaceFor(",
+                "private final PreviewOverlayCanvasView overlayView",
+                "private final int[] windowLocation = new int[2]",
+                "overlayView.setSpecs(specs, topPadPx)",
                 "private int requiredTopPad(",
                 "private int maxBottom(",
-                "private void applyOverlaySpecs(",
                 "private void showOrUpdatePopup(",
-                "private GradientDrawable roundedBackground(",
-                "RuntimeDefaults.keyboardSettings(",
-                "overlay.setVisibility(View.GONE);",
-                "overlay.setVisibility(View.VISIBLE);");
+                "if (popupX == lastPopupX",
+                "private void rememberGeometry(");
+        assertContainsAll(
+                canvasView,
+                "final class PreviewOverlayCanvasView extends View",
+                "private final List<RenderState> renderStates = new ArrayList<>(4)",
+                "void setSpecs(List<PreviewOverlaySpec> specs, int topPadPx)",
+                "renderStates.get(i).copyFrom(specs.get(i))",
+                "KeyboardTypefaceCatalog.typefaceFor(",
+                "private void drawPreview(Canvas canvas, RenderState state)",
+                "private void drawBody(",
+                "private void drawText(",
+                "textPaint.getFontMetrics(textMetrics)");
+        assertContainsNone(
+                canvasView,
+                "android.widget.TextView",
+                "new TextView(",
+                "LinearGradient",
+                "GradientDrawable",
+                "PopupWindow");
         assertContainsAll(spec, "final class PreviewOverlaySpec");
     }
 
@@ -1668,10 +1722,11 @@ public final class ProductionReadinessConfigTest {
         assertTrue(resolver.contains("R.string.ime_action_done"));
         assertTrue(resolver.contains("R.string.ime_action_next"));
         assertTrue(resolver.contains("R.string.ime_action_go"));
-        assertTrue(resolver.contains("R.string.ime_action_newline"));
+        assertFalse(resolver.contains("R.string.ime_action_newline"));
         assertTrue(action.contains("final int labelResId"));
         assertTrue(action.contains("context.getString(labelResId)"));
         assertTrue(service.contains("enterActionLabel()"));
+        assertTrue(service.contains("commitExplicitNewline("));
         assertFalse(service.contains("enterAction.label;"));
         assertTrue(strings.contains("name=\"ime_action_send\""));
         assertTrue(strings.contains("name=\"ime_action_search\""));
@@ -2670,7 +2725,6 @@ public final class ProductionReadinessConfigTest {
         assertFalse(mainActivity.contains("public boolean isDebuggableBuild()"));
         assertFalse(mainActivity.contains("public void markCurrentThemeCustom()"));
         assertTrue(mainActivity.contains("private void loadCurrentPreferences()"));
-        assertEquals(2, countOccurrences(mainActivity, "loadCurrentPreferences();"));
         assertEquals(1, countOccurrences(mainActivity, "KeyboardPreferences.load(this)"));
         assertEquals(1, countOccurrences(mainActivity, "KeyboardPreferences.loadLayoutProfiles(this)"));
         assertEquals(1, countOccurrences(mainActivity, "KeyboardPreferences.loadErgonomicsOptions(this)"));

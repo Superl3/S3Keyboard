@@ -90,16 +90,24 @@ final class EnglishSuggestionStripController {
             KeyboardSettings settings,
             EnglishQwertyCorrectionEngine.Candidate candidate) {
         final String suggestion = candidate.text;
+        int backgroundColor = candidate.exactCorrection
+                ? settings.accentKeyColor
+                : settings.functionKeyColor;
         slot.setVisibility(View.VISIBLE);
         slot.setText(suggestion);
-        slot.setTextColor(settings.accentColor);
-        slot.setBackground(pillBackground(settings, candidate.exactCorrection));
+        slot.setTextColor(KeyboardColorMath.contrastTextColor(backgroundColor, 147));
+        slot.setTypeface(KeyboardTypefaceCatalog.typefaceFor(
+                context,
+                settings.fontFamily,
+                true,
+                false));
+        slot.setBackground(pillBackground(settings, backgroundColor));
         slot.setOnClickListener(v -> onSuggestionAccepted.accept(suggestion));
     }
 
-    private GradientDrawable pillBackground(KeyboardSettings settings, boolean exact) {
+    private GradientDrawable pillBackground(KeyboardSettings settings, int backgroundColor) {
         GradientDrawable background = new GradientDrawable();
-        background.setColor(exact ? settings.accentKeyColor : settings.functionKeyColor);
+        background.setColor(backgroundColor);
         background.setCornerRadius(SettingsRowBuilder.dp(context, 8));
         background.setStroke(Math.max(1, SettingsRowBuilder.dp(context, 1)), settings.borderColor);
         return background;

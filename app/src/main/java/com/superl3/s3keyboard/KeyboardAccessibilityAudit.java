@@ -6,7 +6,7 @@ import java.util.List;
 
 final class KeyboardAccessibilityAudit {
     static final float MIN_TOUCH_TARGET_DP = 30f;
-    static final float RECOMMENDED_TOUCH_TARGET_DP = 40f;
+    static final float RECOMMENDED_TOUCH_TARGET_DP = 48f;
 
     private KeyboardAccessibilityAudit() {
     }
@@ -20,7 +20,7 @@ final class KeyboardAccessibilityAudit {
                 slots,
                 RECOMMENDED_TOUCH_TARGET_DP,
                 RECOMMENDED_TOUCH_TARGET_DP,
-                "recommended touch target below 40dp");
+                "recommended touch target below 48dp");
     }
 
     static List<Issue> audit(

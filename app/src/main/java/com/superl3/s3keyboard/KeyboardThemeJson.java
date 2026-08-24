@@ -10,6 +10,7 @@ import java.util.Map;
 
 final class KeyboardThemeJson {
     static final int SCHEMA_VERSION = 1;
+    static final int MAX_THEME_LAYER_DEPTH = 8;
 
     private KeyboardThemeJson() {
     }
@@ -153,6 +154,16 @@ final class KeyboardThemeJson {
     }
 
     static KeyboardSettings importTheme(KeyboardSettings baseSettings, String json) {
+        return importTheme(baseSettings, json, 0);
+    }
+
+    private static KeyboardSettings importTheme(
+            KeyboardSettings baseSettings,
+            String json,
+            int layerDepth) {
+        if (layerDepth > MAX_THEME_LAYER_DEPTH) {
+            throw new IllegalArgumentException("Theme layer nesting exceeds the supported limit.");
+        }
         KeyboardSettings base = RuntimeDefaults.keyboardSettings(baseSettings);
         try {
             JSONObject root = new JSONObject(json);
@@ -161,7 +172,7 @@ final class KeyboardThemeJson {
                 throw new IllegalArgumentException("Unsupported theme schemaVersion: " + schemaVersion);
             }
 
-            KeyboardSettings layeredBase = importThemeLayers(base, root);
+            KeyboardSettings layeredBase = importThemeLayers(base, root, layerDepth);
             JSONObject colors = root.optJSONObject("colors");
             JSONObject shape = root.optJSONObject("shape");
             JSONObject typography = root.optJSONObject("typography");
@@ -876,7 +887,10 @@ final class KeyboardThemeJson {
         return overrides;
     }
 
-    private static KeyboardSettings importThemeLayers(KeyboardSettings base, JSONObject root) {
+    private static KeyboardSettings importThemeLayers(
+            KeyboardSettings base,
+            JSONObject root,
+            int layerDepth) {
         KeyboardSettings layered = base;
         JSONArray layers = root.optJSONArray("layers");
         if (layers == null) {
@@ -892,7 +906,7 @@ final class KeyboardThemeJson {
         for (int i = 0; i < layers.length(); i++) {
             Object layer = layers.opt(i);
             if (layer instanceof JSONObject) {
-                layered = importTheme(layered, ((JSONObject) layer).toString());
+                layered = importTheme(layered, ((JSONObject) layer).toString(), layerDepth + 1);
             } else if (layer != null) {
                 layered = applyThemeLayer(layered, String.valueOf(layer));
             }

@@ -106,7 +106,8 @@ final class InputConnectionTextOperator {
         CharSequence surroundingText = right
                 ? inputConnection.getTextAfterCursor(1, 0)
                 : inputConnection.getTextBeforeCursor(1, 0);
-        return surroundingText == null || surroundingText.length() == 0;
+        // Some WebView and remote editors do not expose surrounding text but still accept DPAD keys.
+        return surroundingText != null && surroundingText.length() == 0;
     }
 
     static void updateComposing(

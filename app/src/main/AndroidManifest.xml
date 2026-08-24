@@ -54,6 +54,7 @@
             android:name=".S3KeyboardService"
             android:exported="true"
             android:label="@string/ime_name"
+            android:theme="@style/TransparentInputMethodTheme"
             android:permission="android.permission.BIND_INPUT_METHOD">
             <intent-filter>
                 <action android:name="android.view.InputMethod" />

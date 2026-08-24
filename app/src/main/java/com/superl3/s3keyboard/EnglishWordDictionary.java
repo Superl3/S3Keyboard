@@ -19,6 +19,6 @@ final class EnglishWordDictionary {
             "the", "their", "them", "then", "there", "these", "they", "this", "time",
             "to", "type", "typing", "up", "use", "user", "view", "want", "was", "we",
             "web", "were", "what", "when", "where", "which", "who", "will", "with",
-            "word", "work", "would", "you", "your"
+            "word", "work", "would", "you", "your", "you're"
     };
 }

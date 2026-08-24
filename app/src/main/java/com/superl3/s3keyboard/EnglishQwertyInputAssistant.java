@@ -39,11 +39,18 @@ final class EnglishQwertyInputAssistant {
         if (text == null || text.isEmpty()) {
             return;
         }
-        if (isAsciiLetters(text)) {
+        if (continuesCurrentWord(text)) {
             currentWord += text;
         } else {
             reset();
         }
+    }
+
+    boolean continuesCurrentWord(String text) {
+        return isAsciiLetters(text)
+                || ("'".equals(text)
+                && !currentWord.isEmpty()
+                && currentWord.indexOf('\'') < 0);
     }
 
     void refreshFromEditor(InputConnection inputConnection) {
@@ -71,14 +78,26 @@ final class EnglishQwertyInputAssistant {
         if (inputConnection == null || replacement == null || replacement.isEmpty()) {
             return false;
         }
+        CharSequence beforeCursor = inputConnection.getTextBeforeCursor(TEXT_BEFORE_CURSOR_LIMIT, 0);
+        String editorWord = trailingAsciiWord(beforeCursor);
         if (currentWord.isEmpty()) {
-            refreshFromEditor(inputConnection);
-        }
-        if (currentWord.isEmpty()) {
+            currentWord = editorWord;
+        } else if (!currentWord.equals(editorWord)) {
+            currentWord = editorWord;
             return false;
         }
-        InputConnectionTextOperator.deleteBeforeCursorCodePoints(inputConnection, currentWord.length());
-        InputConnectionTextOperator.commitText(inputConnection, replacement);
+        if (currentWord.isEmpty() || replacement.equals(currentWord)) {
+            return false;
+        }
+        inputConnection.beginBatchEdit();
+        try {
+            InputConnectionTextOperator.deleteBeforeCursorCodePoints(inputConnection, currentWord.length());
+            if (!InputConnectionTextOperator.commitText(inputConnection, replacement)) {
+                return false;
+            }
+        } finally {
+            inputConnection.endBatchEdit();
+        }
         currentWord = replacement;
         return true;
     }
@@ -101,10 +120,22 @@ final class EnglishQwertyInputAssistant {
         }
         int end = text.length();
         int start = end;
-        while (start > 0 && isAsciiLetter(text.charAt(start - 1))) {
+        while (start > 0 && isWordCharacter(text, start - 1, end)) {
             start--;
         }
         return start == end ? "" : text.subSequence(start, end).toString();
+    }
+
+    private static boolean isWordCharacter(CharSequence text, int index, int end) {
+        char ch = text.charAt(index);
+        if (isAsciiLetter(ch)) {
+            return true;
+        }
+        return ch == '\''
+                && index > 0
+                && index < end - 1
+                && isAsciiLetter(text.charAt(index - 1))
+                && isAsciiLetter(text.charAt(index + 1));
     }
 
     private static boolean isAsciiLetter(char ch) {

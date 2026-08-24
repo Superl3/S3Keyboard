@@ -36,6 +36,13 @@ final class S3KeyboardCommandTarget extends KeyboardCommandDispatcher.Target {
     }
 
     @Override
+    void newline() {
+        InputConnection inputConnection = service.commandInputConnection();
+        service.resetDoubleSpacePeriodState();
+        service.commitExplicitNewline(inputConnection);
+    }
+
+    @Override
     void moveLeft() {
         moveCursor(false);
     }

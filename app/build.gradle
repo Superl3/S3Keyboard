@@ -2,6 +2,9 @@ plugins {
     id "com.android.application"
 }
 
+def releaseVersionCode = providers.gradleProperty("S3_VERSION_CODE").orElse("1")
+def releaseVersionName = providers.gradleProperty("S3_VERSION_NAME").orElse("0.1.0")
+
 android {
     namespace "com.superl3.s3keyboard"
     compileSdk 35
@@ -14,8 +17,8 @@ android {
         applicationId "com.superl3.s3keyboard"
         minSdk 23
         targetSdk 35
-        versionCode 1
-        versionName "0.1.0"
+        versionCode releaseVersionCode.get().toInteger()
+        versionName releaseVersionName.get()
         buildConfigField "String", "GIT_COMMIT", "\"${gitShortCommit()}\""
         buildConfigField "String", "BUILD_TIME", "\"${buildTimestamp()}\""
     }
@@ -78,6 +81,31 @@ tasks.register("generateThemePresets", Exec) {
 
 tasks.named("preBuild") {
     dependsOn tasks.named("generateThemePresets")
+}
+
+tasks.register("verifyClosedBetaSigning") {
+    doLast {
+        def requiredProperties = [
+                "HANGUL_IME_KEYSTORE",
+                "HANGUL_IME_KEYSTORE_PASSWORD",
+                "HANGUL_IME_KEY_ALIAS",
+                "HANGUL_IME_KEY_PASSWORD"
+        ]
+        def missing = requiredProperties.findAll {
+            !providers.gradleProperty(it).isPresent()
+        }
+        if (!missing.isEmpty()) {
+            throw new GradleException("Missing closed-beta signing properties: ${missing.join(', ')}")
+        }
+        def keystore = file(providers.gradleProperty("HANGUL_IME_KEYSTORE").get())
+        if (!keystore.isFile()) {
+            throw new GradleException("Closed-beta keystore does not exist: ${keystore}")
+        }
+    }
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    dependsOn tasks.named("verifyClosedBetaSigning")
 }
 
 def gitShortCommit() {

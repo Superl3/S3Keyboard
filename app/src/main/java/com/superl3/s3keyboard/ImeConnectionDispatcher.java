@@ -24,9 +24,7 @@ final class ImeConnectionDispatcher {
             return;
         }
         if (rawKeyInput) {
-            if (!sendAnySoftKey(softKeySender, KeyEvent.KEYCODE_ENTER, 0)) {
-                commitNewline(inputConnection);
-            }
+            sendAnySoftKey(softKeySender, KeyEvent.KEYCODE_ENTER, 0);
             return;
         }
 
@@ -38,14 +36,20 @@ final class ImeConnectionDispatcher {
             return;
         }
         if (action.performEditorAction) {
-            if (!sendAnySoftKey(softKeySender, KeyEvent.KEYCODE_ENTER, 0)) {
-                commitNewline(inputConnection);
+            return;
+        }
+        if (action.commitNewline) {
+            if (!inputConnection.commitText("\n", 1)) {
+                send(softKeySender, KeyEvent.KEYCODE_ENTER, 0);
             }
             return;
         }
-        if (!inputConnection.commitText("\n", 1)) {
-            send(softKeySender, KeyEvent.KEYCODE_ENTER, 0);
-        }
+        // A soft Enter can be interpreted as a newline by multiline editors. Standard text
+        // fields therefore require an explicit editor action; newline is a separate command.
+    }
+
+    static boolean commitExplicitNewline(InputConnection inputConnection) {
+        return InputConnectionTextOperator.commitText(inputConnection, "\n");
     }
 
     static void sendRawText(

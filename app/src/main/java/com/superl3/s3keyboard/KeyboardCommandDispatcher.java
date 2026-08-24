@@ -23,6 +23,9 @@ final class KeyboardCommandDispatcher {
             case ENTER:
                 target.enter();
                 return;
+            case NEWLINE:
+                target.newline();
+                return;
             case MOVE_LEFT:
                 target.moveLeft();
                 return;
@@ -100,6 +103,8 @@ final class KeyboardCommandDispatcher {
         abstract void space();
 
         abstract void enter();
+
+        abstract void newline();
 
         abstract void moveLeft();
 

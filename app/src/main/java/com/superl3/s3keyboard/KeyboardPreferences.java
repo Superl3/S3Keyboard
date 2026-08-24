@@ -39,9 +39,14 @@ final class KeyboardPreferences {
     static final String REPEAT_START_DELAY_MS = "repeat_start_delay_ms";
     static final String REPEAT_INTERVAL_MS = "repeat_interval_ms";
     static final String SINGLE_TAP_COMMIT_MODE_ENABLED = "single_tap_commit_mode_enabled";
+    static final String TRANSPARENT_OVERLAY_INPUT_ENABLED = "transparent_overlay_input_enabled";
+    static final String TRANSPARENT_OVERLAY_STYLE = "transparent_overlay_style";
+    static final String WATCH_RADIAL_INPUT_ENABLED = "watch_radial_input_enabled";
     static final String SINGLE_TAP_START_HOLD_MS = "single_tap_start_hold_ms";
     static final String SINGLE_TAP_COMMIT_HOLD_MS = "single_tap_commit_hold_ms";
     static final String ENGLISH_DOUBLE_SPACE_PERIOD_ENABLED = "english_double_space_period_enabled";
+    static final String ENGLISH_SUGGESTIONS_ENABLED = "english_suggestions_enabled";
+    static final String ENGLISH_AUTO_CORRECTION_ENABLED = "english_auto_correction_enabled";
     static final String KEY_IDLE_COLOR = "key_idle_color";
     static final String KEY_PRESSED_COLOR = "key_pressed_color";
     static final String KEYBOARD_BACKGROUND_COLOR = "keyboard_background_color";
@@ -146,6 +151,8 @@ final class KeyboardPreferences {
     static final int MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP = 48;
     static final int DEFAULT_SINGLE_TAP_START_HOLD_MS = 300;
     static final int DEFAULT_SINGLE_TAP_COMMIT_HOLD_MS = 140;
+    static final boolean DEFAULT_TRANSPARENT_OVERLAY_INPUT_ENABLED = true;
+    static final boolean DEFAULT_WATCH_RADIAL_INPUT_ENABLED = false;
     static final int MIN_SINGLE_TAP_HOLD_MS = 100;
     static final int MAX_SINGLE_TAP_HOLD_MS = 700;
 
@@ -791,12 +798,62 @@ final class KeyboardPreferences {
         saveBoolean(context, PALM_REJECTION_ENABLED, enabled);
     }
 
+    static boolean loadEnglishSuggestionsEnabled(Context context) {
+        return prefs(context).getBoolean(ENGLISH_SUGGESTIONS_ENABLED, true);
+    }
+
+    static void saveEnglishSuggestionsEnabled(Context context, boolean enabled) {
+        saveBoolean(context, ENGLISH_SUGGESTIONS_ENABLED, enabled);
+    }
+
+    static boolean loadEnglishAutoCorrectionEnabled(Context context) {
+        return prefs(context).getBoolean(ENGLISH_AUTO_CORRECTION_ENABLED, true);
+    }
+
+    static void saveEnglishAutoCorrectionEnabled(Context context, boolean enabled) {
+        saveBoolean(context, ENGLISH_AUTO_CORRECTION_ENABLED, enabled);
+    }
+
     static boolean loadSingleTapCommitModeEnabled(Context context) {
         return prefs(context).getBoolean(SINGLE_TAP_COMMIT_MODE_ENABLED, false);
     }
 
     static void saveSingleTapCommitModeEnabled(Context context, boolean enabled) {
         saveBoolean(context, SINGLE_TAP_COMMIT_MODE_ENABLED, enabled);
+    }
+
+    static boolean loadTransparentOverlayInputEnabled(Context context) {
+        return prefs(context).getBoolean(
+                TRANSPARENT_OVERLAY_INPUT_ENABLED,
+                DEFAULT_TRANSPARENT_OVERLAY_INPUT_ENABLED);
+    }
+
+    static void saveTransparentOverlayInputEnabled(Context context, boolean enabled) {
+        saveBoolean(context, TRANSPARENT_OVERLAY_INPUT_ENABLED, enabled);
+    }
+
+    static TransparentOverlayStyle loadTransparentOverlayStyle(Context context) {
+        return TransparentOverlayStyle.fromPreference(
+                prefs(context).getString(
+                        TRANSPARENT_OVERLAY_STYLE,
+                        TransparentOverlayStyle.TRANSLUCENT_KEYS.preferenceValue));
+    }
+
+    static void saveTransparentOverlayStyle(Context context, TransparentOverlayStyle style) {
+        TransparentOverlayStyle safeStyle = style == null
+                ? TransparentOverlayStyle.TRANSLUCENT_KEYS
+                : style;
+        saveString(context, TRANSPARENT_OVERLAY_STYLE, safeStyle.preferenceValue);
+    }
+
+    static boolean loadWatchRadialInputEnabled(Context context) {
+        return prefs(context).getBoolean(
+                WATCH_RADIAL_INPUT_ENABLED,
+                DEFAULT_WATCH_RADIAL_INPUT_ENABLED);
+    }
+
+    static void saveWatchRadialInputEnabled(Context context, boolean enabled) {
+        saveBoolean(context, WATCH_RADIAL_INPUT_ENABLED, enabled);
     }
 
     static int loadSingleTapStartHoldMs(Context context) {

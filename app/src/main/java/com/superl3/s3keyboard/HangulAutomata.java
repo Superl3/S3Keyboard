@@ -134,6 +134,10 @@ final class HangulAutomata {
         return initial < 0 && vowel < 0 && finalConsonant == 0;
     }
 
+    boolean prefersVowelInput() {
+        return initial >= 0 && vowel < 0;
+    }
+
     char currentVowelWithoutFinal() {
         return vowel >= 0 && finalConsonant == 0 ? VOWEL_CHARS[vowel] : '\0';
     }

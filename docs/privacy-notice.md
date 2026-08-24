@@ -13,7 +13,7 @@ New Dingul Research is a clean-room research keyboard for closed beta testing.
 - Password, number-like, URI, email, and web-edit fields redact typed key values in the local gesture-intent journal.
 - Quick settings can copy an input issue report to the clipboard. The report is a local redacted JSON payload: it removes typed text, text-like future fields, clipboard/phrase preview fields, and code-point value fields, includes a `redaction` summary, and keeps gesture actions, timing, geometry, correction labels, effective app input profile settings, local remote-test accepted-event counts, and manual pass/fail metadata for debugging.
 - Touch correction also stores aggregate local offset statistics when a typed key is immediately deleted.
-- Clipboard history can store up to 10 recent clipboard text entries locally when the clipboard history setting is enabled. Individual entries longer than 4,096 characters are not stored and are never silently truncated into a different paste value.
+- Clipboard history can store up to 10 recent clipboard text entries locally when the clipboard history setting is enabled. Entries expire automatically after seven days. Individual entries longer than 4,096 characters are not stored and are never silently truncated into a different paste value.
 - The app does not transmit typed content, passwords, clipboard contents, contacts, account data, or identifiers.
 - Users can review a local-data summary in settings and reset touch correction, the local typing pattern log, the local gesture-intent journal, clipboard history, and remote compatibility test logs from app settings.
 
@@ -23,7 +23,7 @@ The app does not transmit app data to the developer, analytics services, ad netw
 
 ## Retention and deletion
 
-Local keyboard settings, touch correction statistics, typing pattern logs, gesture-intent journal entries, optional clipboard history, and remote test logs remain on the device until the user changes settings, uses the relevant clear/reset button, clears app storage, or uninstalls the app.
+Local keyboard settings, touch correction statistics, typing pattern logs, gesture-intent journal entries, and remote test logs remain on the device until the user changes settings, uses the relevant clear/reset button, clears app storage, or uninstalls the app. Optional clipboard entries expire after seven days and can also be cleared manually.
 
 ## Closed beta disclosure text
 

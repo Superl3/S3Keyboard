@@ -18,6 +18,9 @@ final class OneFingerInputSettingsController {
     private final Runnable controlsSyncer;
     private final OneFingerPracticeController practiceController;
     private CheckBox enabledCheckBox;
+    private CheckBox transparentOverlayCheckBox;
+    private Spinner transparentOverlayStyleSpinner;
+    private CheckBox watchRadialInputCheckBox;
     private TextView stateSummary;
     private LinearLayout enabledControls;
     private Spinner speedPresetSpinner;
@@ -40,6 +43,42 @@ final class OneFingerInputSettingsController {
         OneFingerFlowGuideView flowGuide = new OneFingerFlowGuideView(context);
         root.addView(flowGuide, SettingsRowBuilder.matchWrapWithTop(context, 4));
         SettingsRowBuilder.bodyLabelRow(context, root, R.string.one_finger_input_guide, 0);
+
+        transparentOverlayCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                root,
+                R.string.transparent_overlay_input,
+                10,
+                () -> !syncing,
+                this::saveTransparentOverlay);
+        SettingsRowBuilder.secondaryLabelRow(
+                context,
+                root,
+                R.string.transparent_overlay_input_help,
+                2);
+        transparentOverlayStyleSpinner = SettingsRowBuilder.labeledControl(
+                context,
+                root,
+                R.string.transparent_overlay_style,
+                SettingsRowBuilder.optionSpinner(
+                        context,
+                        TransparentOverlayStyle.displayOrder(),
+                        () -> !syncing,
+                        this::saveTransparentOverlayStyle),
+                6);
+
+        watchRadialInputCheckBox = SettingsRowBuilder.checkBoxRow(
+                context,
+                root,
+                R.string.watch_radial_input,
+                12,
+                () -> !syncing,
+                this::saveWatchRadialInput);
+        SettingsRowBuilder.secondaryLabelRow(
+                context,
+                root,
+                R.string.watch_radial_input_help,
+                2);
 
         enabledCheckBox = SettingsRowBuilder.checkBoxRow(
                 context,
@@ -126,6 +165,14 @@ final class OneFingerInputSettingsController {
         }
 
         syncing = true;
+        transparentOverlayCheckBox.setChecked(
+                KeyboardPreferences.loadTransparentOverlayInputEnabled(context));
+        transparentOverlayStyleSpinner.setSelection(
+                TransparentOverlayStyle.indexOf(
+                        KeyboardPreferences.loadTransparentOverlayStyle(context)),
+                false);
+        watchRadialInputCheckBox.setChecked(
+                KeyboardPreferences.loadWatchRadialInputEnabled(context));
         enabledCheckBox.setChecked(enabled);
         speedPresetSpinner.setSelection(OneFingerInputSpeedPreset.indexOf(preset), false);
         actionHoldSeekBar.setProgress(
@@ -154,6 +201,21 @@ final class OneFingerInputSettingsController {
         KeyboardPreferences.saveSingleTapCommitModeEnabled(context, enabled);
         updateVisibility(enabled);
         practiceController.onEnabledChanged(enabled);
+        controlsSyncer.run();
+    }
+
+    private void saveTransparentOverlay(boolean enabled) {
+        KeyboardPreferences.saveTransparentOverlayInputEnabled(context, enabled);
+        controlsSyncer.run();
+    }
+
+    private void saveTransparentOverlayStyle(TransparentOverlayStyle style) {
+        KeyboardPreferences.saveTransparentOverlayStyle(context, style);
+        controlsSyncer.run();
+    }
+
+    private void saveWatchRadialInput(boolean enabled) {
+        KeyboardPreferences.saveWatchRadialInputEnabled(context, enabled);
         controlsSyncer.run();
     }
 

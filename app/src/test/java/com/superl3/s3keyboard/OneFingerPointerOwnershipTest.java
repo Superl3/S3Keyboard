@@ -40,10 +40,12 @@ public final class OneFingerPointerOwnershipTest {
         ownership.releaseOwner(3);
         assertEquals(-1, ownership.ownerPointerId());
         assertEquals(1, ownership.suppressedPointerCount());
+        assertTrue(ownership.isDrainingSuppressedPointers());
         assertFalse(ownership.tryAcquire(7, 1));
         assertTrue(ownership.suppressIfOwnedByOther(7));
         assertTrue(ownership.consumeSuppressedRelease(4));
         assertTrue(ownership.consumeSuppressedRelease(7));
+        assertFalse(ownership.isDrainingSuppressedPointers());
         assertTrue(ownership.tryAcquire(7, 1));
     }
 

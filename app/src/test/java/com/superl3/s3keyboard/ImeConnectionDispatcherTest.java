@@ -39,7 +39,7 @@ public final class ImeConnectionDispatcherTest {
     }
 
     @Test
-    public void rejectedEditorActionFallsBackToSoftEnterKey() {
+    public void rejectedEditorActionDoesNotFallBackToAmbiguousSoftEnterKey() {
         FakeConnection fake = new FakeConnection();
         fake.performEditorActionResult = false;
         RecordingKeySender softSender = new RecordingKeySender();
@@ -52,13 +52,12 @@ public final class ImeConnectionDispatcherTest {
                 softSender,
                 new RecordingKeySender());
 
-        assertEquals(1, softSender.sent.size());
-        assertEquals(KeyEvent.KEYCODE_ENTER, softSender.sent.get(0).keyCode);
+        assertEquals(0, softSender.sent.size());
         assertEquals("performEditorAction", fake.calls.get(0));
     }
 
     @Test
-    public void rejectedEditorActionPerformsActionBeforeFallbackKey() {
+    public void rejectedEditorActionStopsAfterTheActionRequest() {
         FakeConnection fake = new FakeConnection();
         fake.performEditorActionResult = false;
 
@@ -68,17 +67,17 @@ public final class ImeConnectionDispatcherTest {
                 false,
                 false,
                 (keyCode, metaState) -> {
-                    fake.calls.add("softKeyFallback");
+                    fake.calls.add("unexpectedSoftKeyFallback");
                     return RemoteKeyEventSequence.eventCount(keyCode, metaState);
                 },
                 new RecordingKeySender());
 
         assertEquals("performEditorAction", fake.calls.get(0));
-        assertEquals("softKeyFallback", fake.calls.get(1));
+        assertEquals(1, fake.calls.size());
     }
 
     @Test
-    public void rejectedEditorActionCommitsNewlineWhenSoftEnterIsRejected() {
+    public void rejectedEditorActionNeverInventsNewlineWhenSoftEnterIsRejected() {
         FakeConnection fake = new FakeConnection();
         fake.performEditorActionResult = false;
 
@@ -91,9 +90,8 @@ public final class ImeConnectionDispatcherTest {
                 new RecordingKeySender());
 
         assertEquals("performEditorAction", fake.calls.get(0));
-        assertEquals("commitText", fake.calls.get(1));
-        assertEquals(1, fake.committedText.size());
-        assertEquals("\n", fake.committedText.get(0));
+        assertEquals(1, fake.calls.size());
+        assertEquals(0, fake.committedText.size());
     }
 
     @Test
@@ -213,7 +211,7 @@ public final class ImeConnectionDispatcherTest {
     }
 
     @Test
-    public void rawKeyInputEnterCommitsNewlineWhenSoftSenderIsMissing() {
+    public void rawKeyInputEnterDoesNotInventNewlineWhenSoftSenderIsMissing() {
         FakeConnection fake = new FakeConnection();
 
         ImeConnectionDispatcher.performEnter(
@@ -225,8 +223,7 @@ public final class ImeConnectionDispatcherTest {
                 new RecordingKeySender());
 
         assertEquals(0, fake.editorActions.size());
-        assertEquals(1, fake.committedText.size());
-        assertEquals("\n", fake.committedText.get(0));
+        assertEquals(0, fake.committedText.size());
     }
 
     @Test
@@ -246,7 +243,7 @@ public final class ImeConnectionDispatcherTest {
     }
 
     @Test
-    public void rawKeyInputEnterCommitsNewlineWhenSoftSenderRejects() {
+    public void rawKeyInputEnterDoesNotInventNewlineWhenSoftSenderRejects() {
         FakeConnection fake = new FakeConnection();
 
         ImeConnectionDispatcher.performEnter(
@@ -258,8 +255,7 @@ public final class ImeConnectionDispatcherTest {
                 new RecordingKeySender());
 
         assertEquals(0, fake.editorActions.size());
-        assertEquals(1, fake.committedText.size());
-        assertEquals("\n", fake.committedText.get(0));
+        assertEquals(0, fake.committedText.size());
     }
 
     @Test
@@ -393,6 +389,50 @@ public final class ImeConnectionDispatcherTest {
         assertEquals(false, movedLeft);
         assertEquals(false, movedRight);
         assertEquals(0, softSender.sent.size());
+    }
+
+    @Test
+    public void unspecifiedEnterTriesSendActionWithoutAmbiguousKeyOrNewlineFallback() {
+        FakeConnection fake = new FakeConnection();
+        RecordingKeySender softSender = new RecordingKeySender();
+
+        ImeConnectionDispatcher.performEnter(
+                fake.connection(),
+                ImeActionLabelResolver.defaultAction(),
+                false,
+                false,
+                softSender,
+                new RecordingKeySender());
+
+        assertEquals(0, softSender.sent.size());
+        assertEquals(1, fake.editorActions.size());
+        assertEquals(EditorInfo.IME_ACTION_SEND, (int) fake.editorActions.get(0));
+        assertEquals(0, fake.committedText.size());
+    }
+
+    @Test
+    public void explicitNewlineCommitsTextWithoutSendingEnterActionOrKey() {
+        FakeConnection fake = new FakeConnection();
+
+        assertTrue(ImeConnectionDispatcher.commitExplicitNewline(fake.connection()));
+
+        assertEquals(1, fake.committedText.size());
+        assertEquals("\n", fake.committedText.get(0));
+        assertEquals(0, fake.editorActions.size());
+        assertEquals(0, fake.keyEventCount);
+    }
+
+    @Test
+    public void moveCursorStillSendsWhenEditorWithholdsSurroundingText() {
+        FakeConnection fake = new FakeConnection();
+        fake.textBeforeCursor = null;
+        RecordingKeySender softSender = new RecordingKeySender();
+
+        boolean moved = ImeConnectionDispatcher.moveCursor(fake.connection(), false, softSender);
+
+        assertTrue(moved);
+        assertEquals(1, softSender.sent.size());
+        assertEquals(KeyEvent.KEYCODE_DPAD_LEFT, softSender.sent.get(0).keyCode);
     }
 
     @Test
