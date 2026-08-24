@@ -13,3 +13,4 @@ app/build/
 docs/*
 !docs/one-finger-input.md
 !docs/feature-audit.md
+!docs/adaptive-next-key-touch-plan.md
