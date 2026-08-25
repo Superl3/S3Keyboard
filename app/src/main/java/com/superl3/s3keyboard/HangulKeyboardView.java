@@ -530,7 +530,12 @@ public final class HangulKeyboardView extends View
     }
 
     private void drawKeyboardPanel(Canvas canvas) {
-        if (transparentOverlayPresentation) {
+        // A transparent overlay normally omits the backplate so the host editor remains
+        // visible. Glass is different: without its themed surface the effect is reduced to
+        // translucent keycaps over arbitrary app content and the keyboard loses its visual
+        // boundary. Keep the backplate for Glass while preserving the old transparent behavior
+        // for the other overlay styles.
+        if (transparentOverlayPresentation && !settings.visualEffects.glassEnabled) {
             return;
         }
         keyPaint.setShader(null);
