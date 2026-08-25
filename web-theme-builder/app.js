@@ -1674,7 +1674,7 @@ function panelBackgroundForPreview(theme, effects) {
   // exposing enough of that surface for the blur to be visible.
   const surfaceColor = color => blurEnabled
     ? rgbaColor(color, effects?.glass?.enabled
-      ? (effects.glass.tintAlphaPercent || 86) / 100
+      ? 0.28 + 0.22 * ((effects.glass.tintAlphaPercent || 86) / 100)
       : 0.79)
     : color;
   const gradient = effects.panelGradient || {};

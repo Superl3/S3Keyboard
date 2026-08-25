@@ -294,7 +294,8 @@ function New-PanelBackgroundBrush {
     $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
     $glassEnabled = $null -ne $glass -and (Get-ThemeBool $glass.enabled $false)
     $surfaceAlpha = if ($glassEnabled) {
-        [Math]::Round(255 * (Get-ThemeInt $glass.tintAlphaPercent 86) / 100.0)
+        $retention = (Get-ThemeInt $glass.tintAlphaPercent 86) / 100.0
+        [Math]::Round(255 * (0.28 + 0.22 * [Math]::Max(0, [Math]::Min(1, $retention))))
     } elseif ($blurEnabled) {
         202
     } else {

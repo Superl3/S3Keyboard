@@ -578,10 +578,24 @@ public final class HangulKeyboardView extends View
         // The window is blurred by the system at runtime. Preview-only views cannot sample a
         // separate app window, but use the same translucent surface so the editor and web
         // previews preserve the intended glass treatment instead of reverting to an opaque slab.
-        int alpha = settings.visualEffects.glassEnabled
-                ? Math.round(255f * settings.visualEffects.glassTintAlphaPercent / 100f)
-                : (systemBlurApplied ? 218 : 202);
+        int alpha;
+        if (settings.visualEffects.glassEnabled) {
+            // Glass is a color tint over a blurred/refracted source, not an opaque theme slab.
+            // Keep the same tint while the accessibility source reconnects so the panel does
+            // not abruptly jump between a glass surface and a foreground-colored slab.
+            alpha = glassPanelTintAlpha();
+        } else {
+            alpha = systemBlurApplied ? 218 : 202;
+        }
         return withAlpha(color, alpha);
+    }
+
+    private int glassPanelTintAlpha() {
+        float retention = settings.visualEffects.glassTintAlphaPercent / 100f;
+        // Keep the source visibly present. The keyboard backplate should tint the backdrop,
+        // not become a dark foreground slab over it.
+        float alpha = 0.28f + 0.22f * clamp01(retention);
+        return Math.round(255f * alpha);
     }
 
     private int glassKeyTintAlpha(float pressProgress) {
