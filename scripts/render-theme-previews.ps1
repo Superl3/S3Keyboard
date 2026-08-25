@@ -201,7 +201,7 @@ function Get-KeyFaceGradientCurve {
         return "soft"
     }
     $curve = [string]$effect.curve
-    if ($curve -eq "linear" -or $curve -eq "soft" -or $curve -eq "top_glow" -or $curve -eq "bottom_shade") {
+    if ($curve -eq "linear" -or $curve -eq "soft" -or $curve -eq "top_glow" -or $curve -eq "bottom_shade" -or $curve -eq "glass") {
         return $curve
     }
     return "soft"
@@ -213,12 +213,14 @@ function Get-KeyFaceGradientPositions {
         "linear" { return [single[]](0.0, 0.50, 1.0) }
         "top_glow" { return [single[]](0.0, 0.30, 1.0) }
         "bottom_shade" { return [single[]](0.0, 0.62, 1.0) }
+        "glass" { return [single[]](0.0, 0.24, 1.0) }
         default { return [single[]](0.0, 0.42, 1.0) }
     }
 }
 
 function Get-KeyFaceGradientColors {
     param(
+        [object] $Theme,
         [System.Drawing.Color] $Background,
         [int] $StrengthPercent,
         [System.Drawing.Color] $StartColor,
@@ -226,8 +228,9 @@ function Get-KeyFaceGradientColors {
     )
     $luminance = ($Background.R * 299 + $Background.G * 587 + $Background.B * 114) / 1000.0
     $strength = [Math]::Max(0.0, [Math]::Min(1.0, $StrengthPercent / 100.0))
-    $topAmount = $(if ($luminance -lt 42) { 0.08 } else { 0.06 }) + 0.24 * $strength
-    $bottomAmount = $(if ($luminance -lt 42) { 0.04 } else { 0.05 }) + 0.18 * $strength
+    $curve = Get-KeyFaceGradientCurve -Theme $Theme
+    $topAmount = $(if ($luminance -lt 42) { 0.08 } else { 0.06 }) + $(if ($curve -eq "glass") { 0.34 } else { 0.24 }) * $strength
+    $bottomAmount = $(if ($luminance -lt 42) { 0.04 } else { 0.05 }) + $(if ($curve -eq "glass") { 0.26 } else { 0.18 }) * $strength
     return @(
         (Blend-ThemeColor -Foreground $StartColor -Background $Background -ForegroundAmount $topAmount),
         $Background,
@@ -253,6 +256,7 @@ function New-KeyFaceBrush {
     }
 
     $colors = Get-KeyFaceGradientColors `
+            -Theme $Theme `
             -Background $Fill `
             -StrengthPercent $strength `
             -StartColor (Get-KeyFaceGradientStartColor -Theme $Theme) `
@@ -280,12 +284,32 @@ function New-PanelBackgroundBrush {
     )
     $panelColor = if ($null -ne $Theme.colors.panelBackground) { $Theme.colors.panelBackground } else { $Theme.colors.keyboardBackground }
     $fallback = Convert-ThemeColor $panelColor "#EBEBEB"
+    $blur = if ($null -ne $Theme.effects) { $Theme.effects.blur } else { $null }
+    $blurRadius = if ($null -ne $blur) { Get-ThemeInt $blur.radiusDp 0 } else { 0 }
+    $blurEnabled = $null -ne $blur -and (Get-ThemeBool $blur.enabled $false) -and $blurRadius -gt 0
+    $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
+    $glassEnabled = $null -ne $glass -and (Get-ThemeBool $glass.enabled $false)
+    $surfaceAlpha = if ($glassEnabled) {
+        [Math]::Round(255 * (Get-ThemeInt $glass.tintAlphaPercent 86) / 100.0)
+    } elseif ($blurEnabled) {
+        202
+    } else {
+        255
+    }
     $gradient = if ($null -ne $Theme.effects) { $Theme.effects.panelGradient } else { $null }
     if ($null -eq $gradient -or -not (Get-ThemeBool $gradient.enabled $false)) {
+        if ($surfaceAlpha -lt 255) {
+            return [System.Drawing.SolidBrush]::new(
+                    [System.Drawing.Color]::FromArgb($surfaceAlpha, $fallback.R, $fallback.G, $fallback.B))
+        }
         return [System.Drawing.SolidBrush]::new($fallback)
     }
     $start = Convert-ThemeColor $gradient.startColor $panelColor
     $end = Convert-ThemeColor $gradient.endColor $panelColor
+    if ($surfaceAlpha -lt 255) {
+        $start = [System.Drawing.Color]::FromArgb($surfaceAlpha, $start.R, $start.G, $start.B)
+        $end = [System.Drawing.Color]::FromArgb($surfaceAlpha, $end.R, $end.G, $end.B)
+    }
     $rect = [System.Drawing.RectangleF]::new($X, $Y, [Math]::Max(1, $W), [Math]::Max(1, $H))
     return [System.Drawing.Drawing2D.LinearGradientBrush]::new(
             $rect,
@@ -2169,6 +2193,20 @@ function Draw-KeyboardBackground {
     $pen = [System.Drawing.Pen]::new((Convert-ThemeColor $Theme.colors.border "#696969"), 1)
     try {
         Draw-RoundRect -Graphics $Graphics -Brush $brush -Pen $pen -X $X -Y $Y -W $W -H $H -Radius 18
+        $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
+        if ($null -ne $glass -and (Get-ThemeBool $glass.enabled $false)) {
+            $highlight = [Math]::Min(64, [Math]::Round((Get-ThemeInt $glass.highlightPercent 18) * 1.35))
+            $highlightBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+                    [System.Drawing.RectangleF]::new($X, $Y, [Math]::Max(1, $W), [Math]::Max(1, $H)),
+                    [System.Drawing.Color]::FromArgb($highlight, 255, 255, 255),
+                    [System.Drawing.Color]::FromArgb(0, 255, 255, 255),
+                    [System.Drawing.Drawing2D.LinearGradientMode]::Vertical)
+            try {
+                $Graphics.FillRectangle($highlightBrush, $X + 1, $Y + 1, [Math]::Max(1, $W - 2), [Math]::Max(1, $H - 2))
+            } finally {
+                $highlightBrush.Dispose()
+            }
+        }
     } finally {
         $brush.Dispose()
         $pen.Dispose()

@@ -68,11 +68,16 @@ public final class ThemeEditorActivity extends Activity {
     private SeekBar roundnessSeekBar;
     private SeekBar keyBorderWidthSeekBar;
     private SeekBar keyGapSeekBar;
+    private SeekBar pseudoBlurRadiusSeekBar;
+    private SeekBar glassTintSeekBar;
+    private SeekBar glassHighlightSeekBar;
     private SeekBar keyDepthSeekBar;
     private SeekBar keyFaceGradientStrengthSeekBar;
     private SeekBar primaryTextSizeSeekBar;
     private SeekBar secondaryTextSizeSeekBar;
     private CheckBox keyDepthCheckBox;
+    private CheckBox pseudoBlurCheckBox;
+    private CheckBox glassCheckBox;
     private CheckBox customDepthColorCheckBox;
     private CheckBox keyFaceGradientCheckBox;
     private CheckBox panelGradientCheckBox;
@@ -84,6 +89,9 @@ public final class ThemeEditorActivity extends Activity {
     private TextView roundnessValue;
     private TextView keyBorderWidthValue;
     private TextView keyGapValue;
+    private TextView pseudoBlurRadiusValue;
+    private TextView glassTintValue;
+    private TextView glassHighlightValue;
     private TextView keyDepthValue;
     private TextView keyFaceGradientStrengthValue;
     private TextView primaryTextSizeValue;
@@ -194,6 +202,11 @@ public final class ThemeEditorActivity extends Activity {
                 this,
                 globalSection,
                 R.string.theme_editor_colors_section,
+                true).content);
+        addBackgroundControls(SettingsSubsection.add(
+                this,
+                globalSection,
+                R.string.theme_editor_background_section,
                 true).content);
         addShapeControls(SettingsSubsection.add(
                 this,
@@ -648,6 +661,92 @@ public final class ThemeEditorActivity extends Activity {
                 8);
     }
 
+    private void addBackgroundControls(LinearLayout root) {
+        glassCheckBox = SettingsRowBuilder.checkBoxRow(
+                this,
+                root,
+                R.string.theme_glass_enabled,
+                12,
+                () -> !syncing,
+                checked -> updateSettings(settings.withVisualEffects(
+                        settings.visualEffects.withGlass(
+                                checked,
+                                settings.visualEffects.glassTintAlphaPercent,
+                                settings.visualEffects.glassHighlightPercent,
+                                settings.visualEffects.glassBorderAlphaPercent))));
+        SettingsRowBuilder.secondaryLabelRow(
+                this,
+                root,
+                R.string.theme_glass_enabled_description,
+                4);
+
+        SettingsRowBuilder.labelRow(this, root, R.string.theme_glass_tint, 8);
+        glassTintValue = SettingsRowBuilder.valueLabel(this);
+        glassTintSeekBar = SettingsRowBuilder.seekBarRow(
+                this,
+                root,
+                glassTintValue,
+                38,
+                0,
+                () -> !syncing && settings.visualEffects.glassEnabled,
+                progress -> updateSettings(settings.withVisualEffects(
+                        settings.visualEffects.withGlass(
+                                true,
+                                progress + 60,
+                                settings.visualEffects.glassHighlightPercent,
+                                settings.visualEffects.glassBorderAlphaPercent))));
+
+        SettingsRowBuilder.labelRow(this, root, R.string.theme_glass_highlight, 8);
+        glassHighlightValue = SettingsRowBuilder.valueLabel(this);
+        glassHighlightSeekBar = SettingsRowBuilder.seekBarRow(
+                this,
+                root,
+                glassHighlightValue,
+                60,
+                0,
+                () -> !syncing && settings.visualEffects.glassEnabled,
+                progress -> updateSettings(settings.withVisualEffects(
+                        settings.visualEffects.withGlass(
+                                true,
+                                settings.visualEffects.glassTintAlphaPercent,
+                                progress,
+                                settings.visualEffects.glassBorderAlphaPercent))));
+
+        pseudoBlurCheckBox = SettingsRowBuilder.checkBoxRow(
+                this,
+                root,
+                R.string.theme_pseudo_blur_enabled,
+                12,
+                () -> !syncing,
+                checked -> updateSettings(settings.withVisualEffects(
+                        settings.visualEffects.withBlur(
+                                checked,
+                                settings.visualEffects.blurRadiusDp))));
+        SettingsRowBuilder.secondaryLabelRow(
+                this,
+                root,
+                R.string.theme_pseudo_blur_enabled_description,
+                4);
+
+        SettingsRowBuilder.labelRow(
+                this,
+                root,
+                R.string.theme_pseudo_blur_radius,
+                8);
+        pseudoBlurRadiusValue = SettingsRowBuilder.valueLabel(this);
+        pseudoBlurRadiusSeekBar = SettingsRowBuilder.seekBarRow(
+                this,
+                root,
+                pseudoBlurRadiusValue,
+                32,
+                8,
+                () -> !syncing,
+                progress -> updateSettings(settings.withVisualEffects(
+                        settings.visualEffects.withBlur(
+                                settings.visualEffects.blurEnabled,
+                                progress))));
+    }
+
     private void addTypographyControls(LinearLayout root) {
         fontFamilySpinner = fontSpinner();
         SettingsRowBuilder.labeledControl(
@@ -783,6 +882,15 @@ public final class ThemeEditorActivity extends Activity {
         SettingsRowBuilder.setProgressIfPresent(roundnessSeekBar, settings.keyRoundnessDp);
         SettingsRowBuilder.setProgressIfPresent(keyBorderWidthSeekBar, settings.keyBorderWidthDp);
         SettingsRowBuilder.setProgressIfPresent(keyGapSeekBar, settings.keyGapDp);
+        SettingsRowBuilder.setProgressIfPresent(
+                pseudoBlurRadiusSeekBar,
+                settings.visualEffects.blurRadiusDp);
+        SettingsRowBuilder.setProgressIfPresent(
+                glassTintSeekBar,
+                settings.visualEffects.glassTintAlphaPercent - 60);
+        SettingsRowBuilder.setProgressIfPresent(
+                glassHighlightSeekBar,
+                settings.visualEffects.glassHighlightPercent);
         SettingsRowBuilder.setProgressIfPresent(keyDepthSeekBar, settings.keyDepthDp);
         SettingsRowBuilder.setProgressIfPresent(
                 keyFaceGradientStrengthSeekBar,
@@ -843,6 +951,12 @@ public final class ThemeEditorActivity extends Activity {
                 keyDisplayPackSpinner,
                 KeyDisplayOverridePackCatalog.selectablePackIndexOf(settings.keyDisplayThemePackId, false));
         SettingsRowBuilder.setCheckedIfPresent(keyDepthCheckBox, settings.keyDepthEnabled);
+        SettingsRowBuilder.setCheckedIfPresent(
+                pseudoBlurCheckBox,
+                settings.visualEffects.blurEnabled);
+        SettingsRowBuilder.setCheckedIfPresent(
+                glassCheckBox,
+                settings.visualEffects.glassEnabled);
         SettingsRowBuilder.setCheckedIfPresent(customDepthColorCheckBox, settings.customDepthColorEnabled);
         SettingsRowBuilder.setCheckedIfPresent(
                 keyFaceGradientCheckBox,
@@ -855,6 +969,15 @@ public final class ThemeEditorActivity extends Activity {
         SettingsRowBuilder.setCheckedIfPresent(secondaryTextBoldCheckBox, settings.secondaryTextBold);
         SettingsRowBuilder.setCheckedIfPresent(secondaryTextItalicCheckBox, settings.secondaryTextItalic);
         SettingsRowBuilder.setEnabledIfPresent(depthColorSpinner, settings.customDepthColorEnabled);
+        SettingsRowBuilder.setEnabledIfPresent(
+                pseudoBlurRadiusSeekBar,
+                settings.visualEffects.blurEnabled);
+        SettingsRowBuilder.setEnabledIfPresent(
+                glassTintSeekBar,
+                settings.visualEffects.glassEnabled);
+        SettingsRowBuilder.setEnabledIfPresent(
+                glassHighlightSeekBar,
+                settings.visualEffects.glassEnabled);
         SettingsRowBuilder.setEnabledIfPresent(
                 panelGradientStartColorSpinner,
                 settings.visualEffects.panelGradientEnabled);
@@ -898,6 +1021,12 @@ public final class ThemeEditorActivity extends Activity {
         SettingsRowBuilder.setTextIfPresent(
                 keyGapValue,
                 getString(R.string.theme_key_gap_format, settings.keyGapDp));
+        SettingsRowBuilder.setTextIfPresent(
+                glassTintValue,
+                settings.visualEffects.glassTintAlphaPercent + "%");
+        SettingsRowBuilder.setTextIfPresent(
+                glassHighlightValue,
+                settings.visualEffects.glassHighlightPercent + "%");
         SettingsRowBuilder.setTextIfPresent(keyDepthValue, getString(
                 R.string.theme_depth_format,
                 settings.keyDepthDp,

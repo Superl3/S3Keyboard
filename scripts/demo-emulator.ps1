@@ -20,6 +20,7 @@ param(
     [string] $ThemePresetId = "",
     [switch] $ShowNumberRow,
     [switch] $CaptureShiftActive,
+    [switch] $EnableGlassSource,
     [switch] $ResetAppData
 )
 
@@ -118,11 +119,11 @@ function Ensure-DemoKeyboardVisible {
     )
 
     for ($attempt = 0; $attempt -lt 3; $attempt++) {
-        & $Adb @AdbTarget shell input tap 540 565 | Out-Null
+        & $Adb @AdbTarget shell input tap 540 1600 | Out-Null
         Start-Sleep -Milliseconds 500
         & $Adb @AdbTarget shell ime set $Ime | Out-Null
         Start-Sleep -Milliseconds 500
-        & $Adb @AdbTarget shell input tap 540 565 | Out-Null
+        & $Adb @AdbTarget shell input tap 540 1600 | Out-Null
         Start-Sleep -Milliseconds 700
         if (Test-ImeVisible -Adb $Adb -AdbTarget $AdbTarget) {
             return
@@ -379,7 +380,15 @@ function Get-ThemeExtras {
 
 & (Join-Path $PSScriptRoot "build-debug.ps1")
 
-$ApkHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Apk).Hash.Substring(0, 12)
+$Sha256 = [System.Security.Cryptography.SHA256]::Create()
+$ApkStream = [System.IO.File]::OpenRead($Apk)
+try {
+    $ApkHashBytes = $Sha256.ComputeHash($ApkStream)
+    $ApkHash = ([System.BitConverter]::ToString($ApkHashBytes) -replace "-", "").Substring(0, 12)
+} finally {
+    $ApkStream.Dispose()
+    $Sha256.Dispose()
+}
 $ThemePresetMode = -not [string]::IsNullOrWhiteSpace($ThemePresetId)
 $SafeThemeName = if ($ThemePresetMode) {
     $ThemePresetId -replace "[^A-Za-z0-9_-]", "-"
@@ -471,8 +480,12 @@ $StartArgs = @(
     "--ez", "show_hangul_number_row", "$ShowHangulNumberRowValue",
     "--ez", "show_english_number_row", "$ShowEnglishNumberRowValue",
     "--ez", "demo_settings", "true",
-    "--ez", "demo_show_keyboard", "true"
+    "--ez", "demo_show_keyboard", "true",
+    "--ez", "demo_force_visual_effects", "true"
 )
+if ($EnableGlassSource) {
+    $StartArgs += @("--ez", "demo_glass_source_enabled", "true")
+}
 if ($ThemePresetMode) {
     $StartArgs += @("--es", "theme_preset_id", $ThemePresetId)
 } else {
@@ -496,12 +509,17 @@ if ($ThemePresetMode) {
     )
 }
 & $Adb @AdbTarget @StartArgs | Out-Host
+if ($EnableGlassSource) {
+    $GlassService = "$Package/$Package.GlassCaptureAccessibilityService"
+    & $Adb @AdbTarget shell settings put secure enabled_accessibility_services $GlassService | Out-Host
+    & $Adb @AdbTarget shell settings put secure accessibility_enabled 1 | Out-Host
+}
 Start-Sleep -Seconds 2
 & $Adb @AdbTarget shell ime set $Ime | Out-Host
 
 # The Activity also requests focus via demo_show_keyboard; keep a tap fallback
 # for emulator images that ignore the first soft-input request.
-& $Adb @AdbTarget shell input tap 540 565 | Out-Null
+& $Adb @AdbTarget shell input tap 540 1600 | Out-Null
 Start-Sleep -Seconds 2
 Ensure-DemoKeyboardVisible -Adb $Adb -AdbTarget $AdbTarget -Ime $Ime
 

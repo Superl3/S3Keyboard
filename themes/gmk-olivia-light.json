@@ -69,5 +69,13 @@
       "foreground": "#242126",
       "background": "#E8A5AE"
     }
+  },
+  "effects": {
+    "glass": {
+      "enabled": false,
+      "tintAlphaPercent": 86,
+      "highlightPercent": 18,
+      "borderAlphaPercent": 42
+    }
   }
 }

@@ -74,6 +74,7 @@ public final class HangulKeyboardView extends View
     private static final float[] KEY_GRADIENT_STOPS_TOP_GLOW = { 0f, 0.30f, 1f };
     private static final float[] KEY_GRADIENT_STOPS_BOTTOM_SHADE = { 0f, 0.62f, 1f };
     private static final float[] KEY_GRADIENT_STOPS_SOFT = { 0f, 0.42f, 1f };
+    private static final float[] KEY_GRADIENT_STOPS_GLASS = { 0f, 0.16f, 0.54f, 1f };
 
     private final List<KeySlot> keySlots = new ArrayList<>();
     private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -88,14 +89,18 @@ public final class HangulKeyboardView extends View
     private final Paint overlayTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF keySurfaceScratch = new RectF();
     private final RectF keyDepthScratch = new RectF();
+    private final RectF glassHighlightScratch = new RectF();
     private final RectF extremeFloatingFaceScratch = new RectF();
     private final RectF animationDirtyScratch = new RectF();
     private final RectF touchDirtyScratch = new RectF();
     private final RectF moveDirtyScratch = new RectF();
     private final Rect drawClipScratch = new Rect();
     private LinearGradient panelGradientShader;
-    private LinearGradient panelBlurShader;
     private LinearGradient panelMetallicShader;
+    private LinearGradient panelGlassShader;
+    private final GlassRefractionRenderer glassRefractionRenderer = new GlassRefractionRenderer();
+    private final GlassBackdropSourceStore.Listener glassBackdropListener =
+            this::onGlassBackdropSourceChanged;
     private final KeyboardDebugOverlayRenderer debugOverlayRenderer = new KeyboardDebugOverlayRenderer();
     private final KeyboardIconRegistry iconRegistry;
     private final List<TouchState> activeTouches = new ArrayList<>();
@@ -114,6 +119,7 @@ public final class HangulKeyboardView extends View
 
     private KeyboardSettings settings = KeyboardSettings.defaults();
     private boolean transparentOverlayPresentation;
+    private boolean systemBlurApplied;
     private TransparentOverlayStyle transparentOverlayStyle =
             TransparentOverlayStyle.TRANSLUCENT_KEYS;
     private KeyboardLayoutProfiles layoutProfiles = KeyboardLayoutProfiles.defaults();
@@ -134,6 +140,7 @@ public final class HangulKeyboardView extends View
     private long modeTransitionStartMs = -1;
     private boolean settingsInitialized;
     private boolean compactPreviewRendering;
+    private boolean previewErgonomicsEnabled;
     private boolean showHangulConsonantSlideHints = true;
     private boolean showHangulVowelSlideHints = true;
     private boolean showSpacebarSlideHints = true;
@@ -234,7 +241,9 @@ public final class HangulKeyboardView extends View
             touchBiasAutoCorrectionEnabled = false;
             palmRejectionEnabled = false;
             singleTapCommitModeEnabled = false;
-            ergonomicsOptions = KeyboardErgonomicsOptions.DEFAULT;
+            ergonomicsOptions = previewErgonomicsEnabled
+                    ? KeyboardPreferences.loadErgonomicsOptions(getContext())
+                    : KeyboardErgonomicsOptions.DEFAULT;
             debugKeyBoundsOverlayEnabled = false;
             debugShowResolverScores = false;
         } else {
@@ -285,11 +294,30 @@ public final class HangulKeyboardView extends View
         settingsInitialized = true;
     }
 
+    void setPreviewErgonomicsEnabled(boolean enabled) {
+        if (!previewOnly || previewErgonomicsEnabled == enabled) {
+            return;
+        }
+        previewErgonomicsEnabled = enabled;
+        if (settingsInitialized) {
+            setSettings(settings);
+        }
+    }
+
     void setTransparentOverlayPresentation(boolean enabled) {
         if (transparentOverlayPresentation == enabled) {
             return;
         }
         transparentOverlayPresentation = enabled;
+        clearRenderShaderCache();
+        invalidate();
+    }
+
+    void setSystemBlurApplied(boolean applied) {
+        if (systemBlurApplied == applied) {
+            return;
+        }
+        systemBlurApplied = applied;
         clearRenderShaderCache();
         invalidate();
     }
@@ -445,13 +473,30 @@ public final class HangulKeyboardView extends View
     }
 
     @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (!previewOnly) {
+            GlassBackdropSourceStore.addListener(glassBackdropListener);
+            onGlassBackdropSourceChanged();
+        }
+    }
+
+    @Override
     protected void onDetachedFromWindow() {
+        if (!previewOnly) {
+            GlassBackdropSourceStore.removeListener(glassBackdropListener);
+        }
+        glassRefractionRenderer.clear();
         clearTouchState();
         repeatController.stop();
         if (touchBiasStore != null) {
             touchBiasStore.flushNow();
         }
         super.onDetachedFromWindow();
+    }
+
+    private void onGlassBackdropSourceChanged() {
+        postInvalidateOnAnimation();
     }
 
     void flushLearningState() {
@@ -489,6 +534,9 @@ public final class HangulKeyboardView extends View
             return;
         }
         keyPaint.setShader(null);
+        if (settings.visualEffects.glassEnabled) {
+            glassRefractionRenderer.draw(canvas, this);
+        }
         if (settings.visualEffects.panelGradientEnabled) {
             if (panelGradientShader == null) {
                 panelGradientShader = new LinearGradient(
@@ -496,46 +544,85 @@ public final class HangulKeyboardView extends View
                         0,
                         0,
                         Math.max(1, getHeight()),
-                        settings.visualEffects.panelGradientStartColor,
-                        settings.visualEffects.panelGradientEndColor,
+                        panelBackgroundColor(settings.visualEffects.panelGradientStartColor),
+                        panelBackgroundColor(settings.visualEffects.panelGradientEndColor),
                         Shader.TileMode.CLAMP);
             }
             keyPaint.setShader(panelGradientShader);
         } else {
-            keyPaint.setColor(settings.keyboardBackgroundColor);
+            keyPaint.setColor(panelBackgroundColor(settings.keyboardBackgroundColor));
         }
         keyPaint.setStyle(Paint.Style.FILL);
         canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
         keyPaint.setShader(null);
-        if (settings.visualEffects.blurEnabled && settings.visualEffects.blurRadiusDp > 0) {
-            drawPanelBlurWash(canvas);
-        }
         if (settings.visualEffects.metallicEnabled && settings.visualEffects.metallicStrengthPercent > 0) {
             drawMetallicReflection(canvas);
+        }
+        if (settings.visualEffects.glassEnabled) {
+            drawGlassReflection(canvas);
         }
         keyPaint.setShader(null);
     }
 
-    private void drawPanelBlurWash(Canvas canvas) {
-        int radius = renderDp(settings.visualEffects.blurRadiusDp);
-        int alpha = Math.min(92, 28 + radius * 2);
-        if (panelBlurShader == null) {
-            panelBlurShader = new LinearGradient(
+    private int panelBackgroundColor(int color) {
+        boolean blurEnabled = settings.visualEffects.blurEnabled
+                && settings.visualEffects.blurRadiusDp > 0;
+        if (!systemBlurApplied && !blurEnabled && !settings.visualEffects.glassEnabled) {
+            return color;
+        }
+        // The window is blurred by the system at runtime. Preview-only views cannot sample a
+        // separate app window, but use the same translucent surface so the editor and web
+        // previews preserve the intended glass treatment instead of reverting to an opaque slab.
+        int alpha = settings.visualEffects.glassEnabled
+                ? Math.round(255f * settings.visualEffects.glassTintAlphaPercent / 100f)
+                : (systemBlurApplied ? 218 : 202);
+        return withAlpha(color, alpha);
+    }
+
+    private int glassKeyTintAlpha(float pressProgress) {
+        float retention = settings.visualEffects.glassTintAlphaPercent / 100f;
+        // Keep the authored key color recognizable without hiding the refracted source.
+        // The pressed state deliberately becomes more opaque so input feedback remains clear.
+        float alpha = 0.16f + retention * 0.36f;
+        alpha += 0.12f * clamp01(pressProgress);
+        return Math.round(255f * clamp01(alpha));
+    }
+
+    private void drawGlassReflection(Canvas canvas) {
+        int highlightAlpha = Math.min(
+                64,
+                Math.round(settings.visualEffects.glassHighlightPercent * 1.35f));
+        if (panelGlassShader == null) {
+            panelGlassShader = new LinearGradient(
                     0,
                     0,
                     0,
                     Math.max(1, getHeight()),
                     new int[] {
-                            withAlpha(lightenColor(settings.keyboardBackgroundColor, 1.16f), alpha),
-                            withAlpha(settings.keyboardBackgroundColor, Math.max(12, alpha / 3)),
-                            withAlpha(darkenColor(settings.keyboardBackgroundColor, 0.76f), Math.max(18, alpha / 2))
+                            withAlpha(0xFFFFFFFF, highlightAlpha),
+                            withAlpha(0xFFFFFFFF, Math.max(0, highlightAlpha / 3)),
+                            withAlpha(0xFF000000, Math.max(0, highlightAlpha / 5)),
+                            0x00000000
                     },
-                    new float[] { 0f, 0.46f, 1f },
+                    new float[] { 0f, 0.12f, 0.52f, 1f },
                     Shader.TileMode.CLAMP);
         }
-        keyPaint.setShader(panelBlurShader);
+        keyPaint.setShader(panelGlassShader);
         canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
         keyPaint.setShader(null);
+
+        int borderAlpha = Math.round(
+                255f * settings.visualEffects.glassBorderAlphaPercent / 100f);
+        borderPaint.setStyle(Paint.Style.STROKE);
+        borderPaint.setStrokeWidth(Math.max(1f, renderDp(1)));
+        borderPaint.setColor(withAlpha(settings.borderColor, borderAlpha));
+        canvas.drawRect(
+                renderDp(0.5f),
+                renderDp(0.5f),
+                getWidth() - renderDp(0.5f),
+                getHeight() - renderDp(0.5f),
+                borderPaint);
+        borderPaint.setStyle(Paint.Style.FILL);
     }
 
     private void drawMetallicReflection(Canvas canvas) {
@@ -2280,10 +2367,12 @@ public final class HangulKeyboardView extends View
 
     private void clearRenderShaderCache() {
         panelGradientShader = null;
-        panelBlurShader = null;
         panelMetallicShader = null;
+        panelGlassShader = null;
+        glassRefractionRenderer.clear();
         for (KeySlot slot : keySlots) {
             slot.idleFaceShader = null;
+            slot.glassSurfaceShader = null;
         }
     }
 
@@ -2312,6 +2401,17 @@ public final class HangulKeyboardView extends View
                     active || shiftOnceActive
                             ? OVERLAY_KEY_PRESSED_ALPHA
                             : OVERLAY_KEY_FACE_ALPHA);
+        }
+        boolean refractedKeyFace = settings.visualEffects.glassEnabled
+                && !transparentOverlayPresentation
+                && glassRefractionRenderer.drawKey(
+                        canvas,
+                        this,
+                        surfaceBounds,
+                        renderDp(settings.keyRoundnessDp),
+                        pressProgress);
+        if (refractedKeyFace) {
+            faceColor = withAlpha(faceColor, glassKeyTintAlpha(pressProgress));
         }
         drawKeyFace(canvas, keySlot, surfaceBounds, faceColor, pressProgress);
         drawBorderShape(canvas, surfaceBounds);
@@ -3743,15 +3843,78 @@ public final class HangulKeyboardView extends View
             }
         }
         keyPaint.setShader(shader);
+        if (shouldDrawGlassKeyMaterial()) {
+            // Gradient colors already carry the intended surface alpha. Do not multiply them
+            // by the translucent theme face color a second time through Paint's color alpha.
+            keyPaint.setColor(0xFFFFFFFF);
+        }
+        drawKeyShape(canvas, bounds, keyPaint);
+        keyPaint.setShader(null);
+        if (shouldDrawGlassKeyMaterial()) {
+            drawGlassKeySurfaceOverlay(canvas, keySlot, bounds);
+        }
+        if (shouldDrawGlassKeyMaterial()
+                || KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_GLASS.equals(
+                        settings.visualEffects.keyFaceGradientCurve)) {
+            drawGlassKeyHighlight(canvas, bounds, pressProgress);
+        }
+    }
+
+    private void drawGlassKeyHighlight(Canvas canvas, RectF bounds, float pressProgress) {
+        float stroke = Math.max(renderDp(1), renderDp(settings.keyBorderWidthDp) * 0.65f);
+        RectF edgeBounds = glassHighlightScratch;
+        edgeBounds.set(bounds);
+        edgeBounds.inset(stroke * 0.7f, stroke * 0.7f);
+        if (edgeBounds.width() <= 0f || edgeBounds.height() <= 0f) {
+            return;
+        }
+        overlayPaint.setStyle(Paint.Style.STROKE);
+        overlayPaint.setStrokeWidth(stroke);
+        overlayPaint.setColor(withAlpha(
+                0xFFFFFFFF,
+                Math.round((42f - 14f * pressProgress) * motionIntensityScale())));
+        drawKeyShape(canvas, edgeBounds, overlayPaint);
+        overlayPaint.setStyle(Paint.Style.FILL);
+    }
+
+    private void drawGlassKeySurfaceOverlay(Canvas canvas, KeySlot keySlot, RectF bounds) {
+        if (keySlot.glassSurfaceShader == null) {
+            keySlot.glassSurfaceShader = new LinearGradient(
+                    0,
+                    bounds.top,
+                    0,
+                    bounds.bottom,
+                    new int[] {
+                            // The body needs its own material gradient. The border highlight is
+                            // deliberately weaker than this surface pass so glass is visible
+                            // across the whole key, not only around its edge.
+                            withAlpha(0xFFFFFFFF, 128),
+                            withAlpha(0xFFFFFFFF, 46),
+                            0x00000000,
+                            withAlpha(0xFF000000, 96)
+                    },
+                    new float[] { 0f, 0.22f, 0.58f, 1f },
+                    Shader.TileMode.CLAMP);
+        }
+        keyPaint.setColor(0xFFFFFFFF);
+        keyPaint.setShader(keySlot.glassSurfaceShader);
         drawKeyShape(canvas, bounds, keyPaint);
         keyPaint.setShader(null);
     }
 
     private boolean shouldDrawKeyFaceGradient() {
-        return settings.keyDepthEnabled
+        return shouldDrawGlassKeyMaterial()
+                || (settings.keyDepthEnabled
                 && settings.keyDepthDp > 0
                 && settings.visualEffects.keyFaceGradientEnabled
-                && settings.visualEffects.keyFaceGradientStrengthPercent > 0;
+                && settings.visualEffects.keyFaceGradientStrengthPercent > 0);
+    }
+
+    private boolean shouldDrawGlassKeyMaterial() {
+        // The overlay mode intentionally keeps the live backdrop sample disabled for cost and
+        // gesture safety, but the key material itself must still be glassy. Otherwise the
+        // overlay falls back to a flat translucent slab while only its border looks polished.
+        return settings.visualEffects.glassEnabled;
     }
 
     private RectF keySurfaceBounds(RectF bounds, float pressProgress, RectF output) {
@@ -3814,10 +3977,32 @@ public final class HangulKeyboardView extends View
 
     private int[] keyFaceGradientColors(int background, float pressProgress) {
         float strength = settings.visualEffects.keyFaceGradientStrengthPercent / 100f;
+        if (shouldDrawGlassKeyMaterial()) {
+            strength = Math.max(
+                    strength,
+                    settings.visualEffects.glassHighlightPercent / 60f);
+        }
         strength *= 1f - 0.35f * clamp01(pressProgress);
+        boolean glass = shouldDrawGlassKeyMaterial()
+                || KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_GLASS.equals(
+                        settings.visualEffects.keyFaceGradientCurve);
         int luminance = perceivedLuminance(background);
-        float topAmount = (luminance < 42 ? 0.08f : 0.06f) + 0.24f * strength;
-        float bottomAmount = (luminance < 42 ? 0.04f : 0.05f) + 0.18f * strength;
+        if (glass) {
+            int alpha = Math.round(190f - 28f * clamp01(pressProgress));
+            int opaqueBackground = background | 0xFF000000;
+            int glassTop = blendColor(0xFFFFFFFF, opaqueBackground, 0.28f);
+            int glassBottom = blendColor(0xFF000000, opaqueBackground, 0.28f);
+            return new int[] {
+                    withAlpha(blendColor(0xFFFFFFFF, glassTop, 0.38f * strength), alpha),
+                    withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.08f * strength), alpha),
+                    withAlpha(opaqueBackground, alpha),
+                    withAlpha(blendColor(0xFF000000, glassBottom, 0.42f * strength), alpha)
+            };
+        }
+        float topAmount = (luminance < 42 ? 0.08f : 0.06f)
+                + 0.24f * strength;
+        float bottomAmount = (luminance < 42 ? 0.04f : 0.05f)
+                + 0.18f * strength;
         return new int[] {
                 blendColor(settings.visualEffects.keyFaceGradientStartColor, background, topAmount),
                 background,
@@ -3827,6 +4012,9 @@ public final class HangulKeyboardView extends View
 
     private float[] keyFaceGradientStops() {
         String curve = settings.visualEffects.keyFaceGradientCurve;
+        if (shouldDrawGlassKeyMaterial()) {
+            return KEY_GRADIENT_STOPS_GLASS;
+        }
         if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_LINEAR.equals(curve)) {
             return KEY_GRADIENT_STOPS_LINEAR;
         }
@@ -3835,6 +4023,9 @@ public final class HangulKeyboardView extends View
         }
         if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE.equals(curve)) {
             return KEY_GRADIENT_STOPS_BOTTOM_SHADE;
+        }
+        if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_GLASS.equals(curve)) {
+            return KEY_GRADIENT_STOPS_GLASS;
         }
         return KEY_GRADIENT_STOPS_SOFT;
     }
@@ -5381,6 +5572,7 @@ public final class HangulKeyboardView extends View
         private final RectF resolvedVisualBounds;
         private final RectF resolvedHitBounds;
         LinearGradient idleFaceShader;
+        LinearGradient glassSurfaceShader;
 
         KeySlot(
                 GestureKey key,

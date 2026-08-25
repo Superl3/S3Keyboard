@@ -85,6 +85,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#06B6D4"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -175,6 +183,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#16A34A"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -265,6 +281,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#16A34A"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -354,6 +378,14 @@ window.S3_THEME_INDEX = [
           "modCtrl",
           "dingulDot"
         ]
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -443,6 +475,14 @@ window.S3_THEME_INDEX = [
           "modCtrl",
           "dingulDot"
         ]
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -613,6 +653,14 @@ window.S3_THEME_INDEX = [
         "modInv": {
           "foreground": "#F4F6FA",
           "background": "#181C23"
+        }
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         }
       }
     }
@@ -785,6 +833,14 @@ window.S3_THEME_INDEX = [
           "foreground": "#1D2430",
           "background": "#CFCBC0"
         }
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -862,6 +918,14 @@ window.S3_THEME_INDEX = [
         "modInv": {
           "foreground": "#343746",
           "background": "#363949"
+        }
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         }
       }
     }
@@ -952,6 +1016,14 @@ window.S3_THEME_INDEX = [
           "modCtrl",
           "dingulDot"
         ]
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -1033,6 +1105,12 @@ window.S3_THEME_INDEX = [
         "blur": {
           "enabled": true,
           "radiusDp": 10
+        },
+        "glass": {
+          "enabled": true,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": true,
@@ -1201,6 +1279,14 @@ window.S3_THEME_INDEX = [
         "dingul": [
           "dingulDot"
         ]
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -1295,6 +1381,14 @@ window.S3_THEME_INDEX = [
         "modInv": {
           "foreground": "#D7D1C5",
           "background": "#2F3235"
+        }
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         }
       }
     }
@@ -1391,6 +1485,14 @@ window.S3_THEME_INDEX = [
           "foreground": "#93A0A5",
           "background": "#252A2E"
         }
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -1481,6 +1583,14 @@ window.S3_THEME_INDEX = [
         "modInv": {
           "foreground": "#171619",
           "background": "#D9A3AA"
+        }
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         }
       }
     }
@@ -1573,6 +1683,14 @@ window.S3_THEME_INDEX = [
           "foreground": "#242126",
           "background": "#E8A5AE"
         }
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -1663,6 +1781,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#16A34A"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -1753,6 +1879,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#06B6D4"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -1845,6 +1979,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#06B6D4"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -1937,6 +2079,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#06B6D4"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -2025,6 +2175,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#06B6D4"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -2115,6 +2273,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#0891B2"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -2207,6 +2373,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#16A34A"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -2355,6 +2529,12 @@ window.S3_THEME_INDEX = [
           "startColor": "#2A2D33",
           "endColor": "#0F1013",
           "curve": "soft"
+        },
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         }
       },
       "dingulColors": {
@@ -2516,6 +2696,12 @@ window.S3_THEME_INDEX = [
           "startColor": "#FFF8EA",
           "endColor": "#D6CCBD",
           "curve": "soft"
+        },
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         }
       },
       "dingulColors": {
@@ -2619,6 +2805,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#06B6D4"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -2707,6 +2901,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#06B6D4"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -2797,6 +2999,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#16A34A"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   },
@@ -2887,6 +3097,14 @@ window.S3_THEME_INDEX = [
       },
       "keyTextColorOverrides": {
         "shiftIndicator": "#0891B2"
+      },
+      "effects": {
+        "glass": {
+          "enabled": false,
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
+        }
       }
     }
   }

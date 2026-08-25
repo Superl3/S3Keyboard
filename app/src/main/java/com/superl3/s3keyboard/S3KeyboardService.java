@@ -18,6 +18,7 @@ import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
+import android.util.Log;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -139,6 +140,8 @@ public final class S3KeyboardService extends InputMethodService {
         updateInputSurfaceVisibility();
         updateToolbarVisibility();
         updateClipboardListener();
+        applyImeWindowBlur();
+        updateGlassBackdropCaptureState();
         return inputRoot;
     }
 
@@ -161,6 +164,7 @@ public final class S3KeyboardService extends InputMethodService {
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
         window.setDimAmount(0f);
+        applyImeWindowBlur(window);
     }
 
     @Override
@@ -257,6 +261,31 @@ public final class S3KeyboardService extends InputMethodService {
         applyCurrentSettingsToInputView();
     }
 
+    private void applyImeWindowBlur() {
+        applyImeWindowBlur(getWindow().getWindow());
+    }
+
+    private void applyImeWindowBlur(Window window) {
+        if (BuildConfig.DEBUG) {
+            KeyboardVisualEffects effects = settings == null
+                    ? KeyboardVisualEffects.DEFAULT
+                    : settings.visualEffects;
+            Log.d(
+                    "S3KeyboardBlur",
+                    "service allow=" + (!transparentOverlayInputEnabled && !watchRadialInputEnabled)
+                            + " enabled=" + effects.blurEnabled
+                            + " radiusDp=" + effects.blurRadiusDp);
+        }
+        boolean applied = ImeWindowBlurController.apply(
+                window,
+                settings == null ? KeyboardVisualEffects.DEFAULT : settings.visualEffects,
+                !transparentOverlayInputEnabled && !watchRadialInputEnabled,
+                getResources().getDisplayMetrics().density);
+        if (inputView != null) {
+            inputView.setSystemBlurApplied(applied);
+        }
+    }
+
     private void importThemeFromClipboard() {
         if (themeClipboardImportController != null) {
             themeClipboardImportController.importFromClipboard();
@@ -328,6 +357,7 @@ public final class S3KeyboardService extends InputMethodService {
 
     @Override
     public void onFinishInput() {
+        GlassBackdropSourceStore.setConsumerActive(false);
         dismissPreviewPopup();
         dismissQuickSettings();
         removeClipboardListener();
@@ -1080,6 +1110,12 @@ public final class S3KeyboardService extends InputMethodService {
         updateSuggestionStrip();
     }
 
+    @Override
+    public void onFinishInputView(boolean finishingInput) {
+        GlassBackdropSourceStore.setConsumerActive(false);
+        super.onFinishInputView(finishingInput);
+    }
+
     void commitExplicitNewline(InputConnection inputConnection) {
         commitCurrent(inputConnection);
         if (qwertyAutoCorrectionActive(inputConnection)) {
@@ -1508,6 +1544,8 @@ public final class S3KeyboardService extends InputMethodService {
             inputView.setTransparentOverlayStyle(transparentOverlayStyle);
             updateShiftStateView();
         }
+        applyImeWindowBlur();
+        updateGlassBackdropCaptureState();
         if (watchRadialInputView != null) {
             watchRadialInputView.setSettings(settings);
         }
@@ -1538,6 +1576,18 @@ public final class S3KeyboardService extends InputMethodService {
             inputView.setTransparentOverlayStyle(transparentOverlayStyle);
         }
         updateInputSurfaceVisibility();
+        updateGlassBackdropCaptureState();
+    }
+
+    private void updateGlassBackdropCaptureState() {
+        boolean active = inputView != null
+                && settings != null
+                && settings.visualEffects.glassEnabled
+                && GlassBackdropPreferences.isSourceEnabled(this)
+                && !editorPolicy.password
+                && !transparentOverlayInputEnabled
+                && !watchRadialInputEnabled;
+        GlassBackdropSourceStore.setConsumerActive(active);
     }
 
     private boolean watchRadialInputActive() {
@@ -1594,6 +1644,7 @@ public final class S3KeyboardService extends InputMethodService {
 
     @Override
     public void onDestroy() {
+        GlassBackdropSourceStore.setConsumerActive(false);
         mainHandler.removeCallbacksAndMessages(null);
         pendingVoiceInput = null;
         dismissPreviewPopup();

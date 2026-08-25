@@ -63,5 +63,13 @@
   },
   "keyTextColorOverrides": {
     "shiftIndicator": "#06B6D4"
+  },
+  "effects": {
+    "glass": {
+      "enabled": false,
+      "tintAlphaPercent": 86,
+      "highlightPercent": 18,
+      "borderAlphaPercent": 42
+    }
   }
 }

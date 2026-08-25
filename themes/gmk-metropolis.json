@@ -56,6 +56,12 @@
       "enabled": true,
       "radiusDp": 10
     },
+    "glass": {
+      "enabled": true,
+      "tintAlphaPercent": 86,
+      "highlightPercent": 18,
+      "borderAlphaPercent": 42
+    },
     "metal": {
       "enabled": true,
       "strengthPercent": 22

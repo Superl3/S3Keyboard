@@ -2,6 +2,7 @@ package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -250,23 +251,25 @@ public final class KeyboardThemeJsonTest {
         Map<String, KeyDisplayOverride> display = new HashMap<>();
         display.put("alpha", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_DOT));
         display.put("tap:q", KeyDisplayOverride.text("Q"));
+        KeyboardVisualEffects visualEffects = new KeyboardVisualEffects(
+                true,
+                12,
+                true,
+                24,
+                true,
+                true,
+                38,
+                0xFF778899,
+                0xFF010203,
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_TOP_GLOW,
+                true,
+                0xFF112233,
+                0xFF445566)
+                .withGlass(true, 91, 27, 48);
         KeyboardSettings settings = KeyboardSettings.defaults()
                 .withModifierIconThemePack(ModifierIconCatalog.PACK_ACCENT_COLOR)
                 .withKeyDisplayThemePack(KeyDisplayOverridePackCatalog.PACK_SIMPLE_TEXT)
-                .withVisualEffects(new KeyboardVisualEffects(
-                        true,
-                        12,
-                        true,
-                        24,
-                        true,
-                        true,
-                        38,
-                        0xFF778899,
-                        0xFF010203,
-                        KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_TOP_GLOW,
-                        true,
-                        0xFF112233,
-                        0xFF445566))
+                .withVisualEffects(visualEffects)
                 .withKeyDisplayOverrides(display);
 
         KeyboardSettings imported = KeyboardThemeJson.importTheme(
@@ -291,6 +294,36 @@ public final class KeyboardThemeJsonTest {
         assertEquals(true, imported.visualEffects.panelGradientEnabled);
         assertEquals(0xFF112233, imported.visualEffects.panelGradientStartColor);
         assertEquals(0xFF445566, imported.visualEffects.panelGradientEndColor);
+        assertTrue(imported.visualEffects.glassEnabled);
+        assertEquals(91, imported.visualEffects.glassTintAlphaPercent);
+        assertEquals(27, imported.visualEffects.glassHighlightPercent);
+        assertEquals(48, imported.visualEffects.glassBorderAlphaPercent);
+    }
+
+    @Test
+    public void importsGlassSurfaceCurveAndPseudoBlur() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"effects\":{"
+                + "\"blur\":{\"enabled\":true,\"radiusDp\":14},"
+                + "\"glass\":{\"enabled\":true,\"tintAlphaPercent\":88,"
+                + "\"highlightPercent\":16,\"borderAlphaPercent\":36},"
+                + "\"keyFaceGradient\":{\"enabled\":true,\"strengthPercent\":34,\"curve\":\"glass\"}"
+                + "}}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(
+                KeyboardSettings.defaults(),
+                json);
+
+        assertTrue(imported.visualEffects.blurEnabled);
+        assertEquals(14, imported.visualEffects.blurRadiusDp);
+        assertTrue(imported.visualEffects.glassEnabled);
+        assertEquals(88, imported.visualEffects.glassTintAlphaPercent);
+        assertEquals(16, imported.visualEffects.glassHighlightPercent);
+        assertEquals(36, imported.visualEffects.glassBorderAlphaPercent);
+        assertEquals(
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_GLASS,
+                imported.visualEffects.keyFaceGradientCurve);
     }
 
     @Test

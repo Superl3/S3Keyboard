@@ -60,6 +60,9 @@ public final class KeyboardThemePresetTest {
             assertEquals(9, themed.keyboardBottomPaddingDp);
             assertEquals(10, themed.bottomRowTopPaddingDp);
             assertTrue(themed.keyColorOverrides.containsKey("shiftindicator"));
+            assertEquals(
+                    "gmk-metropolis".equals(preset.id),
+                    themed.visualEffects.glassEnabled);
         }
     }
 

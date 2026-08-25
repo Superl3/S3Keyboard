@@ -334,7 +334,8 @@ export const themeContract = {
     { id: "linear", label: "Linear" },
     { id: "soft", label: "Soft" },
     { id: "top_glow", label: "Top glow" },
-    { id: "bottom_shade", label: "Bottom shade" }
+    { id: "bottom_shade", label: "Bottom shade" },
+    { id: "glass", label: "Glass highlight" }
   ],
   keyDisplayPacks: [
     { id: "", label: "None" },

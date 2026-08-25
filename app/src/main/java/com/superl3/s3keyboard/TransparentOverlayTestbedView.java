@@ -160,6 +160,7 @@ final class TransparentOverlayTestbedView {
                 paint.setStyle(Paint.Style.FILL);
                 canvas.drawRect(0, top, getWidth(), Math.min(getHeight(), top + bandHeight), paint);
             }
+            drawComplexScene(canvas);
             paint.setColor(0x35507078);
             paint.setStrokeWidth(SettingsRowBuilder.dp(getContext(), 1));
             paint.setStyle(Paint.Style.STROKE);
@@ -167,6 +168,45 @@ final class TransparentOverlayTestbedView {
             for (int start = -getHeight(); start < getWidth(); start += diagonalStep) {
                 canvas.drawLine(start, getHeight(), start + getHeight(), 0, paint);
             }
+        }
+
+        private void drawComplexScene(Canvas canvas) {
+            float width = getWidth();
+            float height = getHeight();
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0x553D5A80);
+            canvas.drawCircle(width * 0.18f, height * 0.22f, width * 0.16f, paint);
+            paint.setColor(0x44E08E79);
+            canvas.drawCircle(width * 0.82f, height * 0.31f, width * 0.23f, paint);
+            paint.setColor(0x447D5BA6);
+            canvas.drawCircle(width * 0.55f, height * 0.65f, width * 0.19f, paint);
+
+            paint.setColor(0x553F7C88);
+            float cardWidth = width * 0.24f;
+            float cardHeight = SettingsRowBuilder.dp(getContext(), 54);
+            for (int row = 0; row < 5; row++) {
+                for (int column = 0; column < 4; column++) {
+                    float left = width * 0.06f + column * (cardWidth + width * 0.015f);
+                    float top = height * 0.12f + row * (cardHeight + SettingsRowBuilder.dp(getContext(), 18));
+                    paint.setColor((row + column) % 2 == 0 ? 0x553F7C88 : 0x446B4F8A);
+                    canvas.drawRoundRect(
+                            left,
+                            top,
+                            left + cardWidth,
+                            top + cardHeight,
+                            SettingsRowBuilder.dp(getContext(), 10),
+                            SettingsRowBuilder.dp(getContext(), 10),
+                            paint);
+                }
+            }
+
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(SettingsRowBuilder.dp(getContext(), 2));
+            paint.setColor(0x4CFFFFFF);
+            canvas.drawCircle(width * 0.76f, height * 0.72f, width * 0.12f, paint);
+            canvas.drawCircle(width * 0.76f, height * 0.72f, width * 0.07f, paint);
+            canvas.drawLine(width * 0.62f, height * 0.78f, width * 0.89f, height * 0.78f, paint);
+            canvas.drawLine(width * 0.69f, height * 0.84f, width * 0.84f, height * 0.66f, paint);
         }
     }
 }

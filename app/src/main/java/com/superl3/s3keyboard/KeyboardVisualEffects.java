@@ -5,19 +5,25 @@ final class KeyboardVisualEffects {
     static final String KEY_FACE_GRADIENT_CURVE_SOFT = "soft";
     static final String KEY_FACE_GRADIENT_CURVE_TOP_GLOW = "top_glow";
     static final String KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE = "bottom_shade";
+    static final String KEY_FACE_GRADIENT_CURVE_GLASS = "glass";
     static final int DEFAULT_KEY_FACE_GRADIENT_START_COLOR = 0xFFFFFFFF;
     static final int DEFAULT_KEY_FACE_GRADIENT_END_COLOR = 0xFF000000;
+    static final int DEFAULT_GLASS_TINT_ALPHA_PERCENT = 86;
+    static final int DEFAULT_GLASS_HIGHLIGHT_PERCENT = 18;
+    static final int DEFAULT_GLASS_BORDER_ALPHA_PERCENT = 42;
     private static final String[] KEY_FACE_GRADIENT_CURVE_ORDER = {
             KEY_FACE_GRADIENT_CURVE_SOFT,
             KEY_FACE_GRADIENT_CURVE_LINEAR,
             KEY_FACE_GRADIENT_CURVE_TOP_GLOW,
-            KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE
+            KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE,
+            KEY_FACE_GRADIENT_CURVE_GLASS
     };
     private static final String[] KEY_FACE_GRADIENT_CURVE_LABELS = {
             "Soft",
             "Linear",
             "Top glow",
-            "Bottom shade"
+            "Bottom shade",
+            "Glass highlight"
     };
 
     static final KeyboardVisualEffects DEFAULT = new KeyboardVisualEffects(
@@ -33,7 +39,11 @@ final class KeyboardVisualEffects {
             KEY_FACE_GRADIENT_CURVE_SOFT,
             false,
             0xFFEBEBEB,
-            0xFFEBEBEB);
+            0xFFEBEBEB,
+            false,
+            DEFAULT_GLASS_TINT_ALPHA_PERCENT,
+            DEFAULT_GLASS_HIGHLIGHT_PERCENT,
+            DEFAULT_GLASS_BORDER_ALPHA_PERCENT);
 
     final boolean blurEnabled;
     final int blurRadiusDp;
@@ -48,6 +58,10 @@ final class KeyboardVisualEffects {
     final boolean panelGradientEnabled;
     final int panelGradientStartColor;
     final int panelGradientEndColor;
+    final boolean glassEnabled;
+    final int glassTintAlphaPercent;
+    final int glassHighlightPercent;
+    final int glassBorderAlphaPercent;
 
     KeyboardVisualEffects(
             boolean blurEnabled,
@@ -68,7 +82,11 @@ final class KeyboardVisualEffects {
                 DEFAULT.keyFaceGradientCurve,
                 DEFAULT.panelGradientEnabled,
                 DEFAULT.panelGradientStartColor,
-                DEFAULT.panelGradientEndColor);
+                DEFAULT.panelGradientEndColor,
+                DEFAULT.glassEnabled,
+                DEFAULT.glassTintAlphaPercent,
+                DEFAULT.glassHighlightPercent,
+                DEFAULT.glassBorderAlphaPercent);
     }
 
     KeyboardVisualEffects(
@@ -92,7 +110,11 @@ final class KeyboardVisualEffects {
                 DEFAULT.keyFaceGradientCurve,
                 DEFAULT.panelGradientEnabled,
                 DEFAULT.panelGradientStartColor,
-                DEFAULT.panelGradientEndColor);
+                DEFAULT.panelGradientEndColor,
+                DEFAULT.glassEnabled,
+                DEFAULT.glassTintAlphaPercent,
+                DEFAULT.glassHighlightPercent,
+                DEFAULT.glassBorderAlphaPercent);
     }
 
     KeyboardVisualEffects(
@@ -119,7 +141,11 @@ final class KeyboardVisualEffects {
                 DEFAULT.keyFaceGradientCurve,
                 panelGradientEnabled,
                 panelGradientStartColor,
-                panelGradientEndColor);
+                panelGradientEndColor,
+                DEFAULT.glassEnabled,
+                DEFAULT.glassTintAlphaPercent,
+                DEFAULT.glassHighlightPercent,
+                DEFAULT.glassBorderAlphaPercent);
     }
 
     KeyboardVisualEffects(
@@ -136,6 +162,44 @@ final class KeyboardVisualEffects {
             boolean panelGradientEnabled,
             int panelGradientStartColor,
             int panelGradientEndColor) {
+        this(
+                blurEnabled,
+                blurRadiusDp,
+                metallicEnabled,
+                metallicStrengthPercent,
+                angularPreviewBubble,
+                keyFaceGradientEnabled,
+                keyFaceGradientStrengthPercent,
+                keyFaceGradientStartColor,
+                keyFaceGradientEndColor,
+                keyFaceGradientCurve,
+                panelGradientEnabled,
+                panelGradientStartColor,
+                panelGradientEndColor,
+                DEFAULT.glassEnabled,
+                DEFAULT.glassTintAlphaPercent,
+                DEFAULT.glassHighlightPercent,
+                DEFAULT.glassBorderAlphaPercent);
+    }
+
+    KeyboardVisualEffects(
+            boolean blurEnabled,
+            int blurRadiusDp,
+            boolean metallicEnabled,
+            int metallicStrengthPercent,
+            boolean angularPreviewBubble,
+            boolean keyFaceGradientEnabled,
+            int keyFaceGradientStrengthPercent,
+            int keyFaceGradientStartColor,
+            int keyFaceGradientEndColor,
+            String keyFaceGradientCurve,
+            boolean panelGradientEnabled,
+            int panelGradientStartColor,
+            int panelGradientEndColor,
+            boolean glassEnabled,
+            int glassTintAlphaPercent,
+            int glassHighlightPercent,
+            int glassBorderAlphaPercent) {
         this.blurEnabled = blurEnabled;
         this.blurRadiusDp = clamp(blurRadiusDp, 0, 32);
         this.metallicEnabled = metallicEnabled;
@@ -149,6 +213,10 @@ final class KeyboardVisualEffects {
         this.panelGradientEnabled = panelGradientEnabled;
         this.panelGradientStartColor = opaque(panelGradientStartColor);
         this.panelGradientEndColor = opaque(panelGradientEndColor);
+        this.glassEnabled = glassEnabled;
+        this.glassTintAlphaPercent = clamp(glassTintAlphaPercent, 60, 98);
+        this.glassHighlightPercent = clamp(glassHighlightPercent, 0, 60);
+        this.glassBorderAlphaPercent = clamp(glassBorderAlphaPercent, 0, 100);
     }
 
     boolean hasExportableEffects() {
@@ -164,7 +232,11 @@ final class KeyboardVisualEffects {
                 || !keyFaceGradientCurve.equals(DEFAULT.keyFaceGradientCurve)
                 || panelGradientEnabled != DEFAULT.panelGradientEnabled
                 || panelGradientStartColor != DEFAULT.panelGradientStartColor
-                || panelGradientEndColor != DEFAULT.panelGradientEndColor;
+                || panelGradientEndColor != DEFAULT.panelGradientEndColor
+                || glassEnabled
+                || glassTintAlphaPercent != DEFAULT.glassTintAlphaPercent
+                || glassHighlightPercent != DEFAULT.glassHighlightPercent
+                || glassBorderAlphaPercent != DEFAULT.glassBorderAlphaPercent;
     }
 
     KeyboardVisualEffects withKeyFaceGradient(boolean enabled, int strengthPercent) {
@@ -195,7 +267,32 @@ final class KeyboardVisualEffects {
                 curve,
                 panelGradientEnabled,
                 panelGradientStartColor,
-                panelGradientEndColor);
+                panelGradientEndColor,
+                glassEnabled,
+                glassTintAlphaPercent,
+                glassHighlightPercent,
+                glassBorderAlphaPercent);
+    }
+
+    KeyboardVisualEffects withBlur(boolean enabled, int radiusDp) {
+        return new KeyboardVisualEffects(
+                enabled,
+                radiusDp,
+                metallicEnabled,
+                metallicStrengthPercent,
+                angularPreviewBubble,
+                keyFaceGradientEnabled,
+                keyFaceGradientStrengthPercent,
+                keyFaceGradientStartColor,
+                keyFaceGradientEndColor,
+                keyFaceGradientCurve,
+                panelGradientEnabled,
+                panelGradientStartColor,
+                panelGradientEndColor,
+                glassEnabled,
+                glassTintAlphaPercent,
+                glassHighlightPercent,
+                glassBorderAlphaPercent);
     }
 
     KeyboardVisualEffects withPanelGradient(boolean enabled, int startColor, int endColor) {
@@ -212,7 +309,36 @@ final class KeyboardVisualEffects {
                 keyFaceGradientCurve,
                 enabled,
                 startColor,
-                endColor);
+                endColor,
+                glassEnabled,
+                glassTintAlphaPercent,
+                glassHighlightPercent,
+                glassBorderAlphaPercent);
+    }
+
+    KeyboardVisualEffects withGlass(
+            boolean enabled,
+            int tintAlphaPercent,
+            int highlightPercent,
+            int borderAlphaPercent) {
+        return new KeyboardVisualEffects(
+                blurEnabled,
+                blurRadiusDp,
+                metallicEnabled,
+                metallicStrengthPercent,
+                angularPreviewBubble,
+                keyFaceGradientEnabled,
+                keyFaceGradientStrengthPercent,
+                keyFaceGradientStartColor,
+                keyFaceGradientEndColor,
+                keyFaceGradientCurve,
+                panelGradientEnabled,
+                panelGradientStartColor,
+                panelGradientEndColor,
+                enabled,
+                tintAlphaPercent,
+                highlightPercent,
+                borderAlphaPercent);
     }
 
     private static int clamp(int value, int min, int max) {
@@ -227,7 +353,8 @@ final class KeyboardVisualEffects {
         if (KEY_FACE_GRADIENT_CURVE_LINEAR.equals(curve)
                 || KEY_FACE_GRADIENT_CURVE_SOFT.equals(curve)
                 || KEY_FACE_GRADIENT_CURVE_TOP_GLOW.equals(curve)
-                || KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE.equals(curve)) {
+                || KEY_FACE_GRADIENT_CURVE_BOTTOM_SHADE.equals(curve)
+                || KEY_FACE_GRADIENT_CURVE_GLASS.equals(curve)) {
             return curve;
         }
         return KEY_FACE_GRADIENT_CURVE_SOFT;

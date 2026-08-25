@@ -122,6 +122,12 @@
       "startColor": "#2A2D33",
       "endColor": "#0F1013",
       "curve": "soft"
+    },
+    "glass": {
+      "enabled": false,
+      "tintAlphaPercent": 86,
+      "highlightPercent": 18,
+      "borderAlphaPercent": 42
     }
   },
   "dingulColors": {

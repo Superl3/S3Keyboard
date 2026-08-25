@@ -471,6 +471,7 @@ function validateEffects(effects, at, errors) {
   }
   validateEffectToggle(effects.blur, at("effects.blur"), errors, ["enabled", "radiusDp"]);
   validateEffectToggle(effects.metal, at("effects.metal"), errors, ["enabled", "strengthPercent"]);
+  validateGlassEffect(effects.glass, at("effects.glass"), errors);
   validateKeyFaceGradient(effects.keyFaceGradient, at("effects.keyFaceGradient"), errors);
   validatePanelGradient(effects.panelGradient, at("effects.panelGradient"), errors);
   if (effects.previewBubble !== undefined) {
@@ -478,6 +479,32 @@ function validateEffects(effects, at, errors) {
     if (style !== "rounded" && style !== "angular") {
       errors.push(`${at("effects.previewBubble.style")}: expected rounded or angular`);
     }
+  }
+}
+
+function validateGlassEffect(object, label, errors) {
+  if (object === undefined) {
+    errors.push(`${label}: every built-in theme must declare the Glass toggle`);
+    return;
+  }
+  if (!object || typeof object !== "object" || Array.isArray(object)) {
+    errors.push(`${label}: expected object`);
+    return;
+  }
+  if (typeof object.enabled !== "boolean") {
+    errors.push(`${label}.enabled: expected boolean`);
+  }
+  if (object.tintAlphaPercent !== undefined
+      && !isIntegerInRange(object.tintAlphaPercent, 60, 98)) {
+    errors.push(`${label}.tintAlphaPercent: expected integer 60..98`);
+  }
+  if (object.highlightPercent !== undefined
+      && !isIntegerInRange(object.highlightPercent, 0, 60)) {
+    errors.push(`${label}.highlightPercent: expected integer 0..60`);
+  }
+  if (object.borderAlphaPercent !== undefined
+      && !isIntegerInRange(object.borderAlphaPercent, 0, 100)) {
+    errors.push(`${label}.borderAlphaPercent: expected integer 0..100`);
   }
 }
 

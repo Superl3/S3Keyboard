@@ -27,6 +27,7 @@ public final class MainActivity extends Activity {
     private TypographySettingsController typographySettingsController;
     private DisplayStyleSettingsController displayStyleSettingsController;
     private MotionEffectSettingsController motionEffectSettingsController;
+    private GlassSourceSettingsController glassSourceSettingsController;
     private boolean demoShowKeyboard;
     private boolean demoOverlayTestbed;
     private boolean demoWearTestbed;
@@ -98,6 +99,11 @@ public final class MainActivity extends Activity {
         demoShowKeyboard = result.showKeyboard;
         demoOverlayTestbed = result.overlayTestbed;
         demoWearTestbed = result.wearTestbed;
+        if (isDebuggableBuild() && intent != null && intent.hasExtra("demo_glass_source_enabled")) {
+            GlassBackdropPreferences.setSourceEnabled(
+                    this,
+                    intent.getBooleanExtra("demo_glass_source_enabled", false));
+        }
     }
 
     private void loadCurrentPreferences() {
@@ -283,6 +289,14 @@ public final class MainActivity extends Activity {
                 false).content;
         motionEffectSettingsController = new MotionEffectSettingsController(this, this::syncControls);
         motionEffectSettingsController.addTo(motionSection);
+
+        LinearLayout glassSourceSection = SettingsSubsection.add(
+                this,
+                root,
+                R.string.settings_display_glass_source_subsection,
+                false).content;
+        glassSourceSettingsController = new GlassSourceSettingsController(this);
+        glassSourceSettingsController.addTo(glassSourceSection);
     }
 
     private KeyboardSettings settings() {
@@ -370,6 +384,9 @@ public final class MainActivity extends Activity {
         }
         if (motionEffectSettingsController != null) {
             motionEffectSettingsController.sync();
+        }
+        if (glassSourceSettingsController != null) {
+            glassSourceSettingsController.sync();
         }
     }
 

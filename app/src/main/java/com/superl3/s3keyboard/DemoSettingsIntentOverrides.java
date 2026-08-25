@@ -12,6 +12,8 @@ final class DemoSettingsIntentOverrides {
     private static final String EXTRA_DEMO_OVERLAY_TESTBED = "demo_overlay_testbed";
     private static final String EXTRA_DEMO_WEAR_TESTBED = "demo_wear_testbed";
     private static final String EXTRA_DEMO_OVERLAY_STYLE = "demo_overlay_style";
+    private static final String EXTRA_TRANSPARENT_OVERLAY_INPUT = "transparent_overlay_input";
+    private static final String EXTRA_DEMO_FORCE_VISUAL_EFFECTS = "demo_force_visual_effects";
     private static final String EXTRA_DEMO_WATCH_RADIAL_INPUT = "demo_watch_radial_input";
     private static final String EXTRA_KEY_IDLE_COLOR = "key_idle_color";
     private static final String EXTRA_KEY_PRESSED_COLOR = "key_pressed_color";
@@ -100,6 +102,11 @@ final class DemoSettingsIntentOverrides {
                     TransparentOverlayStyle.fromPreference(
                             intent.getStringExtra(EXTRA_DEMO_OVERLAY_STYLE)));
         }
+        if (intent.hasExtra(EXTRA_TRANSPARENT_OVERLAY_INPUT)) {
+            KeyboardPreferences.saveTransparentOverlayInputEnabled(
+                    context,
+                    intent.getBooleanExtra(EXTRA_TRANSPARENT_OVERLAY_INPUT, true));
+        }
         String themePresetId = intent.getStringExtra(EXTRA_THEME_PRESET_ID);
         KeyboardThemePreset themePreset = KeyboardThemePreset.find(themePresetId);
         if (themePreset != null) {
@@ -155,6 +162,21 @@ final class DemoSettingsIntentOverrides {
         if (intent.hasExtra(EXTRA_SHOW_NUMBER_ROW)) {
             next = next.withNumberRow(intent.getBooleanExtra(EXTRA_SHOW_NUMBER_ROW, next.showNumberRow));
         }
+        if (intent.getBooleanExtra(EXTRA_DEMO_FORCE_VISUAL_EFFECTS, false)) {
+            next = next.withVisualEffects(next.visualEffects
+                    .withBlur(true, Math.max(10, next.visualEffects.blurRadiusDp))
+                    .withGlass(true, 86, 18, 42)
+                    .withKeyFaceGradient(
+                            true,
+                            Math.max(22, next.visualEffects.keyFaceGradientStrengthPercent),
+                            next.keyIdleColor,
+                            next.keyPressedColor,
+                            KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_TOP_GLOW)
+                    .withPanelGradient(
+                            true,
+                            next.keyboardBackgroundColor,
+                            next.keyIdleColor));
+        }
         return next
                 .withHangulNumberRow(intent.getBooleanExtra(
                         EXTRA_SHOW_HANGUL_NUMBER_ROW,
@@ -191,7 +213,9 @@ final class DemoSettingsIntentOverrides {
                 || intent.hasExtra(EXTRA_SHOW_ENGLISH_NUMBER_ROW)
                 || intent.hasExtra(EXTRA_DEMO_FIELD_PROFILE)
                 || intent.hasExtra(EXTRA_THEME_PRESET_ID)
-                || intent.hasExtra(EXTRA_DEMO_OVERLAY_STYLE);
+                || intent.hasExtra(EXTRA_DEMO_OVERLAY_STYLE)
+                || intent.hasExtra(EXTRA_TRANSPARENT_OVERLAY_INPUT)
+                || intent.hasExtra(EXTRA_DEMO_FORCE_VISUAL_EFFECTS);
     }
 
     private static int colorExtra(Intent intent, String name, int fallback) {

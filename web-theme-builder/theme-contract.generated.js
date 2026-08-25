@@ -599,6 +599,10 @@ window.S3_THEME_CONTRACT = {
     {
       "id": "bottom_shade",
       "label": "Bottom shade"
+    },
+    {
+      "id": "glass",
+      "label": "Glass highlight"
     }
   ],
   "keyDisplayPacks": [

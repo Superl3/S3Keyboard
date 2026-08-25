@@ -173,6 +173,14 @@ const ids = {
   dingulRoles: document.getElementById("dingulRoleControls"),
   depthEnabled: document.getElementById("depthEnabled"),
   customDepth: document.getElementById("customDepth"),
+  pseudoBlurEnabled: document.getElementById("pseudoBlurEnabled"),
+  pseudoBlurRadius: document.getElementById("pseudoBlurRadiusDp"),
+  pseudoBlurOut: document.getElementById("pseudoBlurOut"),
+  glassEnabled: document.getElementById("glassEnabled"),
+  glassTint: document.getElementById("glassTintAlphaPercent"),
+  glassTintOut: document.getElementById("glassTintOut"),
+  glassHighlight: document.getElementById("glassHighlightPercent"),
+  glassHighlightOut: document.getElementById("glassHighlightOut"),
   keyFaceGradientEnabled: document.getElementById("keyFaceGradientEnabled"),
   keyFaceGradientStrength: document.getElementById("keyFaceGradientStrengthPercent"),
   keyFaceGradientStart: document.getElementById("keyFaceGradientStartColor"),
@@ -297,6 +305,16 @@ function defaultTypography() {
 
 function defaultVisualEffects() {
   return {
+    blur: {
+      enabled: false,
+      radiusDp: 0
+    },
+    glass: {
+      enabled: false,
+      tintAlphaPercent: 86,
+      highlightPercent: 18,
+      borderAlphaPercent: 42
+    },
     keyFaceGradient: {
       enabled: true,
       strengthPercent: 22,
@@ -617,6 +635,33 @@ function bindStaticControls() {
     update();
   });
   ids.customDepth.addEventListener("change", update);
+  ids.pseudoBlurEnabled.addEventListener("change", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.blur.enabled = ids.pseudoBlurEnabled.checked;
+    update();
+  });
+  ids.pseudoBlurRadius.addEventListener("input", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.blur.radiusDp = Number(ids.pseudoBlurRadius.value);
+    update();
+  });
+  ids.glassEnabled.addEventListener("change", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.glass.enabled = ids.glassEnabled.checked;
+    update();
+  });
+  ids.glassTint.addEventListener("input", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.glass.enabled = true;
+    state.effects.glass.tintAlphaPercent = Number(ids.glassTint.value);
+    update();
+  });
+  ids.glassHighlight.addEventListener("input", () => {
+    state.effects = normalizedVisualEffects(state.effects);
+    state.effects.glass.enabled = true;
+    state.effects.glass.highlightPercent = Number(ids.glassHighlight.value);
+    update();
+  });
   ids.keyFaceGradientEnabled.addEventListener("change", () => {
     state.effects = normalizedVisualEffects(state.effects);
     state.effects.keyFaceGradient.enabled = ids.keyFaceGradientEnabled.checked;
@@ -727,6 +772,13 @@ function renderForm() {
   ids.depthEnabled.checked = Boolean(state.shape.depthEnabled);
   ids.customDepth.checked = Boolean(state.colors.depth);
   state.effects = normalizedVisualEffects(state.effects);
+  ids.pseudoBlurEnabled.checked = Boolean(state.effects.blur.enabled);
+  ids.pseudoBlurRadius.value = state.effects.blur.radiusDp;
+  ids.glassEnabled.checked = Boolean(state.effects.glass.enabled);
+  ids.glassTint.value = state.effects.glass.tintAlphaPercent;
+  ids.glassHighlight.value = state.effects.glass.highlightPercent;
+  ids.glassTint.disabled = !state.effects.glass.enabled;
+  ids.glassHighlight.disabled = !state.effects.glass.enabled;
   ids.keyFaceGradientEnabled.checked = Boolean(state.effects.keyFaceGradient.enabled);
   ids.keyFaceGradientStrength.value = state.effects.keyFaceGradient.strengthPercent;
   ids.keyFaceGradientStart.value = state.effects.keyFaceGradient.startColor;
@@ -767,6 +819,12 @@ function update() {
   ids.secondaryOut.textContent = `${state.typography.secondaryTextSizePercent}%`;
   ids.keyFaceGradientOut.textContent =
     `${normalizedVisualEffects(state.effects).keyFaceGradient.strengthPercent}%`;
+  ids.pseudoBlurOut.textContent =
+    `${normalizedVisualEffects(state.effects).blur.radiusDp}dp`;
+  ids.glassTintOut.textContent =
+    `${normalizedVisualEffects(state.effects).glass.tintAlphaPercent}%`;
+  ids.glassHighlightOut.textContent =
+    `${normalizedVisualEffects(state.effects).glass.highlightPercent}%`;
   const theme = buildTheme();
   ids.output.value = JSON.stringify(theme, null, 2);
   ids.aiPrompt.value = buildImageThemePrompt(theme);
@@ -861,8 +919,17 @@ function dingulPreviewRows() {
 function renderKeyboardPreview(container, theme, layout, rows) {
   const effects = normalizedVisualEffects(theme.effects);
   container.style.background = panelBackgroundForPreview(theme, effects);
-  container.style.backdropFilter = effects.blur?.enabled ? `blur(${effects.blur.radiusDp || 8}px)` : "none";
-  container.style.boxShadow = effects.metal?.enabled ? `inset 0 18px 28px rgba(255,255,255,.18), inset 0 -22px 35px rgba(0,0,0,.22)` : "none";
+  const previewBlurEnabled = (effects.blur?.enabled && (effects.blur.radiusDp || 0) > 0)
+    || effects.glass?.enabled;
+  container.style.backdropFilter = previewBlurEnabled
+    ? `blur(${effects.blur.radiusDp || 10}px)`
+    : "none";
+  container.style.webkitBackdropFilter = previewBlurEnabled
+    ? `blur(${effects.blur.radiusDp || 10}px)`
+    : "none";
+  container.style.boxShadow = effects.glass?.enabled
+    ? `inset 0 1px 0 rgba(255,255,255,${(effects.glass.highlightPercent || 18) / 100}), inset 0 -1px 0 rgba(0,0,0,${(effects.glass.borderAlphaPercent || 42) / 255})`
+    : (effects.metal?.enabled ? `inset 0 18px 28px rgba(255,255,255,.18), inset 0 -22px 35px rgba(0,0,0,.22)` : "none");
   container.style.gap = `${theme.shape.keyGapDp}px`;
   container.style.paddingTop = "16px";
   container.style.setProperty("--depth-color", normalizeColor(theme.colors.depth) || "transparent");
@@ -1454,12 +1521,18 @@ function keyFaceBackgroundForPreview(theme, background) {
     bg,
     strength,
     effects.keyFaceGradient.startColor,
-    effects.keyFaceGradient.endColor);
+    effects.keyFaceGradient.endColor,
+    effects.keyFaceGradient.curve);
   const middleStop = keyFaceGradientMiddleStop(effects.keyFaceGradient.curve);
   return `linear-gradient(180deg, ${top} 0%, ${middle} ${middleStop}%, ${bottom} 100%)`;
 }
 
-function keyFaceGradientColors(background, strengthPercent, startColor = "#FFFFFF", endColor = "#000000") {
+function keyFaceGradientColors(
+  background,
+  strengthPercent,
+  startColor = "#FFFFFF",
+  endColor = "#000000",
+  curve = "soft") {
   const bg = normalizeColor(background) || "#F8F8F8";
   const rgb = parseHexColor(bg);
   if (!rgb) {
@@ -1467,8 +1540,9 @@ function keyFaceGradientColors(background, strengthPercent, startColor = "#FFFFF
   }
   const luminance = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
   const strength = Math.max(0, Math.min(100, Number(strengthPercent) || 0)) / 100;
-  const topAmount = (luminance < 42 ? 0.08 : 0.06) + 0.24 * strength;
-  const bottomAmount = (luminance < 42 ? 0.04 : 0.05) + 0.18 * strength;
+  const glass = curve === "glass";
+  const topAmount = (luminance < 42 ? 0.08 : 0.06) + (glass ? 0.34 : 0.24) * strength;
+  const bottomAmount = (luminance < 42 ? 0.04 : 0.05) + (glass ? 0.26 : 0.18) * strength;
   return [
     blendColors(normalizeColor(startColor) || "#FFFFFF", bg, topAmount),
     bg,
@@ -1484,6 +1558,8 @@ function keyFaceGradientMiddleStop(curve) {
       return 30;
     case "bottom_shade":
       return 62;
+    case "glass":
+      return 24;
     case "soft":
     default:
       return 42;
@@ -1504,6 +1580,8 @@ function dimmedDepthColorForBackground(background) {
 
 function normalizedVisualEffects(effects) {
   const raw = effects || {};
+  const blur = raw.blur || {};
+  const glass = raw.glass || {};
   const keyFaceGradient = raw.keyFaceGradient || raw.keyGradient || {};
   const panelGradient = raw.panelGradient || raw.backgroundGradient || {};
   const strength = Number(
@@ -1536,6 +1614,27 @@ function normalizedVisualEffects(effects) {
       || defaultVisualEffects().panelGradient.endColor;
   return {
     ...raw,
+    blur: {
+      enabled: Boolean(blur.enabled ?? raw.blurEnabled ?? defaultVisualEffects().blur.enabled),
+      radiusDp: Math.max(0, Math.min(32, Number.isFinite(Number(blur.radiusDp ?? raw.blurRadiusDp))
+        ? Math.round(Number(blur.radiusDp ?? raw.blurRadiusDp))
+        : defaultVisualEffects().blur.radiusDp))
+    },
+    glass: {
+      enabled: Boolean(glass.enabled ?? raw.glassEnabled ?? defaultVisualEffects().glass.enabled),
+      tintAlphaPercent: Math.max(60, Math.min(98, Number.isFinite(Number(
+        glass.tintAlphaPercent ?? raw.glassTintAlphaPercent))
+        ? Math.round(Number(glass.tintAlphaPercent ?? raw.glassTintAlphaPercent))
+        : defaultVisualEffects().glass.tintAlphaPercent)),
+      highlightPercent: Math.max(0, Math.min(60, Number.isFinite(Number(
+        glass.highlightPercent ?? raw.glassHighlightPercent))
+        ? Math.round(Number(glass.highlightPercent ?? raw.glassHighlightPercent))
+        : defaultVisualEffects().glass.highlightPercent)),
+      borderAlphaPercent: Math.max(0, Math.min(100, Number.isFinite(Number(
+        glass.borderAlphaPercent ?? raw.glassBorderAlphaPercent))
+        ? Math.round(Number(glass.borderAlphaPercent ?? raw.glassBorderAlphaPercent))
+        : defaultVisualEffects().glass.borderAlphaPercent))
+    },
     keyFaceGradient: {
       enabled: keyFaceGradient.enabled
         ?? raw.keyFaceGradientEnabled
@@ -1556,18 +1655,30 @@ function normalizedVisualEffects(effects) {
 }
 
 function normalizeKeyFaceGradientCurve(curve) {
-  return ["linear", "soft", "top_glow", "bottom_shade"].includes(curve) ? curve : "soft";
+  return ["linear", "soft", "top_glow", "bottom_shade", "glass"].includes(curve) ? curve : "soft";
 }
 
 function panelBackgroundForPreview(theme, effects) {
-  const panelColor = theme.colors.panelBackground || theme.colors.keyboardBackground;
+  const panelColor = normalizeColor(theme.colors.panelBackground)
+    || normalizeColor(theme.colors.keyboardBackground)
+    || "#EBEBEB";
+  const blurEnabled = (effects?.blur?.enabled && (effects.blur.radiusDp || 0) > 0)
+    || effects?.glass?.enabled;
+  // The Android preview uses the same translucent surface as the runtime window. CSS can
+  // sample the page behind the card through backdrop-filter, so keep the theme color while
+  // exposing enough of that surface for the blur to be visible.
+  const surfaceColor = color => blurEnabled
+    ? rgbaColor(color, effects?.glass?.enabled
+      ? (effects.glass.tintAlphaPercent || 86) / 100
+      : 0.79)
+    : color;
   const gradient = effects.panelGradient || {};
   if (!gradient.enabled) {
-    return panelColor;
+    return surfaceColor(panelColor);
   }
   const start = normalizeColor(gradient.startColor) || panelColor;
   const end = normalizeColor(gradient.endColor) || panelColor;
-  return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
+  return `linear-gradient(180deg, ${surfaceColor(start)} 0%, ${surfaceColor(end)} 100%)`;
 }
 
 function ensureContrast(preferred, background, minimumContrast, fallbacks = []) {
@@ -1606,6 +1717,15 @@ function blendColors(foreground, background, foregroundAmount) {
     const value = Math.round(channel * amount + bg[index] * inverse);
     return value.toString(16).padStart(2, "0");
   }).join("").toUpperCase()}`;
+}
+
+function rgbaColor(value, alpha) {
+  const rgb = parseHexColor(value);
+  if (!rgb) {
+    return value;
+  }
+  const safeAlpha = Math.max(0, Math.min(1, Number(alpha)));
+  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${safeAlpha})`;
 }
 
 function relativeLuminance(value) {
@@ -3018,7 +3138,7 @@ function buildImageThemePrompt(theme) {
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.keyFaceGradient.enabled boolean, strengthPercent integer 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
+    "Allowed effects: effects.blur.enabled boolean with radiusDp 0..32 for keyboard background blur, effects.glass.enabled boolean with tintAlphaPercent 60..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient.enabled boolean, strengthPercent integer 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,
@@ -3102,7 +3222,7 @@ function buildPaletteImageThemePrompt(theme) {
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.keyFaceGradient.enabled boolean, strengthPercent integer 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
+    "Allowed effects: effects.blur.enabled boolean with radiusDp 0..32 for keyboard background blur, effects.glass.enabled boolean with tintAlphaPercent 60..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient.enabled boolean, strengthPercent integer 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,

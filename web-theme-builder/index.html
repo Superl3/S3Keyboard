@@ -39,6 +39,16 @@
           <label class="check"><input id="depthEnabled" type="checkbox"> Depth enabled</label>
           <label class="check"><input id="customDepth" type="checkbox"> Use fixed custom depth color</label>
           <p class="hint">When fixed depth is off, the depth face is auto-dimmed from each key background.</p>
+          <label class="check"><input id="pseudoBlurEnabled" type="checkbox"> Background blur</label>
+          <label>Blur radius <input id="pseudoBlurRadiusDp" type="range" min="0" max="32"></label>
+          <output id="pseudoBlurOut"></output>
+          <p class="hint">The Android runtime uses platform blur when supported. Preview uses CSS backdrop-filter.</p>
+          <label class="check"><input id="glassEnabled" type="checkbox"> Glass backplate</label>
+          <label>Glass tint retention <input id="glassTintAlphaPercent" type="range" min="60" max="98"></label>
+          <output id="glassTintOut"></output>
+          <label>Glass top highlight <input id="glassHighlightPercent" type="range" min="0" max="60"></label>
+          <output id="glassHighlightOut"></output>
+          <p class="hint">Keeps the theme color, adds translucent depth, a restrained top highlight, and a fine edge instead of a flat blur wash.</p>
           <label class="check"><input id="keyFaceGradientEnabled" type="checkbox"> Subtle key face gradient</label>
           <label>Key face gradient strength <input id="keyFaceGradientStrengthPercent" type="range" min="0" max="100"></label>
           <label>Key face gradient highlight <input id="keyFaceGradientStartColor" type="color"></label>
@@ -49,6 +59,7 @@
               <option value="linear">Linear</option>
               <option value="top_glow">Top glow</option>
               <option value="bottom_shade">Bottom shade</option>
+              <option value="glass">Glass highlight</option>
             </select>
           </label>
           <output id="keyFaceGradientOut"></output>

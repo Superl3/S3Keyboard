@@ -120,6 +120,12 @@
       "startColor": "#FFF8EA",
       "endColor": "#D6CCBD",
       "curve": "soft"
+    },
+    "glass": {
+      "enabled": false,
+      "tintAlphaPercent": 86,
+      "highlightPercent": 18,
+      "borderAlphaPercent": 42
     }
   },
   "dingulColors": {

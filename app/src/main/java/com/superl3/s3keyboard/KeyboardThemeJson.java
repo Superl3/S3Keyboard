@@ -1003,6 +1003,13 @@ final class KeyboardThemeJson {
             panelGradient.put("startColor", colorToString(safeEffects.panelGradientStartColor));
             panelGradient.put("endColor", colorToString(safeEffects.panelGradientEndColor));
             object.put("panelGradient", panelGradient);
+
+            JSONObject glass = new JSONObject();
+            glass.put("enabled", safeEffects.glassEnabled);
+            glass.put("tintAlphaPercent", safeEffects.glassTintAlphaPercent);
+            glass.put("highlightPercent", safeEffects.glassHighlightPercent);
+            glass.put("borderAlphaPercent", safeEffects.glassBorderAlphaPercent);
+            object.put("glass", glass);
         } catch (JSONException exception) {
             throw new IllegalStateException("Failed to encode visual effects.", exception);
         }
@@ -1025,6 +1032,7 @@ final class KeyboardThemeJson {
         if (panelGradient == null) {
             panelGradient = object.optJSONObject("backgroundGradient");
         }
+        JSONObject glass = object.optJSONObject("glass");
         boolean blurEnabled = blur == null
                 ? object.optBoolean("blurEnabled", safeFallback.blurEnabled)
                 : blur.optBoolean("enabled", safeFallback.blurEnabled);
@@ -1095,7 +1103,7 @@ final class KeyboardThemeJson {
                 : parseColor(
                         panelGradient.optString("endColor", ""),
                         safeFallback.panelGradientEndColor);
-        return new KeyboardVisualEffects(
+        KeyboardVisualEffects decoded = new KeyboardVisualEffects(
                 blurEnabled,
                 blurRadiusDp,
                 metallicEnabled,
@@ -1109,6 +1117,14 @@ final class KeyboardThemeJson {
                 panelGradientEnabled,
                 panelGradientStartColor,
                 panelGradientEndColor);
+        if (glass == null) {
+            return decoded;
+        }
+        return decoded.withGlass(
+                glass.optBoolean("enabled", safeFallback.glassEnabled),
+                glass.optInt("tintAlphaPercent", safeFallback.glassTintAlphaPercent),
+                glass.optInt("highlightPercent", safeFallback.glassHighlightPercent),
+                glass.optInt("borderAlphaPercent", safeFallback.glassBorderAlphaPercent));
     }
 
     private static Map<String, KeyDisplayOverride> legacyDotDisplayOverrides() {

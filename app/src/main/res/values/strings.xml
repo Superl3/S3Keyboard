@@ -293,6 +293,7 @@
     <string name="remote_number_row_forced">원격 모드에서는 숫자줄을 항상 표시합니다</string>
     <string name="theme_editor_global_section">전체</string>
     <string name="theme_editor_colors_section">색상</string>
+    <string name="theme_editor_background_section">배경 효과</string>
     <string name="theme_editor_shape_section">형태</string>
     <string name="theme_editor_icon_packs_section">아이콘 팩</string>
     <string name="theme_editor_typography_section">글꼴</string>
@@ -412,6 +413,13 @@
     <string name="theme_color_secondary_text_title">보조 글자</string>
     <string name="theme_color_secondary_text_description">슬라이드 힌트, 보조 글자, 비활성 아이콘 세부 표현의 색상입니다.</string>
     <string name="theme_key_depth_enabled">입체 효과 사용</string>
+    <string name="theme_pseudo_blur_enabled">배경 실제 블러</string>
+    <string name="theme_pseudo_blur_enabled_description">Android 12 이상에서는 키보드 뒤 화면을 실제로 흐리게 합니다. 미지원 환경에서는 가벼운 시각 fallback을 사용합니다.</string>
+    <string name="theme_pseudo_blur_radius">배경 블러 반경</string>
+    <string name="theme_glass_enabled">Glass 배경</string>
+    <string name="theme_glass_enabled_description">키보드 뒤판 영역의 시스템 블러에 테마 색상, 약한 상단 하이라이트, 테두리를 조합합니다. 실제 굴절은 배경 source를 제공할 수 있는 프리뷰에서만 지원합니다.</string>
+    <string name="theme_glass_tint">Glass 색상 유지 강도</string>
+    <string name="theme_glass_highlight">Glass 상단 하이라이트</string>
     <string name="theme_key_face_gradient_curve">키 표면 그라데이션 곡선</string>
     <string name="theme_key_face_gradient">키 표면 그라데이션</string>
     <string name="theme_modifier_icons">기능 키 아이콘</string>
@@ -587,4 +595,13 @@
     <string name="layout_editor_number_row_gap">숫자행 간격</string>
     <string name="layout_editor_main_special_gap">메인-특수열 간격</string>
     <string name="bottom_row_gap_format">하단행 간격: %1$ddp</string>
+    <string name="settings_display_glass_source_subsection">Glass 화면 소스</string>
+    <string name="settings_glass_source_enabled">접근성 화면 소스 사용 (실험적)</string>
+    <string name="settings_glass_source_description">Glass 테마에서 현재 앱 창을 저해상도로 메모리에만 캡처해 굴절 배경으로 사용합니다. 비밀번호 필드에서는 자동으로 중지되며 Android 14 이상이 필요합니다.</string>
+    <string name="settings_open_accessibility">접근성 권한 설정 열기</string>
+    <string name="settings_glass_source_connected">상태: 접근성 서비스 연결됨</string>
+    <string name="settings_glass_source_disconnected">상태: 접근성 서비스 꺼짐</string>
+    <string name="settings_glass_source_unsupported">상태: Android 14 이상에서 지원</string>
+    <string name="glass_accessibility_service_label">뉴딩굴 Glass 화면 소스</string>
+    <string name="glass_accessibility_service_description">Glass 키보드 배경을 위해 활성 앱 창을 저해상도로 메모리에만 제공합니다.</string>
 </resources>
