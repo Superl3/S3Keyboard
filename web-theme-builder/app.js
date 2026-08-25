@@ -928,7 +928,7 @@ function renderKeyboardPreview(container, theme, layout, rows) {
     ? `blur(${effects.blur.radiusDp || 10}px)`
     : "none";
   container.style.boxShadow = effects.glass?.enabled
-    ? `inset 0 1px 0 rgba(255,255,255,${(effects.glass.highlightPercent || 18) / 100}), inset 0 -1px 0 rgba(0,0,0,${(effects.glass.borderAlphaPercent || 42) / 255})`
+    ? `inset 0 1px 0 rgba(255,255,255,${Math.min(0.12, (effects.glass.highlightPercent || 18) / 160)}), inset 0 -1px 0 rgba(0,0,0,${Math.min(0.16, (effects.glass.borderAlphaPercent || 42) / 280)})`
     : (effects.metal?.enabled ? `inset 0 18px 28px rgba(255,255,255,.18), inset 0 -22px 35px rgba(0,0,0,.22)` : "none");
   container.style.gap = `${theme.shape.keyGapDp}px`;
   container.style.paddingTop = "16px";
@@ -1517,13 +1517,18 @@ function keyFaceBackgroundForPreview(theme, background) {
       || !effects.keyFaceGradient.enabled || strength <= 0) {
     return bg;
   }
+  const glassEnabled = effects.glass?.enabled;
+  const gradientCurve = glassEnabled ? "glass" : effects.keyFaceGradient.curve;
+  const gradientStrength = glassEnabled
+    ? Math.max(effects.keyFaceGradient.strengthPercent, effects.glass.highlightPercent)
+    : effects.keyFaceGradient.strengthPercent;
   const [top, middle, bottom] = keyFaceGradientColors(
     bg,
-    strength,
+    gradientStrength,
     effects.keyFaceGradient.startColor,
     effects.keyFaceGradient.endColor,
-    effects.keyFaceGradient.curve);
-  const middleStop = keyFaceGradientMiddleStop(effects.keyFaceGradient.curve);
+    gradientCurve);
+  const middleStop = keyFaceGradientMiddleStop(gradientCurve);
   return `linear-gradient(180deg, ${top} 0%, ${middle} ${middleStop}%, ${bottom} 100%)`;
 }
 
@@ -1541,8 +1546,8 @@ function keyFaceGradientColors(
   const luminance = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
   const strength = Math.max(0, Math.min(100, Number(strengthPercent) || 0)) / 100;
   const glass = curve === "glass";
-  const topAmount = (luminance < 42 ? 0.08 : 0.06) + (glass ? 0.34 : 0.24) * strength;
-  const bottomAmount = (luminance < 42 ? 0.04 : 0.05) + (glass ? 0.26 : 0.18) * strength;
+  const topAmount = (luminance < 42 ? 0.04 : 0.03) + (glass ? 0.10 : 0.24) * strength;
+  const bottomAmount = (luminance < 42 ? 0.02 : 0.025) + (glass ? 0.03 : 0.18) * strength;
   return [
     blendColors(normalizeColor(startColor) || "#FFFFFF", bg, topAmount),
     bg,

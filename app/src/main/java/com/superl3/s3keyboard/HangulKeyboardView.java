@@ -590,8 +590,8 @@ public final class HangulKeyboardView extends View
 
     private void drawGlassReflection(Canvas canvas) {
         int highlightAlpha = Math.min(
-                64,
-                Math.round(settings.visualEffects.glassHighlightPercent * 1.35f));
+                28,
+                Math.round(settings.visualEffects.glassHighlightPercent * 0.85f));
         if (panelGlassShader == null) {
             panelGlassShader = new LinearGradient(
                     0,
@@ -600,8 +600,8 @@ public final class HangulKeyboardView extends View
                     Math.max(1, getHeight()),
                     new int[] {
                             withAlpha(0xFFFFFFFF, highlightAlpha),
-                            withAlpha(0xFFFFFFFF, Math.max(0, highlightAlpha / 3)),
-                            withAlpha(0xFF000000, Math.max(0, highlightAlpha / 5)),
+                            withAlpha(0xFFFFFFFF, Math.max(0, highlightAlpha / 4)),
+                            0x00000000,
                             0x00000000
                     },
                     new float[] { 0f, 0.12f, 0.52f, 1f },
@@ -612,7 +612,7 @@ public final class HangulKeyboardView extends View
         keyPaint.setShader(null);
 
         int borderAlpha = Math.round(
-                255f * settings.visualEffects.glassBorderAlphaPercent / 100f);
+                0.65f * settings.visualEffects.glassBorderAlphaPercent);
         borderPaint.setStyle(Paint.Style.STROKE);
         borderPaint.setStrokeWidth(Math.max(1f, renderDp(1)));
         borderPaint.setColor(withAlpha(settings.borderColor, borderAlpha));
@@ -3872,7 +3872,7 @@ public final class HangulKeyboardView extends View
         overlayPaint.setStrokeWidth(stroke);
         overlayPaint.setColor(withAlpha(
                 0xFFFFFFFF,
-                Math.round((42f - 14f * pressProgress) * motionIntensityScale())));
+                Math.round((28f - 10f * pressProgress) * motionIntensityScale())));
         drawKeyShape(canvas, edgeBounds, overlayPaint);
         overlayPaint.setStyle(Paint.Style.FILL);
     }
@@ -3888,10 +3888,10 @@ public final class HangulKeyboardView extends View
                             // The body needs its own material gradient. The border highlight is
                             // deliberately weaker than this surface pass so glass is visible
                             // across the whole key, not only around its edge.
-                            withAlpha(0xFFFFFFFF, 128),
-                            withAlpha(0xFFFFFFFF, 46),
+                            withAlpha(0xFFFFFFFF, 34),
+                            withAlpha(0xFFFFFFFF, 10),
                             0x00000000,
-                            withAlpha(0xFF000000, 96)
+                            withAlpha(0xFF000000, 24)
                     },
                     new float[] { 0f, 0.22f, 0.58f, 1f },
                     Shader.TileMode.CLAMP);
@@ -3988,15 +3988,13 @@ public final class HangulKeyboardView extends View
                         settings.visualEffects.keyFaceGradientCurve);
         int luminance = perceivedLuminance(background);
         if (glass) {
-            int alpha = Math.round(190f - 28f * clamp01(pressProgress));
+            int alpha = Math.round(238f - 16f * clamp01(pressProgress));
             int opaqueBackground = background | 0xFF000000;
-            int glassTop = blendColor(0xFFFFFFFF, opaqueBackground, 0.28f);
-            int glassBottom = blendColor(0xFF000000, opaqueBackground, 0.28f);
             return new int[] {
-                    withAlpha(blendColor(0xFFFFFFFF, glassTop, 0.38f * strength), alpha),
-                    withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.08f * strength), alpha),
+                    withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.08f + 0.04f * strength), alpha),
+                    withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.02f * strength), alpha),
                     withAlpha(opaqueBackground, alpha),
-                    withAlpha(blendColor(0xFF000000, glassBottom, 0.42f * strength), alpha)
+                    withAlpha(opaqueBackground, alpha)
             };
         }
         float topAmount = (luminance < 42 ? 0.08f : 0.06f)

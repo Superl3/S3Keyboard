@@ -196,6 +196,10 @@ function Get-KeyFaceGradientEndColor {
 
 function Get-KeyFaceGradientCurve {
     param([object] $Theme)
+    $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
+    if ($null -ne $glass -and (Get-ThemeBool $glass.enabled $false)) {
+        return "glass"
+    }
     $effect = Get-KeyFaceGradientEffect -Theme $Theme
     if ($null -eq $effect -or [string]::IsNullOrWhiteSpace([string]$effect.curve)) {
         return "soft"
@@ -229,8 +233,8 @@ function Get-KeyFaceGradientColors {
     $luminance = ($Background.R * 299 + $Background.G * 587 + $Background.B * 114) / 1000.0
     $strength = [Math]::Max(0.0, [Math]::Min(1.0, $StrengthPercent / 100.0))
     $curve = Get-KeyFaceGradientCurve -Theme $Theme
-    $topAmount = $(if ($luminance -lt 42) { 0.08 } else { 0.06 }) + $(if ($curve -eq "glass") { 0.34 } else { 0.24 }) * $strength
-    $bottomAmount = $(if ($luminance -lt 42) { 0.04 } else { 0.05 }) + $(if ($curve -eq "glass") { 0.26 } else { 0.18 }) * $strength
+    $topAmount = $(if ($luminance -lt 42) { 0.04 } else { 0.03 }) + $(if ($curve -eq "glass") { 0.10 } else { 0.24 }) * $strength
+    $bottomAmount = $(if ($luminance -lt 42) { 0.02 } else { 0.025 }) + $(if ($curve -eq "glass") { 0.03 } else { 0.18 }) * $strength
     return @(
         (Blend-ThemeColor -Foreground $StartColor -Background $Background -ForegroundAmount $topAmount),
         $Background,
