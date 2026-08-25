@@ -4007,7 +4007,10 @@ public final class HangulKeyboardView extends View
                         settings.visualEffects.keyFaceGradientCurve);
         int luminance = perceivedLuminance(background);
         if (glass) {
-            int alpha = Math.round(238f - 16f * clamp01(pressProgress));
+            // The panel belongs behind the key. Keep the key body opaque so the panel tint or
+            // captured backdrop cannot visually wash over its legend and surface; the glass
+            // treatment is carried by the face gradient, highlight, and border instead.
+            int alpha = 255;
             int opaqueBackground = background | 0xFF000000;
             return new int[] {
                     withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.08f + 0.04f * strength), alpha),
