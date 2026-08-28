@@ -39,6 +39,45 @@ final class KeyboardKeyVisualClassifier {
         return role == KeyVisualRole.ALPHA ? settings.keyIdleColor : settings.functionKeyColor;
     }
 
+    static int outlineColorFor(KeyboardSettings settings, GestureKey key) {
+        if (settings == null) {
+            return KeyboardSettings.DEFAULT_BORDER_COLOR;
+        }
+        Integer exact = outlineOverrideColorFor(settings, key);
+        if (exact != null) {
+            return exact;
+        }
+        if (KeyDisplayOverrideResolver.hasNoveltyOverride(settings, key)) {
+            Integer novelty = findOutlineOverride(settings, "novelty");
+            if (novelty != null) {
+                return novelty;
+            }
+        }
+        KeyVisualRole role = isAdditionalNumberRowKey(key)
+                ? additionalNumberRowRole(settings, key)
+                : roleFor(settings, key);
+        int faceColor = colorFor(settings, key);
+        if (faceColor == backgroundColorForRole(settings, KeyVisualRole.ACCENT)) {
+            role = KeyVisualRole.ACCENT;
+        }
+        Integer roleColor;
+        if (role == KeyVisualRole.ACCENT) {
+            roleColor = findOutlineOverride(settings, "accent");
+        } else if (role == KeyVisualRole.MODIFIER) {
+            roleColor = findOutlineOverride(settings, "modifiers");
+            if (roleColor == null) {
+                roleColor = findOutlineOverride(settings, "modifier");
+            }
+        } else {
+            roleColor = findOutlineOverride(settings, "alpha");
+        }
+        if (roleColor != null) {
+            return roleColor;
+        }
+        Integer fallback = findOutlineOverride(settings, "default");
+        return fallback == null ? settings.borderColor : fallback;
+    }
+
     static int textColorFor(KeyboardSettings settings, GestureKey key) {
         if (isAdditionalNumberRowKey(key)) {
             Integer exactOverride = exactOverrideColorFor(settings, key);
@@ -418,6 +457,62 @@ final class KeyboardKeyVisualClassifier {
             }
         }
         return null;
+    }
+
+    private static Integer outlineOverrideColorFor(KeyboardSettings settings, GestureKey key) {
+        if (settings == null || key == null || settings.keyColorOverrides.isEmpty()) {
+            return null;
+        }
+        Integer color = findOutlineOverride(settings, "label:" + key.label);
+        if (color != null) {
+            return color;
+        }
+        color = findOutlineOverride(settings, "tap:" + key.tap);
+        if (color != null) {
+            return color;
+        }
+        color = findOutlineOverride(settings, key.tap);
+        if (color != null) {
+            return color;
+        }
+        color = findOutlineOverride(settings, key.label);
+        if (color != null) {
+            return color;
+        }
+        if (KeyboardCommands.CMD_SPACE.equals(key.tap)) {
+            return findOutlineOverride(settings, "space");
+        }
+        if (KeyboardCommands.CMD_DELETE.equals(key.tap)) {
+            return findOutlineOverride(settings, "backspace");
+        }
+        if (KeyboardCommands.CMD_ENTER.equals(key.tap)) {
+            return findOutlineOverride(settings, "enter");
+        }
+        if (KeyboardCommands.CMD_SHIFT_ONCE.equals(key.tap)) {
+            return findOutlineOverride(settings, "shift");
+        }
+        if (KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)) {
+            return findOutlineOverride(settings, "language");
+        }
+        if (KeyboardCommands.CMD_SETTINGS.equals(key.tap)) {
+            return findOutlineOverride(settings, "settings");
+        }
+        if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)
+                || KeyboardCommands.CMD_QUICK_SETTINGS.equals(key.tap)) {
+            return findOutlineOverride(settings, "options");
+        }
+        if (KeyboardCommands.CMD_RESERVED_PHRASES.equals(key.tap)) {
+            return findOutlineOverride(settings, "reserved");
+        }
+        return null;
+    }
+
+    private static Integer findOutlineOverride(KeyboardSettings settings, String key) {
+        if (settings == null || key == null) {
+            return null;
+        }
+        return settings.keyColorOverrides.get(
+                KeyboardSettings.normalizeKeyOverrideName("outline:" + key));
     }
 
     private static Integer findOverride(KeyboardSettings settings, String key) {

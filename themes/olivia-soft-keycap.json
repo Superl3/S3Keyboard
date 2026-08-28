@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "name": "Olivia Soft Keycap",
+  "author": "local",
+  "metadata": {
+    "tags": [
+      "dark",
+      "gmkInspired",
+      "textPack",
+      "softKeycap"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "displayPack",
+      "keyFaceGradient",
+      "keyDepth"
+    ]
+  },
+  "colors": {
+    "alphaKey": "#3A3438",
+    "modifierKey": "#171619",
+    "accentKey": "#D9A3AA",
+    "keyPressed": "#4B4248",
+    "keyboardBackground": "#111114",
+    "border": "#655159",
+    "depth": "#111114",
+    "accent": "#F4E7E2",
+    "secondary": "#D9A3AA"
+  },
+  "shape": {
+    "roundnessDp": 10,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 1
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_alpha"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": true,
+    "secondaryTextItalic": false
+  },
+  "icons": {
+    "keyDisplayPackId": "simple-text"
+  },
+  "keyTextColorOverrides": {
+    "shift": "#F4E7E2",
+    "backspace": "#F4E7E2",
+    "enter": "#211F23",
+    "shiftIndicator": "#D9A3AA"
+  },
+  "keyBackgroundColorOverrides": {
+    "enter": "#D9A3AA"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#F4E7E2",
+      "background": "#3A3438"
+    },
+    "mod": {
+      "foreground": "#D9A3AA",
+      "background": "#171619"
+    },
+    "modInv": {
+      "foreground": "#171619",
+      "background": "#D9A3AA"
+    }
+  },
+  "effects": {
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "glass": {
+      "enabled": false,
+      "tintAlphaPercent": 88,
+      "highlightPercent": 12,
+      "borderAlphaPercent": 34
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "previewBubble": {
+      "style": "rounded"
+    },
+    "keyFaceGradient": {
+      "enabled": true,
+      "strengthPercent": 16,
+      "startColor": "#FFFFFF",
+      "endColor": "#655159",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false,
+      "startColor": "#2A2328",
+      "endColor": "#0E0D10"
+    },
+    "materialStyle": "soft_keycap"
+  }
+}

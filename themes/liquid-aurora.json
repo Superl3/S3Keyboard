@@ -1,0 +1,110 @@
+{
+    "schemaVersion":  1,
+    "name":  "Liquid Aurora",
+    "author":  "local",
+    "metadata":  {
+                     "recommendedHints":  {
+                                              "showHangulSlideHints":  false,
+                                              "showEnglishSlideHints":  false,
+                                              "showBeginnerTooltipPreview":  true
+                                          },
+                     "tags":  [
+                                  "dark",
+                                  "flat",
+                                  "minimal",
+                                  "platformInspired",
+                                  "glassLike"
+                              ],
+                     "features":  [
+                                      "dingulRoleColors",
+                                      "historicalHintRecommendation"
+                                  ]
+                 },
+    "colors":  {
+                   "alphaKey":  "#272D3A",
+                   "modifierKey":  "#303747",
+                   "accentKey":  "#55487A",
+                   "keyPressed":  "#3C455A",
+                   "keyboardBackground":  "#151C29",
+                   "panelBackground":  "#151C29",
+                   "border":  "#B9C8FF",
+                   "depth":  null,
+                   "accent":  "#F7F7FF",
+                   "secondary":  "#B2B9CC"
+               },
+    "shape":  {
+                  "roundnessDp":  6,
+                  "keyGapDp":  5,
+                  "depthEnabled":  false,
+                  "depthDp":  0,
+                  "borderWidthDp":  1
+              },
+    "additionalNumberRow":  {
+                                "colorMode":  "full_mod"
+                            },
+    "typography":  {
+                       "fontFamily":  "noto_sans_kr",
+                       "primaryTextSizePercent":  76,
+                       "secondaryTextSizePercent":  76,
+                       "primaryTextBold":  false,
+                       "primaryTextItalic":  false,
+                       "secondaryTextBold":  false,
+                       "secondaryTextItalic":  false
+                   },
+    "dingulColors":  {
+                         "alpha":  {
+                                       "foreground":  "#F7F7FF",
+                                       "background":  "#272D3A"
+                                   },
+                         "mod":  {
+                                     "foreground":  "#B2B9CC",
+                                     "background":  "#303747"
+                                 },
+                         "modInv":  {
+                                        "foreground":  "#FAF8FF",
+                                        "background":  "#55487A"
+                                    }
+                     },
+    "accentPolicy":  {
+                         "qwerty":  [
+                                        "qwertyShift"
+                                    ],
+                         "dingul":  [
+                                        "dingulDot"
+                                    ]
+                     },
+    "keyTextColorOverrides":  {
+                                  "shiftIndicator":  "#B79CFF"
+                              },
+    "effects":  {
+                    "blur":  {
+                                 "enabled":  true,
+                                 "radiusDp":  20
+                             },
+                    "metal":  {
+                                  "enabled":  false,
+                                  "strengthPercent":  0
+                              },
+                    "previewBubble":  {
+                                          "style":  "rounded"
+                                      },
+                    "keyFaceGradient":  {
+                                            "enabled":  true,
+                                            "strengthPercent":  13,
+                                            "startColor":  "#FFFFFF",
+                                            "endColor":  "#19152B",
+                                            "curve":  "glass"
+                                        },
+                    "panelGradient":  {
+                                          "enabled":  true,
+                                          "startColor":  "#172A3D",
+                                          "endColor":  "#2B203F"
+                                      },
+                    "glass":  {
+                                  "enabled":  true,
+                                  "tintAlphaPercent":  69,
+                                  "highlightPercent":  38,
+                                  "borderAlphaPercent":  46
+                              }
+                }
+}

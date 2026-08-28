@@ -3,6 +3,8 @@ package com.superl3.s3keyboard;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
+import android.view.MotionEvent;
 import android.view.View;
 
 final class LayoutEditorOverlay extends View {
@@ -14,6 +16,8 @@ final class LayoutEditorOverlay extends View {
 
     private final Paint zonePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint hitPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint originPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float density;
 
     private int leftMarginDp;
@@ -27,6 +31,7 @@ final class LayoutEditorOverlay extends View {
     private int keyGapDp;
     private boolean hangulMode;
     private boolean showZones = true;
+    private LayoutGeometrySnapshot geometry = LayoutGeometrySnapshot.empty();
 
     LayoutEditorOverlay(Context context) {
         super(context);
@@ -34,8 +39,23 @@ final class LayoutEditorOverlay extends View {
         linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setStrokeWidth(dp(1));
         linePaint.setColor(0x44000000);
+        hitPaint.setStyle(Paint.Style.STROKE);
+        hitPaint.setStrokeWidth(dp(1));
+        hitPaint.setColor(0x884F6BED);
+        hitPaint.setPathEffect(new android.graphics.DashPathEffect(
+                new float[]{dp(3), dp(3)}, 0));
+        originPaint.setStyle(Paint.Style.FILL);
+        originPaint.setColor(0xCC4F6BED);
         setFocusable(false);
+        // The preview is a visual reference only. Consume its touch stream here so pressing a
+        // key never creates a live keyboard gesture underneath the editor handles.
+        setClickable(true);
         setWillNotDraw(false);
+    }
+
+    void setGeometry(LayoutGeometrySnapshot geometry) {
+        this.geometry = geometry == null ? LayoutGeometrySnapshot.empty() : geometry;
+        invalidate();
     }
 
     void update(int leftMarginDp, int rightMarginDp, int topPaddingDp, int bottomPaddingDp,
@@ -120,6 +140,17 @@ final class LayoutEditorOverlay extends View {
 
         linePaint.setColor(0x33000000);
         canvas.drawRect(leftMargin, kbTop, w - rightMargin, kbBottom, linePaint);
+
+        // These are the real calculator bounds, not an approximation based on padding.
+        for (LayoutGeometrySnapshot.Slot slot : geometry.slots) {
+            canvas.drawRect(slot.hitRect, hitPaint);
+            canvas.drawCircle(slot.gestureOriginX, slot.gestureOriginY, dp(2), originPaint);
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        return true;
     }
 
     private int dp(float value) {

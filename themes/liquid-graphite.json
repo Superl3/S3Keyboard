@@ -1,0 +1,110 @@
+{
+    "schemaVersion":  1,
+    "name":  "Liquid Graphite",
+    "author":  "local",
+    "metadata":  {
+                     "recommendedHints":  {
+                                              "showHangulSlideHints":  false,
+                                              "showEnglishSlideHints":  false,
+                                              "showBeginnerTooltipPreview":  true
+                                          },
+                     "tags":  [
+                                  "dark",
+                                  "flat",
+                                  "minimal",
+                                  "platformInspired",
+                                  "glassLike"
+                              ],
+                     "features":  [
+                                      "dingulRoleColors",
+                                      "historicalHintRecommendation"
+                                  ]
+                 },
+    "colors":  {
+                   "alphaKey":  "#333A43",
+                   "modifierKey":  "#3A424C",
+                   "accentKey":  "#51606F",
+                   "keyPressed":  "#4A5563",
+                   "keyboardBackground":  "#1B2128",
+                   "panelBackground":  "#1B2128",
+                   "border":  "#5D6875",
+                   "depth":  "#29313A",
+                   "accent":  "#F5F7FA",
+                   "secondary":  "#A4ADB8"
+               },
+    "shape":  {
+                  "roundnessDp":  6,
+                  "keyGapDp":  5,
+                  "depthEnabled":  false,
+                  "depthDp":  0,
+                  "borderWidthDp":  1
+              },
+    "additionalNumberRow":  {
+                                "colorMode":  "full_mod"
+                            },
+    "typography":  {
+                       "fontFamily":  "noto_sans_kr",
+                       "primaryTextSizePercent":  76,
+                       "secondaryTextSizePercent":  76,
+                       "primaryTextBold":  false,
+                       "primaryTextItalic":  false,
+                       "secondaryTextBold":  false,
+                       "secondaryTextItalic":  false
+                   },
+    "dingulColors":  {
+                         "alpha":  {
+                                       "foreground":  "#F5F7FA",
+                                       "background":  "#333A43"
+                                   },
+                         "mod":  {
+                                     "foreground":  "#A4ADB8",
+                                     "background":  "#3A424C"
+                                 },
+                         "modInv":  {
+                                        "foreground":  "#F3F7FB",
+                                        "background":  "#51606F"
+                                    }
+                     },
+    "accentPolicy":  {
+                         "qwerty":  [
+                                        "qwertyShift"
+                                    ],
+                         "dingul":  [
+                                        "dingulDot"
+                                    ]
+                     },
+    "keyTextColorOverrides":  {
+                                  "shiftIndicator":  "#7EC8FF"
+                              },
+    "effects":  {
+                    "blur":  {
+                                 "enabled":  true,
+                                 "radiusDp":  20
+                             },
+                    "metal":  {
+                                  "enabled":  false,
+                                  "strengthPercent":  0
+                              },
+                    "previewBubble":  {
+                                          "style":  "rounded"
+                                      },
+                    "keyFaceGradient":  {
+                                            "enabled":  true,
+                                            "strengthPercent":  14,
+                                            "startColor":  "#FFFFFF",
+                                            "endColor":  "#101820",
+                                            "curve":  "glass"
+                                        },
+                    "panelGradient":  {
+                                          "enabled":  true,
+                                          "startColor":  "#1D242C",
+                                          "endColor":  "#141920"
+                                      },
+                    "glass":  {
+                                  "enabled":  true,
+                                  "tintAlphaPercent":  70,
+                                  "highlightPercent":  36,
+                                  "borderAlphaPercent":  48
+                              }
+                }
+}

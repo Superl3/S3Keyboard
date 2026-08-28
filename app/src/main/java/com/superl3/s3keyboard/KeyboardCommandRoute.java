@@ -6,6 +6,7 @@ enum KeyboardCommandRoute {
     DELETE_WORD,
     SPACE,
     ENTER,
+    CORRECT_TEXT,
     NEWLINE,
     MOVE_LEFT,
     MOVE_RIGHT,

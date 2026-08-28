@@ -272,5 +272,16 @@ geometry displacement <= 6dp
 판정은 변경하지 않는다. 두 번째 PR에서 shadow-only 평가를 추가하고, 실제 기기
 자료가 충분할 때 세 번째 PR에서 ㅎ/공백 경계의 제한적 TAP 보정을 활성화한다.
 
+## 현재 구현 상태
+
+단계 1의 전이 모델이 구현되었다. `NextKeyTouchModel`은 기존
+`TypingEventJournal`가 확정한 `accepted_tap`, `accepted_slide`와 명시적
+`wrong_origin_key` 교정 이벤트만 소비한다. 모델은 `TouchBiasStore`의 learning
+epoch와 지연 flush 경로를 사용하며, 로컬 저장 데이터 초기화에도 포함된다.
+
+현재 모델은 실제 터치 후보를 변경하지 않는다. 예측 점수 계산과 shadow-only
+오버레이 표시는 다음 단계에서 추가한다. 따라서 모델 데이터가 없거나 손상되어도
+기존 `TouchResolver` 입력 결과는 변하지 않는다.
+
 이 순서를 지키면 기존 입력 수집을 재사용하면서도 오타를 학습하거나 예측 결과가
 스스로 강화되는 문제를 사전에 검증할 수 있다.

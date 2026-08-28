@@ -21,6 +21,8 @@ param(
     [switch] $ShowNumberRow,
     [switch] $CaptureShiftActive,
     [switch] $EnableGlassSource,
+    [switch] $StandardImeSurface,
+    [switch] $ReplaceExistingPackage,
     [switch] $ResetAppData
 )
 
@@ -126,9 +128,65 @@ function Ensure-DemoKeyboardVisible {
         & $Adb @AdbTarget shell input tap 540 1600 | Out-Null
         Start-Sleep -Milliseconds 700
         if (Test-ImeVisible -Adb $Adb -AdbTarget $AdbTarget) {
-            return
+            Start-Sleep -Milliseconds 650
+            if (Test-ImeVisible -Adb $Adb -AdbTarget $AdbTarget) {
+                return
+            }
         }
     }
+    throw "IME did not remain visible long enough for a reliable screenshot."
+}
+
+function Refresh-DemoImeAfterPreset {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Adb,
+        [Parameter(Mandatory = $true)]
+        [string[]] $AdbTarget,
+        [Parameter(Mandatory = $true)]
+        [string] $Ime
+    )
+
+    $fallback = (& $Adb @AdbTarget shell ime list -s | ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -and $_ -ne $Ime } | Select-Object -First 1)
+    if ($fallback) {
+        & $Adb @AdbTarget shell ime set $fallback | Out-Null
+        Start-Sleep -Milliseconds 500
+    }
+    & $Adb @AdbTarget shell ime set $Ime | Out-Null
+}
+
+function Capture-DemoScreenshot {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Adb,
+        [Parameter(Mandatory = $true)]
+        [string[]] $AdbTarget,
+        [Parameter(Mandatory = $true)]
+        [string] $RemotePath,
+        [Parameter(Mandatory = $true)]
+        [string] $LocalPath
+    )
+
+    for ($attempt = 0; $attempt -lt 4; $attempt++) {
+        $state = (& $Adb @AdbTarget get-state 2>$null | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or $state -ne "device") {
+            Start-Sleep -Milliseconds 800
+            continue
+        }
+        & $Adb @AdbTarget shell screencap -p $RemotePath | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Start-Sleep -Milliseconds 800
+            continue
+        }
+        & $Adb @AdbTarget pull $RemotePath $LocalPath | Out-Host
+        if ($LASTEXITCODE -eq 0 -and (Test-Path $LocalPath) -and (Get-Item $LocalPath).Length -gt 0) {
+            & $Adb @AdbTarget shell rm $RemotePath | Out-Null
+            return
+        }
+        Start-Sleep -Milliseconds 800
+    }
+    throw "Failed to capture a stable emulator screenshot."
 }
 
 function Get-ThemeExtras {
@@ -457,7 +515,31 @@ $EnglishKeyboardCropHeightPx = [int][Math]::Round($EnglishKeyboardCropDp * $Devi
 
 Write-Host "Installing APK"
 & $Adb @AdbTarget shell am force-stop $Package | Out-Null
-& $Adb @AdbTarget install -r $Apk | Out-Host
+$PreviousErrorActionPreference = $ErrorActionPreference
+try {
+    # Windows PowerShell can promote native stderr to NativeCommandError when the script-wide
+    # preference is Stop. Capture adb's text here so a signature mismatch can be handled below.
+    $ErrorActionPreference = "Continue"
+    $InstallOutput = (& $Adb @AdbTarget install -r $Apk 2>&1)
+    $InstallExitCode = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $PreviousErrorActionPreference
+}
+$InstallOutput | Out-Host
+if (($InstallExitCode -ne 0) -and
+        $ReplaceExistingPackage -and
+        (($InstallOutput | Out-String) -match "INSTALL_FAILED_UPDATE_INCOMPATIBLE")) {
+    Write-Host "Replacing incompatible demo package"
+    & $Adb @AdbTarget uninstall $Package | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to remove the incompatible demo package."
+    }
+    & $Adb @AdbTarget install $Apk | Out-Host
+    $InstallExitCode = $LASTEXITCODE
+}
+if ($InstallExitCode -ne 0) {
+    throw "APK install failed; refusing to capture a stale build. For a disposable demo AVD with a signature mismatch, retry with -ReplaceExistingPackage."
+}
 if ($ResetAppData) {
     Write-Host "Resetting app data"
     & $Adb @AdbTarget shell pm clear $Package | Out-Host
@@ -480,11 +562,24 @@ $StartArgs = @(
     "--ez", "show_hangul_number_row", "$ShowHangulNumberRowValue",
     "--ez", "show_english_number_row", "$ShowEnglishNumberRowValue",
     "--ez", "demo_settings", "true",
-    "--ez", "demo_show_keyboard", "true",
-    "--ez", "demo_force_visual_effects", "true"
+    "--ez", "demo_show_keyboard", "true"
 )
+if (-not $ThemePresetMode) {
+    # Free-form variants keep the legacy forced effects; presets own their effects.
+    $StartArgs += @("--ez", "demo_force_visual_effects", "true")
+}
+if ($StandardImeSurface -and -not $EnableGlassSource) {
+    # Frosted/platform-blur reviews need the bounded IME window but never need Accessibility.
+    $StartArgs += @("--ez", "transparent_overlay_input", "false")
+}
 if ($EnableGlassSource) {
-    $StartArgs += @("--ez", "demo_glass_source_enabled", "true")
+    # Live Glass capture and platform panel blur are intentionally disabled in transparent
+    # overlay mode. Force the normal IME surface for Glass review so screenshots exercise the
+    # real blur/refraction path instead of only the theme's translucent fallback material.
+    $StartArgs += @(
+        "--ez", "demo_glass_source_enabled", "true",
+        "--ez", "transparent_overlay_input", "false"
+    )
 }
 if ($ThemePresetMode) {
     $StartArgs += @("--es", "theme_preset_id", $ThemePresetId)
@@ -514,7 +609,14 @@ if ($EnableGlassSource) {
     & $Adb @AdbTarget shell settings put secure enabled_accessibility_services $GlassService | Out-Host
     & $Adb @AdbTarget shell settings put secure accessibility_enabled 1 | Out-Host
 }
-Start-Sleep -Seconds 2
+if ($ThemePresetMode) {
+    # MainActivity persists the requested preset, but an already-running IME service can have
+    # loaded the previous settings before that write completed. Cycle through another installed
+    # IME so the review screenshot always exercises the preset shown by the Activity.
+    Start-Sleep -Milliseconds 900
+    Refresh-DemoImeAfterPreset -Adb $Adb -AdbTarget $AdbTarget -Ime $Ime
+}
+Start-Sleep -Seconds 1
 & $Adb @AdbTarget shell ime set $Ime | Out-Host
 
 # The Activity also requests focus via demo_show_keyboard; keep a tap fallback
@@ -524,9 +626,7 @@ Start-Sleep -Seconds 2
 Ensure-DemoKeyboardVisible -Adb $Adb -AdbTarget $AdbTarget -Ime $Ime
 
 Write-Host "Capturing Hangul keyboard screenshot"
-& $Adb @AdbTarget shell screencap -p $DeviceCapture | Out-Null
-& $Adb @AdbTarget pull $DeviceCapture $RunLocalCapture | Out-Host
-& $Adb @AdbTarget shell rm $DeviceCapture | Out-Null
+Capture-DemoScreenshot -Adb $Adb -AdbTarget $AdbTarget -RemotePath $DeviceCapture -LocalPath $RunLocalCapture
 Copy-Item -LiteralPath $RunLocalCapture -Destination $LocalCapture -Force
 Export-KeyboardCrop -SourcePath $RunLocalCapture -DestinationPath $RunLocalKeyboardOnlyCapture -ExpectedHeightPx $HangulKeyboardCropHeightPx
 Copy-Item -LiteralPath $RunLocalKeyboardOnlyCapture -Destination $LocalKeyboardOnlyCapture -Force
@@ -536,9 +636,7 @@ Write-Host "Switching to English keyboard and capturing screenshot"
 # right-hand layout, so the language key sits near the right side.
 & $Adb @AdbTarget shell input tap 865 2230 | Out-Null
 Start-Sleep -Seconds 1
-& $Adb @AdbTarget shell screencap -p $DeviceEnglishCapture | Out-Null
-& $Adb @AdbTarget pull $DeviceEnglishCapture $RunLocalEnglishCapture | Out-Host
-& $Adb @AdbTarget shell rm $DeviceEnglishCapture | Out-Null
+Capture-DemoScreenshot -Adb $Adb -AdbTarget $AdbTarget -RemotePath $DeviceEnglishCapture -LocalPath $RunLocalEnglishCapture
 Copy-Item -LiteralPath $RunLocalEnglishCapture -Destination $LocalEnglishCapture -Force
 Export-KeyboardCrop -SourcePath $RunLocalEnglishCapture -DestinationPath $RunLocalEnglishKeyboardOnlyCapture -ExpectedHeightPx $EnglishKeyboardCropHeightPx
 Copy-Item -LiteralPath $RunLocalEnglishKeyboardOnlyCapture -Destination $LocalEnglishKeyboardOnlyCapture -Force
@@ -547,9 +645,7 @@ if ($CaptureShiftActive) {
     Write-Host "Activating Shift and capturing screenshot"
     & $Adb @AdbTarget shell input tap 80 2100 | Out-Null
     Start-Sleep -Milliseconds 700
-    & $Adb @AdbTarget shell screencap -p $DeviceShiftCapture | Out-Null
-    & $Adb @AdbTarget pull $DeviceShiftCapture $RunLocalShiftCapture | Out-Host
-    & $Adb @AdbTarget shell rm $DeviceShiftCapture | Out-Null
+    Capture-DemoScreenshot -Adb $Adb -AdbTarget $AdbTarget -RemotePath $DeviceShiftCapture -LocalPath $RunLocalShiftCapture
     Copy-Item -LiteralPath $RunLocalShiftCapture -Destination $LocalShiftCapture -Force
     Export-KeyboardCrop -SourcePath $RunLocalShiftCapture -DestinationPath $RunLocalShiftKeyboardOnlyCapture -ExpectedHeightPx $EnglishKeyboardCropHeightPx
     Copy-Item -LiteralPath $RunLocalShiftKeyboardOnlyCapture -Destination $LocalShiftKeyboardOnlyCapture -Force

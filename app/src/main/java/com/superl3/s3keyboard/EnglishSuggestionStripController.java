@@ -43,18 +43,20 @@ final class EnglishSuggestionStripController {
         return root;
     }
 
-    void update(
+    boolean update(
             KeyboardSettings settings,
             boolean active,
             List<EnglishQwertyCorrectionEngine.Candidate> candidates) {
         if (root == null) {
-            return;
+            return false;
         }
         KeyboardSettings safeSettings = RuntimeDefaults.keyboardSettings(settings);
         List<EnglishQwertyCorrectionEngine.Candidate> safeCandidates =
                 candidates == null ? Collections.emptyList() : candidates;
         boolean visible = active && !safeCandidates.isEmpty();
-        root.setVisibility(visible ? View.VISIBLE : View.GONE);
+        int nextVisibility = visible ? View.VISIBLE : View.GONE;
+        boolean visibilityChanged = root.getVisibility() != nextVisibility;
+        root.setVisibility(nextVisibility);
         root.setBackgroundColor(safeSettings.keyboardBackgroundColor);
         for (int i = 0; i < slots.length; i++) {
             if (!visible || i >= safeCandidates.size()) {
@@ -63,6 +65,7 @@ final class EnglishSuggestionStripController {
             }
             applySuggestion(slots[i], safeSettings, safeCandidates.get(i));
         }
+        return visibilityChanged;
     }
 
     private TextView createSlot() {
@@ -76,12 +79,19 @@ final class EnglishSuggestionStripController {
                 0,
                 SettingsRowBuilder.dp(context, 8),
                 0);
+        slot.setBackground(new GradientDrawable());
+        slot.setOnClickListener(view -> {
+            Object suggestion = view.getTag();
+            if (suggestion instanceof String) {
+                onSuggestionAccepted.accept((String) suggestion);
+            }
+        });
         return slot;
     }
 
     private void resetSlot(TextView slot) {
         slot.setText("");
-        slot.setOnClickListener(null);
+        slot.setTag(null);
         slot.setVisibility(View.INVISIBLE);
     }
 
@@ -94,6 +104,7 @@ final class EnglishSuggestionStripController {
                 ? settings.accentKeyColor
                 : settings.functionKeyColor;
         slot.setVisibility(View.VISIBLE);
+        slot.setTag(suggestion);
         slot.setText(suggestion);
         slot.setTextColor(KeyboardColorMath.contrastTextColor(backgroundColor, 147));
         slot.setTypeface(KeyboardTypefaceCatalog.typefaceFor(
@@ -101,15 +112,9 @@ final class EnglishSuggestionStripController {
                 settings.fontFamily,
                 true,
                 false));
-        slot.setBackground(pillBackground(settings, backgroundColor));
-        slot.setOnClickListener(v -> onSuggestionAccepted.accept(suggestion));
-    }
-
-    private GradientDrawable pillBackground(KeyboardSettings settings, int backgroundColor) {
-        GradientDrawable background = new GradientDrawable();
+        GradientDrawable background = (GradientDrawable) slot.getBackground();
         background.setColor(backgroundColor);
         background.setCornerRadius(SettingsRowBuilder.dp(context, 8));
         background.setStroke(Math.max(1, SettingsRowBuilder.dp(context, 1)), settings.borderColor);
-        return background;
     }
 }

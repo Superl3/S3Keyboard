@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -213,6 +214,37 @@ public final class TypingEventJournalTest {
         assertEquals(
                 serializedStats.shouldApplyActiveSlide("3131", "3131", GestureAction.UP, 0.82f, true),
                 runtimeStats.shouldApplyActiveSlide("3131", "3131", GestureAction.UP, 0.82f, true));
+    }
+
+    @Test
+    public void sessionBoundaryPreventsRollbackFromTargetingPreviousEditor() {
+        String journal = TypingEventJournal.appendInput(
+                "",
+                input("a", "3131", "3131", GestureAction.TAP),
+                50);
+        journal = TypingEventJournal.beginSession(journal, 10L, 50);
+        journal = TypingEventJournal.appendDelete(journal, 11L, 50);
+        journal = TypingEventJournal.appendInput(
+                journal,
+                input("b", "3131", "3132", GestureAction.UP),
+                50);
+
+        assertNull(TypingEventJournal.latestLabelFor(journal, "a"));
+    }
+
+    @Test
+    public void sessionBoundaryPreventsNewEditorTypingFromAcceptingPreviousEditorInput() {
+        String journal = TypingEventJournal.appendInput(
+                "",
+                input("a", "3131", "3131", GestureAction.TAP),
+                50);
+        journal = TypingEventJournal.beginSession(journal, 10L, 50);
+        journal = TypingEventJournal.appendInput(journal, input("b", "3145", "3145", GestureAction.TAP), 50);
+        journal = TypingEventJournal.appendInput(journal, input("c", "3147", "3147", GestureAction.TAP), 50);
+        journal = TypingEventJournal.appendInput(journal, input("d", "3134", "3134", GestureAction.TAP), 50);
+        journal = TypingEventJournal.appendInput(journal, input("e", "3141", "3141", GestureAction.TAP), 50);
+
+        assertNull(TypingEventJournal.latestLabelFor(journal, "a"));
     }
 
     private static String appendMissedSlideEpisode(String journal, String tapId, String replacementId) {

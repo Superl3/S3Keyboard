@@ -1,0 +1,109 @@
+{
+    "schemaVersion":  1,
+    "name":  "Midnight Ice",
+    "author":  "local",
+    "metadata":  {
+                     "recommendedHints":  {
+                                              "showHangulSlideHints":  false,
+                                              "showEnglishSlideHints":  false,
+                                              "showBeginnerTooltipPreview":  true
+                                          },
+                     "tags":  [
+                                  "dark",
+                                  "flat",
+                                  "minimal",
+                                  "glassLike"
+                              ],
+                     "features":  [
+                                      "dingulRoleColors",
+                                      "historicalHintRecommendation"
+                                  ]
+                 },
+    "colors":  {
+                   "alphaKey":  "#132332",
+                   "modifierKey":  "#192B3C",
+                   "accentKey":  "#315D86",
+                   "keyPressed":  "#263E52",
+                   "keyboardBackground":  "#091724",
+                   "panelBackground":  "#091724",
+                   "border":  "#B7D8F6",
+                   "depth":  null,
+                   "accent":  "#F2F8FC",
+                   "secondary":  "#9FB4C6"
+               },
+    "shape":  {
+                  "roundnessDp":  5,
+                  "keyGapDp":  5,
+                  "depthEnabled":  false,
+                  "depthDp":  0,
+                  "borderWidthDp":  1
+              },
+    "additionalNumberRow":  {
+                                "colorMode":  "full_mod"
+                            },
+    "typography":  {
+                       "fontFamily":  "noto_sans_kr",
+                       "primaryTextSizePercent":  76,
+                       "secondaryTextSizePercent":  76,
+                       "primaryTextBold":  false,
+                       "primaryTextItalic":  false,
+                       "secondaryTextBold":  false,
+                       "secondaryTextItalic":  false
+                   },
+    "dingulColors":  {
+                         "alpha":  {
+                                       "foreground":  "#F2F8FC",
+                                       "background":  "#132332"
+                                   },
+                         "mod":  {
+                                     "foreground":  "#9FB4C6",
+                                     "background":  "#192B3C"
+                                 },
+                         "modInv":  {
+                                        "foreground":  "#F4FAFF",
+                                        "background":  "#315D86"
+                                    }
+                     },
+    "accentPolicy":  {
+                         "qwerty":  [
+                                        "qwertyShift"
+                                    ],
+                         "dingul":  [
+                                        "dingulDot"
+                                    ]
+                     },
+    "keyTextColorOverrides":  {
+                                  "shiftIndicator":  "#6BB7F0"
+                              },
+    "effects":  {
+                    "blur":  {
+                                 "enabled":  true,
+                                 "radiusDp":  20
+                             },
+                    "metal":  {
+                                  "enabled":  false,
+                                  "strengthPercent":  0
+                              },
+                    "previewBubble":  {
+                                          "style":  "rounded"
+                                      },
+                    "keyFaceGradient":  {
+                                            "enabled":  true,
+                                            "strengthPercent":  12,
+                                            "startColor":  "#FFFFFF",
+                                            "endColor":  "#07111C",
+                                            "curve":  "glass"
+                                        },
+                    "panelGradient":  {
+                                          "enabled":  true,
+                                          "startColor":  "#0C2133",
+                                          "endColor":  "#07111C"
+                                      },
+                    "glass":  {
+                                  "enabled":  true,
+                                  "tintAlphaPercent":  68,
+                                  "highlightPercent":  36,
+                                  "borderAlphaPercent":  50
+                              }
+                }
+}

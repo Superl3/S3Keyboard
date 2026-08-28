@@ -54,6 +54,13 @@ export const themeContract = {
       description: "\uC2AC\uB77C\uC774\uB4DC \uD78C\uD2B8\uC640 \uBCF4\uC870 \uD14D\uC2A4\uD2B8 \uC0C9\uC0C1\uC785\uB2C8\uB2E4."
     }
   ],
+  outlineColorFields: [
+    { key: "default", label: "Outline default" },
+    { key: "alpha", label: "Outline alpha" },
+    { key: "modifier", label: "Outline modifier" },
+    { key: "accent", label: "Outline accent" },
+    { key: "novelty", label: "Outline novelty" }
+  ],
   shapeFields: [
     { key: "roundnessDp", label: "\uB465\uAE00\uAE30", min: 0, max: 24 },
     { key: "borderWidthDp", label: "\uD14C\uB450\uB9AC \uAD75\uAE30", min: 0, max: 8 },
@@ -337,6 +344,13 @@ export const themeContract = {
     { id: "bottom_shade", label: "Bottom shade" },
     { id: "glass", label: "Glass highlight" }
   ],
+  materialStyles: [
+    { id: "solid", label: "Solid" },
+    { id: "soft_keycap", label: "Soft keycap" },
+    { id: "frosted", label: "Frosted" },
+    { id: "acrylic", label: "Acrylic" },
+    { id: "experimental_refraction", label: "Experimental refraction" }
+  ],
   keyDisplayPacks: [
     { id: "", label: "None" },
     { id: "simple-text", label: "Simple Text" },
@@ -387,6 +401,7 @@ export const themeContract = {
     "description",
     "metadata",
     "colors",
+    "outlineColors",
     "shape",
     "additionalNumberRow",
     "accentPolicy",
@@ -397,6 +412,7 @@ export const themeContract = {
     "keyTextColorOverrides",
     "keyColorOverrides",
     "keyBackgroundColorOverrides",
+    "novelties",
     "keyDisplayOverrides",
     "legendStyle",
     "layers",

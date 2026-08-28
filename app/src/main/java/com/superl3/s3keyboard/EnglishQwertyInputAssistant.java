@@ -74,6 +74,22 @@ final class EnglishQwertyInputAssistant {
         return true;
     }
 
+    boolean correctCurrentWordExplicitly(InputConnection inputConnection) {
+        refreshFromEditor(inputConnection);
+        if (inputConnection == null || currentWord.isEmpty()) {
+            return false;
+        }
+        String exact = correctionEngine.autoCorrection(currentWord);
+        if (exact != null && !exact.equals(currentWord)) {
+            return replaceCurrentWord(inputConnection, exact);
+        }
+        List<EnglishQwertyCorrectionEngine.Candidate> candidates = correctionEngine.suggest(currentWord, 1);
+        if (candidates.isEmpty() || candidates.get(0).score < 0.90f) {
+            return false;
+        }
+        return replaceCurrentWord(inputConnection, candidates.get(0).text);
+    }
+
     boolean replaceCurrentWord(InputConnection inputConnection, String replacement) {
         if (inputConnection == null || replacement == null || replacement.isEmpty()) {
             return false;

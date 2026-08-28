@@ -167,6 +167,39 @@ function Get-KeyFaceGradientEnabled {
     return Get-ThemeBool $effect.enabled $true
 }
 
+function Get-MaterialStyle {
+    param([object] $Theme)
+    $effects = $Theme.effects
+    if ($null -eq $effects) {
+        return "solid"
+    }
+    $explicit = [string]$effects.materialStyle
+    if ($explicit -in @("solid", "soft_keycap", "frosted", "acrylic", "experimental_refraction")) {
+        return $explicit
+    }
+    if (($null -ne $effects.glass -and (Get-ThemeBool $effects.glass.enabled $false)) -or
+            ($null -ne $effects.blur -and (Get-ThemeBool $effects.blur.enabled $false))) {
+        return "frosted"
+    }
+    if ($null -ne $effects.panelGradient -and (Get-ThemeBool $effects.panelGradient.enabled $false)) {
+        return "acrylic"
+    }
+    if (Get-KeyFaceGradientEnabled -Theme $Theme) {
+        return "soft_keycap"
+    }
+    return "solid"
+}
+
+function Test-GlassMaterial {
+    param([object] $Theme)
+    return (Get-MaterialStyle -Theme $Theme) -in @("frosted", "experimental_refraction")
+}
+
+function Test-MaterialRequiresPedestal {
+    param([object] $Theme)
+    return (Get-MaterialStyle -Theme $Theme) -in @("soft_keycap", "frosted", "acrylic")
+}
+
 function Get-KeyFaceGradientStrength {
     param([object] $Theme)
     $effect = Get-KeyFaceGradientEffect -Theme $Theme
@@ -196,16 +229,19 @@ function Get-KeyFaceGradientEndColor {
 
 function Get-KeyFaceGradientCurve {
     param([object] $Theme)
-    $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
-    if ($null -ne $glass -and (Get-ThemeBool $glass.enabled $false)) {
+    $material = Get-MaterialStyle -Theme $Theme
+    if ($material -eq "experimental_refraction") {
         return "glass"
+    }
+    if ($material -eq "frosted") {
+        return "soft"
     }
     $effect = Get-KeyFaceGradientEffect -Theme $Theme
     if ($null -eq $effect -or [string]::IsNullOrWhiteSpace([string]$effect.curve)) {
         return "soft"
     }
     $curve = [string]$effect.curve
-    if ($curve -eq "linear" -or $curve -eq "soft" -or $curve -eq "top_glow" -or $curve -eq "bottom_shade" -or $curve -eq "glass") {
+    if ($curve -eq "linear" -or $curve -eq "soft" -or $curve -eq "top_glow" -or $curve -eq "bottom_shade") {
         return $curve
     }
     return "soft"
@@ -230,11 +266,22 @@ function Get-KeyFaceGradientColors {
         [System.Drawing.Color] $StartColor,
         [System.Drawing.Color] $EndColor
     )
+    $material = Get-MaterialStyle -Theme $Theme
     $luminance = ($Background.R * 299 + $Background.G * 587 + $Background.B * 114) / 1000.0
     $strength = [Math]::Max(0.0, [Math]::Min(1.0, $StrengthPercent / 100.0))
-    $curve = Get-KeyFaceGradientCurve -Theme $Theme
-    $topAmount = $(if ($luminance -lt 42) { 0.04 } else { 0.03 }) + $(if ($curve -eq "glass") { 0.10 } else { 0.24 }) * $strength
-    $bottomAmount = $(if ($luminance -lt 42) { 0.02 } else { 0.025 }) + $(if ($curve -eq "glass") { 0.03 } else { 0.18 }) * $strength
+    if ($material -eq "frosted") {
+        $topAmount = 0.018 + 0.055 * $strength
+        $bottomAmount = 0.012 + 0.035 * $strength
+    } elseif ($material -eq "acrylic") {
+        $topAmount = 0.045 + 0.20 * $strength
+        $bottomAmount = 0.025 + 0.12 * $strength
+    } elseif ($material -eq "soft_keycap") {
+        $topAmount = 0.020 + 0.11 * $strength
+        $bottomAmount = 0.018 + 0.08 * $strength
+    } else {
+        $topAmount = $(if ($luminance -lt 42) { 0.08 } else { 0.06 }) + 0.24 * $strength
+        $bottomAmount = $(if ($luminance -lt 42) { 0.04 } else { 0.05 }) + 0.18 * $strength
+    }
     return @(
         (Blend-ThemeColor -Foreground $StartColor -Background $Background -ForegroundAmount $topAmount),
         $Background,
@@ -255,7 +302,15 @@ function New-KeyFaceBrush {
     $depthDp = Get-ThemeInt $Theme.shape.depthDp 0
     $gradientEnabled = Get-KeyFaceGradientEnabled -Theme $Theme
     $strength = Get-KeyFaceGradientStrength -Theme $Theme
-    if (-not $depthEnabled -or $depthDp -le 0 -or -not $gradientEnabled -or $strength -le 0) {
+    $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
+    $material = Get-MaterialStyle -Theme $Theme
+    $experimental = $material -eq "experimental_refraction"
+    if ($experimental) {
+        $glassStrength = [Math]::Round((Get-ThemeInt $glass.highlightPercent 18) * 100.0 / 60.0)
+        $strength = [Math]::Max($strength, $glassStrength)
+    }
+    $drawGradient = $experimental -or ($material -ne "solid" -and $gradientEnabled -and $strength -gt 0)
+    if (-not $drawGradient) {
         return [System.Drawing.SolidBrush]::new($Fill)
     }
 
@@ -292,17 +347,19 @@ function New-PanelBackgroundBrush {
     $blurRadius = if ($null -ne $blur) { Get-ThemeInt $blur.radiusDp 0 } else { 0 }
     $blurEnabled = $null -ne $blur -and (Get-ThemeBool $blur.enabled $false) -and $blurRadius -gt 0
     $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
-    $glassEnabled = $null -ne $glass -and (Get-ThemeBool $glass.enabled $false)
+    $glassEnabled = Test-GlassMaterial -Theme $Theme
     $surfaceAlpha = if ($glassEnabled) {
         $retention = (Get-ThemeInt $glass.tintAlphaPercent 86) / 100.0
-        [Math]::Round(255 * (0.28 + 0.22 * [Math]::Max(0, [Math]::Min(1, $retention))))
+        [Math]::Round(255 * (0.74 + 0.12 * [Math]::Max(0, [Math]::Min(1, $retention))))
     } elseif ($blurEnabled) {
         202
     } else {
         255
     }
     $gradient = if ($null -ne $Theme.effects) { $Theme.effects.panelGradient } else { $null }
-    if ($null -eq $gradient -or -not (Get-ThemeBool $gradient.enabled $false)) {
+    if ((Get-MaterialStyle -Theme $Theme) -eq "solid" -or
+            $null -eq $gradient -or
+            -not (Get-ThemeBool $gradient.enabled $false)) {
         if ($surfaceAlpha -lt 255) {
             return [System.Drawing.SolidBrush]::new(
                     [System.Drawing.Color]::FromArgb($surfaceAlpha, $fallback.R, $fallback.G, $fallback.B))
@@ -617,6 +674,44 @@ function Get-KeyBackgroundOverrideColor {
     return $null
 }
 
+function Get-OutlinePreviewColor {
+    param([object] $Theme, [string] $Label, [string] $Role)
+    $fallback = Convert-ThemeColor $Theme.colors.border "#696969"
+    $outlines = $Theme.outlineColors
+    if ($null -eq $outlines) {
+        return $fallback
+    }
+    if ($null -ne $outlines.keys -and -not [string]::IsNullOrWhiteSpace($Label)) {
+        foreach ($candidate in (Get-OverrideCandidatesForLabel -Label $Label)) {
+            $property = $outlines.keys.PSObject.Properties |
+                    Where-Object { ($_.Name.ToLowerInvariant() -replace "\s+", "") -eq $candidate } |
+                    Select-Object -First 1
+            if ($null -ne $property) {
+                return Convert-ThemeColor $property.Value $Theme.colors.border
+            }
+        }
+    }
+    if ($null -ne (Get-ExplicitNoveltyOverrideForLabel -Theme $Theme -Label $Label) `
+            -and -not [string]::IsNullOrWhiteSpace([string]$outlines.novelty)) {
+        return Convert-ThemeColor $outlines.novelty $Theme.colors.border
+    }
+    $roleKey = switch ($Role) {
+        "accent" { "accent" }
+        "modifier" { "modifier" }
+        default { "alpha" }
+    }
+    $roleProperty = $outlines.PSObject.Properties |
+            Where-Object { $_.Name -eq $roleKey } |
+            Select-Object -First 1
+    if ($null -ne $roleProperty -and -not [string]::IsNullOrWhiteSpace([string]$roleProperty.Value)) {
+        return Convert-ThemeColor $roleProperty.Value $Theme.colors.border
+    }
+    if (-not [string]::IsNullOrWhiteSpace([string]$outlines.default)) {
+        return Convert-ThemeColor $outlines.default $Theme.colors.border
+    }
+    return $fallback
+}
+
 function Get-OverrideCandidatesForLabel {
     param([string] $Label)
     $normalizedLabel = $Label.ToLowerInvariant() -replace "\s+", ""
@@ -639,6 +734,45 @@ function Get-OverrideCandidatesForLabel {
         "tap:$normalizedLabel",
         "tap:$semantic"
     ) | Select-Object -Unique
+}
+
+function Get-ExplicitNoveltyOverrideForLabel {
+    param([object] $Theme, [string] $Label)
+    if ([string]::IsNullOrWhiteSpace($Label) -or $null -eq $Theme.novelties) {
+        return $null
+    }
+    $map = if ($null -ne $Theme.novelties.keys) { $Theme.novelties.keys } else { $Theme.novelties }
+    foreach ($candidate in (Get-OverrideCandidatesForLabel -Label $Label)) {
+        $property = $map.PSObject.Properties |
+                Where-Object { ($_.Name.ToLowerInvariant() -replace "\s+", "") -eq $candidate } |
+                Select-Object -First 1
+        if ($null -ne $property -and $null -ne $property.Value) {
+            return $property.Value
+        }
+    }
+    return $null
+}
+
+function Get-ExplicitDisplayOverrideForLabel {
+    param([object] $Theme, [string] $Label)
+    if ([string]::IsNullOrWhiteSpace($Label)) {
+        return $null
+    }
+    foreach ($source in @($Theme.keyDisplayOverrides, $Theme.novelties)) {
+        if ($null -eq $source) {
+            continue
+        }
+        $map = if ($null -ne $source.keys) { $source.keys } else { $source }
+        foreach ($candidate in (Get-OverrideCandidatesForLabel -Label $Label)) {
+            $property = $map.PSObject.Properties |
+                    Where-Object { ($_.Name.ToLowerInvariant() -replace "\s+", "") -eq $candidate } |
+                    Select-Object -First 1
+            if ($null -ne $property -and $null -ne $property.Value) {
+                return $property.Value
+            }
+        }
+    }
+    return $null
 }
 
 function Get-PreviewIconName {
@@ -2088,7 +2222,7 @@ function Draw-Key {
         [string] $Layout = "dingul"
     )
 
-    $border = Convert-ThemeColor $Theme.colors.border "#696969"
+    $border = Get-OutlinePreviewColor -Theme $Theme -Label $Label -Role $Role
     $overrideFill = Get-KeyBackgroundOverrideColor -Theme $Theme -Label $Label
     $fill = if ($null -ne $overrideFill) { $overrideFill } else { Get-RoleColor -Theme $Theme -Role $Role }
     $accent = Convert-ThemeColor $Theme.colors.accent "#232323"
@@ -2098,6 +2232,10 @@ function Draw-Key {
 
     $depthEnabled = [bool]$Theme.shape.depthEnabled
     $depthDp = [int]$Theme.shape.depthDp
+    if ((Test-MaterialRequiresPedestal -Theme $Theme) -and (-not $depthEnabled -or $depthDp -le 0)) {
+        $depthEnabled = $true
+        $depthDp = 1
+    }
     if ($depthEnabled -and $depthDp -gt 0) {
         $depthBrush = [System.Drawing.SolidBrush]::new($depthColor)
         try {
@@ -2109,7 +2247,23 @@ function Draw-Key {
 
     $fillBrush = New-KeyFaceBrush -Theme $Theme -Fill $fill -X $X -Y $Y -W $W -H $H
     $borderWidth = [Math]::Max(0, (Get-ThemeInt $Theme.shape.borderWidthDp 1)) * 1.2
-    $borderPen = if ($borderWidth -gt 0) { [System.Drawing.Pen]::new($border, $borderWidth) } else { $null }
+    $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
+    $glassEnabled = Test-GlassMaterial -Theme $Theme
+    $borderAlpha = if ($glassEnabled) {
+        [Math]::Round(255 * (Get-ThemeInt $glass.borderAlphaPercent 42) / 100.0)
+    } else {
+        255
+    }
+    $borderColor = [System.Drawing.Color]::FromArgb($borderAlpha, $border.R, $border.G, $border.B)
+    $borderPen = if ($borderWidth -gt 0) { [System.Drawing.Pen]::new($borderColor, $borderWidth) } else { $null }
+    $highlightPen = $null
+    if ($glassEnabled) {
+        $highlightAlpha = [Math]::Min(72, [Math]::Round((Get-ThemeInt $glass.highlightPercent 18) * 1.35))
+        if ($highlightAlpha -gt 0) {
+            $highlightColor = [System.Drawing.Color]::FromArgb($highlightAlpha, 255, 255, 255)
+            $highlightPen = [System.Drawing.Pen]::new($highlightColor, [Math]::Max(1.0, $borderWidth * 0.65))
+        }
+    }
     $textBrush = [System.Drawing.SolidBrush]::new($textColor)
     try {
         Draw-RoundRect -Graphics $Graphics -Brush $fillBrush -Pen $null -X $X -Y $Y -W $W -H $H -Radius $Radius
@@ -2125,9 +2279,34 @@ function Draw-Key {
                     -H ([Math]::Max(1, $H - $borderWidth)) `
                     -Radius ([Math]::Max(0, $Radius - $inset))
         }
+        if ($null -ne $highlightPen) {
+            $highlightInset = [Math]::Max($borderWidth, $highlightPen.Width * 0.7)
+            Draw-RoundRect `
+                    -Graphics $Graphics `
+                    -Brush $null `
+                    -Pen $highlightPen `
+                    -X ($X + $highlightInset) `
+                    -Y ($Y + $highlightInset) `
+                    -W ([Math]::Max(1, $W - $highlightInset * 2)) `
+                    -H ([Math]::Max(1, $H - $highlightInset * 2)) `
+                    -Radius ([Math]::Max(0, $Radius - $highlightInset))
+        }
         $icon = Get-PreviewIconName $Label
         $hideHints = $false
-        if (Test-DotLegendLabel -Theme $Theme -Label $Label) {
+        $explicitDisplay = Get-ExplicitDisplayOverrideForLabel -Theme $Theme -Label $Label
+        $explicitDisplayRendered = $false
+        if ($null -ne $explicitDisplay) {
+            if ([string]$explicitDisplay.type -eq "text") {
+                Draw-CenteredText -Graphics $Graphics -Text ([string]$explicitDisplay.value) -Font $Font -Brush $textBrush -X $X -Y $Y -W $W -H $H
+                $explicitDisplayRendered = $true
+            } elseif ([string]$explicitDisplay.type -eq "icon") {
+                $explicitDisplayRendered = Draw-PointGlyphPreview -Graphics $Graphics -Glyph ([string]$explicitDisplay.value) -Color $textColor -X $X -Y $Y -W $W -H $H
+            }
+        }
+        if ($explicitDisplayRendered) {
+            $hideHints = $true
+            # rendered by explicit novelty/display override
+        } elseif (Test-DotLegendLabel -Theme $Theme -Label $Label) {
             $hideHints = $true
             $diameter = Get-GlyphDotDiameter -H $H
             if ($Label -eq "." -or $Label -eq "/") {
@@ -2181,6 +2360,9 @@ function Draw-Key {
         if ($null -ne $borderPen) {
             $borderPen.Dispose()
         }
+        if ($null -ne $highlightPen) {
+            $highlightPen.Dispose()
+        }
         $textBrush.Dispose()
     }
 }
@@ -2195,12 +2377,22 @@ function Draw-KeyboardBackground {
         [float] $H
     )
     $brush = New-PanelBackgroundBrush -Theme $Theme -X $X -Y $Y -W $W -H $H
-    $pen = [System.Drawing.Pen]::new((Convert-ThemeColor $Theme.colors.border "#696969"), 1)
+    $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
+    $glassEnabled = Test-GlassMaterial -Theme $Theme
+    $panelBorder = Convert-ThemeColor $Theme.colors.border "#696969"
+    $panelBorderAlpha = if ($glassEnabled) {
+        [Math]::Round(0.65 * (Get-ThemeInt $glass.borderAlphaPercent 42))
+    } else {
+        255
+    }
+    $panelBorderColor = [System.Drawing.Color]::FromArgb(
+            $panelBorderAlpha, $panelBorder.R, $panelBorder.G, $panelBorder.B)
+    $pen = [System.Drawing.Pen]::new($panelBorderColor, 1)
     try {
         Draw-RoundRect -Graphics $Graphics -Brush $brush -Pen $pen -X $X -Y $Y -W $W -H $H -Radius 18
         $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
-        if ($null -ne $glass -and (Get-ThemeBool $glass.enabled $false)) {
-            $highlight = [Math]::Min(64, [Math]::Round((Get-ThemeInt $glass.highlightPercent 18) * 1.35))
+        if (Test-GlassMaterial -Theme $Theme) {
+            $highlight = [Math]::Min(28, [Math]::Round((Get-ThemeInt $glass.highlightPercent 18) * 0.85))
             $highlightBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
                     [System.Drawing.RectangleF]::new($X, $Y, [Math]::Max(1, $W), [Math]::Max(1, $H)),
                     [System.Drawing.Color]::FromArgb($highlight, 255, 255, 255),

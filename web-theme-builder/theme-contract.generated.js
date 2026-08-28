@@ -55,6 +55,28 @@ window.S3_THEME_CONTRACT = {
       "description": "슬라이드 힌트와 보조 텍스트 색상입니다."
     }
   ],
+  "outlineColorFields": [
+    {
+      "key": "default",
+      "label": "Outline default"
+    },
+    {
+      "key": "alpha",
+      "label": "Outline alpha"
+    },
+    {
+      "key": "modifier",
+      "label": "Outline modifier"
+    },
+    {
+      "key": "accent",
+      "label": "Outline accent"
+    },
+    {
+      "key": "novelty",
+      "label": "Outline novelty"
+    }
+  ],
   "shapeFields": [
     {
       "key": "roundnessDp",
@@ -605,6 +627,28 @@ window.S3_THEME_CONTRACT = {
       "label": "Glass highlight"
     }
   ],
+  "materialStyles": [
+    {
+      "id": "solid",
+      "label": "Solid"
+    },
+    {
+      "id": "soft_keycap",
+      "label": "Soft keycap"
+    },
+    {
+      "id": "frosted",
+      "label": "Frosted"
+    },
+    {
+      "id": "acrylic",
+      "label": "Acrylic"
+    },
+    {
+      "id": "experimental_refraction",
+      "label": "Experimental refraction"
+    }
+  ],
   "keyDisplayPacks": [
     {
       "id": "",
@@ -726,6 +770,7 @@ window.S3_THEME_CONTRACT = {
     "description",
     "metadata",
     "colors",
+    "outlineColors",
     "shape",
     "additionalNumberRow",
     "accentPolicy",
@@ -736,6 +781,7 @@ window.S3_THEME_CONTRACT = {
     "keyTextColorOverrides",
     "keyColorOverrides",
     "keyBackgroundColorOverrides",
+    "novelties",
     "keyDisplayOverrides",
     "legendStyle",
     "layers",

@@ -1,6 +1,25 @@
 package com.superl3.s3keyboard;
 
 final class KeyboardVisualEffects {
+    static final String MATERIAL_SOLID = "solid";
+    static final String MATERIAL_SOFT_KEYCAP = "soft_keycap";
+    static final String MATERIAL_FROSTED = "frosted";
+    static final String MATERIAL_ACRYLIC = "acrylic";
+    static final String MATERIAL_EXPERIMENTAL_REFRACTION = "experimental_refraction";
+    private static final String[] MATERIAL_STYLE_ORDER = {
+            MATERIAL_SOLID,
+            MATERIAL_SOFT_KEYCAP,
+            MATERIAL_FROSTED,
+            MATERIAL_ACRYLIC,
+            MATERIAL_EXPERIMENTAL_REFRACTION
+    };
+    private static final String[] MATERIAL_STYLE_LABELS = {
+            "단색",
+            "부드러운 키캡",
+            "서리 유리",
+            "아크릴",
+            "실험적 굴절"
+    };
     static final String KEY_FACE_GRADIENT_CURVE_LINEAR = "linear";
     static final String KEY_FACE_GRADIENT_CURVE_SOFT = "soft";
     static final String KEY_FACE_GRADIENT_CURVE_TOP_GLOW = "top_glow";
@@ -62,6 +81,7 @@ final class KeyboardVisualEffects {
     final int glassTintAlphaPercent;
     final int glassHighlightPercent;
     final int glassBorderAlphaPercent;
+    final String materialStyle;
 
     KeyboardVisualEffects(
             boolean blurEnabled,
@@ -200,6 +220,51 @@ final class KeyboardVisualEffects {
             int glassTintAlphaPercent,
             int glassHighlightPercent,
             int glassBorderAlphaPercent) {
+        this(
+                blurEnabled,
+                blurRadiusDp,
+                metallicEnabled,
+                metallicStrengthPercent,
+                angularPreviewBubble,
+                keyFaceGradientEnabled,
+                keyFaceGradientStrengthPercent,
+                keyFaceGradientStartColor,
+                keyFaceGradientEndColor,
+                keyFaceGradientCurve,
+                panelGradientEnabled,
+                panelGradientStartColor,
+                panelGradientEndColor,
+                glassEnabled,
+                glassTintAlphaPercent,
+                glassHighlightPercent,
+                glassBorderAlphaPercent,
+                inferLegacyMaterialStyle(
+                        glassEnabled,
+                        blurEnabled,
+                        panelGradientEnabled,
+                        keyFaceGradientEnabled,
+                        keyFaceGradientStrengthPercent));
+    }
+
+    private KeyboardVisualEffects(
+            boolean blurEnabled,
+            int blurRadiusDp,
+            boolean metallicEnabled,
+            int metallicStrengthPercent,
+            boolean angularPreviewBubble,
+            boolean keyFaceGradientEnabled,
+            int keyFaceGradientStrengthPercent,
+            int keyFaceGradientStartColor,
+            int keyFaceGradientEndColor,
+            String keyFaceGradientCurve,
+            boolean panelGradientEnabled,
+            int panelGradientStartColor,
+            int panelGradientEndColor,
+            boolean glassEnabled,
+            int glassTintAlphaPercent,
+            int glassHighlightPercent,
+            int glassBorderAlphaPercent,
+            String materialStyle) {
         this.blurEnabled = blurEnabled;
         this.blurRadiusDp = clamp(blurRadiusDp, 0, 32);
         this.metallicEnabled = metallicEnabled;
@@ -214,9 +279,10 @@ final class KeyboardVisualEffects {
         this.panelGradientStartColor = opaque(panelGradientStartColor);
         this.panelGradientEndColor = opaque(panelGradientEndColor);
         this.glassEnabled = glassEnabled;
-        this.glassTintAlphaPercent = clamp(glassTintAlphaPercent, 60, 98);
+        this.glassTintAlphaPercent = clamp(glassTintAlphaPercent, 45, 98);
         this.glassHighlightPercent = clamp(glassHighlightPercent, 0, 60);
         this.glassBorderAlphaPercent = clamp(glassBorderAlphaPercent, 0, 100);
+        this.materialStyle = normalizeMaterialStyle(materialStyle);
     }
 
     boolean hasExportableEffects() {
@@ -236,7 +302,8 @@ final class KeyboardVisualEffects {
                 || glassEnabled
                 || glassTintAlphaPercent != DEFAULT.glassTintAlphaPercent
                 || glassHighlightPercent != DEFAULT.glassHighlightPercent
-                || glassBorderAlphaPercent != DEFAULT.glassBorderAlphaPercent;
+                || glassBorderAlphaPercent != DEFAULT.glassBorderAlphaPercent
+                || !materialStyle.equals(DEFAULT.materialStyle);
     }
 
     KeyboardVisualEffects withKeyFaceGradient(boolean enabled, int strengthPercent) {
@@ -254,6 +321,12 @@ final class KeyboardVisualEffects {
             int startColor,
             int endColor,
             String curve) {
+        String nextMaterial = materialStyle;
+        if (enabled && MATERIAL_SOLID.equals(nextMaterial)) {
+            nextMaterial = MATERIAL_SOFT_KEYCAP;
+        } else if (!enabled && MATERIAL_SOFT_KEYCAP.equals(nextMaterial)) {
+            nextMaterial = MATERIAL_SOLID;
+        }
         return new KeyboardVisualEffects(
                 blurEnabled,
                 blurRadiusDp,
@@ -271,10 +344,19 @@ final class KeyboardVisualEffects {
                 glassEnabled,
                 glassTintAlphaPercent,
                 glassHighlightPercent,
-                glassBorderAlphaPercent);
+                glassBorderAlphaPercent,
+                nextMaterial);
     }
 
     KeyboardVisualEffects withBlur(boolean enabled, int radiusDp) {
+        String nextMaterial = materialStyle;
+        if (enabled && !usesGlassSurface()) {
+            nextMaterial = MATERIAL_FROSTED;
+        } else if (!enabled && MATERIAL_FROSTED.equals(nextMaterial)) {
+            nextMaterial = keyFaceGradientEnabled
+                    ? MATERIAL_SOFT_KEYCAP
+                    : MATERIAL_SOLID;
+        }
         return new KeyboardVisualEffects(
                 enabled,
                 radiusDp,
@@ -292,10 +374,20 @@ final class KeyboardVisualEffects {
                 glassEnabled,
                 glassTintAlphaPercent,
                 glassHighlightPercent,
-                glassBorderAlphaPercent);
+                glassBorderAlphaPercent,
+                nextMaterial);
     }
 
     KeyboardVisualEffects withPanelGradient(boolean enabled, int startColor, int endColor) {
+        String nextMaterial = materialStyle;
+        if (enabled && (MATERIAL_SOLID.equals(nextMaterial)
+                || MATERIAL_SOFT_KEYCAP.equals(nextMaterial))) {
+            nextMaterial = MATERIAL_ACRYLIC;
+        } else if (!enabled && MATERIAL_ACRYLIC.equals(nextMaterial)) {
+            nextMaterial = keyFaceGradientEnabled
+                    ? MATERIAL_SOFT_KEYCAP
+                    : MATERIAL_SOLID;
+        }
         return new KeyboardVisualEffects(
                 blurEnabled,
                 blurRadiusDp,
@@ -313,7 +405,8 @@ final class KeyboardVisualEffects {
                 glassEnabled,
                 glassTintAlphaPercent,
                 glassHighlightPercent,
-                glassBorderAlphaPercent);
+                glassBorderAlphaPercent,
+                nextMaterial);
     }
 
     KeyboardVisualEffects withGlass(
@@ -321,6 +414,17 @@ final class KeyboardVisualEffects {
             int tintAlphaPercent,
             int highlightPercent,
             int borderAlphaPercent) {
+        String nextMaterial = materialStyle;
+        if (enabled && !usesGlassSurface()) {
+            nextMaterial = MATERIAL_FROSTED;
+        } else if (!enabled && usesGlassSurface()) {
+            nextMaterial = inferLegacyMaterialStyle(
+                    false,
+                    blurEnabled,
+                    panelGradientEnabled,
+                    keyFaceGradientEnabled,
+                    keyFaceGradientStrengthPercent);
+        }
         return new KeyboardVisualEffects(
                 blurEnabled,
                 blurRadiusDp,
@@ -338,7 +442,152 @@ final class KeyboardVisualEffects {
                 enabled,
                 tintAlphaPercent,
                 highlightPercent,
-                borderAlphaPercent);
+                borderAlphaPercent,
+                nextMaterial);
+    }
+
+    KeyboardVisualEffects withMaterialStyle(String style) {
+        return copyWithMaterialStyle(normalizeMaterialStyle(style));
+    }
+
+    KeyboardVisualEffects withMaterialPreset(String style) {
+        String normalized = normalizeMaterialStyle(style);
+        switch (normalized) {
+            case MATERIAL_SOLID:
+                return new KeyboardVisualEffects(
+                        false, 0, false, 0, angularPreviewBubble,
+                        false, 0, keyFaceGradientStartColor, keyFaceGradientEndColor,
+                        keyFaceGradientCurve, false, panelGradientStartColor,
+                        panelGradientEndColor, false, glassTintAlphaPercent,
+                        glassHighlightPercent, glassBorderAlphaPercent, normalized);
+            case MATERIAL_FROSTED:
+                return new KeyboardVisualEffects(
+                        true, blurRadiusDp > 0 ? blurRadiusDp : 16,
+                        false, 0, angularPreviewBubble,
+                        true, Math.max(8, keyFaceGradientStrengthPercent),
+                        keyFaceGradientStartColor, keyFaceGradientEndColor,
+                        KEY_FACE_GRADIENT_CURVE_SOFT, false,
+                        panelGradientStartColor, panelGradientEndColor, true,
+                        glassTintAlphaPercent, glassHighlightPercent,
+                        glassBorderAlphaPercent, normalized);
+            case MATERIAL_ACRYLIC:
+                return new KeyboardVisualEffects(
+                        false, blurRadiusDp, false, 0, angularPreviewBubble,
+                        true, Math.max(14, keyFaceGradientStrengthPercent),
+                        keyFaceGradientStartColor, keyFaceGradientEndColor,
+                        KEY_FACE_GRADIENT_CURVE_SOFT, true,
+                        panelGradientStartColor, panelGradientEndColor, false,
+                        glassTintAlphaPercent, glassHighlightPercent,
+                        glassBorderAlphaPercent, normalized);
+            case MATERIAL_EXPERIMENTAL_REFRACTION:
+                return new KeyboardVisualEffects(
+                        true, blurRadiusDp > 0 ? blurRadiusDp : 16,
+                        false, 0, angularPreviewBubble,
+                        true, Math.max(12, keyFaceGradientStrengthPercent),
+                        keyFaceGradientStartColor, keyFaceGradientEndColor,
+                        KEY_FACE_GRADIENT_CURVE_GLASS, panelGradientEnabled,
+                        panelGradientStartColor, panelGradientEndColor, true,
+                        glassTintAlphaPercent, glassHighlightPercent,
+                        glassBorderAlphaPercent, normalized);
+            case MATERIAL_SOFT_KEYCAP:
+            default:
+                return new KeyboardVisualEffects(
+                        false, blurRadiusDp, false, 0, angularPreviewBubble,
+                        true, Math.max(12, keyFaceGradientStrengthPercent),
+                        keyFaceGradientStartColor, keyFaceGradientEndColor,
+                        KEY_FACE_GRADIENT_CURVE_SOFT, false,
+                        panelGradientStartColor, panelGradientEndColor, false,
+                        glassTintAlphaPercent, glassHighlightPercent,
+                        glassBorderAlphaPercent, normalized);
+        }
+    }
+
+    boolean usesGlassSurface() {
+        return MATERIAL_FROSTED.equals(materialStyle)
+                || MATERIAL_EXPERIMENTAL_REFRACTION.equals(materialStyle);
+    }
+
+    boolean usesLiveRefraction() {
+        return MATERIAL_EXPERIMENTAL_REFRACTION.equals(materialStyle);
+    }
+
+    boolean requiresPedestal() {
+        return MATERIAL_SOFT_KEYCAP.equals(materialStyle)
+                || MATERIAL_FROSTED.equals(materialStyle)
+                || MATERIAL_ACRYLIC.equals(materialStyle);
+    }
+
+    boolean usesPlatformBlur() {
+        return usesGlassSurface() && blurEnabled && blurRadiusDp > 0;
+    }
+
+    boolean usesKeyFaceGradient() {
+        return !MATERIAL_SOLID.equals(materialStyle)
+                && keyFaceGradientEnabled
+                && keyFaceGradientStrengthPercent > 0;
+    }
+
+    boolean usesPanelGradient() {
+        return !MATERIAL_SOLID.equals(materialStyle) && panelGradientEnabled;
+    }
+
+    private KeyboardVisualEffects copyWithMaterialStyle(String style) {
+        return new KeyboardVisualEffects(
+                blurEnabled, blurRadiusDp, metallicEnabled, metallicStrengthPercent,
+                angularPreviewBubble, keyFaceGradientEnabled,
+                keyFaceGradientStrengthPercent, keyFaceGradientStartColor,
+                keyFaceGradientEndColor, keyFaceGradientCurve, panelGradientEnabled,
+                panelGradientStartColor, panelGradientEndColor, glassEnabled,
+                glassTintAlphaPercent, glassHighlightPercent,
+                glassBorderAlphaPercent, style);
+    }
+
+    static String normalizeMaterialStyle(String style) {
+        for (String candidate : MATERIAL_STYLE_ORDER) {
+            if (candidate.equals(style)) {
+                return candidate;
+            }
+        }
+        return MATERIAL_SOFT_KEYCAP;
+    }
+
+    private static String inferLegacyMaterialStyle(
+            boolean glassEnabled,
+            boolean blurEnabled,
+            boolean panelGradientEnabled,
+            boolean keyFaceGradientEnabled,
+            int keyFaceGradientStrengthPercent) {
+        if (glassEnabled || blurEnabled) {
+            return MATERIAL_FROSTED;
+        }
+        if (panelGradientEnabled) {
+            return MATERIAL_ACRYLIC;
+        }
+        if (keyFaceGradientEnabled && keyFaceGradientStrengthPercent > 0) {
+            return MATERIAL_SOFT_KEYCAP;
+        }
+        return MATERIAL_SOLID;
+    }
+
+    static String[] materialStyleLabels() {
+        return MATERIAL_STYLE_LABELS.clone();
+    }
+
+    static String materialStyleAt(int position) {
+        if (position < 0 || position >= MATERIAL_STYLE_ORDER.length) {
+            return MATERIAL_SOFT_KEYCAP;
+        }
+        return MATERIAL_STYLE_ORDER[position];
+    }
+
+    static int materialStyleIndexOf(String style) {
+        String normalized = normalizeMaterialStyle(style);
+        for (int i = 0; i < MATERIAL_STYLE_ORDER.length; i++) {
+            if (MATERIAL_STYLE_ORDER[i].equals(normalized)) {
+                return i;
+            }
+        }
+        return 1;
     }
 
     private static int clamp(int value, int min, int max) {

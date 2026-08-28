@@ -105,6 +105,26 @@ public final class EnglishQwertyInputAssistantTest {
         assertEquals("you're", assistant.currentWord());
     }
 
+    @Test
+    public void explicitCorrectionReadsEditorWithoutAutomaticTracking() {
+        EnglishQwertyInputAssistant assistant = new EnglishQwertyInputAssistant();
+        FakeConnection fake = new FakeConnection();
+        fake.beforeCursor = "teh";
+
+        assertTrue(assistant.correctCurrentWordExplicitly(fake.connection()));
+        assertEquals("commitText:the", fake.calls.get(1));
+    }
+
+    @Test
+    public void explicitCorrectionAcceptsOnlyHighConfidenceCandidate() {
+        EnglishQwertyInputAssistant assistant = new EnglishQwertyInputAssistant();
+        FakeConnection fake = new FakeConnection();
+        fake.beforeCursor = "gpod";
+
+        assertTrue(assistant.correctCurrentWordExplicitly(fake.connection()));
+        assertEquals("commitText:good", fake.calls.get(1));
+    }
+
     private static final class FakeConnection implements InvocationHandler {
         String beforeCursor;
         final List<String> calls = new ArrayList<>();

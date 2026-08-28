@@ -28,6 +28,8 @@ final class KeyboardCommandLabels {
                 return R.string.command_space;
             case KeyboardCommands.CMD_ENTER:
                 return R.string.command_enter;
+            case KeyboardCommands.CMD_CORRECT_TEXT:
+                return R.string.command_correct_text;
             case KeyboardCommands.CMD_NEWLINE:
                 return R.string.command_newline;
             case KeyboardCommands.CMD_MOVE_LEFT:

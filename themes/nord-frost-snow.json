@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "name": "Nord Frost Snow",
+  "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": true,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "light",
+      "frosted"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation",
+      "keyFaceGradient",
+      "blurEffect",
+      "keyDepth"
+    ]
+  },
+  "colors": {
+    "alphaKey": "#F8FAFC",
+    "modifierKey": "#EEF2F7",
+    "accentKey": "#E4EAF2",
+    "keyPressed": "#D8DEE9",
+    "keyboardBackground": "#E5E9F0",
+    "border": "#748396",
+    "depth": "#B8C2CC",
+    "accent": "#2E3440",
+    "secondary": "#59687A"
+  },
+  "shape": {
+    "roundnessDp": 9,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 1,
+    "borderWidthDp": 1
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": true,
+    "secondaryTextItalic": false
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#2E3440",
+      "background": "#F8FAFC"
+    },
+    "mod": {
+      "foreground": "#59687A",
+      "background": "#EEF2F7"
+    },
+    "modInv": {
+      "foreground": "#2E3440",
+      "background": "#E4EAF2"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#06B6D4",
+    "enter": "#2E3440",
+    "backspace": "#445064",
+    "language": "#445064",
+    "settings": "#445064"
+  },
+  "effects": {
+    "blur": {
+      "enabled": true,
+      "radiusDp": 18
+    },
+    "glass": {
+      "enabled": true,
+      "tintAlphaPercent": 92,
+      "highlightPercent": 10,
+      "borderAlphaPercent": 30
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "previewBubble": {
+      "style": "rounded"
+    },
+    "keyFaceGradient": {
+      "enabled": true,
+      "strengthPercent": 8,
+      "startColor": "#FFFFFF",
+      "endColor": "#8795A6",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false,
+      "startColor": "#F2F5F9",
+      "endColor": "#CFD8E4"
+    },
+    "materialStyle": "frosted"
+  }
+}

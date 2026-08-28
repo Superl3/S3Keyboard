@@ -39,12 +39,21 @@
           <label class="check"><input id="depthEnabled" type="checkbox"> Depth enabled</label>
           <label class="check"><input id="customDepth" type="checkbox"> Use fixed custom depth color</label>
           <p class="hint">When fixed depth is off, the depth face is auto-dimmed from each key background.</p>
+          <label>Material
+            <select id="materialStyle">
+              <option value="solid">Solid</option>
+              <option value="soft_keycap">Soft keycap</option>
+              <option value="frosted">Frosted</option>
+              <option value="acrylic">Acrylic</option>
+              <option value="experimental_refraction">Experimental refraction</option>
+            </select>
+          </label>
+          <p class="hint">Only Experimental refraction may use the opt-in Android accessibility screen source. All other materials are static or platform-backed.</p>
           <label class="check"><input id="pseudoBlurEnabled" type="checkbox"> Background blur</label>
           <label>Blur radius <input id="pseudoBlurRadiusDp" type="range" min="0" max="32"></label>
           <output id="pseudoBlurOut"></output>
           <p class="hint">The Android runtime uses platform blur when supported. Preview uses CSS backdrop-filter.</p>
-          <label class="check"><input id="glassEnabled" type="checkbox"> Glass backplate</label>
-          <label>Glass tint retention <input id="glassTintAlphaPercent" type="range" min="60" max="98"></label>
+          <label>Glass tint retention <input id="glassTintAlphaPercent" type="range" min="45" max="98"></label>
           <output id="glassTintOut"></output>
           <label>Glass top highlight <input id="glassHighlightPercent" type="range" min="0" max="60"></label>
           <output id="glassHighlightOut"></output>

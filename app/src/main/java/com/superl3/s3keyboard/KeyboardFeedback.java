@@ -16,6 +16,7 @@ final class KeyboardFeedback {
     private static final long MAX_EVENT_AGE_MS = 220L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable drainRunnable = this::drain;
     private final Queue<HapticEvent> queue = new ArrayDeque<>();
     private final Vibrator vibrator;
     private boolean enabled;
@@ -30,8 +31,16 @@ final class KeyboardFeedback {
     void setEnabled(boolean enabled) {
         this.enabled = enabled;
         if (!enabled) {
-            queue.clear();
-            draining = false;
+            cancelPending();
+        }
+    }
+
+    void cancelPending() {
+        handler.removeCallbacks(drainRunnable);
+        queue.clear();
+        draining = false;
+        if (vibrator != null) {
+            vibrator.cancel();
         }
     }
 
@@ -101,7 +110,7 @@ final class KeyboardFeedback {
         }
 
         vibrate(next.durationMs);
-        handler.postDelayed(this::drain, next.durationMs + tickGapMs);
+        handler.postDelayed(drainRunnable, next.durationMs + tickGapMs);
     }
 
     private void vibrate(int durationMs) {

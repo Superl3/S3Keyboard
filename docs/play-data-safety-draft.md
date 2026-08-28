@@ -11,6 +11,8 @@ This draft matches the current closed-beta implementation and should be reviewed
 - Optional voice input delegates recognition to the Android speech-recognition provider. The app
   does not request microphone permission or retain audio; provider-side collection must be
   disclosed according to the provider used in the test/release environment.
+- Optional Accessibility-based Glass source can process the active app window screenshot locally.
+  It is opt-in, memory-only, downscaled, never transmitted, and disabled for password fields.
 
 Under Google Play Data safety guidance, collection means transmitting data off the user's device. This app keeps keyboard settings, local input-learning data, and optional clipboard history on device.
 
@@ -22,6 +24,7 @@ Under Google Play Data safety guidance, collection means transmitting data off t
 - Gesture-intent journal: recent local key input events, touch geometry, policy snapshot fields, shadow correction candidates, delete rollback targets, and derived labels such as missed slide, false slide, wrong direction, wrong origin key, accepted tap, accepted slide, and shadow false alarm. Typed key values are redacted for password, number-like, URI, email, and web-edit fields. Copied issue reports additionally redact text-like future fields, clipboard/phrase preview fields, and code-point values, and include a redaction summary plus remote compatibility accepted-event and pass/fail metadata without clipboard history contents.
 - Optional clipboard history: up to 10 recent clipboard text entries when enabled, with automatic expiry after seven days.
 - No typed content, clipboard content, passwords, personal identifiers, account information, contacts, location, photos, files, microphone, or camera data is transmitted off device.
+- Accessibility API use and on-device screen-content processing require a separate Play policy review even though frames are not transmitted.
 
 ## Security practices
 

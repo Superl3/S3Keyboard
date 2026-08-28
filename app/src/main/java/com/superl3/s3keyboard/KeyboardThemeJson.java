@@ -82,6 +82,10 @@ final class KeyboardThemeJson {
             }
 
             if (!safeSettings.keyColorOverrides.isEmpty()) {
+                JSONObject outlineOverrides = outlineOverridesToJsonObject(safeSettings.keyColorOverrides);
+                if (outlineOverrides.length() > 0) {
+                    root.put("outlineColors", outlineOverrides);
+                }
                 JSONObject textOverrides = keyOverridesToJsonObject(safeSettings.keyColorOverrides, false);
                 if (textOverrides.length() > 0) {
                     root.put("keyTextColorOverrides", textOverrides);
@@ -92,7 +96,15 @@ final class KeyboardThemeJson {
                 }
             }
             if (!safeSettings.keyDisplayOverrides.isEmpty()) {
-                root.put("keyDisplayOverrides", encodeKeyDisplayOverridesObject(safeSettings.keyDisplayOverrides));
+                JSONObject novelties = encodeNoveltyOverridesObject(safeSettings.keyDisplayOverrides);
+                if (novelties.length() > 0) {
+                    root.put("novelties", novelties);
+                }
+                JSONObject displayOverrides = encodeThemeDisplayOverridesObject(
+                        safeSettings.keyDisplayOverrides);
+                if (displayOverrides.length() > 0) {
+                    root.put("keyDisplayOverrides", displayOverrides);
+                }
             }
 
             return root.toString(2);
@@ -184,6 +196,7 @@ final class KeyboardThemeJson {
                 keyColorOverrides = root.optJSONObject("keyColorOverrides");
             }
             JSONObject keyBackgroundColorOverrides = root.optJSONObject("keyBackgroundColorOverrides");
+            JSONObject outlineColors = root.optJSONObject("outlineColors");
             JSONObject dingulColors = root.optJSONObject("dingulColors");
 
             boolean customDepthColor = layeredBase.customDepthColorEnabled;
@@ -281,6 +294,7 @@ final class KeyboardThemeJson {
             Map<String, Integer> explicitOverrides = new HashMap<>();
             explicitOverrides.putAll(decodeKeyColorOverrides(keyColorOverrides));
             explicitOverrides.putAll(decodeKeyBackgroundColorOverrides(keyBackgroundColorOverrides));
+            explicitOverrides.putAll(decodeOutlineColors(outlineColors));
             Map<String, Integer> policyOverrides = new HashMap<>(overrides);
             policyOverrides.putAll(explicitOverrides);
             overrides.putAll(decodeAccentPolicy(
@@ -291,8 +305,10 @@ final class KeyboardThemeJson {
             overrides.putAll(explicitOverrides);
             themed = themed.withKeyColorOverrides(overrides);
             Map<String, KeyDisplayOverride> displayOverrides = new HashMap<>(themed.keyDisplayOverrides);
-            Map<String, KeyDisplayOverride> importedDisplayOverrides = decodeKeyDisplayOverrides(
-                    root.optJSONObject("keyDisplayOverrides"));
+            Map<String, KeyDisplayOverride> importedDisplayOverrides = decodeNoveltyOverrides(
+                    root.optJSONObject("novelties"));
+            importedDisplayOverrides.putAll(decodeKeyDisplayOverrides(
+                    root.optJSONObject("keyDisplayOverrides")));
             importedDisplayOverrides.putAll(decodeImportedPackDisplayOverrides(root, icons));
             if (importedDisplayOverrides.isEmpty() && themed.legendStylePreset == LegendStylePreset.DOTS) {
                 importedDisplayOverrides = legacyDotDisplayOverrides();
@@ -443,7 +459,25 @@ final class KeyboardThemeJson {
     }
 
     static String encodeKeyColorOverrides(Map<String, Integer> keyColorOverrides) {
-        return keyOverridesToJsonObject(keyColorOverrides).toString();
+        // SharedPreferences stores the complete internal map. The public theme export keeps
+        // text and background overrides in separate objects, but dropping background:* here
+        // makes a selected theme lose its keycap color after the next IME reload.
+        JSONObject object = new JSONObject();
+        if (keyColorOverrides == null || keyColorOverrides.isEmpty()) {
+            return object.toString();
+        }
+        try {
+            for (Map.Entry<String, Integer> entry : keyColorOverrides.entrySet()) {
+                if (entry.getKey() != null && entry.getValue() != null) {
+                    object.put(
+                            KeyboardSettings.normalizeKeyOverrideName(entry.getKey()),
+                            colorToString(entry.getValue()));
+                }
+            }
+        } catch (JSONException exception) {
+            throw new IllegalStateException("Failed to encode key color overrides.", exception);
+        }
+        return object.toString();
     }
 
     static Map<String, Integer> decodeKeyColorOverrides(String json) {
@@ -493,6 +527,45 @@ final class KeyboardThemeJson {
             }
         }
         return overrides;
+    }
+
+    static Map<String, Integer> decodeOutlineColors(JSONObject object) {
+        Map<String, Integer> overrides = new HashMap<>();
+        if (object == null) {
+            return overrides;
+        }
+        putOutlineColor(overrides, object, "default", "default");
+        putOutlineColor(overrides, object, "alpha", "alpha");
+        putOutlineColor(overrides, object, "modifier", "modifiers");
+        putOutlineColor(overrides, object, "mod", "modifiers");
+        putOutlineColor(overrides, object, "accent", "accent");
+        putOutlineColor(overrides, object, "novelty", "novelty");
+        JSONObject keys = object.optJSONObject("keys");
+        if (keys != null) {
+            Iterator<String> names = keys.keys();
+            while (names.hasNext()) {
+                String key = names.next();
+                int parsed = parseColor(keys.optString(key), Integer.MIN_VALUE);
+                if (parsed != Integer.MIN_VALUE) {
+                    overrides.put("outline:" + key, parsed);
+                }
+            }
+        }
+        return overrides;
+    }
+
+    private static void putOutlineColor(
+            Map<String, Integer> overrides,
+            JSONObject object,
+            String jsonKey,
+            String overrideKey) {
+        if (!object.has(jsonKey) || object.isNull(jsonKey)) {
+            return;
+        }
+        int parsed = parseColor(object.optString(jsonKey), Integer.MIN_VALUE);
+        if (parsed != Integer.MIN_VALUE) {
+            overrides.put("outline:" + overrideKey, parsed);
+        }
     }
 
     static Map<String, Integer> decodeDingulColors(JSONObject object, KeyboardSettings settings) {
@@ -887,6 +960,18 @@ final class KeyboardThemeJson {
         return overrides;
     }
 
+    static Map<String, KeyDisplayOverride> decodeNoveltyOverrides(JSONObject object) {
+        Map<String, KeyDisplayOverride> decoded = decodeKeyDisplayOverrides(object);
+        Map<String, KeyDisplayOverride> novelties = new HashMap<>();
+        for (Map.Entry<String, KeyDisplayOverride> entry : decoded.entrySet()) {
+            String key = KeyboardSettings.normalizeKeyOverrideName(entry.getKey());
+            if (!key.isEmpty() && !"alpha".equals(key) && !"modifiers".equals(key)) {
+                novelties.put("novelty:" + key, entry.getValue());
+            }
+        }
+        return novelties;
+    }
+
     private static KeyboardSettings importThemeLayers(
             KeyboardSettings base,
             JSONObject root,
@@ -920,6 +1005,37 @@ final class KeyboardThemeJson {
         }
         KeyboardThemePreset preset = KeyboardThemePreset.find(layerId);
         return preset == null ? base : preset.applyTo(base);
+    }
+
+    private static JSONObject encodeThemeDisplayOverridesObject(
+            Map<String, KeyDisplayOverride> overrides) {
+        Map<String, KeyDisplayOverride> regular = new HashMap<>();
+        if (overrides != null) {
+            for (Map.Entry<String, KeyDisplayOverride> entry : overrides.entrySet()) {
+                if (!isNoveltyDisplayOverrideKey(entry.getKey())) {
+                    regular.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        return encodeKeyDisplayOverridesObject(regular);
+    }
+
+    private static JSONObject encodeNoveltyOverridesObject(
+            Map<String, KeyDisplayOverride> overrides) {
+        Map<String, KeyDisplayOverride> novelties = new HashMap<>();
+        if (overrides != null) {
+            for (Map.Entry<String, KeyDisplayOverride> entry : overrides.entrySet()) {
+                String key = KeyboardSettings.normalizeKeyOverrideName(entry.getKey());
+                if (key.startsWith("novelty:") && key.length() > "novelty:".length()) {
+                    novelties.put(key.substring("novelty:".length()), entry.getValue());
+                }
+            }
+        }
+        return encodeKeyDisplayOverridesObject(novelties);
+    }
+
+    private static boolean isNoveltyDisplayOverrideKey(String key) {
+        return KeyboardSettings.normalizeKeyOverrideName(key).startsWith("novelty:");
     }
 
     static JSONObject encodeKeyDisplayOverridesObject(Map<String, KeyDisplayOverride> overrides) {
@@ -976,6 +1092,8 @@ final class KeyboardThemeJson {
         KeyboardVisualEffects safeEffects = effects == null ? KeyboardVisualEffects.DEFAULT : effects;
         JSONObject object = new JSONObject();
         try {
+            object.put("materialStyle", safeEffects.materialStyle);
+
             JSONObject blur = new JSONObject();
             blur.put("enabled", safeEffects.blurEnabled);
             blur.put("radiusDp", safeEffects.blurRadiusDp);
@@ -1117,14 +1235,21 @@ final class KeyboardThemeJson {
                 panelGradientEnabled,
                 panelGradientStartColor,
                 panelGradientEndColor);
-        if (glass == null) {
-            return decoded;
+        KeyboardVisualEffects result = glass == null
+                ? decoded
+                : decoded.withGlass(
+                        glass.optBoolean("enabled", safeFallback.glassEnabled),
+                        glass.optInt("tintAlphaPercent", safeFallback.glassTintAlphaPercent),
+                        glass.optInt("highlightPercent", safeFallback.glassHighlightPercent),
+                        glass.optInt("borderAlphaPercent", safeFallback.glassBorderAlphaPercent));
+        if (!object.has("materialStyle")) {
+            // Legacy Glass and blur themes become the lightweight Frosted material. Live
+            // app-window capture is never enabled merely by importing an old theme.
+            return result;
         }
-        return decoded.withGlass(
-                glass.optBoolean("enabled", safeFallback.glassEnabled),
-                glass.optInt("tintAlphaPercent", safeFallback.glassTintAlphaPercent),
-                glass.optInt("highlightPercent", safeFallback.glassHighlightPercent),
-                glass.optInt("borderAlphaPercent", safeFallback.glassBorderAlphaPercent));
+        return result.withMaterialStyle(object.optString(
+                "materialStyle",
+                result.materialStyle));
     }
 
     private static Map<String, KeyDisplayOverride> legacyDotDisplayOverrides() {
@@ -1148,6 +1273,48 @@ final class KeyboardThemeJson {
         return keyOverridesToJsonObject(keyColorOverrides, false);
     }
 
+    private static JSONObject outlineOverridesToJsonObject(Map<String, Integer> keyColorOverrides) {
+        JSONObject object = new JSONObject();
+        JSONObject keys = new JSONObject();
+        if (keyColorOverrides == null || keyColorOverrides.isEmpty()) {
+            return object;
+        }
+        try {
+            for (Map.Entry<String, Integer> entry : keyColorOverrides.entrySet()) {
+                String key = entry.getKey();
+                Integer value = entry.getValue();
+                if (!isOutlineOverrideKey(key) || value == null) {
+                    continue;
+                }
+                String suffix = KeyboardSettings.normalizeKeyOverrideName(key)
+                        .substring("outline:".length());
+                String outputKey = suffix;
+                if ("modifiers".equals(suffix) || "mod".equals(suffix)) {
+                    outputKey = "modifier";
+                }
+                if ("default".equals(outputKey)
+                        || "alpha".equals(outputKey)
+                        || "modifier".equals(outputKey)
+                        || "accent".equals(outputKey)
+                        || "novelty".equals(outputKey)) {
+                    object.put(outputKey, colorToString(value));
+                } else if (!suffix.isEmpty()) {
+                    keys.put(suffix, colorToString(value));
+                }
+            }
+            if (keys.length() > 0) {
+                object.put("keys", keys);
+            }
+        } catch (JSONException exception) {
+            throw new IllegalStateException("Failed to encode outline color overrides.", exception);
+        }
+        return object;
+    }
+
+    private static boolean isOutlineOverrideKey(String key) {
+        return KeyboardSettings.normalizeKeyOverrideName(key).startsWith("outline:");
+    }
+
     private static JSONObject keyOverridesToJsonObject(Map<String, Integer> keyColorOverrides, boolean background) {
         JSONObject object = new JSONObject();
         if (keyColorOverrides == null || keyColorOverrides.isEmpty()) {
@@ -1158,6 +1325,9 @@ final class KeyboardThemeJson {
                 if (entry.getKey() != null && entry.getValue() != null) {
                     String key = entry.getKey();
                     String outputKey = backgroundOutputKey(key);
+                    if (isOutlineOverrideKey(key)) {
+                        continue;
+                    }
                     if (background && outputKey != null) {
                         object.put(outputKey, colorToString(entry.getValue()));
                     } else if (!background && outputKey == null) {

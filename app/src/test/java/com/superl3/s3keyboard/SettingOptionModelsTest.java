@@ -42,6 +42,34 @@ public final class SettingOptionModelsTest {
         assertEquals(
                 KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_SOFT,
                 KeyboardVisualEffects.keyFaceGradientCurveAt(-1));
+        assertEquals(
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_GLASS,
+                KeyboardVisualEffects.normalizeKeyFaceGradientCurve("glass"));
+        KeyboardVisualEffects blurred = KeyboardVisualEffects.DEFAULT.withBlur(true, 12);
+        assertTrue(blurred.blurEnabled);
+        assertEquals(12, blurred.blurRadiusDp);
+        assertEquals(KeyboardVisualEffects.MATERIAL_FROSTED, blurred.materialStyle);
+        assertTrue(blurred.usesPlatformBlur());
+    }
+
+    @Test
+    public void materialPresetsKeepLiveRefractionExplicit() {
+        KeyboardVisualEffects solid = KeyboardVisualEffects.DEFAULT.withMaterialPreset(
+                KeyboardVisualEffects.MATERIAL_SOLID);
+        KeyboardVisualEffects frosted = KeyboardVisualEffects.DEFAULT.withMaterialPreset(
+                KeyboardVisualEffects.MATERIAL_FROSTED);
+        KeyboardVisualEffects experimental = KeyboardVisualEffects.DEFAULT.withMaterialPreset(
+                KeyboardVisualEffects.MATERIAL_EXPERIMENTAL_REFRACTION);
+
+        assertEquals(KeyboardVisualEffects.MATERIAL_SOLID, solid.materialStyle);
+        assertTrue(!solid.usesGlassSurface());
+        assertTrue(frosted.usesGlassSurface());
+        assertTrue(!frosted.usesLiveRefraction());
+        assertEquals(
+                KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_SOFT,
+                frosted.keyFaceGradientCurve);
+        assertTrue(!frosted.panelGradientEnabled);
+        assertTrue(experimental.usesLiveRefraction());
     }
 
     @Test

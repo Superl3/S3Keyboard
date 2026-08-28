@@ -36,6 +36,11 @@ final class S3KeyboardCommandTarget extends KeyboardCommandDispatcher.Target {
     }
 
     @Override
+    void correctText() {
+        service.correctCurrentEnglishWord(service.commandInputConnection());
+    }
+
+    @Override
     void newline() {
         InputConnection inputConnection = service.commandInputConnection();
         service.resetDoubleSpacePeriodState();

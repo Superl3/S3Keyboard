@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
@@ -91,6 +92,12 @@ public final class HangulKeyboardView extends View
     private final RectF keyDepthScratch = new RectF();
     private final RectF glassHighlightScratch = new RectF();
     private final RectF extremeFloatingFaceScratch = new RectF();
+    private final RectF keyEffectScratch = new RectF();
+    private final RectF iconSurfaceScratch = new RectF();
+    private final RectF iconGeometryScratch = new RectF();
+    private final RectF iconSecondaryGeometryScratch = new RectF();
+    private final Path iconPathScratch = new Path();
+    private final RectF oneFingerProgressScratch = new RectF();
     private final RectF animationDirtyScratch = new RectF();
     private final RectF touchDirtyScratch = new RectF();
     private final RectF moveDirtyScratch = new RectF();
@@ -98,6 +105,8 @@ public final class HangulKeyboardView extends View
     private LinearGradient panelGradientShader;
     private LinearGradient panelMetallicShader;
     private LinearGradient panelGlassShader;
+    private Bitmap acrylicNoiseBitmap;
+    private BitmapShader acrylicNoiseShader;
     private final GlassRefractionRenderer glassRefractionRenderer = new GlassRefractionRenderer();
     private final GlassBackdropSourceStore.Listener glassBackdropListener =
             this::onGlassBackdropSourceChanged;
@@ -489,6 +498,7 @@ public final class HangulKeyboardView extends View
         glassRefractionRenderer.clear();
         clearTouchState();
         repeatController.stop();
+        feedback.cancelPending();
         if (touchBiasStore != null) {
             touchBiasStore.flushNow();
         }
@@ -497,6 +507,14 @@ public final class HangulKeyboardView extends View
 
     private void onGlassBackdropSourceChanged() {
         postInvalidateOnAnimation();
+    }
+
+    void beginInputSession() {
+        lastTextTouchSample = null;
+        recentTextTouchSamples.clear();
+        if (touchBiasStore != null) {
+            typingCorrectionStats = touchBiasStore.beginTypingJournalSession(System.currentTimeMillis());
+        }
     }
 
     void flushLearningState() {
@@ -535,14 +553,14 @@ public final class HangulKeyboardView extends View
         // translucent keycaps over arbitrary app content and the keyboard loses its visual
         // boundary. Keep the backplate for Glass while preserving the old transparent behavior
         // for the other overlay styles.
-        if (transparentOverlayPresentation && !settings.visualEffects.glassEnabled) {
+        if (transparentOverlayPresentation && !settings.visualEffects.usesGlassSurface()) {
             return;
         }
         keyPaint.setShader(null);
-        if (settings.visualEffects.glassEnabled) {
-            glassRefractionRenderer.draw(canvas, this);
+        if (settings.visualEffects.usesLiveRefraction()) {
+            glassRefractionRenderer.draw(canvas, this, glassBackdropBlurRadiusPx());
         }
-        if (settings.visualEffects.panelGradientEnabled) {
+        if (settings.visualEffects.usesPanelGradient()) {
             if (panelGradientShader == null) {
                 panelGradientShader = new LinearGradient(
                         0,
@@ -563,23 +581,37 @@ public final class HangulKeyboardView extends View
         if (settings.visualEffects.metallicEnabled && settings.visualEffects.metallicStrengthPercent > 0) {
             drawMetallicReflection(canvas);
         }
-        if (settings.visualEffects.glassEnabled) {
+        if (settings.visualEffects.usesGlassSurface()) {
             drawGlassReflection(canvas);
         }
         keyPaint.setShader(null);
     }
 
+    private float glassBackdropBlurRadiusPx() {
+        if (!settings.visualEffects.blurEnabled || settings.visualEffects.blurRadiusDp <= 0) {
+            return 0f;
+        }
+        return renderDp(settings.visualEffects.blurRadiusDp);
+    }
+
+    private float glassMaterialGloss() {
+        return clamp01(0.34f + settings.visualEffects.glassHighlightPercent / 100f * 0.72f);
+    }
+
+    private float glassSurfaceTexture() {
+        return clamp01(0.42f + settings.visualEffects.glassHighlightPercent / 100f * 0.48f);
+    }
+
     private int panelBackgroundColor(int color) {
-        boolean blurEnabled = settings.visualEffects.blurEnabled
-                && settings.visualEffects.blurRadiusDp > 0;
-        if (!systemBlurApplied && !blurEnabled && !settings.visualEffects.glassEnabled) {
+        boolean blurEnabled = settings.visualEffects.usesPlatformBlur();
+        if (!systemBlurApplied && !blurEnabled && !settings.visualEffects.usesGlassSurface()) {
             return color;
         }
         // The window is blurred by the system at runtime. Preview-only views cannot sample a
         // separate app window, but use the same translucent surface so the editor and web
         // previews preserve the intended glass treatment instead of reverting to an opaque slab.
         int alpha;
-        if (settings.visualEffects.glassEnabled) {
+        if (settings.visualEffects.usesGlassSurface()) {
             // Glass is a color tint over a blurred/refracted source, not an opaque theme slab.
             // Keep the same tint while the accessibility source reconnects so the panel does
             // not abruptly jump between a glass surface and a foreground-colored slab.
@@ -591,20 +623,14 @@ public final class HangulKeyboardView extends View
     }
 
     private int glassPanelTintAlpha() {
-        float retention = settings.visualEffects.glassTintAlphaPercent / 100f;
-        // Keep the source visibly present. The keyboard backplate should tint the backdrop,
-        // not become a dark foreground slab over it.
-        float alpha = 0.28f + 0.22f * clamp01(retention);
-        return Math.round(255f * alpha);
+        return GlassMaterialPolicy.panelTintAlpha(
+                settings.visualEffects.glassTintAlphaPercent);
     }
 
     private int glassKeyTintAlpha(float pressProgress) {
-        float retention = settings.visualEffects.glassTintAlphaPercent / 100f;
-        // Keep the authored key color recognizable without hiding the refracted source.
-        // The pressed state deliberately becomes more opaque so input feedback remains clear.
-        float alpha = 0.16f + retention * 0.36f;
-        alpha += 0.12f * clamp01(pressProgress);
-        return Math.round(255f * clamp01(alpha));
+        return GlassMaterialPolicy.fallbackKeyTintAlpha(
+                settings.visualEffects.glassTintAlphaPercent,
+                pressProgress);
     }
 
     private void drawGlassReflection(Canvas canvas) {
@@ -630,8 +656,8 @@ public final class HangulKeyboardView extends View
         canvas.drawRect(0, 0, getWidth(), getHeight(), keyPaint);
         keyPaint.setShader(null);
 
-        int borderAlpha = Math.round(
-                0.65f * settings.visualEffects.glassBorderAlphaPercent);
+        int borderAlpha = GlassMaterialPolicy.panelBorderAlpha(
+                settings.visualEffects.glassBorderAlphaPercent);
         borderPaint.setStyle(Paint.Style.STROKE);
         borderPaint.setStrokeWidth(Math.max(1f, renderDp(1)));
         borderPaint.setColor(withAlpha(settings.borderColor, borderAlpha));
@@ -744,7 +770,8 @@ public final class HangulKeyboardView extends View
                         touchBounds.height(),
                         minimumRadius,
                         false);
-                progressBounds = new RectF(
+                progressBounds = oneFingerProgressScratch;
+                progressBounds.set(
                         bounds.centerX() - radiusX,
                         bounds.centerY() - radiusY,
                         bounds.centerX() + radiusX,
@@ -753,7 +780,8 @@ public final class HangulKeyboardView extends View
                 float radius = Math.min(
                         shortestSide * 0.38f,
                         Math.max(renderDp(8), shortestSide * 0.29f));
-                progressBounds = new RectF(
+                progressBounds = oneFingerProgressScratch;
+                progressBounds.set(
                         bounds.centerX() - radius,
                         bounds.centerY() - radius,
                         bounds.centerX() + radius,
@@ -1764,6 +1792,10 @@ public final class HangulKeyboardView extends View
         return feedback;
     }
 
+    private boolean adaptiveTouchLearningEnabled() {
+        return touchBiasAutoCorrectionEnabled && settings.keyboardMode != KeyboardMode.ENGLISH;
+    }
+
     private void rememberTextTouch(PendingTouchOutput output) {
         if (touchBiasStore == null) {
             return;
@@ -1792,7 +1824,7 @@ public final class HangulKeyboardView extends View
                 System.currentTimeMillis());
         lastTextTouchSample = sample;
         rememberRecentTextTouchSample(sample);
-        if (touchBiasAutoCorrectionEnabled) {
+        if (adaptiveTouchLearningEnabled()) {
             recordTypingJournalInput(output, keyCodePoints, value, density);
             if (textValue) {
                 touchBias = touchBiasStore.recordTextInput(
@@ -1856,7 +1888,7 @@ public final class HangulKeyboardView extends View
             if (!KeyboardCommands.CMD_DELETE.equals(value)) {
                 lastTextTouchSample = null;
                 recentTextTouchSamples.clear();
-            } else if (touchBiasAutoCorrectionEnabled) {
+            } else if (adaptiveTouchLearningEnabled()) {
                 typingCorrectionStats = touchBiasStore.recordTypingJournalDelete(System.currentTimeMillis());
             }
             return;
@@ -1866,11 +1898,11 @@ public final class HangulKeyboardView extends View
         lastTextTouchSample = recentTextTouchSamples.isEmpty()
                 ? null
                 : recentTextTouchSamples.get(recentTextTouchSamples.size() - 1);
-        if (touchBiasAutoCorrectionEnabled) {
+        if (adaptiveTouchLearningEnabled()) {
             typingCorrectionStats = touchBiasStore.recordTypingJournalDelete(System.currentTimeMillis());
         }
         if (deletedSample != null && System.currentTimeMillis() - deletedSample.timeMs <= DELETE_CORRECTION_WINDOW_MS) {
-            if (touchBiasAutoCorrectionEnabled) {
+            if (adaptiveTouchLearningEnabled()) {
                 if (!KeyboardCommands.isCommand(deletedSample.value)) {
                     touchBias = touchBiasStore.recordImmediateDelete(
                             deletedSample.offsetXDp,
@@ -2392,6 +2424,7 @@ public final class HangulKeyboardView extends View
         for (KeySlot slot : keySlots) {
             slot.idleFaceShader = null;
             slot.glassSurfaceShader = null;
+            slot.acrylicSurfaceShader = null;
         }
     }
 
@@ -2414,26 +2447,30 @@ public final class HangulKeyboardView extends View
         int faceColor = active || shiftOnceActive
                 ? settings.keyPressedColor
                 : baseColorForKey(keySlot);
-        if (transparentOverlayPresentation) {
-            faceColor = withAlpha(
+        boolean liveGlassDrawn = false;
+        if (settings.visualEffects.usesLiveRefraction()) {
+            liveGlassDrawn = glassRefractionRenderer.drawKey(
+                    canvas,
+                    this,
+                    surfaceBounds,
+                    renderDp(settings.keyRoundnessDp),
+                    pressProgress,
+                    glassBackdropBlurRadiusPx(),
+                    glassMaterialGloss(),
+                    glassSurfaceTexture(),
                     faceColor,
-                    active || shiftOnceActive
-                            ? OVERLAY_KEY_PRESSED_ALPHA
-                            : OVERLAY_KEY_FACE_ALPHA);
+                    GlassMaterialPolicy.keyCenterSourceMix(
+                            settings.visualEffects.glassTintAlphaPercent),
+                    GlassMaterialPolicy.keyEdgeSourceMix(
+                            settings.visualEffects.glassTintAlphaPercent));
         }
-        boolean refractedKeyFace = settings.visualEffects.glassEnabled
-                && !transparentOverlayPresentation
-                && glassRefractionRenderer.drawKey(
-                        canvas,
-                        this,
-                        surfaceBounds,
-                        renderDp(settings.keyRoundnessDp),
-                        pressProgress);
-        if (refractedKeyFace) {
-            faceColor = withAlpha(faceColor, glassKeyTintAlpha(pressProgress));
+        if (liveGlassDrawn) {
+            drawGlassKeySurfaceOverlay(canvas, keySlot, surfaceBounds);
+            drawGlassKeyHighlight(canvas, surfaceBounds, pressProgress);
+        } else {
+            drawKeyFace(canvas, keySlot, surfaceBounds, faceColor, pressProgress);
         }
-        drawKeyFace(canvas, keySlot, surfaceBounds, faceColor, pressProgress);
-        drawBorderShape(canvas, surfaceBounds);
+        drawBorderShape(canvas, surfaceBounds, key);
         drawHitSlopResolveCue(canvas, touchState, surfaceBounds);
 
         float centerX = surfaceBounds.centerX();
@@ -2541,9 +2578,9 @@ public final class HangulKeyboardView extends View
         if (!settings.remoteModeEnabled || !isSpaceKey(key)) {
             return surfaceBounds;
         }
-        RectF adjusted = new RectF(surfaceBounds);
-        adjusted.offset(0, -Math.min(renderDp(5), surfaceBounds.height() * 0.08f));
-        return adjusted;
+        iconSurfaceScratch.set(surfaceBounds);
+        iconSurfaceScratch.offset(0, -Math.min(renderDp(5), surfaceBounds.height() * 0.08f));
+        return iconSurfaceScratch;
     }
 
     private void drawNumberRowSlideHints(
@@ -3765,9 +3802,9 @@ public final class HangulKeyboardView extends View
         overlayPaint.setStyle(Paint.Style.STROKE);
         overlayPaint.setStrokeWidth(Math.max(renderDp(1), renderDp(settings.keyBorderWidthDp + 1)));
         overlayPaint.setColor(withAlpha(settings.accentColor, Math.round(80 * progress * motionIntensityScale())));
-        RectF cueBounds = new RectF(bounds);
-        cueBounds.inset(overlayPaint.getStrokeWidth(), overlayPaint.getStrokeWidth());
-        drawKeyShape(canvas, cueBounds, overlayPaint);
+        keyEffectScratch.set(bounds);
+        keyEffectScratch.inset(overlayPaint.getStrokeWidth(), overlayPaint.getStrokeWidth());
+        drawKeyShape(canvas, keyEffectScratch, overlayPaint);
         overlayPaint.setStyle(Paint.Style.FILL);
     }
 
@@ -3783,31 +3820,41 @@ public final class HangulKeyboardView extends View
         }
         float alpha = (1f - progress) * 90f * motionIntensityScale();
         float inset = -renderDp(2) * (1f + progress);
-        RectF pulseBounds = new RectF(bounds);
-        pulseBounds.inset(inset, inset);
+        keyEffectScratch.set(bounds);
+        keyEffectScratch.inset(inset, inset);
         overlayPaint.setStyle(Paint.Style.STROKE);
         overlayPaint.setStrokeWidth(Math.max(renderDp(1), renderDp(2) * (1f - progress * 0.45f)));
         overlayPaint.setColor(withAlpha(settings.accentColor, Math.round(alpha)));
-        drawKeyShape(canvas, pulseBounds, overlayPaint);
+        drawKeyShape(canvas, keyEffectScratch, overlayPaint);
         overlayPaint.setStyle(Paint.Style.FILL);
     }
 
-    private void drawBorderShape(Canvas canvas, RectF bounds) {
+    private void drawBorderShape(Canvas canvas, RectF bounds, GestureKey key) {
         float strokeWidth = renderDp(settings.keyBorderWidthDp);
         if (strokeWidth <= 0f) {
             return;
         }
-        borderPaint.setColor(transparentOverlayPresentation
-                ? withAlpha(settings.borderColor, OVERLAY_KEY_BORDER_ALPHA)
-                : settings.borderColor);
+        int borderAlpha = 255;
+        if (settings.visualEffects.usesGlassSurface()) {
+            borderAlpha = GlassMaterialPolicy.keyBorderAlpha(
+                    settings.visualEffects.glassBorderAlphaPercent);
+            strokeWidth = Math.min(strokeWidth, renderDp(0.75f));
+        }
+        if (transparentOverlayPresentation) {
+            borderAlpha = Math.min(borderAlpha, OVERLAY_KEY_BORDER_ALPHA);
+        }
+        int borderColor = key == null
+                ? settings.borderColor
+                : KeyboardKeyVisualClassifier.outlineColorFor(settings, key);
+        borderPaint.setColor(withAlpha(borderColor, borderAlpha));
         borderPaint.setStrokeWidth(strokeWidth);
-        RectF borderBounds = new RectF(bounds);
+        keyEffectScratch.set(bounds);
         float inset = strokeWidth / 2f;
-        borderBounds.inset(inset, inset);
-        if (borderBounds.width() <= 0f || borderBounds.height() <= 0f) {
+        keyEffectScratch.inset(inset, inset);
+        if (keyEffectScratch.width() <= 0f || keyEffectScratch.height() <= 0f) {
             return;
         }
-        drawKeyShape(canvas, borderBounds, borderPaint);
+        drawKeyShape(canvas, keyEffectScratch, borderPaint);
     }
 
     private RectF extremeFloatingFaceBounds(KeySlot keySlot, RectF bounds, RectF output) {
@@ -3862,25 +3909,24 @@ public final class HangulKeyboardView extends View
             }
         }
         keyPaint.setShader(shader);
-        if (shouldDrawGlassKeyMaterial()) {
-            // Gradient colors already carry the intended surface alpha. Do not multiply them
-            // by the translucent theme face color a second time through Paint's color alpha.
-            keyPaint.setColor(0xFFFFFFFF);
-        }
+        // Gradient colors carry the surface alpha themselves. Reset Paint's alpha as well,
+        // because the panel pass may have left a translucent theme color on this shared Paint.
+        // Without this, every gradient keycap can be composited as a muted version of the theme.
+        keyPaint.setColor(0xFFFFFFFF);
         drawKeyShape(canvas, bounds, keyPaint);
         keyPaint.setShader(null);
         if (shouldDrawGlassKeyMaterial()) {
             drawGlassKeySurfaceOverlay(canvas, keySlot, bounds);
-        }
-        if (shouldDrawGlassKeyMaterial()
-                || KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_GLASS.equals(
-                        settings.visualEffects.keyFaceGradientCurve)) {
             drawGlassKeyHighlight(canvas, bounds, pressProgress);
+        } else if (isAcrylicMaterial()) {
+            // Acrylic is a static polished plastic surface: a restrained sheen and tiny fixed
+            // grain, with no backdrop sampling or accessibility capture.
+            drawAcrylicKeySurfaceOverlay(canvas, keySlot, bounds);
         }
     }
 
     private void drawGlassKeyHighlight(Canvas canvas, RectF bounds, float pressProgress) {
-        float stroke = Math.max(renderDp(1), renderDp(settings.keyBorderWidthDp) * 0.65f);
+        float stroke = Math.max(renderDp(0.5f), renderDp(settings.keyBorderWidthDp) * 0.45f);
         RectF edgeBounds = glassHighlightScratch;
         edgeBounds.set(bounds);
         edgeBounds.inset(stroke * 0.7f, stroke * 0.7f);
@@ -3889,9 +3935,15 @@ public final class HangulKeyboardView extends View
         }
         overlayPaint.setStyle(Paint.Style.STROKE);
         overlayPaint.setStrokeWidth(stroke);
+        int baseHighlightAlpha = Math.min(
+                42,
+                Math.round(settings.visualEffects.glassHighlightPercent * 0.62f));
+        int pressedHighlightBoost = baseHighlightAlpha == 0
+                ? 0
+                : Math.round(6f * clamp01(pressProgress));
         overlayPaint.setColor(withAlpha(
                 0xFFFFFFFF,
-                Math.round((28f - 10f * pressProgress) * motionIntensityScale())));
+                Math.min(48, baseHighlightAlpha + pressedHighlightBoost)));
         drawKeyShape(canvas, edgeBounds, overlayPaint);
         overlayPaint.setStyle(Paint.Style.FILL);
     }
@@ -3904,15 +3956,17 @@ public final class HangulKeyboardView extends View
                     0,
                     bounds.bottom,
                     new int[] {
-                            // The body needs its own material gradient. The border highlight is
-                            // deliberately weaker than this surface pass so glass is visible
-                            // across the whole key, not only around its edge.
-                            withAlpha(0xFFFFFFFF, 34),
-                            withAlpha(0xFFFFFFFF, 10),
+                            // The live refraction shader carries most of the material now. Keep
+                            // this pass zonal rather than a strong full-height gradient: a narrow
+                            // glossy cap, a broad neutral middle, and a flat darkened lower zone.
+                            withAlpha(0xFFFFFFFF, 13),
+                            withAlpha(0xFFFFFFFF, 4),
                             0x00000000,
-                            withAlpha(0xFF000000, 24)
+                            0x00000000,
+                            withAlpha(0xFF000000, 5),
+                            withAlpha(0xFF000000, 11)
                     },
-                    new float[] { 0f, 0.22f, 0.58f, 1f },
+                    new float[] { 0f, 0.09f, 0.22f, 0.56f, 0.72f, 1f },
                     Shader.TileMode.CLAMP);
         }
         keyPaint.setColor(0xFFFFFFFF);
@@ -3921,37 +3975,114 @@ public final class HangulKeyboardView extends View
         keyPaint.setShader(null);
     }
 
+    private void drawAcrylicKeySurfaceOverlay(Canvas canvas, KeySlot keySlot, RectF bounds) {
+        if (keySlot.acrylicSurfaceShader == null) {
+            keySlot.acrylicSurfaceShader = new LinearGradient(
+                    0,
+                    bounds.top,
+                    0,
+                    bounds.bottom,
+                    new int[] {
+                            withAlpha(0xFFFFFFFF, 9),
+                            withAlpha(0xFFFFFFFF, 3),
+                            0x00000000,
+                            withAlpha(0xFF000000, 6)
+                    },
+                    new float[] { 0f, 0.12f, 0.58f, 1f },
+                    Shader.TileMode.CLAMP);
+        }
+        keyPaint.setColor(0xFFFFFFFF);
+        keyPaint.setShader(keySlot.acrylicSurfaceShader);
+        drawKeyShape(canvas, bounds, keyPaint);
+        keyPaint.setShader(null);
+
+        ensureAcrylicNoiseShader();
+        if (acrylicNoiseShader != null) {
+            keyPaint.setColor(0xFFFFFFFF);
+            keyPaint.setShader(acrylicNoiseShader);
+            drawKeyShape(canvas, bounds, keyPaint);
+            keyPaint.setShader(null);
+        }
+    }
+
+    private void ensureAcrylicNoiseShader() {
+        if (acrylicNoiseShader != null) {
+            return;
+        }
+        int size = 24;
+        int[] pixels = new int[size * size];
+        int state = 0x6D2B79F5;
+        for (int i = 0; i < pixels.length; i++) {
+            state = state * 1664525 + 1013904223;
+            int bucket = (state >>> 28) & 0x0F;
+            if (bucket == 0) {
+                pixels[i] = 0x04FFFFFF;
+            } else if (bucket == 1) {
+                pixels[i] = 0x03000000;
+            }
+        }
+        acrylicNoiseBitmap = Bitmap.createBitmap(
+                pixels,
+                size,
+                size,
+                Bitmap.Config.ARGB_8888);
+        acrylicNoiseShader = new BitmapShader(
+                acrylicNoiseBitmap,
+                Shader.TileMode.REPEAT,
+                Shader.TileMode.REPEAT);
+    }
+
     private boolean shouldDrawKeyFaceGradient() {
         return shouldDrawGlassKeyMaterial()
-                || (settings.keyDepthEnabled
-                && settings.keyDepthDp > 0
-                && settings.visualEffects.keyFaceGradientEnabled
-                && settings.visualEffects.keyFaceGradientStrengthPercent > 0);
+                || settings.visualEffects.usesKeyFaceGradient();
     }
 
     private boolean shouldDrawGlassKeyMaterial() {
-        // The overlay mode intentionally keeps the live backdrop sample disabled for cost and
-        // gesture safety, but the key material itself must still be glassy. Otherwise the
-        // overlay falls back to a flat translucent slab while only its border looks polished.
-        return settings.visualEffects.glassEnabled;
+        // Only the explicitly experimental material gets the glossy Glass fallback. Product
+        // Frosted deliberately stays visually quieter and never imitates live refraction.
+        return settings.visualEffects.usesLiveRefraction();
+    }
+
+    private boolean isFrostedMaterial() {
+        return KeyboardVisualEffects.MATERIAL_FROSTED.equals(
+                settings.visualEffects.materialStyle);
+    }
+
+    private boolean isAcrylicMaterial() {
+        return KeyboardVisualEffects.MATERIAL_ACRYLIC.equals(
+                settings.visualEffects.materialStyle);
+    }
+
+    private boolean isSoftKeycapMaterial() {
+        return KeyboardVisualEffects.MATERIAL_SOFT_KEYCAP.equals(
+                settings.visualEffects.materialStyle);
+    }
+
+    private int effectiveKeyDepthDp() {
+        if (settings.keyDepthEnabled && settings.keyDepthDp > 0) {
+            return settings.keyDepthDp;
+        }
+        return settings.visualEffects.requiresPedestal() ? 1 : 0;
     }
 
     private RectF keySurfaceBounds(RectF bounds, float pressProgress, RectF output) {
-        if (!settings.keyDepthEnabled || settings.keyDepthDp <= 0) {
+        int depthDp = effectiveKeyDepthDp();
+        if (depthDp <= 0) {
             output.set(bounds);
             return output;
         }
-        float pressOffset = Math.min(renderDp(settings.keyDepthDp) * 0.60f, bounds.height() * 0.06f)
+        float pressOffset = Math.min(renderDp(depthDp) * 0.60f, bounds.height() * 0.06f)
                 * pressProgress;
         output.set(bounds.left, bounds.top + pressOffset, bounds.right, bounds.bottom + pressOffset);
         return output;
     }
 
     private void drawKeyDepth(Canvas canvas, KeySlot keySlot, RectF bounds, float pressProgress) {
-        if (!settings.keyDepthEnabled || settings.keyDepthDp <= 0) {
+        int depthDp = effectiveKeyDepthDp();
+        if (depthDp <= 0) {
             return;
         }
-        float configuredDepth = renderDp(settings.keyDepthDp);
+        float configuredDepth = renderDp(depthDp);
         float fullDepth = Math.min(configuredDepth, bounds.height() * 0.12f);
         float pressedDepth = Math.min(configuredDepth * 0.35f, bounds.height() * 0.035f);
         float depth = fullDepth + (pressedDepth - fullDepth) * pressProgress;
@@ -3997,36 +4128,52 @@ public final class HangulKeyboardView extends View
     private int[] keyFaceGradientColors(int background, float pressProgress) {
         float strength = settings.visualEffects.keyFaceGradientStrengthPercent / 100f;
         if (shouldDrawGlassKeyMaterial()) {
+            // The experimental path owns its optical highlight; keep the fallback body quiet.
             strength = Math.max(
                     strength,
-                    settings.visualEffects.glassHighlightPercent / 60f);
+                    settings.visualEffects.glassHighlightPercent / 260f);
         }
         strength *= 1f - 0.35f * clamp01(pressProgress);
-        boolean glass = shouldDrawGlassKeyMaterial()
-                || KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_GLASS.equals(
-                        settings.visualEffects.keyFaceGradientCurve);
-        int luminance = perceivedLuminance(background);
-        if (glass) {
-            // The panel belongs behind the key. Keep the key body opaque so the panel tint or
-            // captured backdrop cannot visually wash over its legend and surface; the glass
-            // treatment is carried by the face gradient, highlight, and border instead.
-            int alpha = 255;
-            int opaqueBackground = background | 0xFF000000;
+        int opaqueBackground = background | 0xFF000000;
+
+        if (shouldDrawGlassKeyMaterial()) {
+            int alpha = glassKeyTintAlpha(pressProgress);
             return new int[] {
-                    withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.08f + 0.04f * strength), alpha),
-                    withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.02f * strength), alpha),
+                    withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.04f + 0.03f * strength), alpha),
+                    withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.01f * strength), alpha),
                     withAlpha(opaqueBackground, alpha),
                     withAlpha(opaqueBackground, alpha)
             };
         }
-        float topAmount = (luminance < 42 ? 0.08f : 0.06f)
-                + 0.24f * strength;
-        float bottomAmount = (luminance < 42 ? 0.04f : 0.05f)
-                + 0.18f * strength;
+
+        if (isFrostedMaterial()) {
+            int alpha = glassKeyTintAlpha(pressProgress);
+            return new int[] {
+                    withAlpha(blendColor(0xFFFFFFFF, opaqueBackground, 0.018f + 0.055f * strength), alpha),
+                    withAlpha(opaqueBackground, alpha),
+                    withAlpha(blendColor(0xFF000000, opaqueBackground, 0.012f + 0.035f * strength), alpha)
+            };
+        }
+
+        int luminance = perceivedLuminance(background);
+        float topAmount;
+        float bottomAmount;
+        if (isAcrylicMaterial()) {
+            topAmount = 0.045f + 0.20f * strength;
+            bottomAmount = 0.025f + 0.12f * strength;
+        } else if (isSoftKeycapMaterial()) {
+            // PBT/ABS-like keycaps need shape, not shine: keep the face almost flat and let the
+            // optional physical depth carry most of the three-dimensional cue.
+            topAmount = 0.020f + 0.11f * strength;
+            bottomAmount = 0.018f + 0.08f * strength;
+        } else {
+            topAmount = (luminance < 42 ? 0.08f : 0.06f) + 0.24f * strength;
+            bottomAmount = (luminance < 42 ? 0.04f : 0.05f) + 0.18f * strength;
+        }
         return new int[] {
-                blendColor(settings.visualEffects.keyFaceGradientStartColor, background, topAmount),
-                background,
-                blendColor(settings.visualEffects.keyFaceGradientEndColor, background, bottomAmount)
+                blendColor(settings.visualEffects.keyFaceGradientStartColor, opaqueBackground, topAmount),
+                opaqueBackground,
+                blendColor(settings.visualEffects.keyFaceGradientEndColor, opaqueBackground, bottomAmount)
         };
     }
 
@@ -4045,7 +4192,9 @@ public final class HangulKeyboardView extends View
             return KEY_GRADIENT_STOPS_BOTTOM_SHADE;
         }
         if (KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_GLASS.equals(curve)) {
-            return KEY_GRADIENT_STOPS_GLASS;
+            // The four-stop optical curve belongs only to Experimental Refraction. Legacy
+            // Glass/Frosted themes are rendered as a quieter three-stop material.
+            return KEY_GRADIENT_STOPS_SOFT;
         }
         return KEY_GRADIENT_STOPS_SOFT;
     }
@@ -4476,7 +4625,7 @@ public final class HangulKeyboardView extends View
                 centerY + height / 2f);
         overlayPaint.setColor(selected ? settings.keyPressedColor : settings.keyIdleColor);
         canvas.drawRoundRect(rect, renderDp(6), renderDp(6), overlayPaint);
-        drawBorderShape(canvas, rect);
+        drawBorderShape(canvas, rect, null);
         int icon = isReservedPhraseCommand(value) ? KeyIcon.NONE : KeyIcon.forCommand(value);
         if (icon == KeyIcon.NONE) {
             overlayTextPaint.setColor(settings.accentColor);
@@ -4804,8 +4953,8 @@ public final class HangulKeyboardView extends View
         float right = cx + size / 2f;
         float bottom = cy + size / 2f;
 
-        RectF iconBounds = new RectF(left, top, right, bottom);
-        if (iconRegistry.draw(canvas, icon, iconBounds, iconColor)) {
+        iconGeometryScratch.set(left, top, right, bottom);
+        if (iconRegistry.draw(canvas, icon, iconGeometryScratch, iconColor)) {
             return;
         }
 
@@ -4885,56 +5034,56 @@ public final class HangulKeyboardView extends View
     }
 
     private void drawBookmarkIcon(Canvas canvas, float left, float top, float right, float bottom) {
-        Path path = new Path();
-        path.moveTo(left + (right - left) * 0.25f, top);
-        path.lineTo(right - (right - left) * 0.25f, top);
-        path.lineTo(right - (right - left) * 0.25f, bottom);
-        path.lineTo((left + right) / 2f, bottom - (bottom - top) * 0.22f);
-        path.lineTo(left + (right - left) * 0.25f, bottom);
-        path.close();
-        canvas.drawPath(path, iconPaint);
+        iconPathScratch.reset();
+        iconPathScratch.moveTo(left + (right - left) * 0.25f, top);
+        iconPathScratch.lineTo(right - (right - left) * 0.25f, top);
+        iconPathScratch.lineTo(right - (right - left) * 0.25f, bottom);
+        iconPathScratch.lineTo((left + right) / 2f, bottom - (bottom - top) * 0.22f);
+        iconPathScratch.lineTo(left + (right - left) * 0.25f, bottom);
+        iconPathScratch.close();
+        canvas.drawPath(iconPathScratch, iconPaint);
     }
 
     private void drawClipboardIcon(Canvas canvas, float left, float top, float right, float bottom) {
         float width = right - left;
         float height = bottom - top;
-        RectF body = new RectF(
+        iconGeometryScratch.set(
                 left + width * 0.22f,
                 top + height * 0.22f,
                 right - width * 0.18f,
                 bottom - height * 0.10f);
-        canvas.drawRoundRect(body, width * 0.08f, width * 0.08f, iconPaint);
-        RectF clip = new RectF(
+        canvas.drawRoundRect(iconGeometryScratch, width * 0.08f, width * 0.08f, iconPaint);
+        iconSecondaryGeometryScratch.set(
                 left + width * 0.38f,
                 top + height * 0.08f,
                 right - width * 0.34f,
                 top + height * 0.30f);
-        canvas.drawRoundRect(clip, width * 0.06f, width * 0.06f, iconPaint);
-        float lineLeft = body.left + width * 0.16f;
-        float lineRight = body.right - width * 0.14f;
-        canvas.drawLine(lineLeft, body.top + height * 0.32f, lineRight, body.top + height * 0.32f, iconPaint);
-        canvas.drawLine(lineLeft, body.top + height * 0.52f, lineRight, body.top + height * 0.52f, iconPaint);
+        canvas.drawRoundRect(iconSecondaryGeometryScratch, width * 0.06f, width * 0.06f, iconPaint);
+        float lineLeft = iconGeometryScratch.left + width * 0.16f;
+        float lineRight = iconGeometryScratch.right - width * 0.14f;
+        canvas.drawLine(lineLeft, iconGeometryScratch.top + height * 0.32f, lineRight, iconGeometryScratch.top + height * 0.32f, iconPaint);
+        canvas.drawLine(lineLeft, iconGeometryScratch.top + height * 0.52f, lineRight, iconGeometryScratch.top + height * 0.52f, iconPaint);
     }
 
     private void drawMicrophoneIcon(Canvas canvas, float left, float top, float right, float bottom) {
         float width = right - left;
         float height = bottom - top;
-        RectF capsule = new RectF(
+        iconGeometryScratch.set(
                 left + width * 0.36f,
                 top + height * 0.08f,
                 right - width * 0.36f,
                 top + height * 0.58f);
-        canvas.drawRoundRect(capsule, width * 0.14f, width * 0.14f, iconPaint);
-        Path arc = new Path();
-        arc.moveTo(left + width * 0.24f, top + height * 0.42f);
-        arc.cubicTo(
+        canvas.drawRoundRect(iconGeometryScratch, width * 0.14f, width * 0.14f, iconPaint);
+        iconPathScratch.reset();
+        iconPathScratch.moveTo(left + width * 0.24f, top + height * 0.42f);
+        iconPathScratch.cubicTo(
                 left + width * 0.24f,
                 top + height * 0.72f,
                 right - width * 0.24f,
                 top + height * 0.72f,
                 right - width * 0.24f,
                 top + height * 0.42f);
-        canvas.drawPath(arc, iconPaint);
+        canvas.drawPath(iconPathScratch, iconPaint);
         canvas.drawLine((left + right) / 2f, top + height * 0.72f, (left + right) / 2f, bottom - height * 0.12f, iconPaint);
         canvas.drawLine(left + width * 0.34f, bottom - height * 0.12f, right - width * 0.34f, bottom - height * 0.12f, iconPaint);
     }
@@ -4942,17 +5091,17 @@ public final class HangulKeyboardView extends View
     private void drawUndoIcon(Canvas canvas, float left, float top, float right, float bottom) {
         float width = right - left;
         float height = bottom - top;
-        Path path = new Path();
-        path.moveTo(left + width * 0.34f, top + height * 0.25f);
-        path.lineTo(left + width * 0.16f, top + height * 0.43f);
-        path.lineTo(left + width * 0.34f, top + height * 0.61f);
-        canvas.drawPath(path, iconPaint);
-        RectF arc = new RectF(
+        iconPathScratch.reset();
+        iconPathScratch.moveTo(left + width * 0.34f, top + height * 0.25f);
+        iconPathScratch.lineTo(left + width * 0.16f, top + height * 0.43f);
+        iconPathScratch.lineTo(left + width * 0.34f, top + height * 0.61f);
+        canvas.drawPath(iconPathScratch, iconPaint);
+        iconGeometryScratch.set(
                 left + width * 0.20f,
                 top + height * 0.24f,
                 right - width * 0.14f,
                 bottom - height * 0.12f);
-        canvas.drawArc(arc, 205f, 245f, false, iconPaint);
+        canvas.drawArc(iconGeometryScratch, 205f, 245f, false, iconPaint);
     }
 
     private void drawToolsIcon(Canvas canvas, float left, float top, float right, float bottom) {
@@ -4974,10 +5123,15 @@ public final class HangulKeyboardView extends View
     }
 
     private void drawLanguageIcon(Canvas canvas, float left, float top, float right, float bottom) {
-        RectF oval = new RectF(left, top, right, bottom);
-        canvas.drawOval(oval, iconPaint);
+        iconGeometryScratch.set(left, top, right, bottom);
+        canvas.drawOval(iconGeometryScratch, iconPaint);
         canvas.drawLine(left, (top + bottom) / 2f, right, (top + bottom) / 2f, iconPaint);
-        canvas.drawOval(new RectF(left + (right - left) * 0.28f, top, right - (right - left) * 0.28f, bottom), iconPaint);
+        iconGeometryScratch.set(
+                left + (right - left) * 0.28f,
+                top,
+                right - (right - left) * 0.28f,
+                bottom);
+        canvas.drawOval(iconGeometryScratch, iconPaint);
     }
 
     private void drawEnterIcon(Canvas canvas, float left, float top, float right, float bottom) {
@@ -5007,31 +5161,31 @@ public final class HangulKeyboardView extends View
     }
 
     private void drawShiftIcon(Canvas canvas, float left, float top, float right, float bottom, boolean locked) {
-        Path path = new Path();
+        iconPathScratch.reset();
         float midX = (left + right) / 2f;
-        path.moveTo(midX, top);
-        path.lineTo(right, top + (bottom - top) * 0.45f);
-        path.lineTo(right - (right - left) * 0.28f, top + (bottom - top) * 0.45f);
-        path.lineTo(right - (right - left) * 0.28f, bottom - (locked ? (bottom - top) * 0.2f : 0));
-        path.lineTo(left + (right - left) * 0.28f, bottom - (locked ? (bottom - top) * 0.2f : 0));
-        path.lineTo(left + (right - left) * 0.28f, top + (bottom - top) * 0.45f);
-        path.lineTo(left, top + (bottom - top) * 0.45f);
-        path.close();
-        canvas.drawPath(path, iconPaint);
+        iconPathScratch.moveTo(midX, top);
+        iconPathScratch.lineTo(right, top + (bottom - top) * 0.45f);
+        iconPathScratch.lineTo(right - (right - left) * 0.28f, top + (bottom - top) * 0.45f);
+        iconPathScratch.lineTo(right - (right - left) * 0.28f, bottom - (locked ? (bottom - top) * 0.2f : 0));
+        iconPathScratch.lineTo(left + (right - left) * 0.28f, bottom - (locked ? (bottom - top) * 0.2f : 0));
+        iconPathScratch.lineTo(left + (right - left) * 0.28f, top + (bottom - top) * 0.45f);
+        iconPathScratch.lineTo(left, top + (bottom - top) * 0.45f);
+        iconPathScratch.close();
+        canvas.drawPath(iconPathScratch, iconPaint);
         if (locked) {
             canvas.drawLine(left + (right - left) * 0.22f, bottom, right - (right - left) * 0.22f, bottom, iconPaint);
         }
     }
 
     private void drawBackspaceIcon(Canvas canvas, float left, float top, float right, float bottom) {
-        Path path = new Path();
-        path.moveTo(left + (right - left) * 0.28f, top);
-        path.lineTo(right, top);
-        path.lineTo(right, bottom);
-        path.lineTo(left + (right - left) * 0.28f, bottom);
-        path.lineTo(left, (top + bottom) / 2f);
-        path.close();
-        canvas.drawPath(path, iconPaint);
+        iconPathScratch.reset();
+        iconPathScratch.moveTo(left + (right - left) * 0.28f, top);
+        iconPathScratch.lineTo(right, top);
+        iconPathScratch.lineTo(right, bottom);
+        iconPathScratch.lineTo(left + (right - left) * 0.28f, bottom);
+        iconPathScratch.lineTo(left, (top + bottom) / 2f);
+        iconPathScratch.close();
+        canvas.drawPath(iconPathScratch, iconPaint);
         canvas.drawLine(left + (right - left) * 0.45f, top + (bottom - top) * 0.35f,
                 right - (right - left) * 0.18f, bottom - (bottom - top) * 0.35f, iconPaint);
         canvas.drawLine(right - (right - left) * 0.18f, top + (bottom - top) * 0.35f,
@@ -5039,13 +5193,13 @@ public final class HangulKeyboardView extends View
     }
 
     private void drawHideIcon(Canvas canvas, float left, float top, float right, float bottom) {
-        RectF rect = new RectF(left, top, right, top + (bottom - top) * 0.58f);
-        canvas.drawRect(rect, iconPaint);
+        iconGeometryScratch.set(left, top, right, top + (bottom - top) * 0.58f);
+        canvas.drawRect(iconGeometryScratch, iconPaint);
         float cell = (right - left) / 4f;
         for (int i = 1; i < 4; i++) {
-            canvas.drawLine(left + cell * i, rect.top, left + cell * i, rect.bottom, iconPaint);
+            canvas.drawLine(left + cell * i, iconGeometryScratch.top, left + cell * i, iconGeometryScratch.bottom, iconPaint);
         }
-        canvas.drawLine((left + right) / 2f, rect.bottom + (bottom - top) * 0.12f,
+        canvas.drawLine((left + right) / 2f, iconGeometryScratch.bottom + (bottom - top) * 0.12f,
                 (left + right) / 2f, bottom, iconPaint);
         canvas.drawLine((left + right) / 2f, bottom, left + (right - left) * 0.35f,
                 bottom - (bottom - top) * 0.16f, iconPaint);
@@ -5092,14 +5246,37 @@ public final class HangulKeyboardView extends View
     }
 
     private KeySlot findKey(float x, float y) {
+        boolean englishMode = settings.keyboardMode == KeyboardMode.ENGLISH;
+        if (englishMode) {
+            KeySlot directVisualHit = findDirectVisualKey(x, y);
+            if (directVisualHit != null) {
+                return directVisualHit;
+            }
+        }
         return TouchResolver.resolve(
                 keySlots,
                 x,
                 y,
                 dp(settings.hitSlopDp),
                 dp(settings.touchYOffsetDp),
-                dp(touchBias.xDp),
-                dp(touchBias.yDp));
+                englishMode ? 0f : dp(touchBias.xDp),
+                englishMode ? 0f : dp(touchBias.yDp));
+    }
+
+    private KeySlot findDirectVisualKey(float x, float y) {
+        KeySlot best = null;
+        float bestDistance = Float.MAX_VALUE;
+        for (KeySlot keySlot : keySlots) {
+            if (!keySlot.visualContains(x, y)) {
+                continue;
+            }
+            float distance = keySlot.distanceSquaredTo(x, y);
+            if (distance < bestDistance) {
+                best = keySlot;
+                bestDistance = distance;
+            }
+        }
+        return best;
     }
 
     private String longPressRepeatValue(GestureKey key) {
@@ -5375,9 +5552,12 @@ public final class HangulKeyboardView extends View
     }
 
     private int gestureThresholdPxFor(GestureKey key, GestureAction action) {
+        TouchBiasStore.Bias effectiveBias = settings.keyboardMode == KeyboardMode.ENGLISH
+                ? null
+                : touchBias;
         int thresholdDp = GestureThresholdPolicy.thresholdDp(
                 settings,
-                touchBias,
+                effectiveBias,
                 key,
                 action,
                 dingulVowelGestureProfile);
@@ -5593,6 +5773,7 @@ public final class HangulKeyboardView extends View
         private final RectF resolvedHitBounds;
         LinearGradient idleFaceShader;
         LinearGradient glassSurfaceShader;
+        LinearGradient acrylicSurfaceShader;
 
         KeySlot(
                 GestureKey key,

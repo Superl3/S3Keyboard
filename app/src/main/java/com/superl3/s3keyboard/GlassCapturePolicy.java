@@ -3,7 +3,10 @@ package com.superl3.s3keyboard;
 final class GlassCapturePolicy {
     static final long MIN_CAPTURE_INTERVAL_MS = 360L;
     static final long EVENT_DEBOUNCE_MS = 160L;
-    static final int MAX_SOURCE_PIXELS = 360_000;
+    // The source is material input, not a screenshot shown at native resolution. A smaller
+    // cache both lowers capture/GPU cost and naturally removes high-frequency text detail so
+    // the refracted surface reads as frosted glass instead of a transparent duplicate.
+    static final int MAX_SOURCE_PIXELS = 100_000;
 
     private GlassCapturePolicy() {
     }

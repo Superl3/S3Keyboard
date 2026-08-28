@@ -16,8 +16,6 @@ final class InputConvenienceSettingsController {
     private CheckBox touchBiasAutoCorrectionCheckBox;
     private CheckBox palmRejectionCheckBox;
     private CheckBox clipboardHistoryCheckBox;
-    private CheckBox englishSuggestionsCheckBox;
-    private CheckBox englishAutoCorrectionCheckBox;
     private CheckBox doubleSpacePeriodCheckBox;
     private boolean syncing;
 
@@ -56,20 +54,6 @@ final class InputConvenienceSettingsController {
                 8,
                 () -> !syncing,
                 this::saveClipboardHistory);
-        englishSuggestionsCheckBox = SettingsRowBuilder.checkBoxRow(
-                context,
-                root,
-                R.string.english_suggestions,
-                8,
-                () -> !syncing,
-                this::saveEnglishSuggestions);
-        englishAutoCorrectionCheckBox = SettingsRowBuilder.checkBoxRow(
-                context,
-                root,
-                R.string.english_auto_correction,
-                8,
-                () -> !syncing,
-                this::saveEnglishAutoCorrection);
         doubleSpacePeriodCheckBox = SettingsRowBuilder.checkBoxRow(
                 context,
                 root,
@@ -90,15 +74,9 @@ final class InputConvenienceSettingsController {
                 KeyboardPreferences.loadTouchBiasAutoCorrectionEnabled(context));
         palmRejectionCheckBox.setChecked(KeyboardPreferences.loadPalmRejectionEnabled(context));
         clipboardHistoryCheckBox.setChecked(localDataControls.get().clipboardHistoryEnabled());
-        englishSuggestionsCheckBox.setChecked(
-                KeyboardPreferences.loadEnglishSuggestionsEnabled(context));
-        englishAutoCorrectionCheckBox.setChecked(
-                KeyboardPreferences.loadEnglishAutoCorrectionEnabled(context));
         doubleSpacePeriodCheckBox.setChecked(safe.englishDoubleSpacePeriodEnabled);
         syncing = false;
     }
-
-
     private void saveTouchBiasAutoCorrection(boolean enabled) {
         KeyboardPreferences.saveTouchBiasAutoCorrectionEnabled(context, enabled);
         controlsSyncer.run();
@@ -111,16 +89,6 @@ final class InputConvenienceSettingsController {
 
     private void saveClipboardHistory(boolean enabled) {
         localDataControls.get().setClipboardHistoryEnabled(enabled);
-        controlsSyncer.run();
-    }
-
-    private void saveEnglishSuggestions(boolean enabled) {
-        KeyboardPreferences.saveEnglishSuggestionsEnabled(context, enabled);
-        controlsSyncer.run();
-    }
-
-    private void saveEnglishAutoCorrection(boolean enabled) {
-        KeyboardPreferences.saveEnglishAutoCorrectionEnabled(context, enabled);
         controlsSyncer.run();
     }
 

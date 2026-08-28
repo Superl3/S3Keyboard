@@ -357,6 +357,7 @@ final class KeyboardSettingsSections {
     private static JSONObject visualEffectsToJson(KeyboardVisualEffects effects) {
         KeyboardVisualEffects safe = RuntimeDefaults.keyboardVisualEffects(effects);
         JSONObject object = new JSONObject();
+        put(object, "materialStyle", safe.materialStyle);
         put(object, "blurEnabled", safe.blurEnabled);
         put(object, "blurRadiusDp", safe.blurRadiusDp);
         put(object, "metallicEnabled", safe.metallicEnabled);

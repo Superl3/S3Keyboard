@@ -46,6 +46,7 @@
     <string name="command_delete">삭제</string>
     <string name="command_space">스페이스</string>
     <string name="command_enter">전송</string>
+    <string name="command_correct_text">오타 교정</string>
     <string name="command_newline">줄바꿈</string>
     <string name="command_move_left">왼쪽</string>
     <string name="command_move_right">오른쪽</string>
@@ -294,6 +295,8 @@
     <string name="theme_editor_global_section">전체</string>
     <string name="theme_editor_colors_section">색상</string>
     <string name="theme_editor_background_section">배경 효과</string>
+    <string name="theme_material_style">재질</string>
+    <string name="theme_material_style_description">단색과 정적 재질은 접근성 권한이나 실시간 화면 캡처를 사용하지 않습니다. 실험적 굴절만 별도 화면 소스를 사용합니다.</string>
     <string name="theme_editor_shape_section">형태</string>
     <string name="theme_editor_icon_packs_section">아이콘 팩</string>
     <string name="theme_editor_typography_section">글꼴</string>
@@ -461,8 +464,8 @@
     <string name="settings_handedness_label">한손 모드</string>
     <string name="settings_hangul_layout_label">한글 입력 배열</string>
     <string name="settings_english_layout_label">영문 입력 배열</string>
-    <string name="settings_dingul_dot_enter_key">딩굴 .. 위치를 Enter로 사용</string>
-    <string name="settings_dingul_dot_enter_key_summary">한 손가락 연속 입력 중에는 모음 슬라이드를 위해 원래 .. 키가 자동으로 표시됩니다.</string>
+    <string name="settings_dingul_dot_enter_key">딩굴 .. 위치를 공백/전송 키로 표시</string>
+    <string name="settings_dingul_dot_enter_key_summary">탭은 띄어쓰기, 길게 누르면 현재 입력창의 전송/입력 동작을 실행하며 상·우·하·좌 슬라이드는 ㅛ·ㅑ·ㅠ·ㅕ를 입력합니다. 한 손가락 연속 입력 중에는 원래 .. 키가 표시됩니다.</string>
     <string name="settings_hangul_number_row">한글 숫자줄 표시</string>
     <string name="settings_english_number_row">영문 숫자줄 표시</string>
     <string name="settings_ergonomics_title">인체공학 옵션</string>

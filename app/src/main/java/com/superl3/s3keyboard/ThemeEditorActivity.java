@@ -50,6 +50,7 @@ public final class ThemeEditorActivity extends Activity {
     private Spinner keyFaceGradientStartColorSpinner;
     private Spinner keyFaceGradientEndColorSpinner;
     private Spinner keyFaceGradientCurveSpinner;
+    private Spinner materialStyleSpinner;
     private Spinner panelGradientStartColorSpinner;
     private Spinner panelGradientEndColorSpinner;
     private Spinner accentColorSpinner;
@@ -77,7 +78,6 @@ public final class ThemeEditorActivity extends Activity {
     private SeekBar secondaryTextSizeSeekBar;
     private CheckBox keyDepthCheckBox;
     private CheckBox pseudoBlurCheckBox;
-    private CheckBox glassCheckBox;
     private CheckBox customDepthColorCheckBox;
     private CheckBox keyFaceGradientCheckBox;
     private CheckBox panelGradientCheckBox;
@@ -662,22 +662,17 @@ public final class ThemeEditorActivity extends Activity {
     }
 
     private void addBackgroundControls(LinearLayout root) {
-        glassCheckBox = SettingsRowBuilder.checkBoxRow(
+        materialStyleSpinner = createMaterialStyleSpinner();
+        SettingsRowBuilder.labeledControl(
                 this,
                 root,
-                R.string.theme_glass_enabled,
-                12,
-                () -> !syncing,
-                checked -> updateSettings(settings.withVisualEffects(
-                        settings.visualEffects.withGlass(
-                                checked,
-                                settings.visualEffects.glassTintAlphaPercent,
-                                settings.visualEffects.glassHighlightPercent,
-                                settings.visualEffects.glassBorderAlphaPercent))));
+                R.string.theme_material_style,
+                materialStyleSpinner,
+                8);
         SettingsRowBuilder.secondaryLabelRow(
                 this,
                 root,
-                R.string.theme_glass_enabled_description,
+                R.string.theme_material_style_description,
                 4);
 
         SettingsRowBuilder.labelRow(this, root, R.string.theme_glass_tint, 8);
@@ -686,13 +681,13 @@ public final class ThemeEditorActivity extends Activity {
                 this,
                 root,
                 glassTintValue,
-                38,
+                53,
                 0,
-                () -> !syncing && settings.visualEffects.glassEnabled,
+                () -> !syncing && settings.visualEffects.usesGlassSurface(),
                 progress -> updateSettings(settings.withVisualEffects(
                         settings.visualEffects.withGlass(
                                 true,
-                                progress + 60,
+                                progress + 45,
                                 settings.visualEffects.glassHighlightPercent,
                                 settings.visualEffects.glassBorderAlphaPercent))));
 
@@ -704,7 +699,7 @@ public final class ThemeEditorActivity extends Activity {
                 glassHighlightValue,
                 60,
                 0,
-                () -> !syncing && settings.visualEffects.glassEnabled,
+                () -> !syncing && settings.visualEffects.usesGlassSurface(),
                 progress -> updateSettings(settings.withVisualEffects(
                         settings.visualEffects.withGlass(
                                 true,
@@ -887,7 +882,7 @@ public final class ThemeEditorActivity extends Activity {
                 settings.visualEffects.blurRadiusDp);
         SettingsRowBuilder.setProgressIfPresent(
                 glassTintSeekBar,
-                settings.visualEffects.glassTintAlphaPercent - 60);
+                settings.visualEffects.glassTintAlphaPercent - 45);
         SettingsRowBuilder.setProgressIfPresent(
                 glassHighlightSeekBar,
                 settings.visualEffects.glassHighlightPercent);
@@ -926,6 +921,9 @@ public final class ThemeEditorActivity extends Activity {
                 keyFaceGradientCurveSpinner,
                 KeyboardVisualEffects.keyFaceGradientCurveIndexOf(settings.visualEffects.keyFaceGradientCurve));
         SettingsRowBuilder.setSelectionIfValid(
+                materialStyleSpinner,
+                KeyboardVisualEffects.materialStyleIndexOf(settings.visualEffects.materialStyle));
+        SettingsRowBuilder.setSelectionIfValid(
                 panelGradientStartColorSpinner,
                 ColorOption.editorIndexOf(settings.visualEffects.panelGradientStartColor));
         SettingsRowBuilder.setSelectionIfValid(
@@ -954,9 +952,6 @@ public final class ThemeEditorActivity extends Activity {
         SettingsRowBuilder.setCheckedIfPresent(
                 pseudoBlurCheckBox,
                 settings.visualEffects.blurEnabled);
-        SettingsRowBuilder.setCheckedIfPresent(
-                glassCheckBox,
-                settings.visualEffects.glassEnabled);
         SettingsRowBuilder.setCheckedIfPresent(customDepthColorCheckBox, settings.customDepthColorEnabled);
         SettingsRowBuilder.setCheckedIfPresent(
                 keyFaceGradientCheckBox,
@@ -974,10 +969,10 @@ public final class ThemeEditorActivity extends Activity {
                 settings.visualEffects.blurEnabled);
         SettingsRowBuilder.setEnabledIfPresent(
                 glassTintSeekBar,
-                settings.visualEffects.glassEnabled);
+                settings.visualEffects.usesGlassSurface());
         SettingsRowBuilder.setEnabledIfPresent(
                 glassHighlightSeekBar,
-                settings.visualEffects.glassEnabled);
+                settings.visualEffects.usesGlassSurface());
         SettingsRowBuilder.setEnabledIfPresent(
                 panelGradientStartColorSpinner,
                 settings.visualEffects.panelGradientEnabled);
@@ -1505,6 +1500,20 @@ public final class ThemeEditorActivity extends Activity {
                                         settings.visualEffects.keyFaceGradientStartColor,
                                         settings.visualEffects.keyFaceGradientEndColor,
                                         curve)));
+                    }
+                });
+    }
+
+    private Spinner createMaterialStyleSpinner() {
+        return SettingsRowBuilder.spinnerAfterInitialSelection(
+                this,
+                KeyboardVisualEffects.materialStyleLabels(),
+                () -> !syncing,
+                position -> {
+                    String style = KeyboardVisualEffects.materialStyleAt(position);
+                    if (!Objects.equals(settings.visualEffects.materialStyle, style)) {
+                        updateSettings(settings.withVisualEffects(
+                                settings.visualEffects.withMaterialPreset(style)));
                     }
                 });
     }

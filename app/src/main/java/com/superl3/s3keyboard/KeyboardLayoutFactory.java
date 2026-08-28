@@ -325,7 +325,7 @@ final class KeyboardLayoutFactory {
                 new KeyboardRow(Arrays.asList(
                         mainKey("ㅈ", "ㅈ", "ㅉ", "~", "ㅊ", "ㅊ", mainUnits),
                         mainKey("ㅎ", "ㅎ", "0", "8", "7", "9", mainUnits),
-                        dotEnterKeyEnabled ? enterKey(mainUnits) : dotDotKey(mainUnits),
+                        dotEnterKeyEnabled ? dotSpaceEnterKey(mainUnits) : dotDotKey(mainUnits),
                         specialKey("/", "/", ":", ";", "@", KeyboardCommands.CMD_NOOP, specialUnits)), baseUnits));
     }
 
@@ -340,6 +340,19 @@ final class KeyboardLayoutFactory {
                 null,
                 widthUnits,
                 KeyIcon.NONE);
+    }
+
+    private static GestureKey dotSpaceEnterKey(int widthUnits) {
+        return new GestureKey(
+                "Enter",
+                KeyboardCommands.CMD_SPACE,
+                "\u315B",
+                "\u3160",
+                "\u3155",
+                "\u3151",
+                KeyboardCommands.CMD_ENTER,
+                widthUnits,
+                KeyIcon.ENTER);
     }
 
     private static List<KeyboardRow> hangulQwertyRows() {
@@ -580,9 +593,15 @@ final class KeyboardLayoutFactory {
                         KeyIcon.RESERVED),
                 spaceKey(settings),
                 languageKey(settings),
-                GestureKey.command(
+                new GestureKey(
                         settings.enterKeyLabel,
                         KeyboardCommands.CMD_ENTER,
+                        settings.keyboardMode == KeyboardMode.ENGLISH
+                                ? KeyboardCommands.CMD_CORRECT_TEXT
+                                : null,
+                        null,
+                        null,
+                        null,
                         KeyboardCommands.CMD_NEWLINE,
                         3,
                         KeyIcon.enterForLabel(settings.enterKeyLabel)));

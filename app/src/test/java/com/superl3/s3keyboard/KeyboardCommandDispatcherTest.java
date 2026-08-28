@@ -15,14 +15,16 @@ public final class KeyboardCommandDispatcherTest {
         KeyboardCommandDispatcher.dispatch(KeyboardCommands.CMD_DELETE, target);
         KeyboardCommandDispatcher.dispatch(KeyboardCommands.CMD_DELETE_WORD, target);
         KeyboardCommandDispatcher.dispatch(KeyboardCommands.CMD_SPACE, target);
+        KeyboardCommandDispatcher.dispatch(KeyboardCommands.CMD_CORRECT_TEXT, target);
         KeyboardCommandDispatcher.dispatch(KeyboardCommands.CMD_NEWLINE, target);
         KeyboardCommandDispatcher.dispatch("가", target);
 
         assertEquals("delete", target.calls.get(0));
         assertEquals("deleteWord", target.calls.get(1));
         assertEquals("space", target.calls.get(2));
-        assertEquals("newline", target.calls.get(3));
-        assertEquals("text:가", target.calls.get(4));
+        assertEquals("correctText", target.calls.get(3));
+        assertEquals("newline", target.calls.get(4));
+        assertEquals("text:가", target.calls.get(5));
     }
 
     @Test
@@ -81,6 +83,11 @@ public final class KeyboardCommandDispatcherTest {
         @Override
         void enter() {
             calls.add("enter");
+        }
+
+        @Override
+        void correctText() {
+            calls.add("correctText");
         }
 
         @Override

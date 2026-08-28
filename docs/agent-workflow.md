@@ -48,6 +48,27 @@ rtk .\.android-tools\android-sdk\platform-tools\adb.exe -t <transport_id> shell 
 - `scripts/render-theme-previews.ps1`: static preview image parity for themes.
 - `TouchBiasStore`: local input learning stats and redacted typing pattern event log.
 
+Visual background effects are layered separately from key styling. `effects.materialStyle`
+selects one of `solid`, `soft_keycap`, `frosted`, `acrylic`, or
+`experimental_refraction`. Solid, soft keycap, frosted, and acrylic are production-safe
+materials that use only theme-color Canvas rendering or Android's platform IME-window blur.
+Old themes that declare blur or Glass without a material style normalize to `frosted`.
+They must never start accessibility capture implicitly.
+The IME must use `Window.setBackgroundBlurRadius()` without `FLAG_BLUR_BEHIND`,
+which would blur the entire host screen. True refraction requires a captured source
+texture. That is available only inside an owned preview/render tree; an IME cannot
+sample arbitrary pixels from another application's window.
+
+The optional accessibility Glass source is the explicit exception to that default boundary and
+is consumed only by `experimental_refraction`.
+On Android 14+ it uses `takeScreenshotOfWindow()` for the active application window, keeps only
+one roughly 100k-pixel frame in process memory, and rate-limits event-driven refreshes to less
+than three per second. It is user opt-in, defaults off, clears its frame when the IME closes, and
+must remain disabled for password fields. Devices without permission or API support fall back
+to the normal panel blur and theme tint. The same cached texture and one reused RuntimeShader
+render both the backplate and individual keycaps. Keycaps use per-key focus uniforms and a
+theme-color tint layer; never allocate a shader, bitmap, path, or capture per key or per frame.
+
 ## Theme And Icon Rules
 
 Theme changes usually need all of these:
@@ -144,7 +165,12 @@ Point display packs (`geo-points`, `soft-symbols`, `terminal-points`, `punctuati
 
 `KeyboardVisualEffects` is part of `KeyboardSettings` and `KeyboardThemeJson`.
 
-- blur and metal are currently Canvas-simulated effects inside `HangulKeyboardView`.
+- material style is the high-level user choice. Prefer `solid`, `soft_keycap`, `frosted`, or
+  `acrylic` for built-in themes. `experimental_refraction` must remain explicit and opt-in.
+- blur uses Android 12+ cross-window IME blur at runtime. Older or unsupported devices use only a
+  translucent theme-colored panel; they do not add a fake white/black wash. Preview surfaces use
+  the same translucent theme color because a static preview cannot sample the host app.
+- metal is a Canvas-simulated effect inside `HangulKeyboardView`.
 - angular preview bubble shape is `PreviewBubbleDrawable`, used by `S3KeyboardService`.
 - Effects must be kept lightweight enough to not break IME redraw, but they are allowed to be visually heavier when explicitly requested.
 

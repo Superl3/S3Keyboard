@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "name": "Metropolis Soft Keycap",
+  "author": "local",
+  "metadata": {
+    "tags": [
+      "dark",
+      "gmkInspired",
+      "softKeycap"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "heavyPerKeyOverrides",
+      "modifierIconPack",
+      "keyFaceGradient",
+      "keyDepth"
+    ]
+  },
+  "colors": {
+    "alphaKey": "#10151B",
+    "modifierKey": "#151B22",
+    "accentKey": "#28161C",
+    "keyPressed": "#26313B",
+    "keyboardBackground": "#090D12",
+    "border": "#5B6976",
+    "depth": "#05070A",
+    "accent": "#66E3C4",
+    "secondary": "#FFB000"
+  },
+  "shape": {
+    "roundnessDp": 8,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 1
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
+  "typography": {
+    "fontFamily": "d2coding",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": true,
+    "secondaryTextItalic": false
+  },
+  "icons": {
+    "modifierPackId": "metropolis-graph"
+  },
+  "effects": {
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "glass": {
+      "enabled": false,
+      "tintAlphaPercent": 88,
+      "highlightPercent": 12,
+      "borderAlphaPercent": 36
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "previewBubble": {
+      "style": "rounded"
+    },
+    "keyFaceGradient": {
+      "enabled": true,
+      "strengthPercent": 18,
+      "startColor": "#FFFFFF",
+      "endColor": "#5B6976",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false,
+      "startColor": "#17202A",
+      "endColor": "#070B10"
+    },
+    "materialStyle": "soft_keycap"
+  },
+  "keyTextColorOverrides": {
+    "shift": "#0D1B2A",
+    "language": "#0D1B2A",
+    "settings": "#0D1B2A",
+    "space": "#70D7E8",
+    "enter": "#0D1B2A",
+    "backspace": "#0D1B2A",
+    "options": "#0D1B2A",
+    "reserved": "#0D1B2A",
+    "alpha": "#66E3C4",
+    "tap:1": "#FF4B3E",
+    "tap:2": "#FF4B3E",
+    "tap:3": "#FF4B3E",
+    "tap:4": "#FFB000",
+    "tap:5": "#FFB000",
+    "tap:6": "#FFB000",
+    "tap:7": "#FFB000",
+    "tap:8": "#FF4B3E",
+    "tap:9": "#FF4B3E",
+    "tap:0": "#FF4B3E",
+    "tap:ㅢ": "#66E3C4",
+    "ㅢ": "#66E3C4",
+    "tap:ㅣ": "#66E3C4",
+    "ㅣ.": "#66E3C4",
+    "__dingul_center_vowel__": "#66E3C4",
+    "tap:ㅡ": "#66E3C4",
+    "ㅡ": "#66E3C4",
+    "ㅡㅐ": "#66E3C4",
+    "__dingul_wide_vowel__": "#66E3C4",
+    "shiftIndicator": "#FFB000"
+  },
+  "keyBackgroundColorOverrides": {
+    "alpha": "#10151B",
+    "tap:1": "#10151B",
+    "tap:2": "#10151B",
+    "tap:3": "#10151B",
+    "tap:4": "#10151B",
+    "tap:5": "#10151B",
+    "tap:6": "#10151B",
+    "tap:7": "#10151B",
+    "tap:8": "#10151B",
+    "tap:9": "#10151B",
+    "tap:0": "#10151B",
+    "shift": "#FF4B3E",
+    "language": "#66E3C4",
+    "settings": "#66E3C4",
+    "enter": "#66E3C4",
+    "backspace": "#FFB000",
+    "options": "#FFB000",
+    "reserved": "#FF4B3E"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#66E3C4",
+      "background": "#10151B"
+    },
+    "mod": {
+      "foreground": "#66E3C4",
+      "background": "#151B22"
+    },
+    "modInv": {
+      "foreground": "#66E3C4",
+      "background": "#28161C"
+    }
+  }
+}

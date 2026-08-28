@@ -99,7 +99,10 @@ public final class ProductionReadinessConfigTest {
         assertTrue(service.contains("void onUpdateExtractingVisibility(EditorInfo editorInfo)"));
         assertTrue(service.contains("outInsets.contentTopInsets = windowHeight"));
         assertTrue(service.contains("outInsets.visibleTopInsets = windowHeight"));
-        assertTrue(service.contains("Insets.TOUCHABLE_INSETS_FRAME"));
+        assertTrue(service.contains("Insets.TOUCHABLE_INSETS_REGION"));
+        assertTrue(service.contains("addTouchableViewBounds(outInsets.touchableRegion, inputContentContainer)"));
+        assertTrue(service.contains("addTouchableViewBounds(outInsets.touchableRegion, clipboardOverlayView)"));
+        assertFalse(service.contains("outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_FRAME"));
         assertTrue(manifest.contains("android:theme=\"@style/TransparentInputMethodTheme\""));
         assertTrue(styles.contains("name=\"TransparentInputMethodTheme\""));
         assertFalse(manifest.contains("android.permission.SYSTEM_ALERT_WINDOW"));
@@ -393,7 +396,7 @@ public final class ProductionReadinessConfigTest {
         assertTrue(operator.contains("finishComposingText()"));
         assertTrue(operator.contains("commitText("));
         assertTrue(operator.contains("static boolean hasSelection(InputConnection inputConnection)"));
-        assertTrue(service.contains("private boolean qwertyAssistanceActive(InputConnection inputConnection)"));
+        assertTrue(service.contains("private boolean explicitEnglishCorrectionAvailable(InputConnection inputConnection)"));
         assertTrue(service.contains("!InputConnectionTextOperator.hasSelection(inputConnection)"));
         assertTrue(service.contains("if (InputConnectionTextOperator.hasSelection(inputConnection)) {"));
         assertFalse(service.contains("inputConnection.getSelectedText("));
@@ -1069,9 +1072,9 @@ public final class ProductionReadinessConfigTest {
         assertTrue(view.contains("public void setOnKeyGestureListener(Consumer<String> listener)"));
         assertTrue(view.contains("listener.accept(value)"));
         assertTrue(service.contains("inputView.setOnKeyGestureListener(this::onKeyGesture)"));
-        assertTrue(service.contains("this::acceptEnglishSuggestion"));
+        assertFalse(service.contains("EnglishSuggestionStripController"));
+        assertFalse(service.contains("acceptEnglishSuggestion"));
         assertFalse(service.contains("HangulKeyboardView.OnKeyGestureListener"));
-        assertFalse(service.contains("suggestion -> acceptEnglishSuggestion(suggestion)"));
         assertFalse(view.contains("interface OnKeyGestureListener"));
         assertFalse(view.contains("listener.onKeyGesture("));
     }

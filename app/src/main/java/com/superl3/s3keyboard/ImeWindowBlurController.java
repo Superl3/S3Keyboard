@@ -25,7 +25,7 @@ final class ImeWindowBlurController {
                 : effects.blurRadiusDp;
         boolean requested = allowPanelBlur
                 && effects != null
-                && (effects.blurEnabled || effects.glassEnabled)
+                && effects.usesPlatformBlur()
                 && requestedRadiusDp > 0
                 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
         boolean enabled = requested;

@@ -30,6 +30,7 @@ const displayOverrideTypes = new Set(themeContract.displayOverrideTypes);
 const supportedRootKeys = new Set(themeContract.supportedRootKeys);
 const accentPolicyTargets = new Set(themeContract.accentPolicyTargets);
 const keyFaceGradientCurves = new Set((themeContract.keyFaceGradientCurves || []).map(curve => curve.id));
+const materialStyles = new Set((themeContract.materialStyles || []).map(style => style.id));
 
 const args = process.argv.slice(2);
 const options = parseArgs(args);
@@ -243,6 +244,7 @@ function validateThemes(themes) {
 
     validateMetadata(json.metadata, at, errors);
     validateColors(json.colors, at, errors);
+    validateOutlineColors(json.outlineColors, at, errors);
     validateShape(json.shape, at, errors);
     validateTypography(json.typography, at, errors);
     validateAdditionalNumberRow(json.additionalNumberRow, at, errors);
@@ -250,9 +252,11 @@ function validateThemes(themes) {
     validateAccentPolicyColorway(json, at, errors);
     validateIcons(json.icons, at, errors);
     validateEffects(json.effects, at, errors);
+    validateMaterialPedestal(json, at, errors);
     validateColorMap(json.keyTextColorOverrides, at("keyTextColorOverrides"), errors);
     validateColorMap(json.keyColorOverrides, at("keyColorOverrides"), errors);
     validateColorMap(json.keyBackgroundColorOverrides, at("keyBackgroundColorOverrides"), errors);
+    validateDisplayOverrides(json.novelties, at("novelties"), errors);
     validateDisplayOverrides(json.keyDisplayOverrides, at("keyDisplayOverrides"), errors);
     validateBuiltInAppearanceContract(json, at, errors);
 
@@ -311,6 +315,22 @@ function validateColors(colors, at, errors) {
   if (colors.panelBackground !== undefined && !isColor(colors.panelBackground)) {
     errors.push(`${at("colors.panelBackground")}: expected #RRGGBB color`);
   }
+}
+
+function validateOutlineColors(outlineColors, at, errors) {
+  if (outlineColors === undefined) {
+    return;
+  }
+  if (!outlineColors || typeof outlineColors !== "object" || Array.isArray(outlineColors)) {
+    errors.push(`${at("outlineColors")}: expected object`);
+    return;
+  }
+  for (const field of themeContract.outlineColorFields || []) {
+    if (outlineColors[field.key] !== undefined && !isColor(outlineColors[field.key])) {
+      errors.push(`${at(`outlineColors.${field.key}`)}: expected #RRGGBB color`);
+    }
+  }
+  validateColorMap(outlineColors.keys, at("outlineColors.keys"), errors);
 }
 
 function validateShape(shape, at, errors) {
@@ -469,6 +489,9 @@ function validateEffects(effects, at, errors) {
     errors.push(`${at("effects")}: effects must be an object`);
     return;
   }
+  if (effects.materialStyle !== undefined && !materialStyles.has(effects.materialStyle)) {
+    errors.push(`${at("effects.materialStyle")}: expected one of ${[...materialStyles].join(", ")}`);
+  }
   validateEffectToggle(effects.blur, at("effects.blur"), errors, ["enabled", "radiusDp"]);
   validateEffectToggle(effects.metal, at("effects.metal"), errors, ["enabled", "strengthPercent"]);
   validateGlassEffect(effects.glass, at("effects.glass"), errors);
@@ -479,6 +502,16 @@ function validateEffects(effects, at, errors) {
     if (style !== "rounded" && style !== "angular") {
       errors.push(`${at("effects.previewBubble.style")}: expected rounded or angular`);
     }
+  }
+}
+
+function validateMaterialPedestal(theme, at, errors) {
+  const style = theme?.effects?.materialStyle;
+  if (!new Set(["soft_keycap", "frosted", "acrylic"]).has(style)) {
+    return;
+  }
+  if (theme?.shape?.depthEnabled !== true || !Number.isInteger(theme?.shape?.depthDp) || theme.shape.depthDp < 1) {
+    errors.push(`${at("shape")}: ${style} material requires a visible pedestal (depthEnabled=true, depthDp>=1)`);
   }
 }
 
@@ -495,8 +528,8 @@ function validateGlassEffect(object, label, errors) {
     errors.push(`${label}.enabled: expected boolean`);
   }
   if (object.tintAlphaPercent !== undefined
-      && !isIntegerInRange(object.tintAlphaPercent, 60, 98)) {
-    errors.push(`${label}.tintAlphaPercent: expected integer 60..98`);
+      && !isIntegerInRange(object.tintAlphaPercent, 45, 98)) {
+    errors.push(`${label}.tintAlphaPercent: expected integer 45..98`);
   }
   if (object.highlightPercent !== undefined
       && !isIntegerInRange(object.highlightPercent, 0, 60)) {
@@ -1147,6 +1180,9 @@ function hasColorfulForegroundOverrides(theme) {
 
 function effectSummary(effects) {
   const result = [];
+  if (effects?.materialStyle) {
+    result.push(effects.materialStyle);
+  }
   if (effects?.blur?.enabled) {
     result.push(`blur${effects.blur.radiusDp ?? ""}`);
   }

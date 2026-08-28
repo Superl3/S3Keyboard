@@ -14,6 +14,9 @@ public final class KeyboardCommandRouterTest {
         assertEquals(KeyboardCommandRoute.DELETE, KeyboardCommandRouter.route(KeyboardCommands.CMD_DELETE));
         assertEquals(KeyboardCommandRoute.SPACE, KeyboardCommandRouter.route(KeyboardCommands.CMD_SPACE));
         assertEquals(KeyboardCommandRoute.ENTER, KeyboardCommandRouter.route(KeyboardCommands.CMD_ENTER));
+        assertEquals(
+                KeyboardCommandRoute.CORRECT_TEXT,
+                KeyboardCommandRouter.route(KeyboardCommands.CMD_CORRECT_TEXT));
         assertEquals(KeyboardCommandRoute.NEWLINE, KeyboardCommandRouter.route(KeyboardCommands.CMD_NEWLINE));
         assertEquals(KeyboardCommandRoute.MOVE_LEFT, KeyboardCommandRouter.route(KeyboardCommands.CMD_MOVE_LEFT));
         assertEquals(KeyboardCommandRoute.MOVE_RIGHT, KeyboardCommandRouter.route(KeyboardCommands.CMD_MOVE_RIGHT));
@@ -88,6 +91,7 @@ public final class KeyboardCommandRouterTest {
                 KeyboardCommands.CMD_DELETE,
                 KeyboardCommands.CMD_SPACE,
                 KeyboardCommands.CMD_ENTER,
+                KeyboardCommands.CMD_CORRECT_TEXT,
                 KeyboardCommands.CMD_NEWLINE,
                 KeyboardCommands.CMD_MOVE_LEFT,
                 KeyboardCommands.CMD_MOVE_RIGHT,

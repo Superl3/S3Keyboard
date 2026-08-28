@@ -3,6 +3,8 @@ package com.superl3.s3keyboard;
 import java.util.Map;
 
 final class KeyDisplayOverrideResolver {
+    private static final String NOVELTY_PREFIX = "novelty:";
+
     private KeyDisplayOverrideResolver() {
     }
 
@@ -19,6 +21,13 @@ final class KeyDisplayOverrideResolver {
 
         Map<String, KeyDisplayOverride> packOverrides =
                 KeyDisplayOverridePackCatalog.overridesForEffectivePack(settings);
+        KeyDisplayOverride novelty = exactOverride(
+                settings.keyDisplayOverrides,
+                key,
+                NOVELTY_PREFIX);
+        if (novelty != null) {
+            return novelty;
+        }
         KeyDisplayOverride exact = exactOverride(settings.keyDisplayOverrides, key);
         if (exact == null) {
             exact = exactOverride(packOverrides, key);
@@ -129,56 +138,71 @@ final class KeyDisplayOverrideResolver {
                 || "/".equals(key.tap);
     }
 
-    private static KeyDisplayOverride exactOverride(Map<String, KeyDisplayOverride> overrides, GestureKey key) {
-        KeyDisplayOverride override = find(overrides, "label:" + key.label);
+    static boolean hasNoveltyOverride(KeyboardSettings settings, GestureKey key) {
+        return settings != null
+                && key != null
+                && exactOverride(settings.keyDisplayOverrides, key, NOVELTY_PREFIX) != null;
+    }
+
+    private static KeyDisplayOverride exactOverride(
+            Map<String, KeyDisplayOverride> overrides,
+            GestureKey key) {
+        return exactOverride(overrides, key, "");
+    }
+
+    private static KeyDisplayOverride exactOverride(
+            Map<String, KeyDisplayOverride> overrides,
+            GestureKey key,
+            String prefix) {
+        KeyDisplayOverride override = find(overrides, prefix + "label:" + key.label);
         if (override != null) {
             return override;
         }
-        override = find(overrides, "tap:" + key.tap);
+        override = find(overrides, prefix + "tap:" + key.tap);
         if (override != null) {
             return override;
         }
-        override = find(overrides, key.tap);
+        override = find(overrides, prefix + key.tap);
         if (override != null) {
             return override;
         }
-        override = find(overrides, key.label);
+        override = find(overrides, prefix + key.label);
         if (override != null) {
             return override;
         }
         if (". .".equals(key.label)) {
-            override = find(overrides, "..");
+            override = find(overrides, prefix + "..");
             if (override != null) {
                 return override;
             }
         }
         if (KeyboardCommands.CMD_SPACE.equals(key.tap)) {
-            return find(overrides, "space");
+            return find(overrides, prefix + "space");
         }
         if (KeyboardCommands.CMD_DELETE.equals(key.tap)) {
-            return find(overrides, "backspace");
+            return find(overrides, prefix + "backspace");
         }
         if (KeyboardCommands.CMD_ENTER.equals(key.tap)) {
-            return find(overrides, "enter");
+            return find(overrides, prefix + "enter");
         }
         if (KeyboardCommands.CMD_SHIFT_ONCE.equals(key.tap)
                 || KeyboardCommands.CMD_SHIFT_LOCK.equals(key.tap)) {
-            return find(overrides, "shift");
+            return find(overrides, prefix + "shift");
         }
         if (KeyboardCommands.CMD_TOGGLE_LANGUAGE.equals(key.tap)) {
-            return find(overrides, "language");
+            return find(overrides, prefix + "language");
         }
         if (KeyboardCommands.CMD_SETTINGS.equals(key.tap)) {
-            return find(overrides, "settings");
+            return find(overrides, prefix + "settings");
         }
         if (KeyboardCommands.CMD_OPEN_OPTIONS.equals(key.tap)) {
-            return find(overrides, "options");
+            return find(overrides, prefix + "options");
         }
         if (KeyboardCommands.CMD_RESERVED_PHRASES.equals(key.tap)) {
-            return find(overrides, "reserved");
+            return find(overrides, prefix + "reserved");
         }
         if (key.icon != KeyIcon.NONE) {
-            return find(overrides, "icon:" + key.icon);
+            return find(overrides, prefix + "icon:" + key.icon);
         }
         return null;
     }

@@ -173,10 +173,10 @@ const ids = {
   dingulRoles: document.getElementById("dingulRoleControls"),
   depthEnabled: document.getElementById("depthEnabled"),
   customDepth: document.getElementById("customDepth"),
+  materialStyle: document.getElementById("materialStyle"),
   pseudoBlurEnabled: document.getElementById("pseudoBlurEnabled"),
   pseudoBlurRadius: document.getElementById("pseudoBlurRadiusDp"),
   pseudoBlurOut: document.getElementById("pseudoBlurOut"),
-  glassEnabled: document.getElementById("glassEnabled"),
   glassTint: document.getElementById("glassTintAlphaPercent"),
   glassTintOut: document.getElementById("glassTintOut"),
   glassHighlight: document.getElementById("glassHighlightPercent"),
@@ -305,6 +305,7 @@ function defaultTypography() {
 
 function defaultVisualEffects() {
   return {
+    materialStyle: "soft_keycap",
     blur: {
       enabled: false,
       radiusDp: 0
@@ -635,6 +636,13 @@ function bindStaticControls() {
     update();
   });
   ids.customDepth.addEventListener("change", update);
+  ids.materialStyle.addEventListener("change", () => {
+    state.effects = applyMaterialPreset(
+      normalizedVisualEffects(state.effects),
+      ids.materialStyle.value);
+    renderForm();
+    update();
+  });
   ids.pseudoBlurEnabled.addEventListener("change", () => {
     state.effects = normalizedVisualEffects(state.effects);
     state.effects.blur.enabled = ids.pseudoBlurEnabled.checked;
@@ -645,20 +653,13 @@ function bindStaticControls() {
     state.effects.blur.radiusDp = Number(ids.pseudoBlurRadius.value);
     update();
   });
-  ids.glassEnabled.addEventListener("change", () => {
-    state.effects = normalizedVisualEffects(state.effects);
-    state.effects.glass.enabled = ids.glassEnabled.checked;
-    update();
-  });
   ids.glassTint.addEventListener("input", () => {
     state.effects = normalizedVisualEffects(state.effects);
-    state.effects.glass.enabled = true;
     state.effects.glass.tintAlphaPercent = Number(ids.glassTint.value);
     update();
   });
   ids.glassHighlight.addEventListener("input", () => {
     state.effects = normalizedVisualEffects(state.effects);
-    state.effects.glass.enabled = true;
     state.effects.glass.highlightPercent = Number(ids.glassHighlight.value);
     update();
   });
@@ -772,13 +773,14 @@ function renderForm() {
   ids.depthEnabled.checked = Boolean(state.shape.depthEnabled);
   ids.customDepth.checked = Boolean(state.colors.depth);
   state.effects = normalizedVisualEffects(state.effects);
+  ids.materialStyle.value = state.effects.materialStyle;
   ids.pseudoBlurEnabled.checked = Boolean(state.effects.blur.enabled);
   ids.pseudoBlurRadius.value = state.effects.blur.radiusDp;
-  ids.glassEnabled.checked = Boolean(state.effects.glass.enabled);
   ids.glassTint.value = state.effects.glass.tintAlphaPercent;
   ids.glassHighlight.value = state.effects.glass.highlightPercent;
-  ids.glassTint.disabled = !state.effects.glass.enabled;
-  ids.glassHighlight.disabled = !state.effects.glass.enabled;
+  const glassSurface = isGlassMaterial(state.effects.materialStyle);
+  ids.glassTint.disabled = !glassSurface;
+  ids.glassHighlight.disabled = !glassSurface;
   ids.keyFaceGradientEnabled.checked = Boolean(state.effects.keyFaceGradient.enabled);
   ids.keyFaceGradientStrength.value = state.effects.keyFaceGradient.strengthPercent;
   ids.keyFaceGradientStart.value = state.effects.keyFaceGradient.startColor;
@@ -919,8 +921,9 @@ function dingulPreviewRows() {
 function renderKeyboardPreview(container, theme, layout, rows) {
   const effects = normalizedVisualEffects(theme.effects);
   container.style.background = panelBackgroundForPreview(theme, effects);
-  const previewBlurEnabled = (effects.blur?.enabled && (effects.blur.radiusDp || 0) > 0)
-    || effects.glass?.enabled;
+  const previewBlurEnabled = isGlassMaterial(effects.materialStyle)
+    && effects.blur?.enabled
+    && (effects.blur.radiusDp || 0) > 0;
   container.style.backdropFilter = previewBlurEnabled
     ? `blur(${effects.blur.radiusDp || 10}px)`
     : "none";
@@ -1513,11 +1516,12 @@ function keyFaceBackgroundForPreview(theme, background) {
   const bg = normalizeColor(background) || "#F8F8F8";
   const effects = normalizedVisualEffects(theme.effects);
   const strength = effects.keyFaceGradient.strengthPercent;
-  if (!theme.shape?.depthEnabled || !theme.shape?.depthDp
-      || !effects.keyFaceGradient.enabled || strength <= 0) {
+  if (effects.materialStyle === "solid"
+      || !effects.keyFaceGradient.enabled
+      || strength <= 0) {
     return bg;
   }
-  const glassEnabled = effects.glass?.enabled;
+  const glassEnabled = isGlassMaterial(effects.materialStyle);
   const gradientCurve = glassEnabled ? "glass" : effects.keyFaceGradient.curve;
   const gradientStrength = glassEnabled
     ? Math.max(effects.keyFaceGradient.strengthPercent, effects.glass.highlightPercent)
@@ -1617,17 +1621,29 @@ function normalizedVisualEffects(effects) {
       ?? raw.panelGradientEndColor
       ?? defaultVisualEffects().panelGradient.endColor)
       || defaultVisualEffects().panelGradient.endColor;
+  const legacyGlassEnabled = Boolean(
+    glass.enabled ?? raw.glassEnabled ?? defaultVisualEffects().glass.enabled);
+  const legacyBlurEnabled = Boolean(
+    blur.enabled ?? raw.blurEnabled ?? defaultVisualEffects().blur.enabled);
+  const materialStyle = normalizeMaterialStyle(raw.materialStyle)
+    || inferLegacyMaterialStyle(
+      legacyGlassEnabled,
+      legacyBlurEnabled,
+      Boolean(panelGradient.enabled ?? raw.panelGradientEnabled),
+      Boolean(keyFaceGradient.enabled ?? raw.keyFaceGradientEnabled),
+      strength);
   return {
     ...raw,
+    materialStyle,
     blur: {
-      enabled: Boolean(blur.enabled ?? raw.blurEnabled ?? defaultVisualEffects().blur.enabled),
+      enabled: legacyBlurEnabled,
       radiusDp: Math.max(0, Math.min(32, Number.isFinite(Number(blur.radiusDp ?? raw.blurRadiusDp))
         ? Math.round(Number(blur.radiusDp ?? raw.blurRadiusDp))
         : defaultVisualEffects().blur.radiusDp))
     },
     glass: {
-      enabled: Boolean(glass.enabled ?? raw.glassEnabled ?? defaultVisualEffects().glass.enabled),
-      tintAlphaPercent: Math.max(60, Math.min(98, Number.isFinite(Number(
+      enabled: legacyGlassEnabled,
+      tintAlphaPercent: Math.max(45, Math.min(98, Number.isFinite(Number(
         glass.tintAlphaPercent ?? raw.glassTintAlphaPercent))
         ? Math.round(Number(glass.tintAlphaPercent ?? raw.glassTintAlphaPercent))
         : defaultVisualEffects().glass.tintAlphaPercent)),
@@ -1659,6 +1675,37 @@ function normalizedVisualEffects(effects) {
   };
 }
 
+function normalizeMaterialStyle(style) {
+  return ["solid", "soft_keycap", "frosted", "acrylic", "experimental_refraction"]
+    .includes(style) ? style : null;
+}
+
+function inferLegacyMaterialStyle(glass, blur, panelGradient, keyGradient, strength) {
+  if (glass || blur) return "frosted";
+  if (panelGradient) return "acrylic";
+  if (keyGradient && Number(strength) > 0) return "soft_keycap";
+  return "solid";
+}
+
+function isGlassMaterial(style) {
+  return style === "frosted" || style === "experimental_refraction";
+}
+
+function applyMaterialPreset(effects, style) {
+  const next = normalizedVisualEffects(effects);
+  next.materialStyle = normalizeMaterialStyle(style) || "soft_keycap";
+  next.blur.enabled = isGlassMaterial(next.materialStyle);
+  if (next.blur.enabled && next.blur.radiusDp <= 0) next.blur.radiusDp = 16;
+  next.glass.enabled = isGlassMaterial(next.materialStyle);
+  next.keyFaceGradient.enabled = next.materialStyle !== "solid";
+  if (next.keyFaceGradient.enabled && next.keyFaceGradient.strengthPercent < 12) {
+    next.keyFaceGradient.strengthPercent = 12;
+  }
+  next.keyFaceGradient.curve = isGlassMaterial(next.materialStyle) ? "glass" : "soft";
+  next.panelGradient.enabled = next.materialStyle === "acrylic";
+  return next;
+}
+
 function normalizeKeyFaceGradientCurve(curve) {
   return ["linear", "soft", "top_glow", "bottom_shade", "glass"].includes(curve) ? curve : "soft";
 }
@@ -1667,18 +1714,20 @@ function panelBackgroundForPreview(theme, effects) {
   const panelColor = normalizeColor(theme.colors.panelBackground)
     || normalizeColor(theme.colors.keyboardBackground)
     || "#EBEBEB";
-  const blurEnabled = (effects?.blur?.enabled && (effects.blur.radiusDp || 0) > 0)
-    || effects?.glass?.enabled;
+  const glassEnabled = isGlassMaterial(effects?.materialStyle);
+  const blurEnabled = glassEnabled
+    && effects?.blur?.enabled
+    && (effects.blur.radiusDp || 0) > 0;
   // The Android preview uses the same translucent surface as the runtime window. CSS can
   // sample the page behind the card through backdrop-filter, so keep the theme color while
   // exposing enough of that surface for the blur to be visible.
   const surfaceColor = color => blurEnabled
-    ? rgbaColor(color, effects?.glass?.enabled
+    ? rgbaColor(color, glassEnabled
       ? 0.28 + 0.22 * ((effects.glass.tintAlphaPercent || 86) / 100)
       : 0.79)
     : color;
   const gradient = effects.panelGradient || {};
-  if (!gradient.enabled) {
+  if (effects.materialStyle === "solid" || !gradient.enabled) {
     return surfaceColor(panelColor);
   }
   const start = normalizeColor(gradient.startColor) || panelColor;
@@ -3143,7 +3192,7 @@ function buildImageThemePrompt(theme) {
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.blur.enabled boolean with radiusDp 0..32 for keyboard background blur, effects.glass.enabled boolean with tintAlphaPercent 60..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient.enabled boolean, strengthPercent integer 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
+    "Allowed effects: effects.materialStyle is solid|soft_keycap|frosted|acrylic|experimental_refraction. Use experimental_refraction only when the user explicitly requests the opt-in Android screen-source effect. effects.blur.enabled has radiusDp 0..32, effects.glass has tintAlphaPercent 45..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient has enabled, strengthPercent 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient has enabled plus startColor/endColor #RRGGBB.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,
@@ -3227,7 +3276,7 @@ function buildPaletteImageThemePrompt(theme) {
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.blur.enabled boolean with radiusDp 0..32 for keyboard background blur, effects.glass.enabled boolean with tintAlphaPercent 60..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient.enabled boolean, strengthPercent integer 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient.enabled boolean plus startColor/endColor #RRGGBB for the keyboard backplate.",
+    "Allowed effects: effects.materialStyle is solid|soft_keycap|frosted|acrylic|experimental_refraction. Prefer solid, soft_keycap, frosted, or acrylic; experimental_refraction requires explicit user opt-in. effects.blur.enabled has radiusDp 0..32, effects.glass has tintAlphaPercent 45..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient has enabled, strengthPercent 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient has enabled plus startColor/endColor #RRGGBB.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,

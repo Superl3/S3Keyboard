@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "name": "Modern Dolch Acrylic",
+  "author": "local",
+  "metadata": {
+    "tags": [
+      "dark",
+      "gmkInspired",
+      "acrylic"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "keyFaceGradient",
+      "panelGradient",
+      "keyDepth"
+    ]
+  },
+  "colors": {
+    "alphaKey": "#616A70",
+    "modifierKey": "#2A2F34",
+    "accentKey": "#2E6F70",
+    "keyPressed": "#4A5258",
+    "keyboardBackground": "#555B60",
+    "border": "#1B2025",
+    "depth": "#202327",
+    "accent": "#E8ECEF",
+    "secondary": "#64D4CF"
+  },
+  "shape": {
+    "roundnessDp": 9,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 1
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": true,
+    "secondaryTextItalic": false
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#55C7C8",
+    "escPoint": "#E8ECEF",
+    "enter": "#E8ECEF",
+    "dingulDot": "#E8ECEF"
+  },
+  "keyBackgroundColorOverrides": {
+    "escPoint": "#F05B6E",
+    "enter": "#66E6D8",
+    "dingulDot": "#66E6D8"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#E8ECEF",
+      "background": "#616A70"
+    },
+    "mod": {
+      "foreground": "#64D4CF",
+      "background": "#2A2F34"
+    },
+    "modInv": {
+      "foreground": "#2A2F34",
+      "background": "#2E6F70"
+    }
+  },
+  "accentPolicy": {
+    "qwerty": [
+      "escPoint",
+      "enter"
+    ],
+    "dingul": [
+      "dingulDot"
+    ]
+  },
+  "effects": {
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "glass": {
+      "enabled": false,
+      "tintAlphaPercent": 88,
+      "highlightPercent": 14,
+      "borderAlphaPercent": 38
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "previewBubble": {
+      "style": "rounded"
+    },
+    "keyFaceGradient": {
+      "enabled": true,
+      "strengthPercent": 14,
+      "startColor": "#FFFFFF",
+      "endColor": "#1B2025",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": true,
+      "startColor": "#656D73",
+      "endColor": "#343A40"
+    },
+    "materialStyle": "acrylic"
+  }
+}

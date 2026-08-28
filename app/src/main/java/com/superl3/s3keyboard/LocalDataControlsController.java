@@ -39,6 +39,7 @@ final class LocalDataControlsController {
                 .edit()
                 .remove(TouchBiasStore.TYPING_PATTERN_LOG)
                 .remove(TouchBiasStore.TYPING_EVENT_JOURNAL)
+                .remove(TouchBiasStore.NEXT_KEY_TOUCH_MODEL)
                 .apply();
     }
 
@@ -47,6 +48,7 @@ final class LocalDataControlsController {
                 .edit()
                 .remove(TouchBiasStore.TOUCH_BIAS_STATS)
                 .remove(TouchBiasStore.DINGUL_TOUCH_PROFILE)
+                .remove(TouchBiasStore.NEXT_KEY_TOUCH_MODEL)
                 .apply();
     }
 
@@ -66,6 +68,7 @@ final class LocalDataControlsController {
                 TouchBiasStore.TOUCH_BIAS_STATS,
                 TouchBiasStore.TYPING_PATTERN_LOG,
                 TouchBiasStore.TYPING_EVENT_JOURNAL,
+                TouchBiasStore.NEXT_KEY_TOUCH_MODEL,
                 TouchBiasStore.DINGUL_TOUCH_PROFILE,
                 TouchBiasStore.LEARNING_EPOCH_MARKER,
                 RemoteCompatibilityLog.KEY_ENTRIES

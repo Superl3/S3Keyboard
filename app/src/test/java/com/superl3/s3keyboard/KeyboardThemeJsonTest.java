@@ -175,6 +175,19 @@ public final class KeyboardThemeJsonTest {
     }
 
     @Test
+    public void preferencesOverrideEncodingKeepsBackgroundColors() {
+        Map<String, Integer> overrides = new HashMap<>();
+        overrides.put("tap:q", 0x00ABCDEF);
+        overrides.put("background:shift", 0x00FF4B3E);
+
+        Map<String, Integer> restored = KeyboardThemeJson.decodeKeyColorOverrides(
+                KeyboardThemeJson.encodeKeyColorOverrides(overrides));
+
+        assertEquals(0xFFABCDEF, (int) restored.get("tap:q"));
+        assertEquals(0xFFFF4B3E, (int) restored.get("background:shift"));
+    }
+
+    @Test
     public void layoutFieldsInThemeJsonDoNotOverrideUserLayout() {
         KeyboardSettings base = KeyboardSettings.defaults()
                 .withHeights(330, 270)
@@ -247,6 +260,29 @@ public final class KeyboardThemeJsonTest {
     }
 
     @Test
+    public void importsNoveltyAliasIntoDedicatedDisplayNamespace() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"novelties\":{\"keys\":{"
+                + "\"enter\":{\"type\":\"icon\",\"value\":\"gmk_moon\"},"
+                + "\"space\":{\"type\":\"text\",\"value\":\"VOID\"}"
+                + "}},"
+                + "\"keyDisplayOverrides\":{\"keys\":{"
+                + "\"enter\":{\"type\":\"icon\",\"value\":\"gmk_sun\"}"
+                + "}}"
+                + "}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals("gmk_sun", imported.keyDisplayOverrides.get("enter").value);
+        assertEquals("gmk_moon", imported.keyDisplayOverrides.get("novelty:enter").value);
+        assertEquals("VOID", imported.keyDisplayOverrides.get("novelty:space").value);
+        assertEquals(
+                KeyDisplayOverride.TYPE_TEXT,
+                imported.keyDisplayOverrides.get("novelty:space").type);
+    }
+
+    @Test
     public void importsAndExportsIconsDisplayPacksAndEffects() {
         Map<String, KeyDisplayOverride> display = new HashMap<>();
         display.put("alpha", KeyDisplayOverride.icon(ModifierIconCatalog.GLYPH_DOT));
@@ -298,6 +334,9 @@ public final class KeyboardThemeJsonTest {
         assertEquals(91, imported.visualEffects.glassTintAlphaPercent);
         assertEquals(27, imported.visualEffects.glassHighlightPercent);
         assertEquals(48, imported.visualEffects.glassBorderAlphaPercent);
+        assertEquals(
+                KeyboardVisualEffects.MATERIAL_FROSTED,
+                imported.visualEffects.materialStyle);
     }
 
     @Test
@@ -306,7 +345,7 @@ public final class KeyboardThemeJsonTest {
                 + "\"schemaVersion\":1,"
                 + "\"effects\":{"
                 + "\"blur\":{\"enabled\":true,\"radiusDp\":14},"
-                + "\"glass\":{\"enabled\":true,\"tintAlphaPercent\":88,"
+                + "\"glass\":{\"enabled\":true,\"tintAlphaPercent\":52,"
                 + "\"highlightPercent\":16,\"borderAlphaPercent\":36},"
                 + "\"keyFaceGradient\":{\"enabled\":true,\"strengthPercent\":34,\"curve\":\"glass\"}"
                 + "}}";
@@ -318,12 +357,40 @@ public final class KeyboardThemeJsonTest {
         assertTrue(imported.visualEffects.blurEnabled);
         assertEquals(14, imported.visualEffects.blurRadiusDp);
         assertTrue(imported.visualEffects.glassEnabled);
-        assertEquals(88, imported.visualEffects.glassTintAlphaPercent);
+        assertEquals(52, imported.visualEffects.glassTintAlphaPercent);
         assertEquals(16, imported.visualEffects.glassHighlightPercent);
         assertEquals(36, imported.visualEffects.glassBorderAlphaPercent);
         assertEquals(
                 KeyboardVisualEffects.KEY_FACE_GRADIENT_CURVE_GLASS,
                 imported.visualEffects.keyFaceGradientCurve);
+        assertEquals(
+                KeyboardVisualEffects.MATERIAL_FROSTED,
+                imported.visualEffects.materialStyle);
+        assertFalse(imported.visualEffects.usesLiveRefraction());
+    }
+
+    @Test
+    public void experimentalRefractionRequiresExplicitMaterialStyle() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"effects\":{"
+                + "\"materialStyle\":\"experimental_refraction\","
+                + "\"blur\":{\"enabled\":true,\"radiusDp\":16},"
+                + "\"glass\":{\"enabled\":true}"
+                + "}}";
+
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(
+                KeyboardSettings.defaults(),
+                json);
+        String exported = KeyboardThemeJson.exportTheme(
+                imported,
+                "Experimental",
+                "local",
+                null);
+
+        assertTrue(imported.visualEffects.usesLiveRefraction());
+        assertTrue(exported.contains("\"materialStyle\""));
+        assertTrue(exported.contains("\"experimental_refraction\""));
     }
 
     @Test
@@ -375,6 +442,56 @@ public final class KeyboardThemeJsonTest {
 
         assertEquals(0xFFFF6677, (int) roundTrip.keyColorOverrides.get("background:enter"));
         assertEquals(0xFF112233, (int) roundTrip.keyColorOverrides.get("background:tap:q"));
+    }
+
+    @Test
+    public void importsAndExportsOutlineColors() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"outlineColors\":{"
+                + "\"default\":\"#102030\","
+                + "\"alpha\":\"#203040\","
+                + "\"modifier\":\"#304050\","
+                + "\"accent\":\"#405060\","
+                + "\"novelty\":\"#506070\","
+                + "\"keys\":{\"enter\":\"#607080\"}"
+                + "}"
+                + "}";
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(0xFF102030, (int) imported.keyColorOverrides.get("outline:default"));
+        assertEquals(0xFF203040, (int) imported.keyColorOverrides.get("outline:alpha"));
+        assertEquals(0xFF304050, (int) imported.keyColorOverrides.get("outline:modifiers"));
+        assertEquals(0xFF405060, (int) imported.keyColorOverrides.get("outline:accent"));
+        assertEquals(0xFF506070, (int) imported.keyColorOverrides.get("outline:novelty"));
+        assertEquals(0xFF607080, (int) imported.keyColorOverrides.get("outline:enter"));
+
+        String exported = KeyboardThemeJson.exportTheme(imported, "Outlines", "local", null);
+        KeyboardSettings roundTrip = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), exported);
+        assertEquals(imported.keyColorOverrides, roundTrip.keyColorOverrides);
+    }
+
+    @Test
+    public void noveltiesKeepDedicatedNamespaceAcrossThemeRoundTrip() {
+        String json = "{"
+                + "\"schemaVersion\":1,"
+                + "\"novelties\":{\"keys\":{"
+                + "\"enter\":{\"type\":\"icon\",\"value\":\"gmk_iso_enter_mark\"}"
+                + "}}"
+                + "}";
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), json);
+
+        assertEquals(
+                "gmk_iso_enter_mark",
+                imported.keyDisplayOverrides.get("novelty:enter").value);
+        String exported = KeyboardThemeJson.exportTheme(imported, "Novelty", "local", null);
+        assertTrue(exported.contains("\"novelties\""));
+        assertFalse(exported.contains("novelty:enter"));
+
+        KeyboardSettings roundTrip = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), exported);
+        assertEquals(
+                "gmk_iso_enter_mark",
+                roundTrip.keyDisplayOverrides.get("novelty:enter").value);
     }
 
     @Test

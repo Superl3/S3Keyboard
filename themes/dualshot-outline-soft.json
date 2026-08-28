@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "name": "Dualshot Outline Soft",
+  "author": "local",
+  "metadata": {
+    "tags": [
+      "light",
+      "keycapInspired",
+      "softKeycap",
+      "outline"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "keyFaceGradient",
+      "keyDepth",
+      "separateOutline",
+      "noveltyKeys"
+    ]
+  },
+  "colors": {
+    "alphaKey": "#B7BABE",
+    "modifierKey": "#303238",
+    "accentKey": "#CB746D",
+    "keyPressed": "#9FA3A8",
+    "keyboardBackground": "#676A6E",
+    "border": "#4E5359",
+    "depth": "#292B2F",
+    "accent": "#24262A",
+    "secondary": "#5CB6C9"
+  },
+  "outlineColors": {
+    "default": "#646A72",
+    "alpha": "#767C84",
+    "modifier": "#D27B74",
+    "accent": "#55B4C8",
+    "novelty": "#D27B74"
+  },
+  "shape": {
+    "roundnessDp": 8,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 2
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": true,
+    "secondaryTextItalic": false
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#5CB6C9"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#24262A",
+      "background": "#B7BABE"
+    },
+    "mod": {
+      "foreground": "#E8EBEE",
+      "background": "#303238"
+    },
+    "modInv": {
+      "foreground": "#24262A",
+      "background": "#CB746D"
+    }
+  },
+  "effects": {
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "glass": {
+      "enabled": false,
+      "tintAlphaPercent": 88,
+      "highlightPercent": 12,
+      "borderAlphaPercent": 36
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "previewBubble": {
+      "style": "rounded"
+    },
+    "keyFaceGradient": {
+      "enabled": true,
+      "strengthPercent": 15,
+      "startColor": "#FFFFFF",
+      "endColor": "#555B63",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false,
+      "startColor": "#30343A",
+      "endColor": "#15181C"
+    },
+    "materialStyle": "soft_keycap"
+  },
+  "accentPolicy": {
+    "spacebar": "mod",
+    "qwerty": [
+      "qwertyShift",
+      "backspace"
+    ],
+    "dingul": [
+      "dingulDot"
+    ]
+  },
+  "novelties": {
+    "keys": {
+      "enter": {
+        "type": "icon",
+        "value": "gmk_iso_enter_mark"
+      },
+      "reserved": {
+        "type": "icon",
+        "value": "gmk_orbit_star"
+      },
+      "space": {
+        "type": "icon",
+        "value": "gmk_side_stripes"
+      }
+    }
+  }
+}

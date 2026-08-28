@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "name": "8008 Soft Keycap",
+  "author": "local",
+  "metadata": {
+    "tags": [
+      "dark",
+      "gmkInspired",
+      "softKeycap"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "keyFaceGradient",
+      "keyDepth"
+    ]
+  },
+  "colors": {
+    "alphaKey": "#8C929D",
+    "modifierKey": "#1E2028",
+    "accentKey": "#B94D61",
+    "keyPressed": "#5A606A",
+    "keyboardBackground": "#111216",
+    "border": "#525865",
+    "depth": "#0E0F13",
+    "accent": "#161820",
+    "secondary": "#A9ADB8"
+  },
+  "shape": {
+    "roundnessDp": 8,
+    "borderWidthDp": 1,
+    "keyGapDp": 5,
+    "depthEnabled": true,
+    "depthDp": 1
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": true,
+    "secondaryTextItalic": false
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#7DBBE8"
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#161820",
+      "background": "#8C929D"
+    },
+    "mod": {
+      "foreground": "#A9ADB8",
+      "background": "#1E2028"
+    },
+    "modInv": {
+      "foreground": "#1E2028",
+      "background": "#B94D61"
+    }
+  },
+  "accentPolicy": {
+    "qwerty": [
+      "modMeta",
+      "qwertyShift",
+      "backspace"
+    ],
+    "dingul": [
+      "modCtrl",
+      "dingulDot"
+    ]
+  },
+  "effects": {
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "glass": {
+      "enabled": false,
+      "tintAlphaPercent": 88,
+      "highlightPercent": 12,
+      "borderAlphaPercent": 36
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "previewBubble": {
+      "style": "rounded"
+    },
+    "keyFaceGradient": {
+      "enabled": true,
+      "strengthPercent": 18,
+      "startColor": "#FFFFFF",
+      "endColor": "#525865",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false,
+      "startColor": "#343842",
+      "endColor": "#101216"
+    },
+    "materialStyle": "soft_keycap"
+  }
+}

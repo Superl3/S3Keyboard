@@ -4,7 +4,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +19,7 @@ final class TypingEventJournal {
     private static final String TYPE_INPUT = "input";
     private static final String TYPE_DELETE = "delete";
     private static final String TYPE_LABEL = "label";
+    private static final String TYPE_SESSION = "session";
     private static final String ID = "id";
     private static final String TIME_MS = "timeMs";
     private static final String TARGET_EVENT_ID = "targetEventId";
@@ -48,6 +51,12 @@ final class TypingEventJournal {
     static String appendDelete(String encodedJournal, long timeMs, int maxEvents) {
         RuntimeJournal journal = RuntimeJournal.decode(encodedJournal);
         journal.appendDelete(timeMs, maxEvents);
+        return journal.encode();
+    }
+
+    static String beginSession(String encodedJournal, long timeMs, int maxEvents) {
+        RuntimeJournal journal = RuntimeJournal.decode(encodedJournal);
+        journal.beginSession(timeMs, maxEvents);
         return journal.encode();
     }
 
@@ -128,6 +137,7 @@ final class TypingEventJournal {
     static final class RuntimeJournal {
         private final JSONArray events;
         private final Map<String, JSONObject> inputs = new HashMap<>();
+        private final Deque<LearningEvent> pendingLearningEvents = new ArrayDeque<>();
         private CorrectionStats stats = new CorrectionStats();
 
         private RuntimeJournal(JSONArray events) {
@@ -155,6 +165,10 @@ final class TypingEventJournal {
             labels.addAll(appendAcceptedLabels(events));
             for (JSONObject labelEvent : labels) {
                 recordLabelEvent(labelEvent);
+                LearningEvent learningEvent = learningEventFor(labelEvent);
+                if (learningEvent != null) {
+                    pendingLearningEvents.add(learningEvent);
+                }
             }
 
             if (trim(events, maxEvents)) {
@@ -179,12 +193,29 @@ final class TypingEventJournal {
             return true;
         }
 
+        boolean beginSession(long timeMs, int maxEvents) {
+            JSONObject event = new JSONObject();
+            put(event, TYPE, TYPE_SESSION);
+            put(event, ID, "s-" + Math.max(0L, timeMs) + "-" + events.length());
+            put(event, TIME_MS, Math.max(0L, timeMs));
+            events.put(event);
+            pendingLearningEvents.clear();
+            if (trim(events, maxEvents)) {
+                rebuildIndexAndStats();
+            }
+            return true;
+        }
+
         CorrectionStats correctionStats() {
             return stats;
         }
 
         String encode() {
             return events.toString();
+        }
+
+        LearningEvent pollLearningEvent() {
+            return pendingLearningEvents.pollFirst();
         }
 
         private void rebuildIndexAndStats() {
@@ -219,6 +250,20 @@ final class TypingEventJournal {
             JSONObject replacement = inputs.get(labelEvent.optString(REPLACEMENT_EVENT_ID));
             stats.record(label, target, replacement);
         }
+
+        private LearningEvent learningEventFor(JSONObject labelEvent) {
+            if (labelEvent == null) {
+                return null;
+            }
+            Label label = Label.fromId(labelEvent.optString(LABEL));
+            JSONObject target = inputs.get(labelEvent.optString(TARGET_EVENT_ID));
+            JSONObject replacement = inputs.get(labelEvent.optString(REPLACEMENT_EVENT_ID));
+            Input targetInput = Input.fromJson(target);
+            Input replacementInput = Input.fromJson(replacement);
+            return label == null || targetInput == null
+                    ? null
+                    : new LearningEvent(label, targetInput, replacementInput);
+        }
     }
 
     private static JSONObject appendReplacementLabel(JSONArray events, Input replacement) {
@@ -245,9 +290,10 @@ final class TypingEventJournal {
     }
 
     private static PendingDeletedInput deepestPendingDeletedInput(JSONArray events) {
+        int sessionStart = currentSessionStartIndex(events);
         List<String> pendingTargets = new ArrayList<>();
         Set<String> consumedTargets = replacementLabelTargetIds(events);
-        for (int i = 0; i < events.length(); i++) {
+        for (int i = sessionStart; i < events.length(); i++) {
             JSONObject event = events.optJSONObject(i);
             if (event == null || !TYPE_DELETE.equals(event.optString(TYPE))) {
                 continue;
@@ -326,11 +372,27 @@ final class TypingEventJournal {
                 && !GestureAction.TAP.name().equals(event.optString(SHADOW_ACTION));
     }
 
+    private static int currentSessionStartIndex(JSONArray events) {
+        for (int i = events.length() - 1; i >= 0; i--) {
+            JSONObject event = events.optJSONObject(i);
+            if (event != null && TYPE_SESSION.equals(event.optString(TYPE))) {
+                return i + 1;
+            }
+        }
+        return 0;
+    }
+
     private static int subsequentInputCount(JSONArray events, int index) {
         int count = 0;
         for (int i = index + 1; i < events.length(); i++) {
             JSONObject event = events.optJSONObject(i);
-            if (event != null && TYPE_INPUT.equals(event.optString(TYPE))) {
+            if (event == null) {
+                continue;
+            }
+            if (TYPE_SESSION.equals(event.optString(TYPE))) {
+                break;
+            }
+            if (TYPE_INPUT.equals(event.optString(TYPE))) {
                 count++;
             }
         }
@@ -341,7 +403,13 @@ final class TypingEventJournal {
         Set<String> deletedTargets = deleteTargetIds(events);
         for (int i = events.length() - 1; i >= 0; i--) {
             JSONObject event = events.optJSONObject(i);
-            if (event == null || !TYPE_INPUT.equals(event.optString(TYPE))) {
+            if (event == null) {
+                continue;
+            }
+            if (TYPE_SESSION.equals(event.optString(TYPE))) {
+                break;
+            }
+            if (!TYPE_INPUT.equals(event.optString(TYPE))) {
                 continue;
             }
             String id = event.optString(ID);
@@ -716,6 +784,18 @@ final class TypingEventJournal {
         }
     }
 
+    static final class LearningEvent {
+        final Label label;
+        final Input target;
+        final Input replacement;
+
+        LearningEvent(Label label, Input target, Input replacement) {
+            this.label = label;
+            this.target = target;
+            this.replacement = replacement;
+        }
+    }
+
     static final class Input {
         final String id;
         final long timeMs;
@@ -785,6 +865,43 @@ final class TypingEventJournal {
             this.shadowAction = shadowAction;
             this.shadowScore = shadowScore;
             this.shadowApplied = shadowApplied;
+        }
+
+        static Input fromJson(JSONObject event) {
+            if (event == null || !TYPE_INPUT.equals(event.optString(TYPE))) {
+                return null;
+            }
+            KeyboardMode mode;
+            try {
+                mode = KeyboardMode.valueOf(event.optString("mode", "hangul").toUpperCase(Locale.US));
+            } catch (IllegalArgumentException ignored) {
+                mode = KeyboardMode.HANGUL;
+            }
+            return new Input(
+                    event.optString(ID),
+                    event.optLong(TIME_MS, 0L),
+                    mode,
+                    event.optString(KEY_CP),
+                    event.optString(VALUE_CP),
+                    actionFrom(event.optString(ACTION)),
+                    actionFrom(event.optString("fallbackAction")),
+                    (float) event.optDouble("downXDp", 0d),
+                    (float) event.optDouble("downYDp", 0d),
+                    (float) event.optDouble("upXDp", 0d),
+                    (float) event.optDouble("upYDp", 0d),
+                    event.optLong("durationMs", 0L),
+                    event.optInt("thresholdDp", 0),
+                    event.optInt("hitSlopDp", 0),
+                    event.optInt("keyGapDp", 0),
+                    event.optInt("touchYOffsetDp", 0),
+                    (float) event.optDouble("biasXDp", 0d),
+                    (float) event.optDouble("biasYDp", 0d),
+                    event.optString(SHADOW_KEY_CP),
+                    event.optString(SHADOW_ACTION).isEmpty()
+                            ? null
+                            : actionFrom(event.optString(SHADOW_ACTION)),
+                    (float) event.optDouble("shadowScore", 0d),
+                    event.optBoolean(SHADOW_APPLIED, false));
         }
 
         JSONObject toJson() {

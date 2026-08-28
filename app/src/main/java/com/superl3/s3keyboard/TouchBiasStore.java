@@ -14,6 +14,7 @@ final class TouchBiasStore {
     static final String TOUCH_BIAS_STATS = "touch_bias_stats";
     static final String TYPING_PATTERN_LOG = "typing_pattern_log";
     static final String TYPING_EVENT_JOURNAL = "typing_event_journal_v1";
+    static final String NEXT_KEY_TOUCH_MODEL = "next_key_touch_model_v1";
     static final String DINGUL_TOUCH_PROFILE = "dingul_touch_profile_v1";
     static final String LEARNING_EPOCH_MARKER = "input_learning_epoch_marker";
     static final float MAX_BIAS_DP = 6f;
@@ -32,10 +33,12 @@ final class TouchBiasStore {
     private DingulTouchProfile cachedDingulTouchProfile;
     private JSONArray typingPatternLog;
     private TypingEventJournal.RuntimeJournal typingEventJournal;
+    private NextKeyTouchModel nextKeyTouchModel;
     private boolean touchBiasDirty;
     private boolean dingulTouchProfileDirty;
     private boolean typingPatternLogDirty;
     private boolean typingEventJournalDirty;
+    private boolean nextKeyTouchModelDirty;
     private final long learningEpoch;
 
     TouchBiasStore(Context context) {
@@ -61,11 +64,16 @@ final class TouchBiasStore {
         return typingEventJournal.correctionStats();
     }
 
+    synchronized NextKeyTouchModel loadNextKeyTouchModel() {
+        return nextKeyTouchModel;
+    }
+
     synchronized void reloadFromPreferencesIfClean() {
         if (touchBiasDirty
                 || dingulTouchProfileDirty
                 || typingPatternLogDirty
-                || typingEventJournalDirty) {
+                || typingEventJournalDirty
+                || nextKeyTouchModelDirty) {
             return;
         }
         loadFromPreferences();
@@ -156,6 +164,11 @@ final class TouchBiasStore {
         synchronized (this) {
             changed = typingEventJournal.appendInput(input, MAX_TYPING_PATTERN_EVENTS);
             typingEventJournalDirty = typingEventJournalDirty || changed;
+            TypingEventJournal.LearningEvent event;
+            while ((event = typingEventJournal.pollLearningEvent()) != null) {
+                nextKeyTouchModel.apply(event);
+                nextKeyTouchModelDirty = true;
+            }
             stats = typingEventJournal.correctionStats();
         }
         if (changed) {
@@ -175,6 +188,17 @@ final class TouchBiasStore {
         return stats;
     }
 
+    TypingEventJournal.CorrectionStats beginTypingJournalSession(long timeMs) {
+        TypingEventJournal.CorrectionStats stats;
+        synchronized (this) {
+            typingEventJournal.beginSession(timeMs, MAX_TYPING_PATTERN_EVENTS);
+            typingEventJournalDirty = true;
+            stats = typingEventJournal.correctionStats();
+        }
+        scheduleFlush();
+        return stats;
+    }
+
     void flushNow() {
         if (flushHandler != null) {
             flushHandler.removeCallbacks(flushRunnable);
@@ -183,6 +207,7 @@ final class TouchBiasStore {
         String encodedDingulProfile = null;
         String encodedPatternLog = null;
         String encodedTypingJournal = null;
+        String encodedNextKeyTouchModel = null;
         synchronized (this) {
             if (touchBiasDirty) {
                 encodedBias = cachedBias.encode();
@@ -200,11 +225,16 @@ final class TouchBiasStore {
                 encodedTypingJournal = typingEventJournal.encode();
                 typingEventJournalDirty = false;
             }
+            if (nextKeyTouchModelDirty) {
+                encodedNextKeyTouchModel = nextKeyTouchModel.encode();
+                nextKeyTouchModelDirty = false;
+            }
         }
         if (encodedBias == null
                 && encodedDingulProfile == null
                 && encodedPatternLog == null
-                && encodedTypingJournal == null) {
+                && encodedTypingJournal == null
+                && encodedNextKeyTouchModel == null) {
             return;
         }
         SharedPreferences.Editor editor = preferences.edit();
@@ -219,6 +249,9 @@ final class TouchBiasStore {
         }
         if (encodedTypingJournal != null) {
             editor.putString(TYPING_EVENT_JOURNAL, encodedTypingJournal);
+        }
+        if (encodedNextKeyTouchModel != null) {
+            editor.putString(NEXT_KEY_TOUCH_MODEL, encodedNextKeyTouchModel);
         }
         editor.putLong(LEARNING_EPOCH_MARKER, learningEpoch);
         editor.apply();
@@ -240,6 +273,7 @@ final class TouchBiasStore {
             cachedDingulTouchProfile = DingulTouchProfile.empty(learningEpoch);
             typingPatternLog = new JSONArray();
             typingEventJournal = TypingEventJournal.RuntimeJournal.decode("");
+            nextKeyTouchModel = NextKeyTouchModel.empty(learningEpoch);
         } else {
             cachedBias = Bias.decode(preferences.getString(TOUCH_BIAS_STATS, ""));
             cachedDingulTouchProfile = DingulTouchProfile.decode(
@@ -248,11 +282,15 @@ final class TouchBiasStore {
             typingPatternLog = decodeTypingPatternLog(preferences.getString(TYPING_PATTERN_LOG, ""));
             typingEventJournal = TypingEventJournal.RuntimeJournal.decode(
                     preferences.getString(TYPING_EVENT_JOURNAL, ""));
+            nextKeyTouchModel = NextKeyTouchModel.decode(
+                    preferences.getString(NEXT_KEY_TOUCH_MODEL, ""),
+                    learningEpoch);
         }
         touchBiasDirty = false;
         dingulTouchProfileDirty = false;
         typingPatternLogDirty = false;
         typingEventJournalDirty = false;
+        nextKeyTouchModelDirty = false;
     }
 
     static void reset(Context context) {
@@ -261,6 +299,7 @@ final class TouchBiasStore {
                 .remove(TOUCH_BIAS_STATS)
                 .remove(TYPING_PATTERN_LOG)
                 .remove(TYPING_EVENT_JOURNAL)
+                .remove(NEXT_KEY_TOUCH_MODEL)
                 .remove(DINGUL_TOUCH_PROFILE)
                 .remove(LEARNING_EPOCH_MARKER)
                 .apply();

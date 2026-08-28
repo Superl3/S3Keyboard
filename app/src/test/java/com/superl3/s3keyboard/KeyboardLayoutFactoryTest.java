@@ -68,7 +68,26 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals("\u3160", dotDot.valueFor(GestureAction.DOWN));
         assertEquals("\u3155", dotDot.valueFor(GestureAction.LEFT));
         assertEquals("\u3151", dotDot.valueFor(GestureAction.RIGHT));
+        assertNull(dotDot.valueFor(GestureAction.LONG_PRESS));
         assertEquals(KeyIcon.NONE, dotDot.icon);
+    }
+
+    @Test
+    public void dingulSpaceEnterDesignKeepsVowelSlidesAndUsesHoldForEnter() {
+        List<KeyboardRow> rows = KeyboardLayoutFactory.build(
+                KeyboardSettings.defaults(),
+                KeyboardSurface.NORMAL,
+                KeyboardLayoutProfiles.defaults().withDingulDotEnterKeyEnabled(true));
+        GestureKey spaceEnter = rows.get(3).keys.get(2);
+
+        assertEquals("Enter", spaceEnter.label);
+        assertEquals(KeyboardCommands.CMD_SPACE, spaceEnter.valueFor(GestureAction.TAP));
+        assertEquals("\u315B", spaceEnter.valueFor(GestureAction.UP));
+        assertEquals("\u3160", spaceEnter.valueFor(GestureAction.DOWN));
+        assertEquals("\u3155", spaceEnter.valueFor(GestureAction.LEFT));
+        assertEquals("\u3151", spaceEnter.valueFor(GestureAction.RIGHT));
+        assertEquals(KeyboardCommands.CMD_ENTER, spaceEnter.valueFor(GestureAction.LONG_PRESS));
+        assertEquals(KeyIcon.ENTER, spaceEnter.icon);
     }
 
     @Test
@@ -112,10 +131,11 @@ public final class KeyboardLayoutFactoryTest {
         assertDirections(findKey(rows, "ㅢ"), "ㅚ", "ㅟ", "ㅝ", "ㅘ");
         assertDirections(findKey(rows, "ㅣ."), "ㅗ", "ㅜ", "ㅓ", "ㅏ");
         assertDirections(findKey(rows, "ㅡㅐ"), "ㅙ", "ㅞ", "ㅔ", "ㅐ");
-        assertEquals(KeyboardCommands.CMD_ENTER, findKey(rows, "Enter").valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_SPACE, findKey(rows, "Enter").valueFor(GestureAction.TAP));
         assertEquals(
-                KeyboardCommands.CMD_NEWLINE,
+                KeyboardCommands.CMD_ENTER,
                 findKey(rows, "Enter").valueFor(GestureAction.LONG_PRESS));
+        assertDirections(findKey(rows, "Enter"), "ㅛ", "ㅠ", "ㅕ", "ㅑ");
         assertEquals(KeyIcon.ENTER, findKey(rows, "Enter").icon);
         assertDirections(findKey(rows, "?"), "!", "*", "+", KeyboardCommands.CMD_NOOP);
         assertDirections(findKey(rows, "."), "\"", "`", ",", KeyboardCommands.CMD_NOOP);
@@ -224,6 +244,16 @@ public final class KeyboardLayoutFactoryTest {
         assertEquals(KeyboardCommands.CMD_DELETE, backspace.valueFor(GestureAction.UP));
         assertEquals(KeyboardCommands.CMD_DELETE_WORD, backspace.valueFor(GestureAction.DOWN));
         assertEquals(KeyboardCommands.CMD_DELETE_WORD, backspace.valueFor(GestureAction.LEFT));
+    }
+
+    @Test
+    public void qwertyEnterUsesUpSlideForExplicitCorrection() {
+        KeyboardSettings settings = KeyboardSettings.defaults().withKeyboardMode(KeyboardMode.ENGLISH);
+        GestureKey enter = findKey(KeyboardLayoutFactory.build(settings), settings.enterKeyLabel);
+
+        assertEquals(KeyboardCommands.CMD_ENTER, enter.valueFor(GestureAction.TAP));
+        assertEquals(KeyboardCommands.CMD_CORRECT_TEXT, enter.valueFor(GestureAction.UP));
+        assertEquals(KeyboardCommands.CMD_NEWLINE, enter.valueFor(GestureAction.LONG_PRESS));
     }
 
     @Test

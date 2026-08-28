@@ -29,6 +29,16 @@ public final class KeyboardThemePresetTest {
     @Test
     public void presetsHaveUniqueIdsAndImportableJson() {
         Set<String> ids = new HashSet<>();
+        Set<String> glassPresetIds = Set.of(
+                "gmk-metropolis",
+                "nord-frost-night",
+                "nord-frost-snow",
+                "liquid-aurora",
+                "liquid-frost",
+                "liquid-graphite",
+                "midnight-ice",
+                "pearl-mist",
+                "slate-glass");
 
         for (KeyboardThemePreset preset : KeyboardThemePreset.PRESETS) {
             assertTrue(ids.add(preset.id));
@@ -61,7 +71,7 @@ public final class KeyboardThemePresetTest {
             assertEquals(10, themed.bottomRowTopPaddingDp);
             assertTrue(themed.keyColorOverrides.containsKey("shiftindicator"));
             assertEquals(
-                    "gmk-metropolis".equals(preset.id),
+                    glassPresetIds.contains(preset.id),
                     themed.visualEffects.glassEnabled);
         }
     }
