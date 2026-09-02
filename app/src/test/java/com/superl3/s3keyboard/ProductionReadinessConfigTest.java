@@ -410,6 +410,17 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void textActionPanelStaysInsideImeWindow() throws Exception {
+        String service = javaSource("S3KeyboardService");
+
+        assertTrue(service.contains("private View textActionOverlayView;"));
+        assertTrue(service.contains("inputRoot.addView(overlay, new FrameLayout.LayoutParams("));
+        assertTrue(service.contains("inputRoot.removeView(textActionOverlayView);"));
+        assertFalse(service.contains("PopupWindow textActionPopup"));
+        assertFalse(service.contains("textActionPopup = new PopupWindow"));
+    }
+
+    @Test
     public void cursorMovementReleasesHangulComposingBeforePendingSelectionSuppression() throws Exception {
         String service = javaSource("S3KeyboardService");
         int mismatchIndex = service.indexOf("boolean selectionMismatch = isComposingSelectionMismatch(");

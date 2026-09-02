@@ -139,6 +139,15 @@ final class EditorInputPolicy {
         return replacesMainRows();
     }
 
+    boolean allowsTextActions(boolean remoteModeEnabled) {
+        return allowTextConveniences
+                && !password
+                && !numberLike
+                && !rawKeyInput
+                && !replacesMainRows()
+                && !remoteModeEnabled;
+    }
+
     boolean replacesMainRows() {
         return surface == KeyboardSurface.NUMPAD
                 || surface == KeyboardSurface.PHONEPAD

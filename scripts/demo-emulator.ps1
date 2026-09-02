@@ -20,7 +20,6 @@ param(
     [string] $ThemePresetId = "",
     [switch] $ShowNumberRow,
     [switch] $CaptureShiftActive,
-    [switch] $EnableGlassSource,
     [switch] $StandardImeSurface,
     [switch] $ReplaceExistingPackage,
     [switch] $ResetAppData
@@ -568,18 +567,9 @@ if (-not $ThemePresetMode) {
     # Free-form variants keep the legacy forced effects; presets own their effects.
     $StartArgs += @("--ez", "demo_force_visual_effects", "true")
 }
-if ($StandardImeSurface -and -not $EnableGlassSource) {
+if ($StandardImeSurface) {
     # Frosted/platform-blur reviews need the bounded IME window but never need Accessibility.
     $StartArgs += @("--ez", "transparent_overlay_input", "false")
-}
-if ($EnableGlassSource) {
-    # Live Glass capture and platform panel blur are intentionally disabled in transparent
-    # overlay mode. Force the normal IME surface for Glass review so screenshots exercise the
-    # real blur/refraction path instead of only the theme's translucent fallback material.
-    $StartArgs += @(
-        "--ez", "demo_glass_source_enabled", "true",
-        "--ez", "transparent_overlay_input", "false"
-    )
 }
 if ($ThemePresetMode) {
     $StartArgs += @("--es", "theme_preset_id", $ThemePresetId)
@@ -604,11 +594,6 @@ if ($ThemePresetMode) {
     )
 }
 & $Adb @AdbTarget @StartArgs | Out-Host
-if ($EnableGlassSource) {
-    $GlassService = "$Package/$Package.GlassCaptureAccessibilityService"
-    & $Adb @AdbTarget shell settings put secure enabled_accessibility_services $GlassService | Out-Host
-    & $Adb @AdbTarget shell settings put secure accessibility_enabled 1 | Out-Host
-}
 if ($ThemePresetMode) {
     # MainActivity persists the requested preset, but an already-running IME service can have
     # loaded the previous settings before that write completed. Cycle through another installed

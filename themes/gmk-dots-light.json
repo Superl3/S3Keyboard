@@ -4,10 +4,10 @@
   "author": "local",
   "metadata": {
     "tags": [
-      "depth",
       "dots",
       "gmkInspired",
-      "light"
+      "light",
+      "flat"
     ],
     "features": [
       "dingulRoleColors",
@@ -30,9 +30,9 @@
   "shape": {
     "roundnessDp": 5,
     "borderWidthDp": 1,
-    "keyGapDp": 6,
-    "depthEnabled": true,
-    "depthDp": 1
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0
   },
   "additionalNumberRow": {
     "colorMode": "full_alpha"
@@ -154,6 +154,25 @@
       "tintAlphaPercent": 86,
       "highlightPercent": 18,
       "borderAlphaPercent": 42
-    }
+    },
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "keyFaceGradient": {
+      "enabled": false,
+      "strengthPercent": 0,
+      "startColor": "#FFFFFF",
+      "endColor": "#C3BEB3",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false
+    },
+    "materialStyle": "solid"
   }
 }

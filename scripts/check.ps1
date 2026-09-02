@@ -25,6 +25,10 @@ if ($BrokenText.Count -gt 0) {
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
+& node (Join-Path $Root "tools\check-material-surfaces.mjs")
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
 & (Join-Path $PSScriptRoot "audit-settings-usage.ps1") -FailOnUnused
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE

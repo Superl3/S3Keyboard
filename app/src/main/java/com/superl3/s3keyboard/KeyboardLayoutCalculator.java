@@ -54,7 +54,6 @@ final class KeyboardLayoutCalculator {
         float numberRowBottomGap = hasAdditionalNumberRow(settings, rows)
                 ? dp(settings.numberRowBottomGapDp, safeDensity)
                 : 0f;
-        float keyGap = dp(settings.keyGapDp, safeDensity);
         boolean hasNumberRow = hasAdditionalNumberRow(settings, rows);
         float usableHeight = Math.max(rows.size(), height - topPadding - bottomPadding);
         float bottomRowHeight = bottomRowHeight(usableHeight, bottomRowTopPadding, rows.size(), safeDensity);
@@ -79,7 +78,13 @@ final class KeyboardLayoutCalculator {
                     ? Math.min(dp(settings.hangulMainSpecialGapDp, safeDensity), Math.max(0f, availableWidth - 1f))
                     : 0f;
             float rowAvailableWidth = Math.max(1f, availableWidth - rowSpecialGap);
-            float rowGap = bottomRow ? 0f : rowGap(row, rowAvailableWidth, keyGap);
+            float proportionalGap = KeyboardShapeMetrics.rowGapPx(
+                    settings.keyGapDp,
+                    row,
+                    rowAvailableWidth,
+                    rowHeight,
+                    hangulCharacterRow);
+            float rowGap = bottomRow ? 0f : rowGap(row, rowAvailableWidth, proportionalGap);
             int bottomSpaceIndex = bottomRow ? spaceIndex(row) : -1;
             float top = topPadding + topForRow(
                     rowIndex,

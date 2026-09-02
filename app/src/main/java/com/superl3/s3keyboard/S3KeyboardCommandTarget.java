@@ -37,7 +37,7 @@ final class S3KeyboardCommandTarget extends KeyboardCommandDispatcher.Target {
 
     @Override
     void correctText() {
-        service.correctCurrentEnglishWord(service.commandInputConnection());
+        service.showTextActionPanel();
     }
 
     @Override

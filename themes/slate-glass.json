@@ -1,99 +1,100 @@
 {
-    "schemaVersion":  1,
-    "name":  "Slate Glass",
-    "author":  "local",
-    "metadata":  {
-                     "recommendedHints":  {
-                                              "showHangulSlideHints":  false,
-                                              "showEnglishSlideHints":  false,
-                                              "showBeginnerTooltipPreview":  true
-                                          },
-                     "tags":  [
-                                  "flat",
-                                  "glassLike",
-                                  "light"
-                              ],
-                     "features":  [
-                                      "dingulRoleColors",
-                                      "historicalHintRecommendation"
-                                  ]
-                 },
-    "colors":  {
-                   "alphaKey":  "#F7F9FC",
-                   "modifierKey":  "#E9EEF5",
-                   "accentKey":  "#DFE7F0",
-                   "keyPressed":  "#D7E2EF",
-                   "keyboardBackground":  "#EAF0F6",
-                   "border":  "#AEB8C6",
-                   "depth":  null,
-                   "accent":  "#0F172A",
-                   "secondary":  "#64748B"
-               },
-    "shape":  {
-                  "roundnessDp":  5,
-                  "keyGapDp":  5,
-                  "depthEnabled":  false,
-                  "depthDp":  0,
-                  "borderWidthDp":  1
-              },
-    "additionalNumberRow":  {
-                                "colorMode":  "full_mod"
-                            },
-    "typography":  {
-                       "fontFamily":  "noto_sans_kr",
-                       "primaryTextSizePercent":  78,
-                       "secondaryTextSizePercent":  80,
-                       "primaryTextBold":  false,
-                       "primaryTextItalic":  false,
-                       "secondaryTextBold":  true,
-                       "secondaryTextItalic":  false
-                   },
-    "dingulColors":  {
-                         "alpha":  {
-                                       "foreground":  "#0F172A",
-                                       "background":  "#F7F9FC"
-                                   },
-                         "mod":  {
-                                     "foreground":  "#64748B",
-                                     "background":  "#E9EEF5"
-                                 },
-                         "modInv":  {
-                                        "foreground":  "#334155",
-                                        "background":  "#DFE7F0"
-                                    }
-                     },
-    "keyTextColorOverrides":  {
-                                  "shiftIndicator":  "#0891B2"
-                              },
-    "effects":  {
-                    "blur":  {
-                                 "enabled":  true,
-                                 "radiusDp":  20
-                             },
-                    "metal":  {
-                                  "enabled":  false,
-                                  "strengthPercent":  0
-                              },
-                    "previewBubble":  {
-                                          "style":  "rounded"
-                                      },
-                    "keyFaceGradient":  {
-                                            "enabled":  true,
-                                            "strengthPercent":  10,
-                                            "startColor":  "#FFFFFF",
-                                            "endColor":  "#B8C4D1",
-                                            "curve":  "glass"
-                                        },
-                    "panelGradient":  {
-                                          "enabled":  true,
-                                          "startColor":  "#EFF3F7",
-                                          "endColor":  "#C8D2DD"
-                                      },
-                    "glass":  {
-                                  "enabled":  true,
-                                  "tintAlphaPercent":  70,
-                                  "highlightPercent":  36,
-                                  "borderAlphaPercent":  48
-                              }
-                }
+  "schemaVersion": 1,
+  "name": "Slate Glass",
+  "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": false,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "flat",
+      "glassLike",
+      "light"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
+  "colors": {
+    "alphaKey": "#F7F9FC",
+    "modifierKey": "#E9EEF5",
+    "accentKey": "#DFE7F0",
+    "keyPressed": "#D7E2EF",
+    "keyboardBackground": "#EAF0F6",
+    "border": "#AEB8C6",
+    "depth": null,
+    "accent": "#0F172A",
+    "secondary": "#64748B"
+  },
+  "shape": {
+    "roundnessDp": 7,
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 78,
+    "secondaryTextSizePercent": 80,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": true,
+    "secondaryTextItalic": false
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#0F172A",
+      "background": "#F7F9FC"
+    },
+    "mod": {
+      "foreground": "#64748B",
+      "background": "#E9EEF5"
+    },
+    "modInv": {
+      "foreground": "#334155",
+      "background": "#DFE7F0"
+    }
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#0891B2"
+  },
+  "effects": {
+    "blur": {
+      "enabled": true,
+      "radiusDp": 16
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "previewBubble": {
+      "style": "rounded"
+    },
+    "keyFaceGradient": {
+      "enabled": true,
+      "strengthPercent": 2,
+      "startColor": "#FFFFFF",
+      "endColor": "#AEB8C6",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": true,
+      "startColor": "#EFF3F7",
+      "endColor": "#C8D2DD"
+    },
+    "glass": {
+      "enabled": true,
+      "tintAlphaPercent": 78,
+      "highlightPercent": 13,
+      "borderAlphaPercent": 30
+    },
+    "materialStyle": "frosted"
+  }
 }

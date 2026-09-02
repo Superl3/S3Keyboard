@@ -5,20 +5,17 @@ final class KeyboardVisualEffects {
     static final String MATERIAL_SOFT_KEYCAP = "soft_keycap";
     static final String MATERIAL_FROSTED = "frosted";
     static final String MATERIAL_ACRYLIC = "acrylic";
-    static final String MATERIAL_EXPERIMENTAL_REFRACTION = "experimental_refraction";
     private static final String[] MATERIAL_STYLE_ORDER = {
             MATERIAL_SOLID,
             MATERIAL_SOFT_KEYCAP,
             MATERIAL_FROSTED,
-            MATERIAL_ACRYLIC,
-            MATERIAL_EXPERIMENTAL_REFRACTION
+            MATERIAL_ACRYLIC
     };
     private static final String[] MATERIAL_STYLE_LABELS = {
             "단색",
             "부드러운 키캡",
             "서리 유리",
             "아크릴",
-            "실험적 굴절"
     };
     static final String KEY_FACE_GRADIENT_CURVE_LINEAR = "linear";
     static final String KEY_FACE_GRADIENT_CURVE_SOFT = "soft";
@@ -479,16 +476,6 @@ final class KeyboardVisualEffects {
                         panelGradientStartColor, panelGradientEndColor, false,
                         glassTintAlphaPercent, glassHighlightPercent,
                         glassBorderAlphaPercent, normalized);
-            case MATERIAL_EXPERIMENTAL_REFRACTION:
-                return new KeyboardVisualEffects(
-                        true, blurRadiusDp > 0 ? blurRadiusDp : 16,
-                        false, 0, angularPreviewBubble,
-                        true, Math.max(12, keyFaceGradientStrengthPercent),
-                        keyFaceGradientStartColor, keyFaceGradientEndColor,
-                        KEY_FACE_GRADIENT_CURVE_GLASS, panelGradientEnabled,
-                        panelGradientStartColor, panelGradientEndColor, true,
-                        glassTintAlphaPercent, glassHighlightPercent,
-                        glassBorderAlphaPercent, normalized);
             case MATERIAL_SOFT_KEYCAP:
             default:
                 return new KeyboardVisualEffects(
@@ -503,18 +490,12 @@ final class KeyboardVisualEffects {
     }
 
     boolean usesGlassSurface() {
-        return MATERIAL_FROSTED.equals(materialStyle)
-                || MATERIAL_EXPERIMENTAL_REFRACTION.equals(materialStyle);
-    }
-
-    boolean usesLiveRefraction() {
-        return MATERIAL_EXPERIMENTAL_REFRACTION.equals(materialStyle);
+        return MATERIAL_FROSTED.equals(materialStyle);
     }
 
     boolean requiresPedestal() {
-        return MATERIAL_SOFT_KEYCAP.equals(materialStyle)
-                || MATERIAL_FROSTED.equals(materialStyle)
-                || MATERIAL_ACRYLIC.equals(materialStyle);
+        // Pedestal/depth is a shape choice; translucent materials can stay flat.
+        return MATERIAL_SOFT_KEYCAP.equals(materialStyle);
     }
 
     boolean usesPlatformBlur() {

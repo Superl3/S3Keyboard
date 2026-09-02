@@ -48,7 +48,11 @@ final class KeyboardThemeJson {
             JSONObject shape = new JSONObject();
             shape.put("roundnessDp", safeSettings.keyRoundnessDp);
             shape.put("borderWidthDp", safeSettings.keyBorderWidthDp);
+            // keyGapDp remains the legacy/common authored value. Preserve both layout values so
+            // a theme round-trip cannot collapse Dingul and QWERTY spacing back together.
             shape.put("keyGapDp", safeSettings.keyGapDp);
+            shape.put("hangulKeyGapDp", safeSettings.hangulKeyGapDp);
+            shape.put("englishKeyGapDp", safeSettings.englishKeyGapDp);
             shape.put("depthEnabled", safeSettings.keyDepthEnabled);
             shape.put("depthDp", safeSettings.keyDepthDp);
             root.put("shape", shape);
@@ -227,12 +231,15 @@ final class KeyboardThemeJson {
                     depthColor);
 
             if (shape != null) {
+                int commonGap = shape.optInt("keyGapDp", themed.keyGapDp);
+                int hangulGap = shape.optInt("hangulKeyGapDp", commonGap);
+                int englishGap = shape.optInt("englishKeyGapDp", commonGap);
                 themed = themed
                         .withKeyRoundness(shape.optInt("roundnessDp", themed.keyRoundnessDp))
                         .withKeyBorderWidth(shape.optInt(
                                 "borderWidthDp",
                                 shape.optInt("outlineDensityDp", themed.keyBorderWidthDp)))
-                        .withKeyGap(shape.optInt("keyGapDp", themed.keyGapDp))
+                        .withKeyGaps(hangulGap, englishGap)
                         .withKeyDepth(
                                 shape.optBoolean("depthEnabled", themed.keyDepthEnabled),
                                 shape.optInt("depthDp", themed.keyDepthDp));
@@ -1247,9 +1254,11 @@ final class KeyboardThemeJson {
             // app-window capture is never enabled merely by importing an old theme.
             return result;
         }
-        return result.withMaterialStyle(object.optString(
-                "materialStyle",
-                result.materialStyle));
+        String materialStyle = object.optString("materialStyle", result.materialStyle);
+        if ("experimental_refraction".equals(materialStyle)) {
+            materialStyle = KeyboardVisualEffects.MATERIAL_FROSTED;
+        }
+        return result.withMaterialStyle(materialStyle);
     }
 
     private static Map<String, KeyDisplayOverride> legacyDotDisplayOverrides() {

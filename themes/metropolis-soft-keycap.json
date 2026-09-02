@@ -28,7 +28,7 @@
     "secondary": "#FFB000"
   },
   "shape": {
-    "roundnessDp": 8,
+    "roundnessDp": 10,
     "borderWidthDp": 1,
     "keyGapDp": 5,
     "depthEnabled": true,
@@ -56,9 +56,9 @@
     },
     "glass": {
       "enabled": false,
-      "tintAlphaPercent": 88,
-      "highlightPercent": 12,
-      "borderAlphaPercent": 36
+      "tintAlphaPercent": 86,
+      "highlightPercent": 18,
+      "borderAlphaPercent": 42
     },
     "metal": {
       "enabled": false,
@@ -69,9 +69,9 @@
     },
     "keyFaceGradient": {
       "enabled": true,
-      "strengthPercent": 18,
+      "strengthPercent": 15,
       "startColor": "#FFFFFF",
-      "endColor": "#5B6976",
+      "endColor": "#05070A",
       "curve": "soft"
     },
     "panelGradient": {

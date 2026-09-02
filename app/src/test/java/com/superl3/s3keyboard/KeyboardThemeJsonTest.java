@@ -366,11 +366,10 @@ public final class KeyboardThemeJsonTest {
         assertEquals(
                 KeyboardVisualEffects.MATERIAL_FROSTED,
                 imported.visualEffects.materialStyle);
-        assertFalse(imported.visualEffects.usesLiveRefraction());
     }
 
     @Test
-    public void experimentalRefractionRequiresExplicitMaterialStyle() {
+    public void experimentalRefractionImportsOneWayAsFrosted() {
         String json = "{"
                 + "\"schemaVersion\":1,"
                 + "\"effects\":{"
@@ -384,13 +383,13 @@ public final class KeyboardThemeJsonTest {
                 json);
         String exported = KeyboardThemeJson.exportTheme(
                 imported,
-                "Experimental",
+                "Migrated",
                 "local",
                 null);
 
-        assertTrue(imported.visualEffects.usesLiveRefraction());
-        assertTrue(exported.contains("\"materialStyle\""));
-        assertTrue(exported.contains("\"experimental_refraction\""));
+        assertEquals(KeyboardVisualEffects.MATERIAL_FROSTED, imported.visualEffects.materialStyle);
+        assertTrue(exported.contains("\"materialStyle\": \"frosted\""));
+        assertFalse(exported.contains("experimental_refraction"));
     }
 
     @Test
@@ -737,6 +736,20 @@ public final class KeyboardThemeJsonTest {
         assertEquals(ModifierIconCatalog.PACK_DOTS_LINES, imported.modifierIconThemePackId);
         assertEquals(KeyDisplayOverride.TYPE_ICON, imported.keyDisplayOverrides.get("modifiers").type);
         assertEquals(ModifierIconCatalog.GLYPH_DOT, imported.keyDisplayOverrides.get("modifiers").value);
+    }
+
+    @Test
+    public void themeRoundTripPreservesLayoutSpecificKeyGaps() {
+        KeyboardSettings settings = KeyboardSettings.defaults().withKeyGaps(7, 4);
+        String exported = KeyboardThemeJson.exportTheme(settings, "Geometry", "local", null);
+        KeyboardSettings imported = KeyboardThemeJson.importTheme(KeyboardSettings.defaults(), exported);
+
+        assertTrue(exported.contains("\"hangulKeyGapDp\": 7"));
+        assertTrue(exported.contains("\"englishKeyGapDp\": 4"));
+        assertEquals(7, imported.hangulKeyGapDp);
+        assertEquals(4, imported.englishKeyGapDp);
+        assertEquals(7, imported.keyGapDp);
+        assertEquals(4, imported.withKeyboardMode(KeyboardMode.ENGLISH).keyGapDp);
     }
 
     private static Map<String, Integer> sampleKeyOverrides() {

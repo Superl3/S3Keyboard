@@ -1,6 +1,6 @@
 package com.superl3.s3keyboard;
 
-/** Pure material values shared by the live Glass renderer and its source-free fallback. */
+/** Pure source-free values for the lightweight Frosted material. */
 final class GlassMaterialPolicy {
     private GlassMaterialPolicy() {
     }
@@ -10,23 +10,9 @@ final class GlassMaterialPolicy {
         return Math.round(255f * (0.74f + 0.12f * retention));
     }
 
-    static int fallbackKeyTintAlpha(int tintRetentionPercent, float pressProgress) {
-        float retention = clamp01(tintRetentionPercent / 100f);
-        // Product Frosted keeps the key body almost opaque; the host is perceived through the
-        // blurred panel around the keys rather than through a noisy translucent key face.
-        float opacity = 0.84f + 0.10f * retention + 0.02f * clamp01(pressProgress);
-        return Math.round(255f * Math.min(0.95f, opacity));
-    }
 
-    static float keyCenterSourceMix(int tintRetentionPercent) {
-        float retention = clamp01(tintRetentionPercent / 100f);
-        return 0.14f - 0.08f * retention;
-    }
 
-    static float keyEdgeSourceMix(int tintRetentionPercent) {
-        float retention = clamp01(tintRetentionPercent / 100f);
-        return 0.31f - 0.11f * retention;
-    }
+
 
     static int keyBorderAlpha(int configuredPercent) {
         return Math.round(16f + 0.42f * clamp(configuredPercent, 0, 100));

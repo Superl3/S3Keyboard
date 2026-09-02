@@ -127,6 +127,10 @@ final class KeyboardPreferences {
     static final String ERGONOMIC_UNIFORM_GRID_GAP_ENABLED = "ergonomic_uniform_grid_gap_enabled";
     static final String ERGONOMIC_VISUAL_CONSISTENCY_LEVEL = "ergonomic_visual_consistency_level";
     static final String DEBUG_KEY_BOUNDS_OVERLAY_ENABLED = "debug_key_bounds_overlay_enabled";
+    static final String AI_TEXT_ACTIONS_ENABLED = "ai_text_actions_enabled";
+    static final String AI_TEXT_ACTION_PROVIDER_ID = "ai_text_action_provider_id";
+    static final String AI_TEXT_ACTION_TIMEOUT_MS = "ai_text_action_timeout_ms";
+    static final String AI_TEXT_ACTION_TRANSLATE_TARGET = "ai_text_action_translate_target";
 
     private static final String PREF_NAME = "keyboard_preferences";
     private static final String DEFAULT_RESERVED_TAP_TEXT = "ㅋㅋㅋ";
@@ -610,6 +614,28 @@ final class KeyboardPreferences {
 
     static void saveDebugKeyBoundsOverlayEnabled(Context context, boolean enabled) {
         saveBoolean(context, DEBUG_KEY_BOUNDS_OVERLAY_ENABLED, enabled);
+    }
+
+    static AiTextActionSettings loadAiTextActionSettings(Context context) {
+        SharedPreferences preferences = prefs(context);
+        AiTextActionSettings defaults = AiTextActionSettings.DEFAULT;
+        return new AiTextActionSettings(
+                preferences.getBoolean(AI_TEXT_ACTIONS_ENABLED, defaults.enabled),
+                preferences.getString(AI_TEXT_ACTION_PROVIDER_ID, defaults.providerId),
+                preferences.getInt(AI_TEXT_ACTION_TIMEOUT_MS, defaults.timeoutMs),
+                preferences.getString(
+                        AI_TEXT_ACTION_TRANSLATE_TARGET,
+                        defaults.translateTargetLanguage));
+    }
+
+    static void saveAiTextActionSettings(Context context, AiTextActionSettings settings) {
+        AiTextActionSettings safe = settings == null ? AiTextActionSettings.DEFAULT : settings;
+        prefs(context).edit()
+                .putBoolean(AI_TEXT_ACTIONS_ENABLED, safe.enabled)
+                .putString(AI_TEXT_ACTION_PROVIDER_ID, safe.providerId)
+                .putInt(AI_TEXT_ACTION_TIMEOUT_MS, safe.timeoutMs)
+                .putString(AI_TEXT_ACTION_TRANSLATE_TARGET, safe.translateTargetLanguage)
+                .apply();
     }
 
     static MotionEffectLevel loadMotionEffectLevel(Context context) {

@@ -67,6 +67,22 @@ public final class KeyboardSettingsSchemaTest {
                 KeyboardSettingsSchema.Section.REMOTE,
                 KeyboardSettingsSchema.StorageRisk.COMPATIBILITY);
         assertEntry(
+                KeyboardPreferences.AI_TEXT_ACTIONS_ENABLED,
+                KeyboardSettingsSchema.Section.PRIVACY_DEBUG,
+                KeyboardSettingsSchema.StorageRisk.NONE);
+        assertEntry(
+                KeyboardPreferences.AI_TEXT_ACTION_PROVIDER_ID,
+                KeyboardSettingsSchema.Section.PRIVACY_DEBUG,
+                KeyboardSettingsSchema.StorageRisk.NONE);
+        assertEntry(
+                KeyboardPreferences.AI_TEXT_ACTION_TIMEOUT_MS,
+                KeyboardSettingsSchema.Section.PRIVACY_DEBUG,
+                KeyboardSettingsSchema.StorageRisk.NONE);
+        assertEntry(
+                KeyboardPreferences.AI_TEXT_ACTION_TRANSLATE_TARGET,
+                KeyboardSettingsSchema.Section.PRIVACY_DEBUG,
+                KeyboardSettingsSchema.StorageRisk.NONE);
+        assertEntry(
                 KeyboardPreferences.DEBUG_KEY_BOUNDS_OVERLAY_ENABLED,
                 KeyboardSettingsSchema.Section.PRIVACY_DEBUG,
                 KeyboardSettingsSchema.StorageRisk.LOCAL_DIAGNOSTIC);

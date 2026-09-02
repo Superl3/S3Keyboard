@@ -30,16 +30,14 @@ public final class KeyboardThemePresetTest {
     public void presetsHaveUniqueIdsAndImportableJson() {
         Set<String> ids = new HashSet<>();
         Set<String> glassPresetIds = Set.of(
-                "gmk-metropolis",
+                "macos-frost-light",
                 "nord-frost-night",
                 "nord-frost-snow",
-                "liquid-aurora",
-                "liquid-frost",
-                "liquid-graphite",
                 "midnight-ice",
                 "pearl-mist",
                 "slate-glass");
 
+        assertEquals(42, KeyboardThemePreset.PRESETS.length);
         for (KeyboardThemePreset preset : KeyboardThemePreset.PRESETS) {
             assertTrue(ids.add(preset.id));
             assertNotNull(preset.displayName);
@@ -92,10 +90,12 @@ public final class KeyboardThemePresetTest {
         KeyboardSettings light = KeyboardThemePreset.find("marigold-fiesta-light")
                 .applyTo(KeyboardSettings.defaults());
 
-        assertEquals(4, dark.keyRoundnessDp);
+        assertEquals(6, dark.keyRoundnessDp);
+        assertEquals(false, dark.keyDepthEnabled);
         assertEquals(0xFF45484F, dark.borderColor);
         assertEquals(0xFF2F3339, dark.depthColor);
-        assertEquals(4, light.keyRoundnessDp);
+        assertEquals(6, light.keyRoundnessDp);
+        assertEquals(false, light.keyDepthEnabled);
         assertEquals(0xFFBBB4AA, light.borderColor);
         assertEquals(0xFFD2CCC2, light.depthColor);
         assertEquals(0xFFFFFFFF, light.keyboardBackgroundColor);
@@ -213,11 +213,91 @@ public final class KeyboardThemePresetTest {
         assertEquals(0xFFFFB000, (int) metropolis.keyColorOverrides.get("background:backspace"));
         assertEquals(0xFFFF4B3E, (int) metropolis.keyColorOverrides.get("background:shift"));
         assertEquals(0xFF66E3C4, (int) metropolis.keyColorOverrides.get("background:enter"));
-        assertEquals(true, metropolis.visualEffects.blurEnabled);
-        assertEquals(true, metropolis.visualEffects.metallicEnabled);
+        assertEquals(false, metropolis.visualEffects.blurEnabled);
+        assertEquals(false, metropolis.visualEffects.metallicEnabled);
+        assertEquals(false, metropolis.visualEffects.glassEnabled);
+        assertEquals(KeyboardVisualEffects.MATERIAL_SOLID,
+                metropolis.visualEffects.materialStyle);
+        assertEquals(6, metropolis.keyRoundnessDp);
+        assertEquals(false, metropolis.keyDepthEnabled);
+        assertEquals(0, metropolis.keyDepthDp);
+        assertEquals(false, metropolis.visualEffects.keyFaceGradientEnabled);
+        assertEquals(0, metropolis.visualEffects.keyFaceGradientStrengthPercent);
         assertEquals(true, metropolis.visualEffects.angularPreviewBubble);
     }
 
+    @Test
+    public void curatedFamiliesUseDistinctSurfaceContracts() {
+        KeyboardSettings ios = KeyboardThemePreset.find("ios-clean-light")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings android = KeyboardThemePreset.find("android-material-light")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings metropolis = KeyboardThemePreset.find("gmk-metropolis")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings bentoOutline = KeyboardThemePreset.find("bento-outline-soft")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings modernDolchAcrylic = KeyboardThemePreset.find("modern-dolch-acrylic")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings nordFrost = KeyboardThemePreset.find("nord-frost-night")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings paper = KeyboardThemePreset.find("paper-mono-flat")
+                .applyTo(KeyboardSettings.defaults());
+
+        assertEquals(KeyboardVisualEffects.MATERIAL_SOLID, ios.visualEffects.materialStyle);
+        assertEquals(9, ios.keyRoundnessDp);
+        assertEquals(0, ios.keyBorderWidthDp);
+        assertEquals(false, ios.keyDepthEnabled);
+
+        assertEquals(KeyboardVisualEffects.MATERIAL_SOLID, android.visualEffects.materialStyle);
+        assertEquals(8, android.keyRoundnessDp);
+        assertEquals(0, android.keyBorderWidthDp);
+        assertEquals(false, android.keyDepthEnabled);
+
+        assertEquals(KeyboardVisualEffects.MATERIAL_SOLID, metropolis.visualEffects.materialStyle);
+        assertEquals(false, metropolis.visualEffects.glassEnabled);
+        assertEquals(6, metropolis.keyRoundnessDp);
+        assertEquals(false, metropolis.keyDepthEnabled);
+        assertEquals(0, metropolis.keyDepthDp);
+
+        assertEquals(KeyboardVisualEffects.MATERIAL_SOLID, bentoOutline.visualEffects.materialStyle);
+        assertEquals(false, bentoOutline.keyDepthEnabled);
+        assertEquals(2, bentoOutline.keyBorderWidthDp);
+        assertEquals(7, bentoOutline.keyRoundnessDp);
+        assertEquals(KeyboardVisualEffects.MATERIAL_ACRYLIC,
+                modernDolchAcrylic.visualEffects.materialStyle);
+        assertEquals(true, modernDolchAcrylic.visualEffects.panelGradientEnabled);
+
+        assertEquals(KeyboardVisualEffects.MATERIAL_FROSTED, nordFrost.visualEffects.materialStyle);
+        assertEquals(true, nordFrost.visualEffects.glassEnabled);
+        assertEquals(7, nordFrost.keyRoundnessDp);
+        assertEquals(false, nordFrost.keyDepthEnabled);
+
+
+        assertEquals(KeyboardVisualEffects.MATERIAL_SOLID, paper.visualEffects.materialStyle);
+        assertEquals(2, paper.keyRoundnessDp);
+        assertEquals(7, paper.keyGapDp);
+    }
+
+    @Test
+    public void materialDerivativesPreserveSourceThemeLanguage() {
+        KeyboardSettings dracula = KeyboardThemePreset.find("gmk-dracula")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings draculaOutline = KeyboardThemePreset.find("dracula-outline-soft")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings nordSnow = KeyboardThemePreset.find("nord-snow")
+                .applyTo(KeyboardSettings.defaults());
+        KeyboardSettings nordFrostSnow = KeyboardThemePreset.find("nord-frost-snow")
+                .applyTo(KeyboardSettings.defaults());
+
+        assertEquals(dracula.fontFamily, draculaOutline.fontFamily);
+        assertEquals(
+                dracula.keyColorOverrides.get("shiftindicator"),
+                draculaOutline.keyColorOverrides.get("shiftindicator"));
+        assertEquals(nordSnow.fontFamily, nordFrostSnow.fontFamily);
+        assertEquals(
+                nordSnow.keyColorOverrides.get("shiftindicator"),
+                nordFrostSnow.keyColorOverrides.get("shiftindicator"));
+    }
     @Test
     public void semanticDingulPresetsUseRoleColorOverrides() {
         assertDingulVowelOverrides("marigold-fiesta-dark");

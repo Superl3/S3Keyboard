@@ -1676,7 +1676,7 @@ function normalizedVisualEffects(effects) {
 }
 
 function normalizeMaterialStyle(style) {
-  return ["solid", "soft_keycap", "frosted", "acrylic", "experimental_refraction"]
+  return ["solid", "soft_keycap", "frosted", "acrylic"]
     .includes(style) ? style : null;
 }
 
@@ -1688,7 +1688,7 @@ function inferLegacyMaterialStyle(glass, blur, panelGradient, keyGradient, stren
 }
 
 function isGlassMaterial(style) {
-  return style === "frosted" || style === "experimental_refraction";
+  return style === "frosted";
 }
 
 function applyMaterialPreset(effects, style) {
@@ -3033,6 +3033,9 @@ function normalizeNumberRowMode(mode) {
 function importJson() {
   try {
     const parsed = JSON.parse(ids.output.value);
+    if (parsed.effects?.materialStyle === "experimental_refraction") {
+      parsed.effects.materialStyle = "frosted";
+    }
     if (parsed.schemaVersion !== 1) {
       throw new Error("Only schemaVersion 1 is supported.");
     }
@@ -3192,7 +3195,7 @@ function buildImageThemePrompt(theme) {
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.materialStyle is solid|soft_keycap|frosted|acrylic|experimental_refraction. Use experimental_refraction only when the user explicitly requests the opt-in Android screen-source effect. effects.blur.enabled has radiusDp 0..32, effects.glass has tintAlphaPercent 45..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient has enabled, strengthPercent 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient has enabled plus startColor/endColor #RRGGBB.",
+    "Allowed effects: effects.materialStyle is solid|soft_keycap|frosted|acrylic. effects.blur.enabled has radiusDp 0..32, effects.glass has tintAlphaPercent 45..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient has enabled, strengthPercent 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient has enabled plus startColor/endColor #RRGGBB.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,
@@ -3276,7 +3279,7 @@ function buildPaletteImageThemePrompt(theme) {
     "",
     `Allowed color keys: ${colorKeys}.`,
     `Allowed shape keys: ${shapeKeys}.`,
-    "Allowed effects: effects.materialStyle is solid|soft_keycap|frosted|acrylic|experimental_refraction. Prefer solid, soft_keycap, frosted, or acrylic; experimental_refraction requires explicit user opt-in. effects.blur.enabled has radiusDp 0..32, effects.glass has tintAlphaPercent 45..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient has enabled, strengthPercent 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient has enabled plus startColor/endColor #RRGGBB.",
+    "Allowed effects: effects.materialStyle is solid|soft_keycap|frosted|acrylic. effects.blur.enabled has radiusDp 0..32, effects.glass has tintAlphaPercent 45..98, highlightPercent 0..60, and borderAlphaPercent 0..100, effects.keyFaceGradient has enabled, strengthPercent 0..100, startColor/endColor #RRGGBB, and curve linear|soft|top_glow|bottom_shade|glass; effects.panelGradient has enabled plus startColor/endColor #RRGGBB.",
     `Allowed fontFamily values: ${fontIds}.`,
     `Allowed additionalNumberRow.colorMode values: ${numberModes}.`,
     `Allowed accentPolicy targets: ${accentTargets}.`,

@@ -507,7 +507,7 @@ function validateEffects(effects, at, errors) {
 
 function validateMaterialPedestal(theme, at, errors) {
   const style = theme?.effects?.materialStyle;
-  if (!new Set(["soft_keycap", "frosted", "acrylic"]).has(style)) {
+  if (style !== "soft_keycap") {
     return;
   }
   if (theme?.shape?.depthEnabled !== true || !Number.isInteger(theme?.shape?.depthDp) || theme.shape.depthDp < 1) {

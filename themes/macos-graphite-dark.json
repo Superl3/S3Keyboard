@@ -10,9 +10,9 @@
     },
     "tags": [
       "dark",
-      "depth",
       "minimal",
-      "platformInspired"
+      "platformInspired",
+      "flat"
     ],
     "features": [
       "dingulRoleColors",
@@ -32,9 +32,9 @@
   },
   "shape": {
     "roundnessDp": 6,
-    "keyGapDp": 5,
-    "depthEnabled": true,
-    "depthDp": 2,
+    "keyGapDp": 4,
+    "depthEnabled": false,
+    "depthDp": 0,
     "borderWidthDp": 1
   },
   "additionalNumberRow": {
@@ -72,6 +72,25 @@
       "tintAlphaPercent": 86,
       "highlightPercent": 18,
       "borderAlphaPercent": 42
-    }
+    },
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "keyFaceGradient": {
+      "enabled": false,
+      "strengthPercent": 0,
+      "startColor": "#FFFFFF",
+      "endColor": "#15191F",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false
+    },
+    "materialStyle": "solid"
   }
 }

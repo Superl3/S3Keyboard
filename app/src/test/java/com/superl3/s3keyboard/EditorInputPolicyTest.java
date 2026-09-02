@@ -11,6 +11,21 @@ import org.junit.Test;
 
 public final class EditorInputPolicyTest {
     @Test
+    public void textActionsAreDisabledForSensitiveNumberRawAndRemotePolicies() {
+        EditorInputPolicy normal = EditorInputPolicy.fromInputType(InputType.TYPE_CLASS_TEXT);
+        EditorInputPolicy password = EditorInputPolicy.fromInputType(
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        EditorInputPolicy number = EditorInputPolicy.fromInputType(InputType.TYPE_CLASS_NUMBER);
+        EditorInputPolicy raw = EditorInputPolicy.fromInputType(InputType.TYPE_NULL);
+
+        assertTrue(normal.allowsTextActions(false));
+        assertFalse(password.allowsTextActions(false));
+        assertFalse(number.allowsTextActions(false));
+        assertFalse(raw.allowsTextActions(false));
+        assertFalse(normal.allowsTextActions(true));
+    }
+
+    @Test
     public void passwordFieldsForceNumberRowAndDisableComposingConveniences() {
         EditorInputPolicy policy = EditorInputPolicy.fromInputType(
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD);

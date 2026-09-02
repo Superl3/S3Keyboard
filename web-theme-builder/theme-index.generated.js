@@ -45,7 +45,7 @@ window.S3_THEME_INDEX = [
         "secondary": "#A9ADB8"
       },
       "shape": {
-        "roundnessDp": 8,
+        "roundnessDp": 9,
         "borderWidthDp": 1,
         "keyGapDp": 5,
         "depthEnabled": true,
@@ -98,9 +98,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 12,
-          "borderAlphaPercent": 36
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -111,9 +111,9 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 18,
+          "strengthPercent": 16,
           "startColor": "#FFFFFF",
-          "endColor": "#525865",
+          "endColor": "#0E0F13",
           "curve": "soft"
         },
         "panelGradient": {
@@ -176,11 +176,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#A7A7A7"
       },
       "shape": {
-        "roundnessDp": 6,
-        "keyGapDp": 5,
+        "roundnessDp": 5,
+        "keyGapDp": 4,
         "depthEnabled": false,
         "depthDp": 0,
-        "borderWidthDp": 1
+        "borderWidthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -217,7 +217,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#303030",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -274,22 +293,22 @@ window.S3_THEME_INDEX = [
         "secondary": "#CAC4D0"
       },
       "shape": {
-        "roundnessDp": 12,
-        "keyGapDp": 5,
+        "roundnessDp": 8,
+        "keyGapDp": 4,
         "depthEnabled": false,
         "depthDp": 0,
-        "borderWidthDp": 1
+        "borderWidthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
       },
       "typography": {
         "fontFamily": "noto_sans_kr",
-        "primaryTextSizePercent": 78,
-        "secondaryTextSizePercent": 80,
+        "primaryTextSizePercent": 80,
+        "secondaryTextSizePercent": 74,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": true,
+        "secondaryTextBold": false,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -315,7 +334,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#49454F",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -372,22 +410,22 @@ window.S3_THEME_INDEX = [
         "secondary": "#625B71"
       },
       "shape": {
-        "roundnessDp": 12,
-        "keyGapDp": 5,
+        "roundnessDp": 8,
+        "keyGapDp": 4,
         "depthEnabled": false,
         "depthDp": 0,
-        "borderWidthDp": 1
+        "borderWidthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
       },
       "typography": {
         "fontFamily": "noto_sans_kr",
-        "primaryTextSizePercent": 78,
-        "secondaryTextSizePercent": 80,
+        "primaryTextSizePercent": 80,
+        "secondaryTextSizePercent": 74,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": true,
+        "secondaryTextBold": false,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -413,7 +451,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#CAC4D0",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -426,13 +483,11 @@ window.S3_THEME_INDEX = [
       "tags": [
         "light",
         "gmkInspired",
-        "softKeycap",
-        "outline"
+        "outline",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
-        "keyFaceGradient",
-        "keyDepth",
         "separateOutline",
         "noveltyKeys"
       ]
@@ -445,13 +500,11 @@ window.S3_THEME_INDEX = [
         "tags": [
           "light",
           "gmkInspired",
-          "softKeycap",
-          "outline"
+          "outline",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
-          "keyFaceGradient",
-          "keyDepth",
           "separateOutline",
           "noveltyKeys"
         ]
@@ -475,11 +528,11 @@ window.S3_THEME_INDEX = [
         "novelty": "#E66D61"
       },
       "shape": {
-        "roundnessDp": 8,
-        "borderWidthDp": 1,
+        "roundnessDp": 7,
+        "borderWidthDp": 2,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -517,9 +570,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 12,
-          "borderAlphaPercent": 36
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -529,10 +582,10 @@ window.S3_THEME_INDEX = [
           "style": "rounded"
         },
         "keyFaceGradient": {
-          "enabled": true,
-          "strengthPercent": 15,
+          "enabled": false,
+          "strengthPercent": 0,
           "startColor": "#FFFFFF",
-          "endColor": "#7E8B8C",
+          "endColor": "#596568",
           "curve": "soft"
         },
         "panelGradient": {
@@ -540,7 +593,7 @@ window.S3_THEME_INDEX = [
           "startColor": "#30343A",
           "endColor": "#15181C"
         },
-        "materialStyle": "soft_keycap"
+        "materialStyle": "solid"
       },
       "accentPolicy": {
         "qwerty": [
@@ -580,13 +633,11 @@ window.S3_THEME_INDEX = [
       "tags": [
         "light",
         "keycapInspired",
-        "softKeycap",
-        "outline"
+        "outline",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
-        "keyFaceGradient",
-        "keyDepth",
         "separateOutline",
         "noveltyKeys"
       ]
@@ -599,13 +650,11 @@ window.S3_THEME_INDEX = [
         "tags": [
           "light",
           "keycapInspired",
-          "softKeycap",
-          "outline"
+          "outline",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
-          "keyFaceGradient",
-          "keyDepth",
           "separateOutline",
           "noveltyKeys"
         ]
@@ -630,10 +679,10 @@ window.S3_THEME_INDEX = [
       },
       "shape": {
         "roundnessDp": 9,
-        "borderWidthDp": 1,
+        "borderWidthDp": 2,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -671,9 +720,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 12,
-          "borderAlphaPercent": 36
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -683,10 +732,10 @@ window.S3_THEME_INDEX = [
           "style": "rounded"
         },
         "keyFaceGradient": {
-          "enabled": true,
-          "strengthPercent": 14,
+          "enabled": false,
+          "strengthPercent": 0,
           "startColor": "#FFFFFF",
-          "endColor": "#667563",
+          "endColor": "#526052",
           "curve": "soft"
         },
         "panelGradient": {
@@ -694,7 +743,7 @@ window.S3_THEME_INDEX = [
           "startColor": "#30343A",
           "endColor": "#15181C"
         },
-        "materialStyle": "soft_keycap"
+        "materialStyle": "solid"
       },
       "accentPolicy": {
         "qwerty": [
@@ -732,13 +781,11 @@ window.S3_THEME_INDEX = [
       "tags": [
         "dark",
         "gmkInspired",
-        "softKeycap",
-        "outline"
+        "outline",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
-        "keyFaceGradient",
-        "keyDepth",
         "separateOutline",
         "noveltyKeys"
       ]
@@ -751,13 +798,11 @@ window.S3_THEME_INDEX = [
         "tags": [
           "dark",
           "gmkInspired",
-          "softKeycap",
-          "outline"
+          "outline",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
-          "keyFaceGradient",
-          "keyDepth",
           "separateOutline",
           "noveltyKeys"
         ]
@@ -781,17 +826,17 @@ window.S3_THEME_INDEX = [
         "novelty": "#8BE9FD"
       },
       "shape": {
-        "roundnessDp": 8,
-        "borderWidthDp": 1,
+        "roundnessDp": 7,
+        "borderWidthDp": 2,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
       },
       "typography": {
-        "fontFamily": "noto_sans_kr",
+        "fontFamily": "d2coding",
         "primaryTextSizePercent": 78,
         "secondaryTextSizePercent": 80,
         "primaryTextBold": false,
@@ -812,8 +857,8 @@ window.S3_THEME_INDEX = [
           "background": "#343746"
         },
         "modInv": {
-          "foreground": "#F8F8F2",
-          "background": "#3D3552"
+          "foreground": "#343746",
+          "background": "#363949"
         }
       },
       "effects": {
@@ -823,9 +868,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 12,
-          "borderAlphaPercent": 36
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -835,10 +880,10 @@ window.S3_THEME_INDEX = [
           "style": "rounded"
         },
         "keyFaceGradient": {
-          "enabled": true,
-          "strengthPercent": 16,
+          "enabled": false,
+          "strengthPercent": 0,
           "startColor": "#FFFFFF",
-          "endColor": "#252735",
+          "endColor": "#191B22",
           "curve": "soft"
         },
         "panelGradient": {
@@ -846,10 +891,7 @@ window.S3_THEME_INDEX = [
           "startColor": "#30343A",
           "endColor": "#15181C"
         },
-        "materialStyle": "soft_keycap"
-      },
-      "accentPolicy": {
-        "spacebar": "mod"
+        "materialStyle": "solid"
       },
       "novelties": {
         "keys": {
@@ -878,13 +920,11 @@ window.S3_THEME_INDEX = [
       "tags": [
         "light",
         "keycapInspired",
-        "softKeycap",
-        "outline"
+        "outline",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
-        "keyFaceGradient",
-        "keyDepth",
         "separateOutline",
         "noveltyKeys"
       ]
@@ -897,13 +937,11 @@ window.S3_THEME_INDEX = [
         "tags": [
           "light",
           "keycapInspired",
-          "softKeycap",
-          "outline"
+          "outline",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
-          "keyFaceGradient",
-          "keyDepth",
           "separateOutline",
           "noveltyKeys"
         ]
@@ -927,11 +965,11 @@ window.S3_THEME_INDEX = [
         "novelty": "#D27B74"
       },
       "shape": {
-        "roundnessDp": 8,
-        "borderWidthDp": 1,
+        "roundnessDp": 7,
+        "borderWidthDp": 2,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -969,9 +1007,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 12,
-          "borderAlphaPercent": 36
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -981,10 +1019,10 @@ window.S3_THEME_INDEX = [
           "style": "rounded"
         },
         "keyFaceGradient": {
-          "enabled": true,
-          "strengthPercent": 15,
+          "enabled": false,
+          "strengthPercent": 0,
           "startColor": "#FFFFFF",
-          "endColor": "#555B63",
+          "endColor": "#292B2F",
           "curve": "soft"
         },
         "panelGradient": {
@@ -992,7 +1030,7 @@ window.S3_THEME_INDEX = [
           "startColor": "#30343A",
           "endColor": "#15181C"
         },
-        "materialStyle": "soft_keycap"
+        "materialStyle": "solid"
       },
       "accentPolicy": {
         "spacebar": "mod",
@@ -1030,8 +1068,8 @@ window.S3_THEME_INDEX = [
     "metadata": {
       "tags": [
         "dark",
-        "depth",
-        "gmkInspired"
+        "gmkInspired",
+        "flat"
       ],
       "features": [
         "dingulRoleColors"
@@ -1044,8 +1082,8 @@ window.S3_THEME_INDEX = [
       "metadata": {
         "tags": [
           "dark",
-          "depth",
-          "gmkInspired"
+          "gmkInspired",
+          "flat"
         ],
         "features": [
           "dingulRoleColors"
@@ -1063,11 +1101,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#A9ADB8"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -1115,7 +1153,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#0E0F13",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -1127,8 +1184,8 @@ window.S3_THEME_INDEX = [
     "metadata": {
       "tags": [
         "dark",
-        "depth",
-        "gmkInspired"
+        "gmkInspired",
+        "flat"
       ],
       "features": [
         "dingulRoleColors"
@@ -1141,8 +1198,8 @@ window.S3_THEME_INDEX = [
       "metadata": {
         "tags": [
           "dark",
-          "depth",
-          "gmkInspired"
+          "gmkInspired",
+          "flat"
         ],
         "features": [
           "dingulRoleColors"
@@ -1160,11 +1217,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#FFF3E7"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -1212,7 +1269,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#5C6E72",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -1224,9 +1300,9 @@ window.S3_THEME_INDEX = [
     "metadata": {
       "tags": [
         "dark",
-        "depth",
         "dots",
-        "gmkInspired"
+        "gmkInspired",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -1242,9 +1318,9 @@ window.S3_THEME_INDEX = [
       "metadata": {
         "tags": [
           "dark",
-          "depth",
           "dots",
-          "gmkInspired"
+          "gmkInspired",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -1267,9 +1343,9 @@ window.S3_THEME_INDEX = [
       "shape": {
         "roundnessDp": 5,
         "borderWidthDp": 1,
-        "keyGapDp": 6,
-        "depthEnabled": true,
-        "depthDp": 1
+        "keyGapDp": 5,
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_alpha"
@@ -1391,7 +1467,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#0B0E12",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -1402,10 +1497,10 @@ window.S3_THEME_INDEX = [
     "url": "../themes/gmk-dots-light.json",
     "metadata": {
       "tags": [
-        "depth",
         "dots",
         "gmkInspired",
-        "light"
+        "light",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -1420,10 +1515,10 @@ window.S3_THEME_INDEX = [
       "author": "local",
       "metadata": {
         "tags": [
-          "depth",
           "dots",
           "gmkInspired",
-          "light"
+          "light",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -1446,9 +1541,9 @@ window.S3_THEME_INDEX = [
       "shape": {
         "roundnessDp": 5,
         "borderWidthDp": 1,
-        "keyGapDp": 6,
-        "depthEnabled": true,
-        "depthDp": 1
+        "keyGapDp": 5,
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_alpha"
@@ -1570,7 +1665,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#C3BEB3",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -1582,8 +1696,8 @@ window.S3_THEME_INDEX = [
     "metadata": {
       "tags": [
         "dark",
-        "depth",
-        "gmkInspired"
+        "gmkInspired",
+        "flat"
       ],
       "features": [
         "dingulRoleColors"
@@ -1596,8 +1710,8 @@ window.S3_THEME_INDEX = [
       "metadata": {
         "tags": [
           "dark",
-          "depth",
-          "gmkInspired"
+          "gmkInspired",
+          "flat"
         ],
         "features": [
           "dingulRoleColors"
@@ -1615,11 +1729,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#BD93F9"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -1656,7 +1770,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#191B22",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -1667,9 +1800,9 @@ window.S3_THEME_INDEX = [
     "url": "../themes/gmk-hammerhead.json",
     "metadata": {
       "tags": [
-        "depth",
         "gmkInspired",
-        "light"
+        "light",
+        "flat"
       ],
       "features": [
         "dingulRoleColors"
@@ -1681,9 +1814,9 @@ window.S3_THEME_INDEX = [
       "author": "local",
       "metadata": {
         "tags": [
-          "depth",
           "gmkInspired",
-          "light"
+          "light",
+          "flat"
         ],
         "features": [
           "dingulRoleColors"
@@ -1701,11 +1834,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#0AA29A"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -1753,7 +1886,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#7C8D93",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -1765,16 +1917,13 @@ window.S3_THEME_INDEX = [
     "metadata": {
       "tags": [
         "dark",
-        "depth",
-        "gmkInspired",
-        "metal"
+        "flat",
+        "gmkInspired"
       ],
       "features": [
         "angularPreviewBubble",
-        "blurEffect",
         "dingulRoleColors",
         "heavyPerKeyOverrides",
-        "metalEffect",
         "modifierIconPack"
       ]
     },
@@ -1785,16 +1934,13 @@ window.S3_THEME_INDEX = [
       "metadata": {
         "tags": [
           "dark",
-          "depth",
-          "gmkInspired",
-          "metal"
+          "flat",
+          "gmkInspired"
         ],
         "features": [
           "angularPreviewBubble",
-          "blurEffect",
           "dingulRoleColors",
           "heavyPerKeyOverrides",
-          "metalEffect",
           "modifierIconPack"
         ]
       },
@@ -1810,11 +1956,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#FFB000"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -1833,21 +1979,32 @@ window.S3_THEME_INDEX = [
       },
       "effects": {
         "blur": {
-          "enabled": true,
-          "radiusDp": 10
+          "enabled": false,
+          "radiusDp": 0
         },
         "glass": {
-          "enabled": true,
+          "enabled": false,
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
         },
         "metal": {
-          "enabled": true,
-          "strengthPercent": 22
+          "enabled": false,
+          "strengthPercent": 0
         },
         "previewBubble": {
           "style": "angular"
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#05070A",
+          "curve": "soft"
+        },
+        "materialStyle": "solid",
+        "panelGradient": {
+          "enabled": false
         }
       },
       "keyTextColorOverrides": {
@@ -1925,8 +2082,8 @@ window.S3_THEME_INDEX = [
     "metadata": {
       "tags": [
         "dark",
-        "depth",
-        "gmkInspired"
+        "gmkInspired",
+        "flat"
       ],
       "features": [
         "dingulRoleColors"
@@ -1939,8 +2096,8 @@ window.S3_THEME_INDEX = [
       "metadata": {
         "tags": [
           "dark",
-          "depth",
-          "gmkInspired"
+          "gmkInspired",
+          "flat"
         ],
         "features": [
           "dingulRoleColors"
@@ -1958,11 +2115,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#64D4CF"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -2016,7 +2173,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#202327",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -2028,9 +2204,9 @@ window.S3_THEME_INDEX = [
     "metadata": {
       "tags": [
         "dark",
-        "depth",
         "gmkInspired",
-        "textPack"
+        "textPack",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -2044,9 +2220,9 @@ window.S3_THEME_INDEX = [
       "metadata": {
         "tags": [
           "dark",
-          "depth",
           "gmkInspired",
-          "textPack"
+          "textPack",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -2065,11 +2241,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#D7D1C5"
       },
       "shape": {
-        "roundnessDp": 4,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -2119,7 +2295,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#0B0C0E",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -2131,9 +2326,9 @@ window.S3_THEME_INDEX = [
     "metadata": {
       "tags": [
         "dark",
-        "depth",
         "gmkInspired",
-        "textPack"
+        "textPack",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -2147,9 +2342,9 @@ window.S3_THEME_INDEX = [
       "metadata": {
         "tags": [
           "dark",
-          "depth",
           "gmkInspired",
-          "textPack"
+          "textPack",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -2168,11 +2363,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#93A0A5"
       },
       "shape": {
-        "roundnessDp": 4,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -2222,7 +2417,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#0A0B0D",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -2234,9 +2448,9 @@ window.S3_THEME_INDEX = [
     "metadata": {
       "tags": [
         "dark",
-        "depth",
         "gmkInspired",
-        "textPack"
+        "textPack",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -2250,9 +2464,9 @@ window.S3_THEME_INDEX = [
       "metadata": {
         "tags": [
           "dark",
-          "depth",
           "gmkInspired",
-          "textPack"
+          "textPack",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -2271,11 +2485,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#D9A3AA"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_alpha"
@@ -2321,7 +2535,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#111114",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -2332,10 +2565,10 @@ window.S3_THEME_INDEX = [
     "url": "../themes/gmk-olivia-light.json",
     "metadata": {
       "tags": [
-        "depth",
         "gmkInspired",
         "light",
-        "textPack"
+        "textPack",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -2348,10 +2581,10 @@ window.S3_THEME_INDEX = [
       "author": "local",
       "metadata": {
         "tags": [
-          "depth",
           "gmkInspired",
           "light",
-          "textPack"
+          "textPack",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -2370,11 +2603,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#E8A5AE"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 6,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_alpha"
@@ -2420,7 +2653,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#BBAFB0",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -2436,9 +2688,9 @@ window.S3_THEME_INDEX = [
         "showBeginnerTooltipPreview": true
       },
       "tags": [
-        "depth",
         "light",
-        "minimal"
+        "minimal",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -2456,9 +2708,9 @@ window.S3_THEME_INDEX = [
           "showBeginnerTooltipPreview": true
         },
         "tags": [
-          "depth",
           "light",
-          "minimal"
+          "minimal",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -2477,10 +2729,10 @@ window.S3_THEME_INDEX = [
         "secondary": "#686868"
       },
       "shape": {
-        "roundnessDp": 4,
-        "keyGapDp": 6,
-        "depthEnabled": true,
-        "depthDp": 1,
+        "roundnessDp": 6,
+        "keyGapDp": 5,
+        "depthEnabled": false,
+        "depthDp": 0,
         "borderWidthDp": 1
       },
       "additionalNumberRow": {
@@ -2518,7 +2770,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#B8B8B8",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -2575,20 +2846,20 @@ window.S3_THEME_INDEX = [
         "secondary": "#424242"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 3,
         "keyGapDp": 6,
         "depthEnabled": false,
         "depthDp": 0,
-        "borderWidthDp": 1
+        "borderWidthDp": 2
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
       },
       "typography": {
         "fontFamily": "noto_sans_kr",
-        "primaryTextSizePercent": 78,
-        "secondaryTextSizePercent": 80,
-        "primaryTextBold": false,
+        "primaryTextSizePercent": 82,
+        "secondaryTextSizePercent": 78,
+        "primaryTextBold": true,
         "primaryTextItalic": false,
         "secondaryTextBold": true,
         "secondaryTextItalic": false
@@ -2616,7 +2887,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#111111",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -2675,22 +2965,22 @@ window.S3_THEME_INDEX = [
         "secondary": "#B8BEC8"
       },
       "shape": {
-        "roundnessDp": 8,
-        "keyGapDp": 5,
+        "roundnessDp": 9,
+        "keyGapDp": 4,
         "depthEnabled": false,
         "depthDp": 0,
-        "borderWidthDp": 1
+        "borderWidthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
       },
       "typography": {
         "fontFamily": "noto_sans_kr",
-        "primaryTextSizePercent": 78,
-        "secondaryTextSizePercent": 80,
+        "primaryTextSizePercent": 80,
+        "secondaryTextSizePercent": 72,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": true,
+        "secondaryTextBold": false,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -2716,7 +3006,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#202328",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -2775,22 +3084,22 @@ window.S3_THEME_INDEX = [
         "secondary": "#707780"
       },
       "shape": {
-        "roundnessDp": 8,
-        "keyGapDp": 5,
+        "roundnessDp": 9,
+        "keyGapDp": 4,
         "depthEnabled": false,
         "depthDp": 0,
-        "borderWidthDp": 1
+        "borderWidthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
       },
       "typography": {
         "fontFamily": "noto_sans_kr",
-        "primaryTextSizePercent": 78,
-        "secondaryTextSizePercent": 80,
+        "primaryTextSizePercent": 80,
+        "secondaryTextSizePercent": 72,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": true,
+        "secondaryTextBold": false,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -2816,7 +3125,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#C2C7D0",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -2830,12 +3158,12 @@ window.S3_THEME_INDEX = [
         "dark",
         "keycapInspired",
         "acrylic",
-        "outline"
+        "outline",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
         "keyFaceGradient",
-        "keyDepth",
         "separateOutline",
         "noveltyKeys"
       ]
@@ -2849,12 +3177,12 @@ window.S3_THEME_INDEX = [
           "dark",
           "keycapInspired",
           "acrylic",
-          "outline"
+          "outline",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
           "keyFaceGradient",
-          "keyDepth",
           "separateOutline",
           "noveltyKeys"
         ]
@@ -2879,10 +3207,10 @@ window.S3_THEME_INDEX = [
       },
       "shape": {
         "roundnessDp": 8,
-        "borderWidthDp": 1,
+        "borderWidthDp": 2,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -2920,9 +3248,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 12,
-          "borderAlphaPercent": 36
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -2933,10 +3261,10 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 12,
+          "strengthPercent": 13,
           "startColor": "#FFFFFF",
-          "endColor": "#6A4680",
-          "curve": "soft"
+          "endColor": "#0B0913",
+          "curve": "top_glow"
         },
         "panelGradient": {
           "enabled": true,
@@ -3023,22 +3351,22 @@ window.S3_THEME_INDEX = [
         "secondary": "#6E607C"
       },
       "shape": {
-        "roundnessDp": 10,
+        "roundnessDp": 12,
         "keyGapDp": 5,
         "depthEnabled": false,
         "depthDp": 0,
-        "borderWidthDp": 1
+        "borderWidthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
       },
       "typography": {
         "fontFamily": "noto_sans_kr",
-        "primaryTextSizePercent": 78,
-        "secondaryTextSizePercent": 80,
+        "primaryTextSizePercent": 80,
+        "secondaryTextSizePercent": 74,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": true,
+        "secondaryTextBold": false,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -3064,409 +3392,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
-      }
-    }
-  },
-  {
-    "id": "liquid-aurora",
-    "name": "Liquid Aurora",
-    "file": "liquid-aurora.json",
-    "url": "../themes/liquid-aurora.json",
-    "metadata": {
-      "recommendedHints": {
-        "showHangulSlideHints": false,
-        "showEnglishSlideHints": false,
-        "showBeginnerTooltipPreview": true
-      },
-      "tags": [
-        "dark",
-        "flat",
-        "minimal",
-        "platformInspired",
-        "glassLike"
-      ],
-      "features": [
-        "dingulRoleColors",
-        "historicalHintRecommendation"
-      ]
-    },
-    "theme": {
-      "schemaVersion": 1,
-      "name": "Liquid Aurora",
-      "author": "local",
-      "metadata": {
-        "recommendedHints": {
-          "showHangulSlideHints": false,
-          "showEnglishSlideHints": false,
-          "showBeginnerTooltipPreview": true
         },
-        "tags": [
-          "dark",
-          "flat",
-          "minimal",
-          "platformInspired",
-          "glassLike"
-        ],
-        "features": [
-          "dingulRoleColors",
-          "historicalHintRecommendation"
-        ]
-      },
-      "colors": {
-        "alphaKey": "#272D3A",
-        "modifierKey": "#303747",
-        "accentKey": "#55487A",
-        "keyPressed": "#3C455A",
-        "keyboardBackground": "#151C29",
-        "panelBackground": "#151C29",
-        "border": "#B9C8FF",
-        "depth": null,
-        "accent": "#F7F7FF",
-        "secondary": "#B2B9CC"
-      },
-      "shape": {
-        "roundnessDp": 6,
-        "keyGapDp": 5,
-        "depthEnabled": false,
-        "depthDp": 0,
-        "borderWidthDp": 1
-      },
-      "additionalNumberRow": {
-        "colorMode": "full_mod"
-      },
-      "typography": {
-        "fontFamily": "noto_sans_kr",
-        "primaryTextSizePercent": 76,
-        "secondaryTextSizePercent": 76,
-        "primaryTextBold": false,
-        "primaryTextItalic": false,
-        "secondaryTextBold": false,
-        "secondaryTextItalic": false
-      },
-      "dingulColors": {
-        "alpha": {
-          "foreground": "#F7F7FF",
-          "background": "#272D3A"
-        },
-        "mod": {
-          "foreground": "#B2B9CC",
-          "background": "#303747"
-        },
-        "modInv": {
-          "foreground": "#FAF8FF",
-          "background": "#55487A"
-        }
-      },
-      "accentPolicy": {
-        "qwerty": [
-          "qwertyShift"
-        ],
-        "dingul": [
-          "dingulDot"
-        ]
-      },
-      "keyTextColorOverrides": {
-        "shiftIndicator": "#B79CFF"
-      },
-      "effects": {
         "blur": {
-          "enabled": true,
-          "radiusDp": 20
+          "enabled": false,
+          "radiusDp": 0
         },
         "metal": {
           "enabled": false,
           "strengthPercent": 0
         },
-        "previewBubble": {
-          "style": "rounded"
-        },
         "keyFaceGradient": {
-          "enabled": true,
-          "strengthPercent": 13,
-          "startColor": "#FFFFFF",
-          "endColor": "#19152B",
-          "curve": "glass"
-        },
-        "panelGradient": {
-          "enabled": true,
-          "startColor": "#172A3D",
-          "endColor": "#2B203F"
-        },
-        "glass": {
-          "enabled": true,
-          "tintAlphaPercent": 69,
-          "highlightPercent": 38,
-          "borderAlphaPercent": 46
-        }
-      }
-    }
-  },
-  {
-    "id": "liquid-frost",
-    "name": "Liquid Frost",
-    "file": "liquid-frost.json",
-    "url": "../themes/liquid-frost.json",
-    "metadata": {
-      "recommendedHints": {
-        "showHangulSlideHints": false,
-        "showEnglishSlideHints": false,
-        "showBeginnerTooltipPreview": true
-      },
-      "tags": [
-        "light",
-        "flat",
-        "minimal",
-        "platformInspired",
-        "glassLike"
-      ],
-      "features": [
-        "dingulRoleColors",
-        "historicalHintRecommendation"
-      ]
-    },
-    "theme": {
-      "schemaVersion": 1,
-      "name": "Liquid Frost",
-      "author": "local",
-      "metadata": {
-        "recommendedHints": {
-          "showHangulSlideHints": false,
-          "showEnglishSlideHints": false,
-          "showBeginnerTooltipPreview": true
-        },
-        "tags": [
-          "light",
-          "flat",
-          "minimal",
-          "platformInspired",
-          "glassLike"
-        ],
-        "features": [
-          "dingulRoleColors",
-          "historicalHintRecommendation"
-        ]
-      },
-      "colors": {
-        "alphaKey": "#F4F7FB",
-        "modifierKey": "#E9EFF6",
-        "accentKey": "#BBD2EB",
-        "keyPressed": "#D9E4EF",
-        "keyboardBackground": "#DDE5ED",
-        "panelBackground": "#DDE5ED",
-        "border": "#FFFFFF",
-        "depth": null,
-        "accent": "#17212B",
-        "secondary": "#667383"
-      },
-      "shape": {
-        "roundnessDp": 6,
-        "keyGapDp": 5,
-        "depthEnabled": false,
-        "depthDp": 0,
-        "borderWidthDp": 1
-      },
-      "additionalNumberRow": {
-        "colorMode": "full_mod"
-      },
-      "typography": {
-        "fontFamily": "noto_sans_kr",
-        "primaryTextSizePercent": 76,
-        "secondaryTextSizePercent": 76,
-        "primaryTextBold": false,
-        "primaryTextItalic": false,
-        "secondaryTextBold": false,
-        "secondaryTextItalic": false
-      },
-      "dingulColors": {
-        "alpha": {
-          "foreground": "#17212B",
-          "background": "#F4F7FB"
-        },
-        "mod": {
-          "foreground": "#667383",
-          "background": "#E9EFF6"
-        },
-        "modInv": {
-          "foreground": "#17314D",
-          "background": "#BBD2EB"
-        }
-      },
-      "accentPolicy": {
-        "qwerty": [
-          "qwertyShift"
-        ],
-        "dingul": [
-          "dingulDot"
-        ]
-      },
-      "keyTextColorOverrides": {
-        "shiftIndicator": "#4B91D1"
-      },
-      "effects": {
-        "blur": {
-          "enabled": true,
-          "radiusDp": 22
-        },
-        "metal": {
           "enabled": false,
-          "strengthPercent": 0
-        },
-        "previewBubble": {
-          "style": "rounded"
-        },
-        "keyFaceGradient": {
-          "enabled": true,
-          "strengthPercent": 12,
+          "strengthPercent": 0,
           "startColor": "#FFFFFF",
-          "endColor": "#B6C5D4",
-          "curve": "glass"
+          "endColor": "#C9BED6",
+          "curve": "soft"
         },
         "panelGradient": {
-          "enabled": true,
-          "startColor": "#EEF3F8",
-          "endColor": "#CDD8E3"
+          "enabled": false
         },
-        "glass": {
-          "enabled": true,
-          "tintAlphaPercent": 68,
-          "highlightPercent": 42,
-          "borderAlphaPercent": 42
-        }
-      }
-    }
-  },
-  {
-    "id": "liquid-graphite",
-    "name": "Liquid Graphite",
-    "file": "liquid-graphite.json",
-    "url": "../themes/liquid-graphite.json",
-    "metadata": {
-      "recommendedHints": {
-        "showHangulSlideHints": false,
-        "showEnglishSlideHints": false,
-        "showBeginnerTooltipPreview": true
-      },
-      "tags": [
-        "dark",
-        "flat",
-        "minimal",
-        "platformInspired",
-        "glassLike"
-      ],
-      "features": [
-        "dingulRoleColors",
-        "historicalHintRecommendation"
-      ]
-    },
-    "theme": {
-      "schemaVersion": 1,
-      "name": "Liquid Graphite",
-      "author": "local",
-      "metadata": {
-        "recommendedHints": {
-          "showHangulSlideHints": false,
-          "showEnglishSlideHints": false,
-          "showBeginnerTooltipPreview": true
-        },
-        "tags": [
-          "dark",
-          "flat",
-          "minimal",
-          "platformInspired",
-          "glassLike"
-        ],
-        "features": [
-          "dingulRoleColors",
-          "historicalHintRecommendation"
-        ]
-      },
-      "colors": {
-        "alphaKey": "#333A43",
-        "modifierKey": "#3A424C",
-        "accentKey": "#51606F",
-        "keyPressed": "#4A5563",
-        "keyboardBackground": "#1B2128",
-        "panelBackground": "#1B2128",
-        "border": "#5D6875",
-        "depth": "#29313A",
-        "accent": "#F5F7FA",
-        "secondary": "#A4ADB8"
-      },
-      "shape": {
-        "roundnessDp": 6,
-        "keyGapDp": 5,
-        "depthEnabled": false,
-        "depthDp": 0,
-        "borderWidthDp": 1
-      },
-      "additionalNumberRow": {
-        "colorMode": "full_mod"
-      },
-      "typography": {
-        "fontFamily": "noto_sans_kr",
-        "primaryTextSizePercent": 76,
-        "secondaryTextSizePercent": 76,
-        "primaryTextBold": false,
-        "primaryTextItalic": false,
-        "secondaryTextBold": false,
-        "secondaryTextItalic": false
-      },
-      "dingulColors": {
-        "alpha": {
-          "foreground": "#F5F7FA",
-          "background": "#333A43"
-        },
-        "mod": {
-          "foreground": "#A4ADB8",
-          "background": "#3A424C"
-        },
-        "modInv": {
-          "foreground": "#F3F7FB",
-          "background": "#51606F"
-        }
-      },
-      "accentPolicy": {
-        "qwerty": [
-          "qwertyShift"
-        ],
-        "dingul": [
-          "dingulDot"
-        ]
-      },
-      "keyTextColorOverrides": {
-        "shiftIndicator": "#7EC8FF"
-      },
-      "effects": {
-        "blur": {
-          "enabled": true,
-          "radiusDp": 20
-        },
-        "metal": {
-          "enabled": false,
-          "strengthPercent": 0
-        },
-        "previewBubble": {
-          "style": "rounded"
-        },
-        "keyFaceGradient": {
-          "enabled": true,
-          "strengthPercent": 14,
-          "startColor": "#FFFFFF",
-          "endColor": "#101820",
-          "curve": "glass"
-        },
-        "panelGradient": {
-          "enabled": true,
-          "startColor": "#1D242C",
-          "endColor": "#141920"
-        },
-        "glass": {
-          "enabled": true,
-          "tintAlphaPercent": 70,
-          "highlightPercent": 36,
-          "borderAlphaPercent": 48
-        }
+        "materialStyle": "solid"
       }
     }
   },
@@ -3482,9 +3427,9 @@ window.S3_THEME_INDEX = [
         "showBeginnerTooltipPreview": true
       },
       "tags": [
-        "depth",
         "light",
-        "platformInspired"
+        "platformInspired",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -3502,9 +3447,9 @@ window.S3_THEME_INDEX = [
           "showBeginnerTooltipPreview": true
         },
         "tags": [
-          "depth",
           "light",
-          "platformInspired"
+          "platformInspired",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -3524,9 +3469,9 @@ window.S3_THEME_INDEX = [
       },
       "shape": {
         "roundnessDp": 6,
-        "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2,
+        "keyGapDp": 4,
+        "depthEnabled": false,
+        "depthDp": 0,
         "borderWidthDp": 1
       },
       "additionalNumberRow": {
@@ -3560,11 +3505,30 @@ window.S3_THEME_INDEX = [
       },
       "effects": {
         "glass": {
+          "enabled": true,
+          "tintAlphaPercent": 84,
+          "highlightPercent": 10,
+          "borderAlphaPercent": 24
+        },
+        "blur": {
+          "enabled": true,
+          "radiusDp": 12
+        },
+        "metal": {
           "enabled": false,
-          "tintAlphaPercent": 86,
-          "highlightPercent": 18,
-          "borderAlphaPercent": 42
-        }
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": true,
+          "strengthPercent": 2,
+          "startColor": "#FFFFFF",
+          "endColor": "#B8C0CA",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "frosted"
       }
     }
   },
@@ -3581,9 +3545,9 @@ window.S3_THEME_INDEX = [
       },
       "tags": [
         "dark",
-        "depth",
         "minimal",
-        "platformInspired"
+        "platformInspired",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -3602,9 +3566,9 @@ window.S3_THEME_INDEX = [
         },
         "tags": [
           "dark",
-          "depth",
           "minimal",
-          "platformInspired"
+          "platformInspired",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -3624,9 +3588,9 @@ window.S3_THEME_INDEX = [
       },
       "shape": {
         "roundnessDp": 6,
-        "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2,
+        "keyGapDp": 4,
+        "depthEnabled": false,
+        "depthDp": 0,
         "borderWidthDp": 1
       },
       "additionalNumberRow": {
@@ -3664,7 +3628,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#15191F",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -3681,7 +3664,7 @@ window.S3_THEME_INDEX = [
       },
       "tags": [
         "dark",
-        "depth"
+        "flat"
       ],
       "features": [
         "colorfulForeground",
@@ -3701,7 +3684,7 @@ window.S3_THEME_INDEX = [
         },
         "tags": [
           "dark",
-          "depth"
+          "flat"
         ],
         "features": [
           "colorfulForeground",
@@ -3721,10 +3704,10 @@ window.S3_THEME_INDEX = [
         "secondary": "#B8A9BF"
       },
       "shape": {
-        "roundnessDp": 4,
+        "roundnessDp": 6,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2,
+        "depthEnabled": false,
+        "depthDp": 0,
         "borderWidthDp": 1
       },
       "additionalNumberRow": {
@@ -3808,10 +3791,10 @@ window.S3_THEME_INDEX = [
       },
       "effects": {
         "keyFaceGradient": {
-          "enabled": true,
-          "strengthPercent": 8,
-          "startColor": "#2A2D33",
-          "endColor": "#0F1013",
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#2F3339",
           "curve": "soft"
         },
         "glass": {
@@ -3819,7 +3802,19 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       },
       "dingulColors": {
         "alpha": {
@@ -3849,8 +3844,8 @@ window.S3_THEME_INDEX = [
         "showBeginnerTooltipPreview": true
       },
       "tags": [
-        "depth",
-        "light"
+        "light",
+        "flat"
       ],
       "features": [
         "colorfulForeground",
@@ -3869,8 +3864,8 @@ window.S3_THEME_INDEX = [
           "showBeginnerTooltipPreview": true
         },
         "tags": [
-          "depth",
-          "light"
+          "light",
+          "flat"
         ],
         "features": [
           "colorfulForeground",
@@ -3890,10 +3885,10 @@ window.S3_THEME_INDEX = [
         "secondary": "#6C5542"
       },
       "shape": {
-        "roundnessDp": 4,
+        "roundnessDp": 6,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2,
+        "depthEnabled": false,
+        "depthDp": 0,
         "borderWidthDp": 1
       },
       "additionalNumberRow": {
@@ -3975,10 +3970,10 @@ window.S3_THEME_INDEX = [
       },
       "effects": {
         "keyFaceGradient": {
-          "enabled": true,
-          "strengthPercent": 8,
-          "startColor": "#FFF8EA",
-          "endColor": "#D6CCBD",
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#D2CCC2",
           "curve": "soft"
         },
         "glass": {
@@ -3986,7 +3981,19 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       },
       "dingulColors": {
         "alpha": {
@@ -4053,7 +4060,7 @@ window.S3_THEME_INDEX = [
         "secondary": "#FFB000"
       },
       "shape": {
-        "roundnessDp": 8,
+        "roundnessDp": 10,
         "borderWidthDp": 1,
         "keyGapDp": 5,
         "depthEnabled": true,
@@ -4081,9 +4088,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 12,
-          "borderAlphaPercent": 36
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -4094,9 +4101,9 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 18,
+          "strengthPercent": 15,
           "startColor": "#FFFFFF",
-          "endColor": "#5B6976",
+          "endColor": "#05070A",
           "curve": "soft"
         },
         "panelGradient": {
@@ -4229,7 +4236,7 @@ window.S3_THEME_INDEX = [
         "secondary": "#9FB4C6"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 8,
         "keyGapDp": 5,
         "depthEnabled": false,
         "depthDp": 0,
@@ -4275,7 +4282,7 @@ window.S3_THEME_INDEX = [
       "effects": {
         "blur": {
           "enabled": true,
-          "radiusDp": 20
+          "radiusDp": 18
         },
         "metal": {
           "enabled": false,
@@ -4286,10 +4293,10 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 12,
+          "strengthPercent": 2,
           "startColor": "#FFFFFF",
-          "endColor": "#07111C",
-          "curve": "glass"
+          "endColor": "#B7D8F6",
+          "curve": "soft"
         },
         "panelGradient": {
           "enabled": true,
@@ -4298,10 +4305,11 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": true,
-          "tintAlphaPercent": 68,
-          "highlightPercent": 36,
-          "borderAlphaPercent": 50
-        }
+          "tintAlphaPercent": 76,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 34
+        },
+        "materialStyle": "frosted"
       }
     }
   },
@@ -4314,13 +4322,13 @@ window.S3_THEME_INDEX = [
       "tags": [
         "dark",
         "gmkInspired",
-        "acrylic"
+        "acrylic",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
         "keyFaceGradient",
-        "panelGradient",
-        "keyDepth"
+        "panelGradient"
       ]
     },
     "theme": {
@@ -4331,13 +4339,13 @@ window.S3_THEME_INDEX = [
         "tags": [
           "dark",
           "gmkInspired",
-          "acrylic"
+          "acrylic",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
           "keyFaceGradient",
-          "panelGradient",
-          "keyDepth"
+          "panelGradient"
         ]
       },
       "colors": {
@@ -4352,11 +4360,11 @@ window.S3_THEME_INDEX = [
         "secondary": "#64D4CF"
       },
       "shape": {
-        "roundnessDp": 9,
+        "roundnessDp": 10,
         "borderWidthDp": 1,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 1
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -4411,9 +4419,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 14,
-          "borderAlphaPercent": 38
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -4424,10 +4432,10 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 14,
+          "strengthPercent": 16,
           "startColor": "#FFFFFF",
-          "endColor": "#1B2025",
-          "curve": "soft"
+          "endColor": "#202327",
+          "curve": "top_glow"
         },
         "panelGradient": {
           "enabled": true,
@@ -4451,14 +4459,14 @@ window.S3_THEME_INDEX = [
       },
       "tags": [
         "dark",
-        "frosted"
+        "frosted",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
         "historicalHintRecommendation",
         "keyFaceGradient",
-        "blurEffect",
-        "keyDepth"
+        "blurEffect"
       ]
     },
     "theme": {
@@ -4473,14 +4481,14 @@ window.S3_THEME_INDEX = [
         },
         "tags": [
           "dark",
-          "frosted"
+          "frosted",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
           "historicalHintRecommendation",
           "keyFaceGradient",
-          "blurEffect",
-          "keyDepth"
+          "blurEffect"
         ]
       },
       "colors": {
@@ -4495,10 +4503,10 @@ window.S3_THEME_INDEX = [
         "secondary": "#C7D0DC"
       },
       "shape": {
-        "roundnessDp": 8,
+        "roundnessDp": 7,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 1,
+        "depthEnabled": false,
+        "depthDp": 0,
         "borderWidthDp": 1
       },
       "additionalNumberRow": {
@@ -4533,13 +4541,13 @@ window.S3_THEME_INDEX = [
       "effects": {
         "blur": {
           "enabled": true,
-          "radiusDp": 16
+          "radiusDp": 14
         },
         "glass": {
           "enabled": true,
-          "tintAlphaPercent": 90,
-          "highlightPercent": 10,
-          "borderAlphaPercent": 32
+          "tintAlphaPercent": 82,
+          "highlightPercent": 9,
+          "borderAlphaPercent": 24
         },
         "metal": {
           "enabled": false,
@@ -4550,9 +4558,9 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 8,
+          "strengthPercent": 2,
           "startColor": "#FFFFFF",
-          "endColor": "#69768A",
+          "endColor": "#1E2430",
           "curve": "soft"
         },
         "panelGradient": {
@@ -4577,14 +4585,14 @@ window.S3_THEME_INDEX = [
       },
       "tags": [
         "light",
-        "frosted"
+        "frosted",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
         "historicalHintRecommendation",
         "keyFaceGradient",
-        "blurEffect",
-        "keyDepth"
+        "blurEffect"
       ]
     },
     "theme": {
@@ -4599,14 +4607,14 @@ window.S3_THEME_INDEX = [
         },
         "tags": [
           "light",
-          "frosted"
+          "frosted",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
           "historicalHintRecommendation",
           "keyFaceGradient",
-          "blurEffect",
-          "keyDepth"
+          "blurEffect"
         ]
       },
       "colors": {
@@ -4621,10 +4629,10 @@ window.S3_THEME_INDEX = [
         "secondary": "#59687A"
       },
       "shape": {
-        "roundnessDp": 9,
+        "roundnessDp": 7,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 1,
+        "depthEnabled": false,
+        "depthDp": 0,
         "borderWidthDp": 1
       },
       "additionalNumberRow": {
@@ -4645,31 +4653,27 @@ window.S3_THEME_INDEX = [
           "background": "#F8FAFC"
         },
         "mod": {
-          "foreground": "#59687A",
+          "foreground": "#667085",
           "background": "#EEF2F7"
         },
         "modInv": {
-          "foreground": "#2E3440",
+          "foreground": "#EEF2F7",
           "background": "#E4EAF2"
         }
       },
       "keyTextColorOverrides": {
-        "shiftIndicator": "#06B6D4",
-        "enter": "#2E3440",
-        "backspace": "#445064",
-        "language": "#445064",
-        "settings": "#445064"
+        "shiftIndicator": "#06B6D4"
       },
       "effects": {
         "blur": {
           "enabled": true,
-          "radiusDp": 18
+          "radiusDp": 14
         },
         "glass": {
           "enabled": true,
-          "tintAlphaPercent": 92,
-          "highlightPercent": 10,
-          "borderAlphaPercent": 30
+          "tintAlphaPercent": 82,
+          "highlightPercent": 9,
+          "borderAlphaPercent": 24
         },
         "metal": {
           "enabled": false,
@@ -4680,9 +4684,9 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 8,
+          "strengthPercent": 2,
           "startColor": "#FFFFFF",
-          "endColor": "#8795A6",
+          "endColor": "#B8C2CC",
           "curve": "soft"
         },
         "panelGradient": {
@@ -4707,7 +4711,7 @@ window.S3_THEME_INDEX = [
       },
       "tags": [
         "dark",
-        "depth"
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -4726,7 +4730,7 @@ window.S3_THEME_INDEX = [
         },
         "tags": [
           "dark",
-          "depth"
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -4745,10 +4749,10 @@ window.S3_THEME_INDEX = [
         "secondary": "#C7D0DC"
       },
       "shape": {
-        "roundnessDp": 7,
+        "roundnessDp": 6,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2,
+        "depthEnabled": false,
+        "depthDp": 0,
         "borderWidthDp": 1
       },
       "additionalNumberRow": {
@@ -4786,7 +4790,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#1E2430",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -4802,8 +4825,8 @@ window.S3_THEME_INDEX = [
         "showBeginnerTooltipPreview": true
       },
       "tags": [
-        "depth",
-        "light"
+        "light",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
@@ -4821,8 +4844,8 @@ window.S3_THEME_INDEX = [
           "showBeginnerTooltipPreview": true
         },
         "tags": [
-          "depth",
-          "light"
+          "light",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
@@ -4841,10 +4864,10 @@ window.S3_THEME_INDEX = [
         "secondary": "#667085"
       },
       "shape": {
-        "roundnessDp": 7,
+        "roundnessDp": 6,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2,
+        "depthEnabled": false,
+        "depthDp": 0,
         "borderWidthDp": 1
       },
       "additionalNumberRow": {
@@ -4882,7 +4905,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#B8C2CC",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -4935,7 +4977,7 @@ window.S3_THEME_INDEX = [
         "secondary": "#D9A3AA"
       },
       "shape": {
-        "roundnessDp": 10,
+        "roundnessDp": 11,
         "borderWidthDp": 1,
         "keyGapDp": 5,
         "depthEnabled": true,
@@ -4986,9 +5028,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 12,
-          "borderAlphaPercent": 34
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -4999,9 +5041,9 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 16,
+          "strengthPercent": 14,
           "startColor": "#FFFFFF",
-          "endColor": "#655159",
+          "endColor": "#111114",
           "curve": "soft"
         },
         "panelGradient": {
@@ -5066,8 +5108,8 @@ window.S3_THEME_INDEX = [
         "secondary": "#777777"
       },
       "shape": {
-        "roundnessDp": 3,
-        "keyGapDp": 6,
+        "roundnessDp": 2,
+        "keyGapDp": 7,
         "depthEnabled": false,
         "depthDp": 0,
         "borderWidthDp": 1
@@ -5077,11 +5119,11 @@ window.S3_THEME_INDEX = [
       },
       "typography": {
         "fontFamily": "d2coding",
-        "primaryTextSizePercent": 78,
-        "secondaryTextSizePercent": 80,
+        "primaryTextSizePercent": 76,
+        "secondaryTextSizePercent": 72,
         "primaryTextBold": false,
         "primaryTextItalic": false,
-        "secondaryTextBold": true,
+        "secondaryTextBold": false,
         "secondaryTextItalic": false
       },
       "dingulColors": {
@@ -5107,7 +5149,26 @@ window.S3_THEME_INDEX = [
           "tintAlphaPercent": 86,
           "highlightPercent": 18,
           "borderAlphaPercent": 42
-        }
+        },
+        "blur": {
+          "enabled": false,
+          "radiusDp": 0
+        },
+        "metal": {
+          "enabled": false,
+          "strengthPercent": 0
+        },
+        "keyFaceGradient": {
+          "enabled": false,
+          "strengthPercent": 0,
+          "startColor": "#FFFFFF",
+          "endColor": "#D0D0D0",
+          "curve": "soft"
+        },
+        "panelGradient": {
+          "enabled": false
+        },
+        "materialStyle": "solid"
       }
     }
   },
@@ -5167,7 +5228,7 @@ window.S3_THEME_INDEX = [
         "secondary": "#7A6B60"
       },
       "shape": {
-        "roundnessDp": 6,
+        "roundnessDp": 9,
         "keyGapDp": 5,
         "depthEnabled": false,
         "depthDp": 0,
@@ -5213,7 +5274,7 @@ window.S3_THEME_INDEX = [
       "effects": {
         "blur": {
           "enabled": true,
-          "radiusDp": 20
+          "radiusDp": 18
         },
         "metal": {
           "enabled": false,
@@ -5224,10 +5285,10 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 11,
+          "strengthPercent": 2,
           "startColor": "#FFFFFF",
-          "endColor": "#CDBDAE",
-          "curve": "glass"
+          "endColor": "#FFF9F0",
+          "curve": "soft"
         },
         "panelGradient": {
           "enabled": true,
@@ -5236,10 +5297,11 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": true,
-          "tintAlphaPercent": 70,
-          "highlightPercent": 38,
-          "borderAlphaPercent": 44
-        }
+          "tintAlphaPercent": 80,
+          "highlightPercent": 14,
+          "borderAlphaPercent": 28
+        },
+        "materialStyle": "frosted"
       }
     }
   },
@@ -5296,7 +5358,7 @@ window.S3_THEME_INDEX = [
         "secondary": "#64748B"
       },
       "shape": {
-        "roundnessDp": 5,
+        "roundnessDp": 7,
         "keyGapDp": 5,
         "depthEnabled": false,
         "depthDp": 0,
@@ -5334,7 +5396,7 @@ window.S3_THEME_INDEX = [
       "effects": {
         "blur": {
           "enabled": true,
-          "radiusDp": 20
+          "radiusDp": 16
         },
         "metal": {
           "enabled": false,
@@ -5345,10 +5407,10 @@ window.S3_THEME_INDEX = [
         },
         "keyFaceGradient": {
           "enabled": true,
-          "strengthPercent": 10,
+          "strengthPercent": 2,
           "startColor": "#FFFFFF",
-          "endColor": "#B8C4D1",
-          "curve": "glass"
+          "endColor": "#AEB8C6",
+          "curve": "soft"
         },
         "panelGradient": {
           "enabled": true,
@@ -5357,10 +5419,11 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": true,
-          "tintAlphaPercent": 70,
-          "highlightPercent": 36,
-          "borderAlphaPercent": 48
-        }
+          "tintAlphaPercent": 78,
+          "highlightPercent": 13,
+          "borderAlphaPercent": 30
+        },
+        "materialStyle": "frosted"
       }
     }
   },
@@ -5374,12 +5437,12 @@ window.S3_THEME_INDEX = [
         "light",
         "keycapInspired",
         "acrylic",
-        "outline"
+        "outline",
+        "flat"
       ],
       "features": [
         "dingulRoleColors",
         "keyFaceGradient",
-        "keyDepth",
         "separateOutline",
         "noveltyKeys"
       ]
@@ -5393,12 +5456,12 @@ window.S3_THEME_INDEX = [
           "light",
           "keycapInspired",
           "acrylic",
-          "outline"
+          "outline",
+          "flat"
         ],
         "features": [
           "dingulRoleColors",
           "keyFaceGradient",
-          "keyDepth",
           "separateOutline",
           "noveltyKeys"
         ]
@@ -5423,10 +5486,10 @@ window.S3_THEME_INDEX = [
       },
       "shape": {
         "roundnessDp": 8,
-        "borderWidthDp": 1,
+        "borderWidthDp": 2,
         "keyGapDp": 5,
-        "depthEnabled": true,
-        "depthDp": 2
+        "depthEnabled": false,
+        "depthDp": 0
       },
       "additionalNumberRow": {
         "colorMode": "full_mod"
@@ -5464,9 +5527,9 @@ window.S3_THEME_INDEX = [
         },
         "glass": {
           "enabled": false,
-          "tintAlphaPercent": 88,
-          "highlightPercent": 12,
-          "borderAlphaPercent": 36
+          "tintAlphaPercent": 86,
+          "highlightPercent": 18,
+          "borderAlphaPercent": 42
         },
         "metal": {
           "enabled": false,
@@ -5479,8 +5542,8 @@ window.S3_THEME_INDEX = [
           "enabled": true,
           "strengthPercent": 13,
           "startColor": "#FFFFFF",
-          "endColor": "#567B9A",
-          "curve": "soft"
+          "endColor": "#647B90",
+          "curve": "top_glow"
         },
         "panelGradient": {
           "enabled": true,

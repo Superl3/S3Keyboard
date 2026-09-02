@@ -80,7 +80,7 @@ window.S3_THEME_CONTRACT = {
   "shapeFields": [
     {
       "key": "roundnessDp",
-      "label": "둥글기",
+      "label": "둥글기 (키 비율 기준)",
       "min": 0,
       "max": 24
     },
@@ -92,9 +92,23 @@ window.S3_THEME_CONTRACT = {
     },
     {
       "key": "keyGapDp",
-      "label": "키 사이 시각 간격",
+      "label": "공통 키 간격 (면적 비율 기준)",
       "min": 0,
       "max": 18
+    },
+    {
+      "key": "hangulKeyGapDp",
+      "label": "딩굴 키 간격",
+      "min": 0,
+      "max": 18,
+      "optional": true
+    },
+    {
+      "key": "englishKeyGapDp",
+      "label": "QWERTY 키 간격",
+      "min": 0,
+      "max": 18,
+      "optional": true
     },
     {
       "key": "depthDp",
@@ -643,10 +657,6 @@ window.S3_THEME_CONTRACT = {
     {
       "id": "acrylic",
       "label": "Acrylic"
-    },
-    {
-      "id": "experimental_refraction",
-      "label": "Experimental refraction"
     }
   ],
   "keyDisplayPacks": [

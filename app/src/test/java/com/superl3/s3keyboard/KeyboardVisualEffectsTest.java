@@ -7,14 +7,14 @@ import org.junit.Test;
 
 public final class KeyboardVisualEffectsTest {
     @Test
-    public void physicalMaterialStylesRequirePedestal() {
+    public void onlySculptedSoftKeycapRequiresPedestal() {
         assertTrue(KeyboardVisualEffects.DEFAULT
                 .withMaterialStyle(KeyboardVisualEffects.MATERIAL_SOFT_KEYCAP)
                 .requiresPedestal());
-        assertTrue(KeyboardVisualEffects.DEFAULT
+        assertFalse(KeyboardVisualEffects.DEFAULT
                 .withMaterialStyle(KeyboardVisualEffects.MATERIAL_FROSTED)
                 .requiresPedestal());
-        assertTrue(KeyboardVisualEffects.DEFAULT
+        assertFalse(KeyboardVisualEffects.DEFAULT
                 .withMaterialStyle(KeyboardVisualEffects.MATERIAL_ACRYLIC)
                 .requiresPedestal());
     }

@@ -1,6 +1,8 @@
 param(
     [switch] $SkipBuild,
-    [switch] $ResetAppData
+    [switch] $ResetAppData,
+    [string] $Serial = "",
+    [switch] $SkipEmulatorLaunch
 )
 
 $ErrorActionPreference = "Stop"
@@ -40,14 +42,20 @@ if (-not $SkipBuild) {
     & (Join-Path $PSScriptRoot "build-debug.ps1")
 }
 
-& (Join-Path $PSScriptRoot "setup-emulator.ps1")
-& (Join-Path $PSScriptRoot "launch-emulator.ps1")
+if (-not $SkipEmulatorLaunch -and [string]::IsNullOrWhiteSpace($Serial)) {
+    & (Join-Path $PSScriptRoot "setup-emulator.ps1")
+    & (Join-Path $PSScriptRoot "launch-emulator.ps1")
+}
 
 New-Item -ItemType Directory -Force -Path $CaptureDir | Out-Null
 
-$Device = (& $Adb devices | Select-String -Pattern "emulator-\d+\s+device" | Select-Object -First 1).ToString().Split()[0]
-if (-not $Device) {
-    throw "No running emulator found."
+$Device = $Serial
+if ([string]::IsNullOrWhiteSpace($Device)) {
+    $deviceLine = & $Adb devices | Select-String -Pattern "^\S+\s+device$" | Select-Object -First 1
+    if ($null -eq $deviceLine) {
+        throw "No running emulator/device found. Pass -Serial or start an emulator first."
+    }
+    $Device = $deviceLine.ToString().Split()[0]
 }
 $AdbTarget = @("-s", $Device)
 
@@ -76,8 +84,41 @@ function Test-ImeReady {
 }
 
 function Focus-PracticeField {
+    $remoteDumpPath = "/sdcard/s3keyboard-dingul-window.xml"
+    $localDumpPath = Join-Path $CaptureDir "s3keyboard-dingul-window.xml"
+    $dumpReady = $false
+    for ($dumpAttempt = 0; $dumpAttempt -lt 5; $dumpAttempt++) {
+        & $Adb @AdbTarget shell rm -f $remoteDumpPath | Out-Null
+        & $Adb @AdbTarget shell uiautomator dump $remoteDumpPath | Out-Host
+        Start-Sleep -Milliseconds 400
+        $probe = (& $Adb @AdbTarget shell ls $remoteDumpPath 2>$null | Out-String).Trim()
+        if ($LASTEXITCODE -eq 0 -and $probe -eq $remoteDumpPath) {
+            $dumpReady = $true
+            break
+        }
+        Start-Sleep -Milliseconds 600
+    }
+    if (-not $dumpReady) {
+        throw "uiautomator did not produce $remoteDumpPath"
+    }
+    & $Adb @AdbTarget pull $remoteDumpPath $localDumpPath | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "adb failed: pull $remoteDumpPath $localDumpPath"
+    }
+    [xml] $hierarchy = Get-Content -LiteralPath $localDumpPath -Raw -Encoding UTF8
+    $fields = @($hierarchy.SelectNodes("//node[@class='android.widget.EditText']"))
+    $field = $fields | Where-Object { $_.focused -eq "true" } | Select-Object -First 1
+    if ($null -eq $field -and $fields.Count -gt 0) {
+        $field = $fields[-1]
+    }
+    if ($null -eq $field -or $field.bounds -notmatch "\[(\d+),(\d+)\]\[(\d+),(\d+)\]") {
+        throw "Practice field was not found in the current settings UI"
+    }
+    $tapX = [int](([int] $Matches[1] + [int] $Matches[3]) / 2)
+    $tapY = [int](([int] $Matches[2] + [int] $Matches[4]) / 2)
+
     for ($attempt = 0; $attempt -lt 8; $attempt++) {
-        Invoke-AdbTarget shell input tap 540 565
+        Invoke-AdbTarget shell input tap $tapX $tapY
         Start-Sleep -Milliseconds 450
         Invoke-AdbTarget shell ime set $Ime
         Start-Sleep -Milliseconds 650
@@ -172,7 +213,7 @@ Invoke-AdbTarget shell settings put secure show_ime_with_hard_keyboard 1
 Invoke-AdbTarget shell ime enable $Ime
 Invoke-AdbTarget shell ime set $Ime
 Invoke-AdbTarget shell am force-stop $Package
-Invoke-AdbTarget shell am start -n $Activity --ez demo_settings true --ez demo_show_keyboard true
+Invoke-AdbTarget shell am start -n $Activity --ez demo_settings true --ez demo_show_keyboard true --es keyboard_mode hangul
 Start-Sleep -Seconds 3
 Focus-PracticeField
 

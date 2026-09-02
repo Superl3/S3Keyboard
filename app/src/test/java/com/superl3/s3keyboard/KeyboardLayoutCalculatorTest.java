@@ -45,7 +45,8 @@ public final class KeyboardLayoutCalculatorTest {
         KeyboardLayoutCalculator.Slot bottomSecond = slots.get(17);
         KeyboardLayoutCalculator.Slot bottomLast = slots.get(20);
 
-        assertEquals(settings.hangulMainSpecialGapDp + settings.keyGapDp,
+        float mainGap = slots.get(1).left - slots.get(0).right;
+        assertEquals(settings.hangulMainSpecialGapDp + mainGap,
                 specialKey.left - thirdMainKey.right,
                 0.001f);
         assertEquals(0f, bottomSecond.left - bottomFirst.right, 0.001f);
@@ -204,7 +205,9 @@ public final class KeyboardLayoutCalculatorTest {
         float noGapWidth = first.get(0).right - first.get(0).left;
         float withGapWidth = second.get(0).right - second.get(0).left;
 
-        assertEquals(18f, second.get(1).left - second.get(0).right, 0.001f);
+        float proportionalGap = second.get(1).left - second.get(0).right;
+        assertTrue(proportionalGap > 0f);
+        assertTrue(proportionalGap < 18f);
         assertEquals(first.get(0).left, second.get(0).left, 0.001f);
         assertTrue(withGapWidth < noGapWidth);
         assertEquals(first.get(first.size() - 1).bottom, second.get(second.size() - 1).bottom, 0.001f);

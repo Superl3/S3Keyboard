@@ -198,6 +198,11 @@ final class KeyboardSettingsSchema {
                 KeyboardPreferences.RESERVED_RIGHT_TEXT,
                 KeyboardPreferences.RESERVED_UP_TEXT);
 
+        add(entries, Section.PRIVACY_DEBUG, StorageRisk.NONE, true,
+                KeyboardPreferences.AI_TEXT_ACTIONS_ENABLED,
+                KeyboardPreferences.AI_TEXT_ACTION_PROVIDER_ID,
+                KeyboardPreferences.AI_TEXT_ACTION_TIMEOUT_MS,
+                KeyboardPreferences.AI_TEXT_ACTION_TRANSLATE_TARGET);
         add(entries, Section.PRIVACY_DEBUG, StorageRisk.LOCAL_TEXT, true,
                 KeyboardPreferences.CLIPBOARD_HISTORY_ENABLED);
         add(entries, Section.PRIVACY_DEBUG, StorageRisk.LOCAL_DIAGNOSTIC, true,

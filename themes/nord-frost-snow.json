@@ -10,14 +10,14 @@
     },
     "tags": [
       "light",
-      "frosted"
+      "frosted",
+      "flat"
     ],
     "features": [
       "dingulRoleColors",
       "historicalHintRecommendation",
       "keyFaceGradient",
-      "blurEffect",
-      "keyDepth"
+      "blurEffect"
     ]
   },
   "colors": {
@@ -32,10 +32,10 @@
     "secondary": "#59687A"
   },
   "shape": {
-    "roundnessDp": 9,
+    "roundnessDp": 7,
     "keyGapDp": 5,
-    "depthEnabled": true,
-    "depthDp": 1,
+    "depthEnabled": false,
+    "depthDp": 0,
     "borderWidthDp": 1
   },
   "additionalNumberRow": {
@@ -56,31 +56,27 @@
       "background": "#F8FAFC"
     },
     "mod": {
-      "foreground": "#59687A",
+      "foreground": "#667085",
       "background": "#EEF2F7"
     },
     "modInv": {
-      "foreground": "#2E3440",
+      "foreground": "#EEF2F7",
       "background": "#E4EAF2"
     }
   },
   "keyTextColorOverrides": {
-    "shiftIndicator": "#06B6D4",
-    "enter": "#2E3440",
-    "backspace": "#445064",
-    "language": "#445064",
-    "settings": "#445064"
+    "shiftIndicator": "#06B6D4"
   },
   "effects": {
     "blur": {
       "enabled": true,
-      "radiusDp": 18
+      "radiusDp": 14
     },
     "glass": {
       "enabled": true,
-      "tintAlphaPercent": 92,
-      "highlightPercent": 10,
-      "borderAlphaPercent": 30
+      "tintAlphaPercent": 82,
+      "highlightPercent": 9,
+      "borderAlphaPercent": 24
     },
     "metal": {
       "enabled": false,
@@ -91,9 +87,9 @@
     },
     "keyFaceGradient": {
       "enabled": true,
-      "strengthPercent": 8,
+      "strengthPercent": 2,
       "startColor": "#FFFFFF",
-      "endColor": "#8795A6",
+      "endColor": "#B8C2CC",
       "curve": "soft"
     },
     "panelGradient": {

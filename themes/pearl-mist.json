@@ -1,109 +1,110 @@
 {
-    "schemaVersion":  1,
-    "name":  "Pearl Mist",
-    "author":  "local",
-    "metadata":  {
-                     "recommendedHints":  {
-                                              "showHangulSlideHints":  false,
-                                              "showEnglishSlideHints":  false,
-                                              "showBeginnerTooltipPreview":  true
-                                          },
-                     "tags":  [
-                                  "light",
-                                  "flat",
-                                  "minimal",
-                                  "glassLike"
-                              ],
-                     "features":  [
-                                      "dingulRoleColors",
-                                      "historicalHintRecommendation"
-                                  ]
-                 },
-    "colors":  {
-                   "alphaKey":  "#F7F2EC",
-                   "modifierKey":  "#EEE6DC",
-                   "accentKey":  "#DCC39F",
-                   "keyPressed":  "#E3D8CC",
-                   "keyboardBackground":  "#E8E0D7",
-                   "panelBackground":  "#E8E0D7",
-                   "border":  "#FFF9F0",
-                   "depth":  null,
-                   "accent":  "#3C3027",
-                   "secondary":  "#7A6B60"
-               },
-    "shape":  {
-                  "roundnessDp":  6,
-                  "keyGapDp":  5,
-                  "depthEnabled":  false,
-                  "depthDp":  0,
-                  "borderWidthDp":  1
-              },
-    "additionalNumberRow":  {
-                                "colorMode":  "full_mod"
-                            },
-    "typography":  {
-                       "fontFamily":  "noto_sans_kr",
-                       "primaryTextSizePercent":  76,
-                       "secondaryTextSizePercent":  76,
-                       "primaryTextBold":  false,
-                       "primaryTextItalic":  false,
-                       "secondaryTextBold":  false,
-                       "secondaryTextItalic":  false
-                   },
-    "dingulColors":  {
-                         "alpha":  {
-                                       "foreground":  "#3C3027",
-                                       "background":  "#F7F2EC"
-                                   },
-                         "mod":  {
-                                     "foreground":  "#7A6B60",
-                                     "background":  "#EEE6DC"
-                                 },
-                         "modInv":  {
-                                        "foreground":  "#443126",
-                                        "background":  "#DCC39F"
-                                    }
-                     },
-    "accentPolicy":  {
-                         "qwerty":  [
-                                        "qwertyShift"
-                                    ],
-                         "dingul":  [
-                                        "dingulDot"
-                                    ]
-                     },
-    "keyTextColorOverrides":  {
-                                  "shiftIndicator":  "#B37B3E"
-                              },
-    "effects":  {
-                    "blur":  {
-                                 "enabled":  true,
-                                 "radiusDp":  20
-                             },
-                    "metal":  {
-                                  "enabled":  false,
-                                  "strengthPercent":  0
-                              },
-                    "previewBubble":  {
-                                          "style":  "rounded"
-                                      },
-                    "keyFaceGradient":  {
-                                            "enabled":  true,
-                                            "strengthPercent":  11,
-                                            "startColor":  "#FFFFFF",
-                                            "endColor":  "#CDBDAE",
-                                            "curve":  "glass"
-                                        },
-                    "panelGradient":  {
-                                          "enabled":  true,
-                                          "startColor":  "#F4EEE7",
-                                          "endColor":  "#DACFC4"
-                                      },
-                    "glass":  {
-                                  "enabled":  true,
-                                  "tintAlphaPercent":  70,
-                                  "highlightPercent":  38,
-                                  "borderAlphaPercent":  44
-                              }
-                }
+  "schemaVersion": 1,
+  "name": "Pearl Mist",
+  "author": "local",
+  "metadata": {
+    "recommendedHints": {
+      "showHangulSlideHints": false,
+      "showEnglishSlideHints": false,
+      "showBeginnerTooltipPreview": true
+    },
+    "tags": [
+      "light",
+      "flat",
+      "minimal",
+      "glassLike"
+    ],
+    "features": [
+      "dingulRoleColors",
+      "historicalHintRecommendation"
+    ]
+  },
+  "colors": {
+    "alphaKey": "#F7F2EC",
+    "modifierKey": "#EEE6DC",
+    "accentKey": "#DCC39F",
+    "keyPressed": "#E3D8CC",
+    "keyboardBackground": "#E8E0D7",
+    "panelBackground": "#E8E0D7",
+    "border": "#FFF9F0",
+    "depth": null,
+    "accent": "#3C3027",
+    "secondary": "#7A6B60"
+  },
+  "shape": {
+    "roundnessDp": 9,
+    "keyGapDp": 5,
+    "depthEnabled": false,
+    "depthDp": 0,
+    "borderWidthDp": 1
+  },
+  "additionalNumberRow": {
+    "colorMode": "full_mod"
+  },
+  "typography": {
+    "fontFamily": "noto_sans_kr",
+    "primaryTextSizePercent": 76,
+    "secondaryTextSizePercent": 76,
+    "primaryTextBold": false,
+    "primaryTextItalic": false,
+    "secondaryTextBold": false,
+    "secondaryTextItalic": false
+  },
+  "dingulColors": {
+    "alpha": {
+      "foreground": "#3C3027",
+      "background": "#F7F2EC"
+    },
+    "mod": {
+      "foreground": "#7A6B60",
+      "background": "#EEE6DC"
+    },
+    "modInv": {
+      "foreground": "#443126",
+      "background": "#DCC39F"
+    }
+  },
+  "accentPolicy": {
+    "qwerty": [
+      "qwertyShift"
+    ],
+    "dingul": [
+      "dingulDot"
+    ]
+  },
+  "keyTextColorOverrides": {
+    "shiftIndicator": "#B37B3E"
+  },
+  "effects": {
+    "blur": {
+      "enabled": true,
+      "radiusDp": 18
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "previewBubble": {
+      "style": "rounded"
+    },
+    "keyFaceGradient": {
+      "enabled": true,
+      "strengthPercent": 2,
+      "startColor": "#FFFFFF",
+      "endColor": "#FFF9F0",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": true,
+      "startColor": "#F4EEE7",
+      "endColor": "#DACFC4"
+    },
+    "glass": {
+      "enabled": true,
+      "tintAlphaPercent": 80,
+      "highlightPercent": 14,
+      "borderAlphaPercent": 28
+    },
+    "materialStyle": "frosted"
+  }
 }

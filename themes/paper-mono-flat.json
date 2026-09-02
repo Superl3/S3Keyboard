@@ -30,8 +30,8 @@
     "secondary": "#777777"
   },
   "shape": {
-    "roundnessDp": 3,
-    "keyGapDp": 6,
+    "roundnessDp": 2,
+    "keyGapDp": 7,
     "depthEnabled": false,
     "depthDp": 0,
     "borderWidthDp": 1
@@ -41,11 +41,11 @@
   },
   "typography": {
     "fontFamily": "d2coding",
-    "primaryTextSizePercent": 78,
-    "secondaryTextSizePercent": 80,
+    "primaryTextSizePercent": 76,
+    "secondaryTextSizePercent": 72,
     "primaryTextBold": false,
     "primaryTextItalic": false,
-    "secondaryTextBold": true,
+    "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
   "dingulColors": {
@@ -71,6 +71,25 @@
       "tintAlphaPercent": 86,
       "highlightPercent": 18,
       "borderAlphaPercent": 42
-    }
+    },
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "keyFaceGradient": {
+      "enabled": false,
+      "strengthPercent": 0,
+      "startColor": "#FFFFFF",
+      "endColor": "#D0D0D0",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false
+    },
+    "materialStyle": "solid"
   }
 }

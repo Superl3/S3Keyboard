@@ -6,13 +6,11 @@
     "tags": [
       "light",
       "gmkInspired",
-      "softKeycap",
-      "outline"
+      "outline",
+      "flat"
     ],
     "features": [
       "dingulRoleColors",
-      "keyFaceGradient",
-      "keyDepth",
       "separateOutline",
       "noveltyKeys"
     ]
@@ -36,11 +34,11 @@
     "novelty": "#E66D61"
   },
   "shape": {
-    "roundnessDp": 8,
-    "borderWidthDp": 1,
+    "roundnessDp": 7,
+    "borderWidthDp": 2,
     "keyGapDp": 5,
-    "depthEnabled": true,
-    "depthDp": 2
+    "depthEnabled": false,
+    "depthDp": 0
   },
   "additionalNumberRow": {
     "colorMode": "full_mod"
@@ -78,9 +76,9 @@
     },
     "glass": {
       "enabled": false,
-      "tintAlphaPercent": 88,
-      "highlightPercent": 12,
-      "borderAlphaPercent": 36
+      "tintAlphaPercent": 86,
+      "highlightPercent": 18,
+      "borderAlphaPercent": 42
     },
     "metal": {
       "enabled": false,
@@ -90,10 +88,10 @@
       "style": "rounded"
     },
     "keyFaceGradient": {
-      "enabled": true,
-      "strengthPercent": 15,
+      "enabled": false,
+      "strengthPercent": 0,
       "startColor": "#FFFFFF",
-      "endColor": "#7E8B8C",
+      "endColor": "#596568",
       "curve": "soft"
     },
     "panelGradient": {
@@ -101,7 +99,7 @@
       "startColor": "#30343A",
       "endColor": "#15181C"
     },
-    "materialStyle": "soft_keycap"
+    "materialStyle": "solid"
   },
   "accentPolicy": {
     "qwerty": [

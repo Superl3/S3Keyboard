@@ -307,9 +307,32 @@ function New-ProfileExpectation {
 
 function Focus-LocalPracticeField {
     $dumpPath = "/sdcard/s3keyboard-smoke-window.xml"
-    Invoke-AdbTarget shell uiautomator dump $dumpPath
-    [xml] $hierarchy = Invoke-AdbTargetText shell cat $dumpPath
-    $field = $hierarchy.SelectSingleNode("//node[@class='android.widget.EditText']")
+    $localDumpPath = Join-Path $CaptureDir "s3keyboard-smoke-window.xml"
+    $dumpReady = $false
+    for ($dumpAttempt = 0; $dumpAttempt -lt 5; $dumpAttempt++) {
+        & $Adb @AdbTarget shell rm -f $dumpPath | Out-Null
+        & $Adb @AdbTarget shell uiautomator dump $dumpPath | Out-Host
+        Start-Sleep -Milliseconds 400
+        $probe = (& $Adb @AdbTarget shell ls $dumpPath 2>$null | Out-String).Trim()
+        if ($LASTEXITCODE -eq 0 -and $probe -eq $dumpPath) {
+            $dumpReady = $true
+            break
+        }
+        Start-Sleep -Milliseconds 600
+    }
+    if (-not $dumpReady) {
+        throw "uiautomator did not produce $dumpPath"
+    }
+    & $Adb @AdbTarget pull $dumpPath $localDumpPath | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "adb failed: pull $dumpPath $localDumpPath"
+    }
+    [xml] $hierarchy = Get-Content -LiteralPath $localDumpPath -Raw -Encoding UTF8
+    $fields = @($hierarchy.SelectNodes("//node[@class='android.widget.EditText']"))
+    $field = $fields | Where-Object { $_.focused -eq "true" } | Select-Object -First 1
+    if ($null -eq $field -and $fields.Count -gt 0) {
+        $field = $fields[-1]
+    }
     if ($null -eq $field -or $field.bounds -notmatch "\[(\d+),(\d+)\]\[(\d+),(\d+)\]") {
         throw "Local practice field was not found in the current settings UI"
     }

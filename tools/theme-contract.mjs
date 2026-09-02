@@ -62,9 +62,11 @@ export const themeContract = {
     { key: "novelty", label: "Outline novelty" }
   ],
   shapeFields: [
-    { key: "roundnessDp", label: "\uB465\uAE00\uAE30", min: 0, max: 24 },
+    { key: "roundnessDp", label: "\uB465\uAE00\uAE30 (\uD0A4 \uBE44\uC728 \uAE30\uC900)", min: 0, max: 24 },
     { key: "borderWidthDp", label: "\uD14C\uB450\uB9AC \uAD75\uAE30", min: 0, max: 8 },
-    { key: "keyGapDp", label: "\uD0A4 \uC0AC\uC774 \uC2DC\uAC01 \uAC04\uACA9", min: 0, max: 18 },
+    { key: "keyGapDp", label: "\uACF5\uD1B5 \uD0A4 \uAC04\uACA9 (\uBA74\uC801 \uBE44\uC728 \uAE30\uC900)", min: 0, max: 18 },
+    { key: "hangulKeyGapDp", label: "\uB529\uAD74 \uD0A4 \uAC04\uACA9", min: 0, max: 18, optional: true },
+    { key: "englishKeyGapDp", label: "QWERTY \uD0A4 \uAC04\uACA9", min: 0, max: 18, optional: true },
     { key: "depthDp", label: "\uC785\uCCB4 \uB192\uC774", min: 0, max: 8 }
   ],
   typographyFields: [
@@ -348,8 +350,7 @@ export const themeContract = {
     { id: "solid", label: "Solid" },
     { id: "soft_keycap", label: "Soft keycap" },
     { id: "frosted", label: "Frosted" },
-    { id: "acrylic", label: "Acrylic" },
-    { id: "experimental_refraction", label: "Experimental refraction" }
+    { id: "acrylic", label: "Acrylic" }
   ],
   keyDisplayPacks: [
     { id: "", label: "None" },
@@ -436,7 +437,9 @@ export function requiredColorKeys() {
 }
 
 export function requiredShapeKeys() {
-  return themeContract.shapeFields.map(field => field.key);
+  return themeContract.shapeFields
+    .filter(field => !field.optional)
+    .map(field => field.key);
 }
 
 export function numberRowModeIds(includeLegacy = false) {

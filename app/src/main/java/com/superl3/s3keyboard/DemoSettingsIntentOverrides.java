@@ -39,6 +39,8 @@ final class DemoSettingsIntentOverrides {
     private static final String EXTRA_DEMO_SETTINGS = "demo_settings";
     private static final String EXTRA_DEMO_FIELD_PROFILE = "demo_field_profile";
     private static final String EXTRA_THEME_PRESET_ID = "theme_preset_id";
+    private static final String EXTRA_KEYBOARD_MODE = "keyboard_mode";
+    private static final String EXTRA_MATERIAL_STYLE = "material_style";
 
     private DemoSettingsIntentOverrides() {
     }
@@ -112,6 +114,14 @@ final class DemoSettingsIntentOverrides {
         if (themePreset != null) {
             next = next.withAppearanceFrom(themePreset.applyTo(KeyboardSettings.defaults()));
             KeyboardPreferences.saveSelectedThemeId(context, themePreset.id);
+        }
+        if (intent.hasExtra(EXTRA_KEYBOARD_MODE)) {
+            next = next.withKeyboardMode(KeyboardMode.fromPreference(
+                    intent.getStringExtra(EXTRA_KEYBOARD_MODE)));
+        }
+        if (intent.hasExtra(EXTRA_MATERIAL_STYLE)) {
+            next = next.withVisualEffects(next.visualEffects.withMaterialStyle(
+                    intent.getStringExtra(EXTRA_MATERIAL_STYLE)));
         }
 
         if (intent.hasExtra(EXTRA_HANGUL_SPECIAL_COLUMN_PERCENT)) {
@@ -213,6 +223,8 @@ final class DemoSettingsIntentOverrides {
                 || intent.hasExtra(EXTRA_SHOW_ENGLISH_NUMBER_ROW)
                 || intent.hasExtra(EXTRA_DEMO_FIELD_PROFILE)
                 || intent.hasExtra(EXTRA_THEME_PRESET_ID)
+                || intent.hasExtra(EXTRA_KEYBOARD_MODE)
+                || intent.hasExtra(EXTRA_MATERIAL_STYLE)
                 || intent.hasExtra(EXTRA_DEMO_OVERLAY_STYLE)
                 || intent.hasExtra(EXTRA_TRANSPARENT_OVERLAY_INPUT)
                 || intent.hasExtra(EXTRA_DEMO_FORCE_VISUAL_EFFECTS);

@@ -6,6 +6,7 @@ import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.drawable.ColorDrawable;
 import android.inputmethodservice.InputMethodService;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -18,7 +19,10 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.ExtractedText;
+import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.SurroundingText;
 import android.view.inputmethod.InputMethodManager;
 import android.util.Log;
 import android.widget.FrameLayout;
@@ -60,6 +64,13 @@ public final class S3KeyboardService extends InputMethodService {
     private ClipboardPanelController clipboardPanelController;
     private ThemeClipboardImportController themeClipboardImportController;
     private PopupWindow quickSettingsPopup;
+    private View textActionOverlayView;
+    private TextActionTransaction textActionTransaction;
+    private AiTextActionSettings aiTextActionSettings = AiTextActionSettings.DEFAULT;
+    private TextActionProviderClient.Operation activeTextActionProviderOperation;
+    private PendingProviderTextAction pendingProviderTextAction;
+    private String pendingProviderReplacement;
+    private long textActionProviderRequestId;
     private final RemoteInputController remoteInputController = new RemoteInputController(
             () -> settings.remoteImeShortcut,
             (pendingMetaState, lockedMetaState) -> updateShiftStateView());
@@ -88,6 +99,7 @@ public final class S3KeyboardService extends InputMethodService {
         transparentOverlayInputEnabled = KeyboardPreferences.loadTransparentOverlayInputEnabled(this);
         transparentOverlayStyle = KeyboardPreferences.loadTransparentOverlayStyle(this);
         watchRadialInputEnabled = KeyboardPreferences.loadWatchRadialInputEnabled(this);
+        aiTextActionSettings = KeyboardPreferences.loadAiTextActionSettings(this);
 
         clipboardPanelController = new ClipboardPanelController(
                 this,
@@ -143,7 +155,6 @@ public final class S3KeyboardService extends InputMethodService {
         updateToolbarVisibility();
         updateClipboardListener();
         applyImeWindowBlur();
-        updateGlassBackdropCaptureState();
         return inputRoot;
     }
 
@@ -183,6 +194,7 @@ public final class S3KeyboardService extends InputMethodService {
             outInsets.touchableRegion.setEmpty();
             addTouchableViewBounds(outInsets.touchableRegion, inputContentContainer);
             addTouchableViewBounds(outInsets.touchableRegion, clipboardOverlayView);
+            addTouchableViewBounds(outInsets.touchableRegion, textActionOverlayView);
         }
     }
 
@@ -352,6 +364,91 @@ public final class S3KeyboardService extends InputMethodService {
         }
     }
 
+    private void scheduleAuditRenderReadyLog() {
+        if (!BuildConfig.DEBUG || inputView == null || settings == null) {
+            return;
+        }
+        String themeId = RuntimeDefaults.stringOrDefault(
+                KeyboardPreferences.loadSelectedThemeId(this),
+                "");
+        String mode = settings.keyboardMode.preferenceValue;
+        String material = settings.visualEffects.materialStyle;
+        inputView.postOnAnimation(() -> inputView.postOnAnimation(() -> {
+            logAuditGeometry("renderReady", themeId, mode, material);
+            inputView.postDelayed(
+                    () -> logAuditGeometry("geometry", themeId, mode, material),
+                    300L);
+            inputView.postDelayed(
+                    () -> logAuditGeometry("geometry", themeId, mode, material),
+                    600L);
+            inputView.postDelayed(
+                    () -> logAuditGeometry("geometry", themeId, mode, material),
+                    900L);
+            inputView.postDelayed(
+                    () -> logAuditGeometry("geometry", themeId, mode, material),
+                    1200L);
+            inputView.postDelayed(
+                    () -> logAuditGeometry("geometry", themeId, mode, material),
+                    1500L);
+        }));
+    }
+
+    private void logAuditGeometry(String event, String themeId, String mode, String material) {
+        if (!BuildConfig.DEBUG || inputView == null) {
+            return;
+        }
+        int[] location = new int[2];
+        inputView.getLocationOnScreen(location);
+        int screenWidth;
+        int screenHeight;
+        android.view.WindowManager windowManager =
+                (android.view.WindowManager) getSystemService(WINDOW_SERVICE);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            android.graphics.Rect bounds = windowManager.getMaximumWindowMetrics().getBounds();
+            screenWidth = bounds.width();
+            screenHeight = bounds.height();
+        } else {
+            android.util.DisplayMetrics metrics = new android.util.DisplayMetrics();
+            windowManager.getDefaultDisplay().getRealMetrics(metrics);
+            screenWidth = metrics.widthPixels;
+            screenHeight = metrics.heightPixels;
+        }
+        int navBottomInset = 0;
+        android.view.WindowInsets rootInsets = inputView.getRootWindowInsets();
+        if (rootInsets != null) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                navBottomInset = rootInsets.getInsetsIgnoringVisibility(
+                        android.view.WindowInsets.Type.navigationBars()).bottom;
+            } else {
+                navBottomInset = rootInsets.getStableInsetBottom();
+            }
+        }
+        int width = inputView.getWidth();
+        int height = inputView.getHeight();
+        int rawInputBottom = location[1] + height;
+        int keyboardBottom = rawInputBottom - navBottomInset;
+        int expectedBottom = screenHeight - navBottomInset;
+        int bottomDelta = keyboardBottom - expectedBottom;
+        Log.d(
+                "S3KeyboardAudit",
+                event
+                        + " theme=" + themeId
+                        + " mode=" + mode
+                        + " material=" + material
+                        + " width=" + width
+                        + " height=" + height
+                        + " x=" + location[0]
+                        + " y=" + location[1]
+                        + " screenWidth=" + screenWidth
+                        + " screenHeight=" + screenHeight
+                        + " navBottomInset=" + navBottomInset
+                        + " rawInputBottom=" + rawInputBottom
+                        + " keyboardBottom=" + keyboardBottom
+                        + " expectedBottom=" + expectedBottom
+                        + " bottomDelta=" + bottomDelta
+                        + " uptimeMs=" + android.os.SystemClock.uptimeMillis());
+    }
+
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
@@ -360,6 +457,7 @@ public final class S3KeyboardService extends InputMethodService {
         if (inputView != null) {
             inputView.setRedactTypingEventText(!editorPolicy.allowTextConveniences);
             applyCurrentSettingsToInputView();
+            scheduleAuditRenderReadyLog();
         }
         updateToolbarVisibility();
         updateClipboardListener();
@@ -376,6 +474,9 @@ public final class S3KeyboardService extends InputMethodService {
         automata.reset();
         commitOnlyEditor.reset();
         pendingOwnComposingSelectionUpdates = 0;
+        textActionTransaction = null;
+        cancelActiveProviderTextAction(true);
+        dismissTextActionPanel();
         previousTextRepairState.reset();
         doubleSpacePeriodState.reset();
         englishShiftState.reset();
@@ -397,7 +498,6 @@ public final class S3KeyboardService extends InputMethodService {
 
     @Override
     public void onFinishInput() {
-        GlassBackdropSourceStore.setConsumerActive(false);
         dismissPreviewPopup();
         dismissQuickSettings();
         removeClipboardListener();
@@ -411,6 +511,9 @@ public final class S3KeyboardService extends InputMethodService {
         automata.reset();
         commitOnlyEditor.reset();
         pendingOwnComposingSelectionUpdates = 0;
+        textActionTransaction = null;
+        cancelActiveProviderTextAction(true);
+        dismissTextActionPanel();
         previousTextRepairState.reset();
         englishShiftState.reset();
         qwertyInputAssistant.reset();
@@ -655,6 +758,13 @@ public final class S3KeyboardService extends InputMethodService {
         InputConnection inputConnection = commandInputConnection();
         commitCurrent(inputConnection);
         doubleSpacePeriodState.reset();
+        if (textActionTransaction != null
+                && textActionTransaction.restore(
+                        new InputConnectionTextActionEditor(inputConnection), currentEditorPackageName)) {
+            textActionTransaction = null;
+            dismissTextActionPanel();
+            return;
+        }
         if (!ImeConnectionDispatcher.performUndo(inputConnection)) {
             Toast.makeText(this, R.string.undo_unavailable, Toast.LENGTH_SHORT).show();
         }
@@ -1097,7 +1207,6 @@ public final class S3KeyboardService extends InputMethodService {
 
     @Override
     public void onFinishInputView(boolean finishingInput) {
-        GlassBackdropSourceStore.setConsumerActive(false);
         super.onFinishInputView(finishingInput);
     }
 
@@ -1335,6 +1444,481 @@ public final class S3KeyboardService extends InputMethodService {
         startActivity(intent);
     }
 
+    void showTextActionPanel() {
+        InputConnection inputConnection = commandInputConnection();
+        commitCurrent(inputConnection);
+        if (!textActionsAllowed()) {
+            dismissTextActionPanel();
+            Toast.makeText(this, R.string.text_action_unavailable, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (inputRoot == null) {
+            return;
+        }
+        dismissTextActionPanel();
+        int padding = SettingsRowBuilder.dp(this, 12);
+        LinearLayout panel = SettingsRowBuilder.vertical(this);
+        panel.setPadding(padding, padding, padding, padding);
+        panel.setBackgroundColor(SettingsUiPalette.from(this).surfaceRaised);
+        panel.setClickable(true);
+        panel.setFocusable(true);
+        panel.setFocusableInTouchMode(true);
+        SettingsRowBuilder.labelRow(this, panel, R.string.text_action_title, 0);
+        SettingsRowBuilder.labelRow(this, panel, R.string.text_action_provider_privacy, 2);
+        aiTextActionSettings = KeyboardPreferences.loadAiTextActionSettings(this);
+        LinearLayout providerRow = SettingsRowBuilder.horizontal(this);
+        android.widget.Button providerToggle = SettingsRowBuilder.weightedButton(
+                this, providerRow, R.string.text_action_provider_disabled, 0, 2,
+                view -> toggleTextActionProvider());
+        android.widget.Button timeoutToggle = SettingsRowBuilder.weightedButton(
+                this, providerRow, R.string.text_action_timeout_default, 2, 2,
+                view -> cycleTextActionProviderTimeout());
+        android.widget.Button targetToggle = SettingsRowBuilder.weightedButton(
+                this, providerRow, R.string.text_action_translate_target_ko, 2, 0,
+                view -> toggleTextActionTranslateTarget());
+        providerToggle.setText(textActionProviderToggleLabel());
+        timeoutToggle.setText(textActionProviderTimeoutLabel());
+        targetToggle.setText(textActionTranslateTargetLabel());
+        panel.addView(providerRow, SettingsRowBuilder.matchWrapWithTop(this, 4));
+
+        LinearLayout primaryRow = SettingsRowBuilder.horizontal(this);
+        android.widget.Button correct = SettingsRowBuilder.weightedButton(
+                this, primaryRow, R.string.text_action_correct, 0, 3,
+                view -> applyTextAction(TextAction.CORRECT));
+        android.widget.Button restore = SettingsRowBuilder.weightedButton(
+                this, primaryRow, R.string.text_action_restore, 3, 0,
+                view -> restoreOriginalTextAction());
+        restore.setEnabled(textActionTransaction != null);
+        panel.addView(primaryRow, SettingsRowBuilder.matchWrapWithTop(this, 6));
+
+        LinearLayout rewriteRow = SettingsRowBuilder.horizontal(this);
+        android.widget.Button polish = SettingsRowBuilder.weightedButton(
+                this, rewriteRow, R.string.text_action_polish, 0, 3,
+                view -> applyTextAction(TextAction.POLISH));
+        android.widget.Button shorter = SettingsRowBuilder.weightedButton(
+                this, rewriteRow, R.string.text_action_shorter, 3, 0,
+                view -> applyTextAction(TextAction.SHORTER));
+        panel.addView(rewriteRow, SettingsRowBuilder.matchWrapWithTop(this, 4));
+
+        LinearLayout toneRow = SettingsRowBuilder.horizontal(this);
+        android.widget.Button polite = SettingsRowBuilder.weightedButton(
+                this, toneRow, R.string.text_action_polite, 0, 3,
+                view -> applyTextAction(TextAction.POLITE));
+        android.widget.Button translate = SettingsRowBuilder.weightedButton(
+                this, toneRow, R.string.text_action_translate, 3, 0,
+                view -> applyTextAction(TextAction.TRANSLATE));
+        panel.addView(toneRow, SettingsRowBuilder.matchWrapWithTop(this, 4));
+        boolean providerReady = aiTextActionSettings.enabled && configuredTextActionProvider() != null;
+        polish.setEnabled(providerReady);
+        shorter.setEnabled(providerReady);
+        polite.setEnabled(providerReady);
+        translate.setEnabled(providerReady);
+
+        showTextActionOverlay(panel, correct);
+    }
+
+    private boolean textActionsAllowed() {
+        return editorPolicy.allowsTextActions(settings.remoteModeEnabled);
+    }
+
+    private void applyTextAction(TextAction action) {
+        if (action == null || action == TextAction.RESTORE_ORIGINAL || !textActionsAllowed()) {
+            return;
+        }
+        InputConnection inputConnection = getCurrentInputConnection();
+        if (inputConnection == null) {
+            return;
+        }
+        TextActionRange range = currentTextActionRange(inputConnection);
+        if (range == null) {
+            Toast.makeText(this, R.string.text_action_no_target, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        aiTextActionSettings = KeyboardPreferences.loadAiTextActionSettings(this);
+        if (action == TextAction.CORRECT && !aiTextActionSettings.enabled) {
+            applyTextActionReplacement(inputConnection, range, TextActionEngine.correct(range.text));
+            return;
+        }
+        startProviderTextAction(action, range);
+    }
+
+    private void applyTextActionReplacement(
+            InputConnection inputConnection,
+            TextActionRange range,
+            String replacement) {
+        TextActionTransaction transaction = TextActionTransaction.apply(
+                new InputConnectionTextActionEditor(inputConnection),
+                currentEditorPackageName,
+                range,
+                replacement);
+        if (transaction == null) {
+            Toast.makeText(this, R.string.text_action_no_change, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        textActionTransaction = transaction;
+        clearPendingProviderTextAction();
+        dismissTextActionPanel();
+        doubleSpacePeriodState.reset();
+        previousTextRepairState.reset();
+        qwertyInputAssistant.reset();
+    }
+
+    private TextActionProvider configuredTextActionProvider() {
+        if (!AiTextActionSettings.LOCAL_TEST_PROVIDER_ID.equals(aiTextActionSettings.providerId)) {
+            return null;
+        }
+        return new LocalTestTextActionProvider(textActionTaskScheduler());
+    }
+
+    private TextActionTaskScheduler textActionTaskScheduler() {
+        return (runnable, delayMs) -> {
+            mainHandler.postDelayed(runnable, Math.max(0L, delayMs));
+            return () -> mainHandler.removeCallbacks(runnable);
+        };
+    }
+
+    private void startProviderTextAction(TextAction action, TextActionRange range) {
+        TextActionProviderRequest.BuildResult built = TextActionProviderRequest.build(
+                action,
+                range,
+                editorPolicy,
+                settings.remoteModeEnabled,
+                aiTextActionSettings.enabled,
+                aiTextActionSettings.translateTargetLanguage);
+        if (built.error != null) {
+            showTextActionProviderError(built.error);
+            return;
+        }
+        cancelActiveProviderTextAction(false);
+        TextActionProvider provider = configuredTextActionProvider();
+        pendingProviderTextAction = new PendingProviderTextAction(
+                action,
+                range,
+                currentEditorPackageName,
+                built.request);
+        pendingProviderReplacement = null;
+        long requestId = ++textActionProviderRequestId;
+        showTextActionProviderLoading();
+        TextActionProviderClient client = new TextActionProviderClient(
+                provider,
+                textActionTaskScheduler(),
+                aiTextActionSettings.timeoutMs);
+        activeTextActionProviderOperation = client.start(
+                built.request,
+                result -> mainHandler.post(() -> handleTextActionProviderResult(requestId, result)));
+    }
+
+    private void handleTextActionProviderResult(long requestId, TextActionProviderResult result) {
+        if (requestId != textActionProviderRequestId) {
+            return;
+        }
+        activeTextActionProviderOperation = null;
+        if (result == null) {
+            showTextActionProviderError(TextActionProviderError.MALFORMED_RESULT);
+            return;
+        }
+        if (!result.succeeded()) {
+            if (result.error == TextActionProviderError.CANCELLED) {
+                clearPendingProviderTextAction();
+                dismissTextActionPanel();
+                return;
+            }
+            showTextActionProviderError(result.error);
+            return;
+        }
+        pendingProviderReplacement = result.text;
+        showTextActionProviderPreview();
+    }
+
+    private void showTextActionProviderLoading() {
+        LinearLayout panel = newTextActionPanel();
+        SettingsRowBuilder.labelRow(this, panel, R.string.text_action_provider_loading, 0);
+        android.widget.Button cancel = SettingsRowBuilder.buttonRow(
+                this,
+                panel,
+                R.string.text_action_cancel,
+                6,
+                view -> cancelProviderTextActionAndDismiss());
+        showTextActionOverlay(panel, cancel);
+    }
+
+    private void showTextActionProviderPreview() {
+        PendingProviderTextAction pending = pendingProviderTextAction;
+        if (pending == null || pendingProviderReplacement == null) {
+            showTextActionProviderError(TextActionProviderError.MALFORMED_RESULT);
+            return;
+        }
+        LinearLayout panel = newTextActionPanel();
+        SettingsRowBuilder.labelRow(this, panel, R.string.text_action_preview_title, 0);
+        panel.addView(textActionBody(getString(
+                R.string.text_action_preview_before,
+                pending.range.text)), SettingsRowBuilder.matchWrapWithTop(this, 4));
+        panel.addView(textActionBody(getString(
+                R.string.text_action_preview_after,
+                pendingProviderReplacement)), SettingsRowBuilder.matchWrapWithTop(this, 4));
+        LinearLayout actions = SettingsRowBuilder.horizontal(this);
+        android.widget.Button apply = SettingsRowBuilder.weightedButton(
+                this, actions, R.string.text_action_apply, 0, 3,
+                view -> applyProviderTextActionPreview());
+        SettingsRowBuilder.weightedButton(
+                this, actions, R.string.text_action_cancel, 3, 0,
+                view -> cancelProviderTextActionAndDismiss());
+        panel.addView(actions, SettingsRowBuilder.matchWrapWithTop(this, 6));
+        showTextActionOverlay(panel, apply);
+    }
+
+    private void showTextActionProviderError(TextActionProviderError error) {
+        LinearLayout panel = newTextActionPanel();
+        SettingsRowBuilder.labelRow(this, panel, R.string.text_action_provider_error_title, 0);
+        panel.addView(textActionBody(textActionProviderErrorLabel(error)),
+                SettingsRowBuilder.matchWrapWithTop(this, 4));
+        LinearLayout actions = SettingsRowBuilder.horizontal(this);
+        android.widget.Button retry = SettingsRowBuilder.weightedButton(
+                this, actions, R.string.text_action_retry, 0, 3,
+                view -> retryProviderTextAction());
+        SettingsRowBuilder.weightedButton(
+                this, actions, R.string.text_action_cancel, 3, 0,
+                view -> cancelProviderTextActionAndDismiss());
+        retry.setEnabled(pendingProviderTextAction != null);
+        panel.addView(actions, SettingsRowBuilder.matchWrapWithTop(this, 6));
+        showTextActionOverlay(panel, retry);
+    }
+
+    private void retryProviderTextAction() {
+        PendingProviderTextAction pending = pendingProviderTextAction;
+        if (pending == null || !textActionsAllowed()) {
+            cancelProviderTextActionAndDismiss();
+            return;
+        }
+        cancelActiveProviderTextAction(false);
+        pendingProviderReplacement = null;
+        long requestId = ++textActionProviderRequestId;
+        showTextActionProviderLoading();
+        TextActionProviderClient client = new TextActionProviderClient(
+                configuredTextActionProvider(),
+                textActionTaskScheduler(),
+                aiTextActionSettings.timeoutMs);
+        activeTextActionProviderOperation = client.start(
+                pending.request,
+                result -> mainHandler.post(() -> handleTextActionProviderResult(requestId, result)));
+    }
+
+    private void applyProviderTextActionPreview() {
+        PendingProviderTextAction pending = pendingProviderTextAction;
+        String replacement = pendingProviderReplacement;
+        InputConnection inputConnection = getCurrentInputConnection();
+        if (pending == null || replacement == null || inputConnection == null) {
+            showTextActionProviderError(TextActionProviderError.STALE_EDITOR);
+            return;
+        }
+        TextActionRange activeRange = currentTextActionRange(inputConnection);
+        if (!pending.targets(currentEditorPackageName, activeRange)) {
+            showTextActionProviderError(TextActionProviderError.STALE_EDITOR);
+            return;
+        }
+        applyTextActionReplacement(inputConnection, pending.range, replacement);
+    }
+
+    private void cancelProviderTextActionAndDismiss() {
+        cancelActiveProviderTextAction(true);
+        dismissTextActionPanel();
+    }
+
+    private void cancelActiveProviderTextAction(boolean clearPending) {
+        TextActionProviderClient.Operation operation = activeTextActionProviderOperation;
+        activeTextActionProviderOperation = null;
+        if (clearPending) {
+            textActionProviderRequestId++;
+        }
+        if (operation != null && !operation.isDone()) {
+            operation.cancel();
+        }
+        if (clearPending) {
+            clearPendingProviderTextAction();
+        }
+    }
+
+    private void clearPendingProviderTextAction() {
+        pendingProviderTextAction = null;
+        pendingProviderReplacement = null;
+    }
+
+    private LinearLayout newTextActionPanel() {
+        int padding = SettingsRowBuilder.dp(this, 12);
+        LinearLayout panel = SettingsRowBuilder.vertical(this);
+        panel.setPadding(padding, padding, padding, padding);
+        panel.setBackgroundColor(SettingsUiPalette.from(this).surfaceRaised);
+        panel.setClickable(true);
+        panel.setFocusable(true);
+        panel.setFocusableInTouchMode(true);
+        return panel;
+    }
+
+    private android.widget.TextView textActionBody(String text) {
+        android.widget.TextView view = new android.widget.TextView(this);
+        SettingsUiPalette palette = SettingsUiPalette.from(this);
+        view.setText(text == null ? "" : text);
+        view.setTextColor(palette.textPrimary);
+        view.setTextSize(14f);
+        view.setTextIsSelectable(false);
+        int padding = SettingsRowBuilder.dp(this, 8);
+        view.setPadding(padding, padding, padding, padding);
+        view.setBackgroundColor(palette.surface);
+        return view;
+    }
+
+    private void showTextActionOverlay(LinearLayout panel, View focusView) {
+        if (inputRoot == null || panel == null) {
+            return;
+        }
+        dismissTextActionPanel();
+        int margin = SettingsRowBuilder.dp(this, 12);
+        FrameLayout overlay = new FrameLayout(this);
+        overlay.setClickable(true);
+        overlay.setFocusable(true);
+        overlay.setOnClickListener(view -> cancelProviderTextActionAndDismiss());
+        FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM);
+        panelParams.setMargins(margin, margin, margin, margin);
+        overlay.addView(panel, panelParams);
+        textActionOverlayView = overlay;
+        inputRoot.addView(overlay, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        overlay.bringToFront();
+        if (focusView != null) {
+            focusView.requestFocus();
+        }
+        requestOverlayTouchableRegionUpdate();
+    }
+
+    private void toggleTextActionProvider() {
+        aiTextActionSettings = aiTextActionSettings.withEnabled(!aiTextActionSettings.enabled);
+        KeyboardPreferences.saveAiTextActionSettings(this, aiTextActionSettings);
+        cancelActiveProviderTextAction(true);
+        dismissTextActionPanel();
+        Toast.makeText(this, textActionProviderToggleLabel(), Toast.LENGTH_SHORT).show();
+    }
+
+    private void cycleTextActionProviderTimeout() {
+        int current = aiTextActionSettings.timeoutMs;
+        int next = current < 5000 ? 5000 : (current < 10000 ? 10000 : 3000);
+        aiTextActionSettings = aiTextActionSettings.withTimeoutMs(next);
+        KeyboardPreferences.saveAiTextActionSettings(this, aiTextActionSettings);
+        dismissTextActionPanel();
+        Toast.makeText(this, textActionProviderTimeoutLabel(), Toast.LENGTH_SHORT).show();
+    }
+
+    private void toggleTextActionTranslateTarget() {
+        String next = "ko".equals(aiTextActionSettings.translateTargetLanguage) ? "en" : "ko";
+        aiTextActionSettings = aiTextActionSettings.withTranslateTarget(next);
+        KeyboardPreferences.saveAiTextActionSettings(this, aiTextActionSettings);
+        dismissTextActionPanel();
+        Toast.makeText(this, textActionTranslateTargetLabel(), Toast.LENGTH_SHORT).show();
+    }
+
+    private String textActionProviderToggleLabel() {
+        return getString(aiTextActionSettings.enabled
+                ? R.string.text_action_provider_enabled
+                : R.string.text_action_provider_disabled);
+    }
+
+    private String textActionProviderTimeoutLabel() {
+        return getString(R.string.text_action_timeout_format, aiTextActionSettings.timeoutMs / 1000);
+    }
+
+    private String textActionTranslateTargetLabel() {
+        return getString("en".equals(aiTextActionSettings.translateTargetLanguage)
+                ? R.string.text_action_translate_target_en
+                : R.string.text_action_translate_target_ko);
+    }
+
+    private String textActionProviderErrorLabel(TextActionProviderError error) {
+        TextActionProviderError safe = error == null ? TextActionProviderError.FAILED : error;
+        switch (safe) {
+            case DISABLED:
+                return getString(R.string.text_action_error_disabled);
+            case DENIED:
+                return getString(R.string.text_action_error_denied);
+            case UNAVAILABLE:
+                return getString(R.string.text_action_error_unavailable);
+            case TIMEOUT:
+                return getString(R.string.text_action_error_timeout);
+            case CANCELLED:
+                return getString(R.string.text_action_error_cancelled);
+            case EMPTY_RESULT:
+                return getString(R.string.text_action_error_empty);
+            case MALFORMED_RESULT:
+                return getString(R.string.text_action_error_malformed);
+            case STALE_EDITOR:
+                return getString(R.string.text_action_error_stale);
+            case TOO_LARGE:
+                return getString(R.string.text_action_error_too_large);
+            default:
+                return getString(R.string.text_action_error_failed);
+        }
+    }
+
+    private void restoreOriginalTextAction() {
+        InputConnection inputConnection = getCurrentInputConnection();
+        TextActionTransaction transaction = textActionTransaction;
+        if (inputConnection != null && transaction != null
+                && transaction.restore(new InputConnectionTextActionEditor(inputConnection), currentEditorPackageName)) {
+            textActionTransaction = null;
+            dismissTextActionPanel();
+        }
+    }
+
+    private TextActionRange currentTextActionRange(InputConnection inputConnection) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            SurroundingText surrounding = inputConnection.getSurroundingText(512, 512, 0);
+            if (surrounding == null || surrounding.getText() == null) {
+                return null;
+            }
+            int offset = surrounding.getOffset();
+            return TextActionRange.resolve(surrounding.getText().toString(), offset,
+                    offset + surrounding.getSelectionStart(), offset + surrounding.getSelectionEnd());
+        }
+        ExtractedTextRequest request = new ExtractedTextRequest();
+        request.hintMaxChars = 1024;
+        request.hintMaxLines = 4;
+        ExtractedText extracted = inputConnection.getExtractedText(request, 0);
+        if (extracted == null || extracted.text == null || extracted.text.length() > 2048) {
+            return null;
+        }
+        return TextActionRange.resolve(extracted.text.toString(), extracted.startOffset,
+                extracted.startOffset + extracted.selectionStart,
+                extracted.startOffset + extracted.selectionEnd);
+    }
+
+    private void dismissTextActionPanel() {
+        if (inputRoot != null && textActionOverlayView != null) {
+            inputRoot.removeView(textActionOverlayView);
+            requestOverlayTouchableRegionUpdate();
+        }
+        textActionOverlayView = null;
+    }
+
+    private static final class InputConnectionTextActionEditor implements TextActionTransaction.Editor {
+        private final InputConnection inputConnection;
+
+        InputConnectionTextActionEditor(InputConnection inputConnection) {
+            this.inputConnection = inputConnection;
+        }
+
+        @Override
+        public boolean setSelection(int start, int end) {
+            return inputConnection.setSelection(start, end);
+        }
+
+        @Override
+        public boolean commitText(String text) {
+            return InputConnectionTextOperator.commitText(inputConnection, text);
+        }
+    }
+
     void showQuickSettings() {
         if (inputRoot == null) {
             return;
@@ -1519,7 +2103,6 @@ public final class S3KeyboardService extends InputMethodService {
             updateShiftStateView();
         }
         applyImeWindowBlur();
-        updateGlassBackdropCaptureState();
         if (watchRadialInputView != null) {
             watchRadialInputView.setSettings(settings);
         }
@@ -1534,6 +2117,7 @@ public final class S3KeyboardService extends InputMethodService {
                 KeyboardPreferences.loadTransparentOverlayInputEnabled(this);
         transparentOverlayStyle = KeyboardPreferences.loadTransparentOverlayStyle(this);
         watchRadialInputEnabled = KeyboardPreferences.loadWatchRadialInputEnabled(this);
+        aiTextActionSettings = KeyboardPreferences.loadAiTextActionSettings(this);
         if (transparentOverlayStyle == TransparentOverlayStyle.EXTREME_FLOATING) {
             dismissPreviewPopup();
         }
@@ -1549,19 +2133,8 @@ public final class S3KeyboardService extends InputMethodService {
             inputView.setTransparentOverlayStyle(transparentOverlayStyle);
         }
         updateInputSurfaceVisibility();
-        updateGlassBackdropCaptureState();
     }
 
-    private void updateGlassBackdropCaptureState() {
-        boolean active = inputView != null
-                && settings != null
-                && settings.visualEffects.usesLiveRefraction()
-                && GlassBackdropPreferences.isSourceEnabled(this)
-                && !editorPolicy.password
-                && !transparentOverlayInputEnabled
-                && !watchRadialInputEnabled;
-        GlassBackdropSourceStore.setConsumerActive(active);
-    }
 
     private boolean watchRadialInputActive() {
         return WatchRadialInputPolicy.isActive(
@@ -1617,11 +2190,12 @@ public final class S3KeyboardService extends InputMethodService {
 
     @Override
     public void onDestroy() {
-        GlassBackdropSourceStore.setConsumerActive(false);
+        cancelActiveProviderTextAction(true);
         mainHandler.removeCallbacksAndMessages(null);
         pendingVoiceInput = null;
         dismissPreviewPopup();
         dismissQuickSettings();
+        dismissTextActionPanel();
         removeClipboardListener();
         if (inputView != null) {
             inputView.flushLearningState();

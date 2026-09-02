@@ -4,9 +4,9 @@
   "author": "local",
   "metadata": {
     "tags": [
-      "depth",
       "gmkInspired",
-      "light"
+      "light",
+      "flat"
     ],
     "features": [
       "dingulRoleColors"
@@ -24,11 +24,11 @@
     "secondary": "#0AA29A"
   },
   "shape": {
-    "roundnessDp": 5,
+    "roundnessDp": 6,
     "borderWidthDp": 1,
     "keyGapDp": 5,
-    "depthEnabled": true,
-    "depthDp": 2
+    "depthEnabled": false,
+    "depthDp": 0
   },
   "additionalNumberRow": {
     "colorMode": "full_mod"
@@ -76,6 +76,25 @@
       "tintAlphaPercent": 86,
       "highlightPercent": 18,
       "borderAlphaPercent": 42
-    }
+    },
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "keyFaceGradient": {
+      "enabled": false,
+      "strengthPercent": 0,
+      "startColor": "#FFFFFF",
+      "endColor": "#7C8D93",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false
+    },
+    "materialStyle": "solid"
   }
 }

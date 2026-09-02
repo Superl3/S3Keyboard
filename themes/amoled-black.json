@@ -29,11 +29,11 @@
     "secondary": "#A7A7A7"
   },
   "shape": {
-    "roundnessDp": 6,
-    "keyGapDp": 5,
+    "roundnessDp": 5,
+    "keyGapDp": 4,
     "depthEnabled": false,
     "depthDp": 0,
-    "borderWidthDp": 1
+    "borderWidthDp": 0
   },
   "additionalNumberRow": {
     "colorMode": "full_mod"
@@ -70,6 +70,25 @@
       "tintAlphaPercent": 86,
       "highlightPercent": 18,
       "borderAlphaPercent": 42
-    }
+    },
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "keyFaceGradient": {
+      "enabled": false,
+      "strengthPercent": 0,
+      "startColor": "#FFFFFF",
+      "endColor": "#303030",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false
+    },
+    "materialStyle": "solid"
   }
 }

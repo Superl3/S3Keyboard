@@ -174,7 +174,7 @@ function Get-MaterialStyle {
         return "solid"
     }
     $explicit = [string]$effects.materialStyle
-    if ($explicit -in @("solid", "soft_keycap", "frosted", "acrylic", "experimental_refraction")) {
+    if ($explicit -in @("solid", "soft_keycap", "frosted", "acrylic")) {
         return $explicit
     }
     if (($null -ne $effects.glass -and (Get-ThemeBool $effects.glass.enabled $false)) -or
@@ -192,12 +192,12 @@ function Get-MaterialStyle {
 
 function Test-GlassMaterial {
     param([object] $Theme)
-    return (Get-MaterialStyle -Theme $Theme) -in @("frosted", "experimental_refraction")
+    return (Get-MaterialStyle -Theme $Theme) -eq "frosted"
 }
 
 function Test-MaterialRequiresPedestal {
     param([object] $Theme)
-    return (Get-MaterialStyle -Theme $Theme) -in @("soft_keycap", "frosted", "acrylic")
+    return (Get-MaterialStyle -Theme $Theme) -eq "soft_keycap"
 }
 
 function Get-KeyFaceGradientStrength {
@@ -230,9 +230,6 @@ function Get-KeyFaceGradientEndColor {
 function Get-KeyFaceGradientCurve {
     param([object] $Theme)
     $material = Get-MaterialStyle -Theme $Theme
-    if ($material -eq "experimental_refraction") {
-        return "glass"
-    }
     if ($material -eq "frosted") {
         return "soft"
     }
@@ -302,14 +299,8 @@ function New-KeyFaceBrush {
     $depthDp = Get-ThemeInt $Theme.shape.depthDp 0
     $gradientEnabled = Get-KeyFaceGradientEnabled -Theme $Theme
     $strength = Get-KeyFaceGradientStrength -Theme $Theme
-    $glass = if ($null -ne $Theme.effects) { $Theme.effects.glass } else { $null }
     $material = Get-MaterialStyle -Theme $Theme
-    $experimental = $material -eq "experimental_refraction"
-    if ($experimental) {
-        $glassStrength = [Math]::Round((Get-ThemeInt $glass.highlightPercent 18) * 100.0 / 60.0)
-        $strength = [Math]::Max($strength, $glassStrength)
-    }
-    $drawGradient = $experimental -or ($material -ne "solid" -and $gradientEnabled -and $strength -gt 0)
+    $drawGradient = $material -ne "solid" -and $gradientEnabled -and $strength -gt 0
     if (-not $drawGradient) {
         return [System.Drawing.SolidBrush]::new($Fill)
     }
@@ -2493,12 +2484,38 @@ function Draw-KeyHints {
     }
 }
 
+function Get-ShapeGapReference {
+    param([object] $Theme, [string] $Layout)
+    $shape = $Theme.shape
+    $fallback = [Math]::Max(0, [int]$shape.keyGapDp)
+    if ($Layout -eq "qwerty" -and $null -ne $shape.englishKeyGapDp) {
+        return [Math]::Max(0, [int]$shape.englishKeyGapDp)
+    }
+    if ($Layout -eq "dingul" -and $null -ne $shape.hangulKeyGapDp) {
+        return [Math]::Max(0, [int]$shape.hangulKeyGapDp)
+    }
+    return $fallback
+}
+
+function Get-ProportionalShapeGap {
+    param([float] $ReferenceGap, [float] $W, [float] $H)
+    if ($ReferenceGap -le 0 -or $W -le 0 -or $H -le 0) { return 0.0 }
+    $requested = [Math]::Sqrt($W * $H) * $ReferenceGap / 50.0
+    return [Math]::Min($requested, [Math]::Min($W, $H) * 0.42)
+}
+
+function Get-ProportionalShapeRadius {
+    param([object] $Theme, [float] $W, [float] $H)
+    $short = [Math]::Max(0.0, [Math]::Min($W, $H))
+    $ratio = [Math]::Max(0, [int]$Theme.shape.roundnessDp) / 50.0
+    return [Math]::Min($short * 0.5, $short * $ratio)
+}
+
 function Draw-QwertySample {
     param([System.Drawing.Graphics] $Graphics, [object] $Theme, [float] $X, [float] $Y, [float] $W, [float] $H)
     Draw-KeyboardBackground -Graphics $Graphics -Theme $Theme -X $X -Y $Y -W $W -H $H
 
-    $radius = [Math]::Max(0, [int]$Theme.shape.roundnessDp) * 2.1
-    $gap = [Math]::Max(0, [int]$Theme.shape.keyGapDp) * 1.55
+    $gapReference = Get-ShapeGapReference -Theme $Theme -Layout "qwerty"
     $leftPadding = 0
     $rightPadding = 0
     $bottomPadding = 0
@@ -2508,6 +2525,8 @@ function Draw-QwertySample {
     try {
         $rowH = ($H - 40 - $bottomPadding - $bottomRowTopPadding) / 5
         $unit = ($W - 36 - $leftPadding - $rightPadding) / 20
+        $gap = Get-ProportionalShapeGap -ReferenceGap $gapReference -W (2 * $unit) -H $rowH
+        $radius = Get-ProportionalShapeRadius -Theme $Theme -W ([Math]::Max(1, 2 * $unit - $gap)) -H ([Math]::Max(1, $rowH - $gap))
         $startX = $X + 18 + $leftPadding
         $rowY = $Y + 18
         $rowIndex = 0
@@ -2588,8 +2607,7 @@ function Draw-DingulSample {
     param([System.Drawing.Graphics] $Graphics, [object] $Theme, [float] $X, [float] $Y, [float] $W, [float] $H)
     Draw-KeyboardBackground -Graphics $Graphics -Theme $Theme -X $X -Y $Y -W $W -H $H
 
-    $radius = [Math]::Max(0, [int]$Theme.shape.roundnessDp) * 2.1
-    $gap = [Math]::Max(0, [int]$Theme.shape.keyGapDp) * 1.55
+    $gapReference = Get-ShapeGapReference -Theme $Theme -Layout "dingul"
     $leftPadding = 0
     $rightPadding = 0
     $mainSpecialGap = 8 * 1.55
@@ -2600,6 +2618,8 @@ function Draw-DingulSample {
     try {
         $rowH = ($H - 32 - $bottomPadding - $bottomRowTopPadding) / 5
         $unit = ($W - 36 - $leftPadding - $rightPadding - $mainSpecialGap) / 300
+        $gap = Get-ProportionalShapeGap -ReferenceGap $gapReference -W (86 * $unit) -H $rowH
+        $radius = Get-ProportionalShapeRadius -Theme $Theme -W ([Math]::Max(1, 86 * $unit - $gap)) -H ([Math]::Max(1, $rowH - $gap))
         $bottomUnit = ($W - 36 - $leftPadding - $rightPadding) / 300
         $startX = $X + 18 + $leftPadding
         $rowY = $Y + 16

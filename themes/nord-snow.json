@@ -9,8 +9,8 @@
       "showBeginnerTooltipPreview": true
     },
     "tags": [
-      "depth",
-      "light"
+      "light",
+      "flat"
     ],
     "features": [
       "dingulRoleColors",
@@ -29,10 +29,10 @@
     "secondary": "#667085"
   },
   "shape": {
-    "roundnessDp": 7,
+    "roundnessDp": 6,
     "keyGapDp": 5,
-    "depthEnabled": true,
-    "depthDp": 2,
+    "depthEnabled": false,
+    "depthDp": 0,
     "borderWidthDp": 1
   },
   "additionalNumberRow": {
@@ -70,6 +70,25 @@
       "tintAlphaPercent": 86,
       "highlightPercent": 18,
       "borderAlphaPercent": 42
-    }
+    },
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "keyFaceGradient": {
+      "enabled": false,
+      "strengthPercent": 0,
+      "startColor": "#FFFFFF",
+      "endColor": "#B8C2CC",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false
+    },
+    "materialStyle": "solid"
   }
 }

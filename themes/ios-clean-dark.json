@@ -31,22 +31,22 @@
     "secondary": "#B8BEC8"
   },
   "shape": {
-    "roundnessDp": 8,
-    "keyGapDp": 5,
+    "roundnessDp": 9,
+    "keyGapDp": 4,
     "depthEnabled": false,
     "depthDp": 0,
-    "borderWidthDp": 1
+    "borderWidthDp": 0
   },
   "additionalNumberRow": {
     "colorMode": "full_mod"
   },
   "typography": {
     "fontFamily": "noto_sans_kr",
-    "primaryTextSizePercent": 78,
-    "secondaryTextSizePercent": 80,
+    "primaryTextSizePercent": 80,
+    "secondaryTextSizePercent": 72,
     "primaryTextBold": false,
     "primaryTextItalic": false,
-    "secondaryTextBold": true,
+    "secondaryTextBold": false,
     "secondaryTextItalic": false
   },
   "dingulColors": {
@@ -72,6 +72,25 @@
       "tintAlphaPercent": 86,
       "highlightPercent": 18,
       "borderAlphaPercent": 42
-    }
+    },
+    "blur": {
+      "enabled": false,
+      "radiusDp": 0
+    },
+    "metal": {
+      "enabled": false,
+      "strengthPercent": 0
+    },
+    "keyFaceGradient": {
+      "enabled": false,
+      "strengthPercent": 0,
+      "startColor": "#FFFFFF",
+      "endColor": "#202328",
+      "curve": "soft"
+    },
+    "panelGradient": {
+      "enabled": false
+    },
+    "materialStyle": "solid"
   }
 }

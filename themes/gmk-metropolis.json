@@ -5,16 +5,13 @@
   "metadata": {
     "tags": [
       "dark",
-      "depth",
-      "gmkInspired",
-      "metal"
+      "flat",
+      "gmkInspired"
     ],
     "features": [
       "angularPreviewBubble",
-      "blurEffect",
       "dingulRoleColors",
       "heavyPerKeyOverrides",
-      "metalEffect",
       "modifierIconPack"
     ]
   },
@@ -30,11 +27,11 @@
     "secondary": "#FFB000"
   },
   "shape": {
-    "roundnessDp": 5,
+    "roundnessDp": 6,
     "borderWidthDp": 1,
     "keyGapDp": 5,
-    "depthEnabled": true,
-    "depthDp": 2
+    "depthEnabled": false,
+    "depthDp": 0
   },
   "additionalNumberRow": {
     "colorMode": "full_mod"
@@ -53,21 +50,32 @@
   },
   "effects": {
     "blur": {
-      "enabled": true,
-      "radiusDp": 10
+      "enabled": false,
+      "radiusDp": 0
     },
     "glass": {
-      "enabled": true,
+      "enabled": false,
       "tintAlphaPercent": 86,
       "highlightPercent": 18,
       "borderAlphaPercent": 42
     },
     "metal": {
-      "enabled": true,
-      "strengthPercent": 22
+      "enabled": false,
+      "strengthPercent": 0
     },
     "previewBubble": {
       "style": "angular"
+    },
+    "keyFaceGradient": {
+      "enabled": false,
+      "strengthPercent": 0,
+      "startColor": "#FFFFFF",
+      "endColor": "#05070A",
+      "curve": "soft"
+    },
+    "materialStyle": "solid",
+    "panelGradient": {
+      "enabled": false
     }
   },
   "keyTextColorOverrides": {
