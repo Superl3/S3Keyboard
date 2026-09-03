@@ -8,6 +8,14 @@ unified Text Tools, versioned backup/restore, managed themes, productized Window
 remote-mode controls, release-safe diagnostics/privacy controls, and English QWERTY
 tap-typing assistance for typo suggestions, quick punctuation, and word-level editing.
 
+## Screenshots and visual tour
+
+A detailed visual walkthrough based on verified emulator captures is available in
+[`docs/visual-showcase.md`](docs/visual-showcase.md). It covers theme management,
+text actions, Text Tools, QWERTY/Dingul visual structure, and Windows Remote mode.
+
+![Theme selector](docs/images/theme-selector.png)
+
 ## Setup
 
 ```powershell
@@ -33,6 +41,14 @@ The debug APK is produced at:
 ```text
 app\build\outputs\apk\debug\app-debug.apk
 ```
+
+To create the GitHub-installable beta package used for prereleases:
+
+```powershell
+rtk powershell -ExecutionPolicy Bypass -File .\scripts\build-installable-beta.ps1
+```
+
+This package is signed with the Android debug key so it can be installed directly for testing. It is not the production/Play signing identity.
 
 For a closed-beta release build, provide signing properties outside source control and run:
 

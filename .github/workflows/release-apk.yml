@@ -1,4 +1,4 @@
-name: Release APK
+name: Installable APK Release
 
 on:
   push:
@@ -15,7 +15,6 @@ env:
 jobs:
   release:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,20 +28,28 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Make Gradle wrapper executable
-        run: chmod +x ./gradlew
+      - name: Build installable beta APK
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          VERSION_NAME="${GITHUB_REF_NAME#v}"
+          ./gradlew --no-daemon assembleDebug -PS3_VERSION_NAME="$VERSION_NAME" -PS3_VERSION_CODE="$GITHUB_RUN_NUMBER"
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/new-dingul-${VERSION_NAME}-installable.apk"
 
-      - name: Build release APK
-        run: ./gradlew --no-daemon assembleRelease
-
-      - name: Upload release APK artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: s3keyboard-release-apk
-          path: app/build/outputs/apk/release/*.apk
+          name: new-dingul-installable-apk
+          path: dist/*.apk
 
       - name: Attach APK to GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/*.apk
+          prerelease: true
+          files: dist/*.apk
+          body: |
+            Installable beta build signed with the Android debug key.
+            See docs/visual-showcase.md and docs/feature-catalog.md for the current feature set.
+            Production/Play signing remains separate and requires the closed-beta keystore.

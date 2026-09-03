@@ -17,4 +17,7 @@ docs/*
 !docs/feature-audit.md
 !docs/adaptive-next-key-touch-plan.md
 !docs/agent-handoff-current.md
+!docs/visual-showcase.md
+!docs/images/
+!docs/images/**
 !docs/roadmap-2026-09/
