@@ -12,6 +12,6 @@ For every new implementation session:
 8. Update both the master ledger and `docs/agent-handoff-current.md` with exact tests/artifacts/blockers.
 9. Stop at the session boundary unless the user explicitly asks to continue into the next session.
 
-Current next session at roadmap creation: **S01 - `01-enter-text-actions.md`**.
+This roadmap is complete: **S01-S09 are DONE**.
 
-A future agent must not infer completion from source presence. Completion requires the session's specified automatic and runtime evidence.
+The next independent workstream is the UI stabilization roadmap at `docs/ui-stabilization-2026-09/README.md`. A future agent must not reopen S01-S09 unless a regression is directly traced to that completed work.

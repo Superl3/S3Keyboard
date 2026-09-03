@@ -13,6 +13,15 @@ Base HEAD when this work started: `1cbcfb7`
 4. Treat this file as the canonical rolling handoff; update it before ending a session.
 5. Keep automatic verification and runtime/manual verification separate in reports.
 
+## Current workstream — UI stabilization
+
+The 2026-09 S01-S09 product-expansion roadmap and installable beta publishing work are treated as complete. Do not reopen them as unfinished work.
+
+New canonical entry point: `docs\ui-stabilization-2026-09\README.md`.
+Current next session: **SUI01 — baseline capture inventory**.
+
+This workstream is intentionally conservative: capture every meaningful view first, classify objective anomalies, and change only `FIX/BLOCKER` items. The unwanted clipboard-looking IME top bar is a priority observation for SUI01 and repair target for SUI02 once its runtime cause is established. Broad aesthetic redesign is out of scope.
+
 ## Hard constraints
 
 - Do not alter input arrays, Hangul automata, touch hit-testing, or one-hand input behavior as part of theme stabilization.

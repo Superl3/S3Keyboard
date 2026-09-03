@@ -21,3 +21,4 @@ docs/*
 !docs/images/
 !docs/images/**
 !docs/roadmap-2026-09/
+!docs/ui-stabilization-2026-09/
