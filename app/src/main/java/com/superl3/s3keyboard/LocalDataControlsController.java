@@ -56,21 +56,31 @@ final class LocalDataControlsController {
         RemoteCompatibilityLog.clear(context);
     }
 
+    void resetDiagnosticsAndInputLearning() {
+        ReleaseSafeDiagnostics.clear(context);
+        TouchBiasStore.reset(context);
+    }
+
     void clearAllLocalData() {
         clearClipboardHistory();
+        new TextToolsStore(context).clear();
         resetTouchCorrectionAndInputLogs();
+        ReleaseSafeDiagnostics.clear(context);
         clearRemoteCompatibilityLog();
     }
 
     static String[] managedLocalDataKeys() {
         return new String[] {
                 ClipboardStore.KEY_ENTRIES,
+                ClipboardStore.KEY_ENTRIES_V2,
+                TextToolsStore.KEY_DATA_V1,
                 TouchBiasStore.TOUCH_BIAS_STATS,
                 TouchBiasStore.TYPING_PATTERN_LOG,
                 TouchBiasStore.TYPING_EVENT_JOURNAL,
                 TouchBiasStore.NEXT_KEY_TOUCH_MODEL,
                 TouchBiasStore.DINGUL_TOUCH_PROFILE,
                 TouchBiasStore.LEARNING_EPOCH_MARKER,
+                ReleaseSafeDiagnostics.KEY_STATE_V1,
                 RemoteCompatibilityLog.KEY_ENTRIES
         };
     }

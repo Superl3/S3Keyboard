@@ -10,14 +10,14 @@ final class AppInputProfileResolver {
             boolean remoteModeRequested) {
         EditorInputPolicy policy = RuntimeDefaults.editorInputPolicy(basePolicy);
         String normalizedPackage = AppPackageCatalog.normalizePackageName(packageName);
-        if (remoteModeRequested) {
-            return AppInputProfileCatalog.remote(normalizedPackage);
-        }
         if (policy.password) {
             return AppInputProfileCatalog.password();
         }
-        if (policy.numberLike) {
+        if (policy.numberLike || policy.rawKeyInput) {
             return AppInputProfileCatalog.number();
+        }
+        if (remoteModeRequested) {
+            return AppInputProfileCatalog.remote(normalizedPackage);
         }
         if (policy.uriLike) {
             return AppInputProfileCatalog.url();

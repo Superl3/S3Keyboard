@@ -1,5 +1,7 @@
 # S03 - App Profiles and State Indicators
 
+Status: **DONE** (2026-09-02 KST)
+
 ## Read first
 - `docs/agent-workflow.md`, `docs/agent-handoff-current.md`
 - `docs/roadmap-2026-09/00-master-plan.md`
@@ -26,3 +28,22 @@
 
 ## Done gate
 Automatic checks + real-app runtime evidence pass. Mark S03=DONE and update handoff.
+## Completion evidence
+- Added versioned per-app override JSON with legacy package-list compatibility and safe auto defaults.
+- Per-app controls cover language, number row, composing, text conveniences, and Remote; per-app reset and global clear are available from quick settings.
+- Resolver precedence is now built-in editor/app policy -> per-app override -> hard password/number/raw restrictions. Per-app `remote=false` can suppress stored/auto Remote for that app.
+- Runtime indicator is a separate non-touch-obscuring row and reports effective language/layout plus active Remote/Caps/one-finger states only.
+- Focused S03 resolver/schema tests pass, including JSON round-trip, Remote on/off, language/number-row overrides, and sensitive-field precedence.
+- Final `scripts/check.ps1` -> PASS: `testDebugUnitTest`, `lintDebug`, `assembleDebug`, theme validation/material/settings audits; `git diff --check` -> PASS before documentation-only edits.
+
+## Runtime evidence
+- Canonical synthetic/real-app matrix: `captures\s03-app-profiles-20260902-runtime`.
+- Synthetic password and number fields keep their hard restrictions; password shows `EN · QWERTY` with forced number row, and number uses the numeric surface without unsafe Remote promotion.
+- Real Google Messages recipient `ContactSearchField`: `messages-recipient-ime.png` shows the effective `EN · QWERTY` state for that phone/email-style field.
+- Real Chrome `com.android.chrome:id/url_bar`: `chrome-url-focused-hangul-stored.png` shows `EN · QWERTY` even when the stored keyboard mode was temporarily Hangul, proving URL/browser field policy wins.
+- Remote auto entry/exit evidence: `captures\s03-app-profiles-20260902-remote-auto\remote-standard-active.png` shows `EN · QWERTY · Remote` and Remote keys in an auto-matched standard field; `remote-exit-chrome.png` immediately after leaving that package shows `EN · QWERTY` with no Remote state leakage.
+- The same Remote-auto test kept password/number fields out of Remote; `field-password.png` and `field-number.png` are the pass frames.
+- Test-only AVD preference edits were restored afterward to `keyboard_mode_last=english` and `remote_mode_enabled=false`.
+- `uiautomator` intermittently returned a null root on this AVD; the smoke harness now retries dumps and validates screenshot pulls instead of treating a transient first failure as an app failure.
+
+The Done gate is satisfied. The next roadmap session is S04 `04-text-tools.md`.

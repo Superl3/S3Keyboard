@@ -1,0 +1,17 @@
+{
+  "appVersion": "0.0-test",
+  "generatedAt": "2026-08-01T00:00:00Z",
+  "settings": {
+    "haptic_feedback_enabled": false,
+    "show_english_number_row": true
+  },
+  "appProfiles": {
+    "app_profile_overrides_json": "{\"version\":1,\"apps\":{}}"
+  },
+  "textTools": {
+    "reserved_tap_text": "legacy phrase"
+  },
+  "localPreferences": {
+    "clipboard_history_enabled": true
+  }
+}

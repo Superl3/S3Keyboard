@@ -25,3 +25,8 @@
 
 ## Done gate
 Round-trip and migration evidence pass. Mark S05=DONE and update handoff.
+## Completion — 2026-09-03 KST
+- State: **DONE**.
+- Versioned envelope, migration, pre-apply validation, atomic/selective restore and sensitive exclusions are covered by the current unit suite.
+- Runtime evidence: `captures\s05-backup-restore-20260903-runtime`, including export, restore preview, full/selective preference comparison and malformed-backup rejection.
+- Clipboard history/provider credentials remain excluded by the portable backup contract unless explicitly supported by a safe section.

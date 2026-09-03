@@ -13,10 +13,9 @@ final class KeyDisplayOverrideResolver {
             return null;
         }
         if (settings.remoteModeEnabled) {
-            KeyDisplayOverride remoteOverride = remoteModeOverride(key);
-            if (remoteOverride != null) {
-                return remoteOverride;
-            }
+            // Remote mode is a transport surface first. Decorative theme overrides must
+            // not replace PC legends while the remote profile is active.
+            return remoteModeOverride(key);
         }
 
         Map<String, KeyDisplayOverride> packOverrides =

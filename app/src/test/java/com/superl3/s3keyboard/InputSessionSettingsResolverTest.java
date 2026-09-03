@@ -148,6 +148,66 @@ public final class InputSessionSettingsResolverTest {
     }
 
     @Test
+    public void perAppOverrideCanSuppressStoredRemoteMode() {
+        KeyboardSettings stored = KeyboardSettings.defaults()
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+        AppInputProfileOverrides overrides = AppInputProfileOverrides.EMPTY.withOverride(
+                "com.example.notes",
+                AppInputProfileOverride.AUTO.withRemoteMode(Boolean.FALSE));
+
+        InputSessionSettings session = InputSessionSettingsResolver.resolve(
+                textInfo("com.example.notes"), stored, false, overrides, "Send");
+
+        assertFalse(session.runtimeSettings.remoteModeEnabled);
+        assertFalse(session.remoteModeAutoActivated);
+        assertEquals("standard", session.appInputProfile.id);
+    }
+
+
+    @Test
+    public void perAppLanguageAndNumberRowOverrideBuiltInBrowserProfile() {
+        KeyboardSettings stored = KeyboardSettings.defaults()
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withEnglishNumberRow(true);
+        AppInputProfileOverrides overrides = AppInputProfileOverrides.EMPTY.withOverride(
+                "com.android.chrome",
+                AppInputProfileOverride.AUTO
+                        .withKeyboardMode(KeyboardMode.HANGUL)
+                        .withNumberRowVisible(Boolean.FALSE));
+
+        InputSessionSettings session = InputSessionSettingsResolver.resolve(
+                textInfo("com.android.chrome"), stored, false, overrides, "Go");
+
+        assertEquals("browser_search", session.appInputProfile.id);
+        assertEquals(KeyboardMode.HANGUL, session.runtimeSettings.keyboardMode);
+        assertFalse(session.editorPolicy.preferAsciiLayout);
+        assertFalse(session.runtimeSettings.showNumberRow);
+    }
+
+    @Test
+    public void passwordHardRestrictionWinsOverEveryPerAppOverride() {
+        KeyboardSettings stored = KeyboardSettings.defaults()
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+        EditorInfo info = textInfo("com.example.login");
+        info.inputType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD;
+        AppInputProfileOverrides overrides = AppInputProfileOverrides.EMPTY.withOverride(
+                "com.example.login",
+                new AppInputProfileOverride(
+                        KeyboardMode.HANGUL, Boolean.FALSE, Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
+
+        InputSessionSettings session = InputSessionSettingsResolver.resolve(
+                info, stored, true, overrides, "Done");
+
+        assertEquals("password", session.appInputProfile.id);
+        assertFalse(session.runtimeSettings.remoteModeEnabled);
+        assertEquals(KeyboardMode.ENGLISH, session.runtimeSettings.keyboardMode);
+        assertTrue(session.runtimeSettings.showNumberRow);
+        assertFalse(session.editorPolicy.allowComposingText);
+        assertFalse(session.editorPolicy.allowTextConveniences);
+    }
+
+
+    @Test
     public void enterActionAndLabelAreCarriedIntoRuntimeSettings() {
         KeyboardSettings stored = KeyboardSettings.defaults();
         EditorInfo info = textInfo("com.example.search");

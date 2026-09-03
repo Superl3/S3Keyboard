@@ -2284,9 +2284,9 @@ public final class ProductionReadinessConfigTest {
         assertTrue(controller.contains("new ClipboardView("));
         assertTrue(controller.contains("new ClipboardStore("));
         assertTrue(controller.contains("createClipboardButton()"));
-        assertTrue(controller.contains("ClipboardPanelAccess.resolve("));
-        assertTrue(controller.contains("R.string.clipboard_history_disabled"));
-        assertTrue(controller.contains("R.string.clipboard_secure_field"));
+        assertTrue(controller.contains("TextToolsPolicy.allows("));
+        assertTrue(controller.contains("R.string.text_tools_sensitive_field"));
+        assertTrue(controller.contains("TextToolsStore"));
         assertFalse(controller.contains("createDragHandle()"));
         assertFalse(controller.contains("createRemoteIndicator()"));
         assertFalse(controller.contains("TypedValue.applyDimension("));
@@ -2362,10 +2362,11 @@ public final class ProductionReadinessConfigTest {
 
         assertFalse(service.contains("TODO"));
         assertTrue(service.contains("R.string.voice_input_unavailable"));
-        assertTrue(clipboardPanel.contains("R.string.clipboard_history_disabled"));
-        assertTrue(clipboardPanel.contains("R.string.clipboard_secure_field"));
+        assertTrue(clipboardPanel.contains("R.string.text_tools_sensitive_field"));
+        assertTrue(clipboardPanel.contains("TextToolsPolicy.allows("));
         assertTrue(service.contains("R.string.undo_unavailable"));
-        assertTrue(clipboardPanel.contains("ClipboardPanelAccess.resolve("));
+        assertFalse(clipboardPanel.contains("ClipboardPanelAccess.resolve("));
+        assertTrue(clipboardPanel.contains("TextToolsPolicy.allows("));
         assertTrue(clipboardAccess.contains("enum Result"));
         int clipboardCommitMethod = service.indexOf("private void commitClipboardText(String text)");
         int finishComposition = service.indexOf("commitCurrent(inputConnection);", clipboardCommitMethod);
@@ -3490,15 +3491,15 @@ public final class ProductionReadinessConfigTest {
         assertTrue(settingsRowBuilder.contains("static FrameLayout.LayoutParams frameMatchMatch()"));
         assertTrue(settingsRowBuilder.contains("static RadioButton radioButton(Context context, int id, int labelResId)"));
         assertTrue(clipboardView.contains("Consumer<String> onTextSelected"));
-        assertTrue(clipboardView.contains("SettingsRowBuilder.button(context, R.string.action_close,"));
+        assertTrue(clipboardView.contains("R.string.action_close"));
         assertTrue(clipboardView.contains("SettingsRowBuilder.label("));
         assertTrue(clipboardView.contains("SettingsRowBuilder.secondaryLabel("));
         assertTrue(clipboardView.contains("SettingsRowBuilder.dp("));
-        assertTrue(clipboardView.contains("SettingsRowBuilder.vertical(context)"));
-        assertTrue(clipboardView.contains("SettingsRowBuilder.horizontal(context)"));
+        assertTrue(clipboardView.contains("SettingsRowBuilder.vertical(getContext())"));
+        assertTrue(clipboardView.contains("SettingsRowBuilder.horizontal(getContext())"));
         assertTrue(clipboardView.contains("private LinearLayout createHeader("));
-        assertTrue(clipboardView.contains("private TextView createEmptyText()"));
-        assertTrue(clipboardView.contains("private TextView createEntryItem("));
+        assertTrue(clipboardView.contains("private void addSavedItems()"));
+        assertTrue(clipboardView.contains("private void addRecentClipboard()"));
         assertFalse(clipboardView.contains("OnTextSelectedListener"));
         assertFalse(clipboardView.contains("private LinearLayout createHeader(Context context)"));
         assertFalse(clipboardView.contains("new Button("));

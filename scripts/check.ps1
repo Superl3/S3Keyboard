@@ -3,6 +3,8 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "env.ps1")
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
+Push-Location $Root
+try {
 $TextFiles = @(
     Get-ChildItem -Path (Join-Path $Root "app\src\main"), (Join-Path $Root "docs") `
         -Recurse -File -Include *.java, *.xml, *.md
@@ -34,4 +36,8 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 & (Join-Path $Root "gradlew.bat") --no-daemon testDebugUnitTest lintDebug assembleDebug
-exit $LASTEXITCODE
+$exitCode = $LASTEXITCODE
+} finally {
+    Pop-Location
+}
+exit $exitCode

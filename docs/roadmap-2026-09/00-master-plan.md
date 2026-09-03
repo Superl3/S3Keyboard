@@ -1,6 +1,6 @@
 # Product Expansion Master Plan
 
-Updated: 2026-09-02 KST
+Updated: 2026-09-03 KST
 Repository: `C:\Users\bug95\Documents\Codex\2026-05-19\mimic-apk-ux`
 
 ## Goal
@@ -38,13 +38,13 @@ Turn the stabilized keyboard into a polished product without destabilizing Dingu
 |---|---|---|
 | S01 | DONE | local text actions + exact restore pass; real IME matrix passed on fresh `hangul_gesture_s01` / `emulator-5558`, including sentence/selection scope, cursor/selection restore, password/number/remote blocking, Enter tap/long-press/slide regression |
 | S02 | DONE | provider abstraction + privacy/failure pass; fake-provider tests (success/timeout/cancel/malformed/unavailable/sensitive denial/payload cap) pass; real IME matrix passed on `emulator-5558` with the on-device test provider: provider-off local correct, polish/shorter/polite/translate/correct preview -> Apply, failure/cancel/timeout leave editor unchanged, password/number/remote blocked, timeout/translate-target config; evidence `captures\s02-ai-provider-20260902-runtime` |
-| S03 | TODO | app override + state UI runtime pass |
-| S04 | TODO | text tools insertion + sensitive-field pass |
-| S05 | TODO | round-trip + migration pass |
-| S06 | TODO | management UX + preview parity pass |
-| S07 | TODO | remote preset/state runtime pass |
-| S08 | TODO | redacted report + privacy docs pass |
-| S09 | TODO | full checks + runtime matrix + release/commit gate |
+| S03 | DONE | versioned per-app overrides + precedence/state UI pass; full checks PASS; real Chrome URL + Google Messages field evidence; password/number hard restrictions pass; Remote auto enter/exit without leakage; evidence `captures\s03-app-profiles-20260902-runtime`, `captures\s03-app-profiles-20260902-remote-auto` |
+| S04 | DONE | unified Text Tools ordering/pin/edit/delete + sensitive-field suppression pass; runtime evidence `captures\s04-runtime` |
+| S05 | DONE | versioned atomic backup/restore, migration, selective restore, malformed-file safety pass; runtime evidence `captures\s05-backup-restore-20260903-runtime` |
+| S06 | DONE | 42-theme management filters/favorites/recent/system pairing/A-B path pass; selector runtime evidence `captures\s06-theme-management-20260903-runtime` |
+| S07 | DONE | remote app families + compact nav toolbar + explicit modifier 1x/LOCK/Clear Mods + display-override bypass pass; 798 unit tests and AVD smoke pass; Windows delivery remains explicitly manual/unverified |
+| S08 | DONE | release-safe diagnostics schema/UI/copy-export + debug separation + scoped diagnostics/input-learning reset + privacy/data-safety alignment pass; normal/password/real Chrome/Remote runtime evidence `captures\s08-diagnostics-privacy-20260903-runtime` |
+| S09 | DONE | full checks + fresh Dingul/app/theme runtime matrix pass; docs/VCS gate complete; release signing explicitly blocked only by external HANGUL_IME signing properties |
 
 ## Definition of done
 The roadmap is complete only when S01-S09 are DONE, all non-external blockers are closed, current handoff points to no unfinished product work, and the final verification report clearly separates debug/runtime/release evidence.

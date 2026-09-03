@@ -306,6 +306,7 @@ function New-ProfileExpectation {
 }
 
 function Focus-LocalPracticeField {
+    Start-Sleep -Milliseconds 900
     $dumpPath = "/sdcard/s3keyboard-smoke-window.xml"
     $localDumpPath = Join-Path $CaptureDir "s3keyboard-smoke-window.xml"
     $dumpReady = $false
@@ -313,8 +314,8 @@ function Focus-LocalPracticeField {
         & $Adb @AdbTarget shell rm -f $dumpPath | Out-Null
         & $Adb @AdbTarget shell uiautomator dump $dumpPath | Out-Host
         Start-Sleep -Milliseconds 400
-        $probe = (& $Adb @AdbTarget shell ls $dumpPath 2>$null | Out-String).Trim()
-        if ($LASTEXITCODE -eq 0 -and $probe -eq $dumpPath) {
+        $probe = (& $Adb @AdbTarget shell "if [ -f $dumpPath ]; then echo ready; else echo missing; fi" | Out-String).Trim()
+        if ($LASTEXITCODE -eq 0 -and $probe -eq "ready") {
             $dumpReady = $true
             break
         }
@@ -367,7 +368,19 @@ function Save-State {
     if ($LASTEXITCODE -ne 0) {
         throw "adb failed: shell screencap -p /sdcard/$safeName.png"
     }
-    Invoke-AdbTarget pull "/sdcard/$safeName.png" $screenFile
+    Remove-Item -LiteralPath $screenFile -Force -ErrorAction SilentlyContinue
+    $pulled = $false
+    for ($pullAttempt = 0; $pullAttempt -lt 3; $pullAttempt++) {
+        & $Adb @AdbTarget pull "/sdcard/$safeName.png" $screenFile | Out-Host
+        if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $screenFile) -and (Get-Item -LiteralPath $screenFile).Length -gt 0) {
+            $pulled = $true
+            break
+        }
+        Start-Sleep -Milliseconds 300
+    }
+    if (-not $pulled) {
+        throw "adb failed: pull /sdcard/$safeName.png $screenFile"
+    }
     $Results.Add([ordered]@{
         name = $Name
         packageName = $PackageName

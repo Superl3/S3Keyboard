@@ -159,6 +159,15 @@ final class RemoteWindowsSettingsController {
                 R.string.settings_app_profile_no_text_conveniences_packages,
                 KeyboardPreferences.loadAppProfileNoTextConveniencesPackages(context),
                 packages -> KeyboardPreferences.saveAppProfileNoTextConveniencesPackages(context, packages));
+        SettingsRowBuilder.buttonRow(
+                context,
+                appOverridesSection,
+                R.string.settings_app_profile_clear_all,
+                8,
+                view -> {
+                    KeyboardPreferences.clearAllAppInputProfileOverrides(context);
+                    controlsSyncer.run();
+                });
     }
 
     void sync(KeyboardSettings settings) {

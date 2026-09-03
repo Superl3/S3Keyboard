@@ -26,3 +26,8 @@
 
 ## Done gate
 Checks, privacy review, and runtime evidence pass. Mark S04=DONE and update handoff.
+## Completion — 2026-09-03 KST
+- State: **DONE**.
+- Unified Text Tools persistence, ordering, pin/edit/delete/clear behavior and sensitive-field suppression are covered by the current unit suite.
+- Runtime evidence: `captures\s04-runtime` (normal insertion, recent item, restart persistence, reserved-phrase editing and panel state).
+- Privacy contract remains clipboard/user-created source only; no raw typed-text capture was added.

@@ -1,6 +1,6 @@
 # Current Agent Handoff
 
-Updated: 2026-09-02 11:28 KST
+Updated: 2026-09-03 KST
 Repository: `C:\Users\bug95\Documents\Codex\2026-05-19\mimic-apk-ux`
 Branch: `main`
 Base HEAD when this work started: `1cbcfb7`
@@ -147,8 +147,8 @@ Session order:
 8. S08 release-safe diagnostics + privacy/data-safety alignment.
 9. S09 integration/regression/docs/version-control/release gate.
 
-S01 and S02 are DONE. The next active implementation session is S03: `docs\roadmap-2026-09\03-app-profiles-status.md`.
-Both runtime gates passed on the fresh test AVD `hangul_gesture_s01` (`emulator-5558`); the master ledger is DONE for S01 and S02.
+S01 through S09 are DONE. The 2026-09 product-expansion roadmap is COMPLETE from the repository-engineering perspective.
+S09 independently re-audited prior evidence, reran canonical checks plus fresh Dingul/app/theme runtime gates, aligned release/docs state, and leaves only explicit external signing/device/service validation blockers.
 
 ### S01 Enter text actions — DONE
 
@@ -205,27 +205,48 @@ S02 runtime verification — PASS on `emulator-5558`, evidence `captures\s02-ai-
 - Frames `03-after-miss.png`, `03-provider-off-correct.xml`, `04-provider-off-touch-fixed.png`, `05-current-panel.png` document an injected-touch coordinate miss and its correction; they are not pass evidence.
 - Not covered: a real network provider does not exist in this artifact, so "privacy UI and actual request gate agree" was verified only against the request-builder gate and the local test provider.
 
-## Remaining pre-roadmap verification caveats
+### S03 App profiles + runtime state indicators — DONE
 
-- Messages recipient-field input is verified, but message-body typing/send delivery is still unverified; S09 should include it if feasible.
+Implemented and verified on 2026-09-02 KST:
+- Added versioned per-app override records with legacy package-list compatibility, tri-state language/number-row/composing/text-convenience/Remote controls, per-app reset, and global clear.
+- Resolver precedence is built-in editor/app policy -> user app override -> hard password/number/raw restrictions; `remote=false` can suppress stored/auto Remote for a specific app.
+- Added a compact separate runtime state row for effective Hangul/English, Dingul/QWERTY, and active Remote/Caps/one-finger state; it does not overlap key touch bounds.
+- Final `scripts\check.ps1` -> PASS (`testDebugUnitTest`, `lintDebug`, `assembleDebug`, theme/material/settings audits). `git diff --check` passed before documentation-only updates.
+- Main synthetic/real-app evidence: `captures\s03-app-profiles-20260902-runtime`.
+- Real Chrome URL bar with stored Hangul still resolved to `EN · QWERTY`: `chrome-url-focused-hangul-stored.png`.
+- Real Google Messages `ContactSearchField` focused with S3 and effective `EN · QWERTY`: `messages-recipient-ime.png`.
+- Password/number hard restrictions stayed safe, including while the host package was temporarily configured for Remote auto.
+- Remote auto no-leak proof: `captures\s03-app-profiles-20260902-remote-auto\remote-standard-active.png` shows `EN · QWERTY · Remote`; immediately moving to Chrome produced `remote-exit-chrome.png` with `EN · QWERTY` and no Remote state.
+- All test-only AVD preference edits were restored; final test state was `keyboard_mode_last=english`, `remote_mode_enabled=false`.
+- `scripts\smoke-ime-apps.ps1` now tolerates transient `uiautomator` null-root failures and validates/retries screenshot pulls.
+
+### S04-S08 product roadmap — DONE
+
+- **S04 Text Tools:** unified clipboard/reserved/pinned panel, ordering/pin/edit/delete persistence and sensitive-field suppression complete; evidence `captures\s04-runtime`.
+- **S05 Backup/Restore:** versioned envelope, migration, atomic/selective restore, malformed-file safety and sensitive exclusions complete; evidence `captures\s05-backup-restore-20260903-runtime`.
+- **S06 Theme Management:** existing 42-theme source remains canonical; search/filter/favorites/recent/system light-dark pairing/A-B selection complete; evidence `captures\s06-theme-management-20260903-runtime`.
+- **S07 Remote Productization:** remote app families, compact navigation/F-key toolbar, one-shot/sticky modifiers, Clear Mods and Remote display-override bypass complete; evidence `captures\s07-remote-mode-20260903-runtime`. Android accepted KeyEvents do not prove delivery to a real Windows session, which remains manual/unverified.
+- **S08 Diagnostics/Privacy:** release-safe diagnostics is separated from debug geometry/code-point probes, records only a whitelisted latest-session snapshot and up to 12 action categories, supports copy/document export, and has a scoped diagnostics/input-learning reset. Privacy/Data Safety/manual-test docs were aligned; evidence `captures\s08-diagnostics-privacy-20260903-runtime`.
+- S08 runtime covered standard, password, real Chrome URL and stored Remote sessions. Injected password/browser sentinel text was absent from diagnostic state; reset confirmation and before/after prefs verify release diagnostics are removed while ordinary settings remain.
+
+## Remaining external/manual verification caveats
+
+- Google Messages recipient-field input is verified; message-body typing/send delivery remains a real-app breadth check rather than unfinished roadmap engineering.
 - Release verification remains blocked until real closed-beta signing properties are available.
-- The worktree still mixes pre-existing changes with stabilization work; do not blindly stage everything.
+- Real Windows Remote receiver delivery and physical-device/TalkBack breadth remain manual gates.
 
-## Git / commit caution
+## Git / finalization status
 
-The worktree already contained substantial uncommitted theme/style/layout changes before this stabilization work began.
-Current changes mix prior work and this stabilization in some of the same files.
-Do not create broad commits by blindly staging the entire worktree unless the user explicitly accepts combining the pre-existing changes.
-On 2026-09-02 the whole worktree (theme stabilization + S01 + S02 + docs) was committed as a single commit at the user's explicit request; the pre-existing mixed changes were accepted as combined. No push has been made.
-Recommended conceptual commit titles remain:
-- `Drop experimental Liquid refraction`
-- `Make runtime theme captures geometry-aware`
-- `Complete theme runtime audit and beta gates`
+- The user explicitly requested finalization through S09 and accepted committing/pushing the remaining combined roadmap worktree.
+- The S03-S09 implementation, tests, release/check script hardening, roadmap documentation, and `docs\feature-catalog.md` belong to the final roadmap closeout commit.
+- Before pushing, run staged whitespace validation and confirm the intended file list; after pushing, verify `main` is clean and aligned with `origin/main`.
 
 ## Useful artifacts
 
 - S01 text-action runtime: `captures\s01-text-actions-20260902-runtime`
 - S02 AI provider runtime: `captures\s02-ai-provider-20260902-runtime`
+- S03 app-profile runtime: `captures\s03-app-profiles-20260902-runtime`
+- S03 Remote auto enter/exit: `captures\s03-app-profiles-20260902-remote-auto`
 - Runtime theme audit: `captures\runtime-theme-audit-20260901-geometry-final`
 - Runtime manifest: `captures\runtime-theme-audit-20260901-geometry-final\capture-manifest.csv`
 - Runtime summary: `captures\runtime-theme-audit-20260901-geometry-final\capture-summary.csv`
@@ -235,3 +256,14 @@ Recommended conceptual commit titles remain:
 - One-finger runtime log: `captures\runtime-input-followup-20260901\one-finger-logcat.txt`
 - Static previews: `captures\theme-previews`
 - Theme classification report: `captures\theme-classification-report.html`
+
+## S09 final integration - DONE
+
+Fresh 2026-09-03 evidence:
+- canonical `scripts\check.ps1` PASS after making it independent of caller working directory; Gradle debug test/lint/assemble all PASS.
+- Dingul probe PASS: `captures\dingul-typing-20260903-103232`.
+- editor/real-app smoke PASS: `captures\s09-integration-20260903-runtime\app-smoke`.
+- representative English/Hangul theme geometry PASS with `bottomDelta=0` for solid, soft-keycap, frosted and acrylic materials under `captures\s09-integration-20260903-runtime`.
+- final report: `docs\roadmap-2026-09\09-final-verification.md`.
+
+Release signing is the only build blocker: `scripts\build-release.ps1` reaches `verifyClosedBetaSigning` and correctly reports missing `HANGUL_IME_KEYSTORE`, `HANGUL_IME_KEYSTORE_PASSWORD`, `HANGUL_IME_KEY_ALIAS`, `HANGUL_IME_KEY_PASSWORD`. Real Windows Remote receiver delivery, final developer/contact metadata, and physical-device/TalkBack breadth remain external/manual gates rather than unfinished repository work.

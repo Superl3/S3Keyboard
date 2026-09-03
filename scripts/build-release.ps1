@@ -5,9 +5,15 @@ $ErrorActionPreference = "Stop"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 
 Write-Host "Building release APK"
-& (Join-Path $Root "gradlew.bat") --no-daemon assembleRelease
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
+Push-Location $Root
+try {
+    & (Join-Path $Root "gradlew.bat") --no-daemon assembleRelease
+    $buildExitCode = $LASTEXITCODE
+} finally {
+    Pop-Location
+}
+if ($buildExitCode -ne 0) {
+    exit $buildExitCode
 }
 
 $ReleaseDirectory = Join-Path $Root "app\build\outputs\apk\release"
@@ -15,7 +21,6 @@ $Apks = @(Get-ChildItem -LiteralPath $ReleaseDirectory -Filter "*.apk")
 if ($Apks.Count -eq 0) {
     throw "Release build completed without an APK output."
 }
-
 $BuildTools = Join-Path $env:ANDROID_SDK_ROOT "build-tools"
 $ApkSigner = Get-ChildItem -LiteralPath $BuildTools -Recurse -Filter "apksigner.bat" |
     Sort-Object FullName -Descending |

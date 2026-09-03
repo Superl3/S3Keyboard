@@ -3,9 +3,10 @@
 This workspace contains a clean-room Android input method prototype for studying a Korean gesture-keyboard UX. It is built from the described interaction model and screenshot, not from proprietary APK code or assets.
 
 The prototype includes Dingul-style Hangul gesture input, English QWERTY input,
-Windows remote-mode key mapping, theme/icon customization, and English QWERTY
-tap-typing assistance for typo suggestions, quick punctuation, and word-level
-editing.
+reversible text actions with an optional on-device provider path, per-app profiles,
+unified Text Tools, versioned backup/restore, managed themes, productized Windows
+remote-mode controls, release-safe diagnostics/privacy controls, and English QWERTY
+tap-typing assistance for typo suggestions, quick punctuation, and word-level editing.
 
 ## Setup
 
@@ -135,6 +136,10 @@ rtk powershell -ExecutionPolicy Bypass -File .\scripts\smoke-ime-apps.ps1
 ```
 
 The smoke script opens the local practice field and captures input-method state for Chrome, Messages, and Keep when those packages exist on the emulator image.
+
+## Feature Catalog
+
+현재 구현된 전체 기능, 2026-09 S01-S09 개선점, 검증 상태와 외부 release gate는 `docs\feature-catalog.md`에 정리되어 있습니다.
 
 ## Current Prototype Scope
 

@@ -29,6 +29,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.List;
@@ -53,6 +54,7 @@ public final class S3KeyboardService extends InputMethodService {
     private WatchRadialKeyboardView watchRadialInputView;
     private FrameLayout inputRoot;
     private LinearLayout inputContentContainer;
+    private TextView runtimeStateIndicatorView;
     private View clipboardOverlayView;
     private final int[] touchRegionLocation = new int[2];
     private final Rect touchRegionBounds = new Rect();
@@ -60,8 +62,10 @@ public final class S3KeyboardService extends InputMethodService {
     private RemoteCompatibilityPanelController remoteCompatibilityPanelController;
     private InputIssueReportClipboardController inputIssueReportController;
     private QuickThemePanelController quickThemePanelController;
+    private AppProfileQuickSettingsController appProfileQuickSettingsController;
     private QuickSettingsPanelController quickSettingsPanelController;
     private ClipboardPanelController clipboardPanelController;
+    private RemoteNavigationToolbarController remoteNavigationToolbarController;
     private ThemeClipboardImportController themeClipboardImportController;
     private PopupWindow quickSettingsPopup;
     private View textActionOverlayView;
@@ -106,6 +110,15 @@ public final class S3KeyboardService extends InputMethodService {
                 () -> settings,
                 () -> editorPolicy,
                 this::commitClipboardText);
+        remoteNavigationToolbarController = new RemoteNavigationToolbarController(
+                this,
+                () -> settings,
+                command -> handleRemoteCommand(getCurrentInputConnection(), command),
+                () -> {
+                    remoteInputController.reset();
+                    updateShiftStateView();
+                    updateRuntimeStateIndicator();
+                });
 
         inputRoot = new FrameLayout(this);
         inputRoot.setBackgroundColor(Color.TRANSPARENT);
@@ -139,8 +152,19 @@ public final class S3KeyboardService extends InputMethodService {
         keyboardSurfaceContainer.addView(inputView, surfaceParams);
         keyboardSurfaceContainer.addView(watchRadialInputView, surfaceParams);
 
+        runtimeStateIndicatorView = SettingsRowBuilder.bodyLabel(this, "");
+        runtimeStateIndicatorView.setGravity(Gravity.CENTER);
+        runtimeStateIndicatorView.setPadding(
+                SettingsRowBuilder.dp(this, 6),
+                SettingsRowBuilder.dp(this, 2),
+                SettingsRowBuilder.dp(this, 6),
+                SettingsRowBuilder.dp(this, 2));
+        mainContainer.addView(runtimeStateIndicatorView, SettingsRowBuilder.matchWrap());
         mainContainer.addView(
                 clipboardPanelController.createToolbar(),
+                SettingsRowBuilder.matchWrap());
+        mainContainer.addView(
+                remoteNavigationToolbarController.createView(),
                 SettingsRowBuilder.matchWrap());
         mainContainer.addView(keyboardSurfaceContainer, SettingsRowBuilder.matchWrap());
 
@@ -154,6 +178,7 @@ public final class S3KeyboardService extends InputMethodService {
         updateInputSurfaceVisibility();
         updateToolbarVisibility();
         updateClipboardListener();
+        updateRuntimeStateIndicator();
         applyImeWindowBlur();
         return inputRoot;
     }
@@ -259,10 +284,18 @@ public final class S3KeyboardService extends InputMethodService {
                 () -> editorPolicy.forceNumberRow,
                 this::applyRuntimeSettings,
                 this::dismissQuickSettings);
+        appProfileQuickSettingsController = new AppProfileQuickSettingsController(
+                this,
+                () -> currentEditorPackageName,
+                () -> appInputProfile,
+                () -> editorPolicy,
+                this::reloadCurrentEditorSessionSettings,
+                this::dismissQuickSettings);
         quickSettingsPanelController = new QuickSettingsPanelController(
                 this,
                 remoteCompatibilityPanelController,
                 quickThemePanelController,
+                appProfileQuickSettingsController,
                 () -> settings,
                 this::remoteModeToggleLabel,
                 this::toggleRemoteMode,
@@ -282,7 +315,7 @@ public final class S3KeyboardService extends InputMethodService {
     }
 
     private void commitClipboardText(String text) {
-        if (editorPolicy.password || text == null || text.isEmpty()) {
+        if (!TextToolsPolicy.allowsInsertion(editorPolicy, settings.remoteModeEnabled, text)) {
             return;
         }
         InputConnection inputConnection = getCurrentInputConnection();
@@ -345,9 +378,61 @@ public final class S3KeyboardService extends InputMethodService {
         inputIssueReportController.copyToClipboard();
     }
 
+    private void reloadCurrentEditorSessionSettings() {
+        InputConnection connection = getCurrentInputConnection();
+        if (connection != null) {
+            commitCurrent(connection);
+        }
+        automata.reset();
+        commitOnlyEditor.reset();
+        qwertyInputAssistant.reset();
+        remoteInputController.reset();
+        loadSettingsForEditor(getCurrentInputEditorInfo());
+        applyCurrentSettingsToInputView();
+        updateToolbarVisibility();
+        updateClipboardListener();
+    }
+
+    private void updateRuntimeStateIndicator() {
+        if (runtimeStateIndicatorView == null) {
+            return;
+        }
+        String language = settings.keyboardMode == KeyboardMode.ENGLISH ? "EN" : "한글";
+        String layout = SettingsDisplayLabels.label(this, activeLayoutProfile());
+        StringBuilder active = new StringBuilder();
+        if (settings.remoteModeEnabled) {
+            active.append(" · Remote");
+            appendRemoteModifierState(active);
+        }
+        if (englishShiftState.isLocked()) active.append(" · CAPS");
+        if (singleTapCommitModeEnabled()) active.append(" · 1F");
+        runtimeStateIndicatorView.setText(getString(
+                R.string.runtime_state_indicator_format, language, layout, active.toString()));
+    }
+
+    private void appendRemoteModifierState(StringBuilder active) {
+        int pending = remoteInputController.pendingMetaState();
+        int locked = remoteInputController.lockedMetaState();
+        appendRemoteModifierState(active, "Ctrl", KeyEvent.META_CTRL_ON, pending, locked);
+        appendRemoteModifierState(active, "Alt", KeyEvent.META_ALT_ON, pending, locked);
+        appendRemoteModifierState(active, "Win", KeyEvent.META_META_ON, pending, locked);
+    }
+
+    private void appendRemoteModifierState(
+            StringBuilder active, String label, int meta, int pending, int locked) {
+        if ((locked & meta) == meta) {
+            active.append(" · ").append(label).append(":LOCK");
+        } else if ((pending & meta) == meta) {
+            active.append(" · ").append(label).append(":1x");
+        }
+    }
+
     private void updateToolbarVisibility() {
         if (clipboardPanelController != null) {
             clipboardPanelController.updateVisibility();
+        }
+        if (remoteNavigationToolbarController != null) {
+            remoteNavigationToolbarController.updateVisibility();
         }
         requestOverlayTouchableRegionUpdate();
     }
@@ -594,6 +679,7 @@ public final class S3KeyboardService extends InputMethodService {
         if (inputConnection == null || value == null || value.isEmpty()) {
             return;
         }
+        ReleaseSafeDiagnostics.recordGesture(this, value);
         commandDispatchInputConnection = inputConnection;
         try {
             KeyboardCommandDispatcher.dispatch(value, commandDispatchTarget);
@@ -1157,6 +1243,14 @@ public final class S3KeyboardService extends InputMethodService {
         appInputProfile = session.appInputProfile;
         remoteModeAutoActivated = session.remoteModeAutoActivated;
         settings = withSessionRuntimeState(session.runtimeSettings);
+        ReleaseSafeDiagnostics.recordSession(
+                this,
+                info,
+                appInputProfile,
+                editorPolicy,
+                settings,
+                layoutProfiles.activeFor(settings.keyboardMode),
+                KeyboardPreferences.loadSingleTapCommitModeEnabled(this));
     }
 
     private KeyboardSettings withSessionRuntimeState(KeyboardSettings source) {
@@ -1259,6 +1353,7 @@ public final class S3KeyboardService extends InputMethodService {
                     remoteInputController.pendingMetaState(),
                     remoteInputController.lockedMetaState());
         }
+        updateRuntimeStateIndicator();
     }
 
     private String enterActionLabel() {
@@ -2054,6 +2149,7 @@ public final class S3KeyboardService extends InputMethodService {
         if (inputView != null) {
             inputView.setSettings(settings);
         }
+        updateRuntimeStateIndicator();
         dismissQuickSettings();
     }
 
@@ -2110,6 +2206,7 @@ public final class S3KeyboardService extends InputMethodService {
         if (previewOverlayController != null) {
             previewOverlayController.setSettings(settings);
         }
+        updateRuntimeStateIndicator();
     }
 
     private void updateTransparentOverlayPresentation() {

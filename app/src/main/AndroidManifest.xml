@@ -45,6 +45,23 @@
             android:windowSoftInputMode="stateAlwaysHidden" />
 
         <activity
+            android:name=".TextToolsEditActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.Dialog.Alert"
+            android:windowSoftInputMode="stateAlwaysVisible" />
+
+        <activity
+            android:name=".BackupRestoreActivity"
+            android:exported="false"
+            android:label="@string/backup_restore_activity_label" />
+
+        <activity
+            android:name=".DiagnosticsActivity"
+            android:exported="false"
+            android:label="@string/diagnostics_title" />
+
+        <activity
             android:name=".VoiceInputActivity"
             android:excludeFromRecents="true"
             android:exported="false"

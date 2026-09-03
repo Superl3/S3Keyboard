@@ -364,9 +364,9 @@ public final class KeyboardKeyVisualClassifierTest {
                 .withKeyDisplayOverrides(displayOverrides)
                 .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
 
-        assertEquals(ModifierIconCatalog.GLYPH_DOT, KeyDisplayOverrideResolver.resolve(
+        assertNull(KeyDisplayOverrideResolver.resolve(
                 settings,
-                new GestureKey("q", "q", "Q", "1", null, null, null)).value);
+                new GestureKey("q", "q", "Q", "1", null, null, null)));
         KeyDisplayOverride ctrl = KeyDisplayOverrideResolver.resolve(
                 settings,
                 new GestureKey(
@@ -392,7 +392,7 @@ public final class KeyboardKeyVisualClassifierTest {
                         null,
                         8,
                         KeyIcon.SPACE));
-        assertEquals(ModifierIconCatalog.GLYPH_ESC, space.value);
+        assertNull(space);
         KeyDisplayOverride shift = KeyDisplayOverrideResolver.resolve(
                 settings,
                 GestureKey.command(
@@ -401,7 +401,7 @@ public final class KeyboardKeyVisualClassifierTest {
                         KeyboardCommands.CMD_SHIFT_LOCK,
                         3,
                         KeyIcon.SHIFT));
-        assertEquals("shift-pack", shift.value);
+        assertNull(shift);
     }
 
     @Test

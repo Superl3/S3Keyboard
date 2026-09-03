@@ -227,6 +227,12 @@ public final class MainActivity extends Activity {
         androidImeSettingsController =
                 new AndroidImeSettingsController(this, this::isDebuggableBuild, this::syncControls);
         androidImeSettingsController.addTo(androidSection);
+        SettingsRowBuilder.buttonRow(
+                this,
+                androidSection,
+                R.string.settings_backup_restore,
+                12,
+                view -> startActivity(new Intent(this, BackupRestoreActivity.class)));
 
         settingsWizardController.finishSetup();
         return page;

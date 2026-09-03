@@ -26,3 +26,8 @@
 
 ## Done gate
 Generator/checks, preview parity checks, and representative runtime captures pass. Mark S06=DONE and update handoff.
+## Completion — 2026-09-03 KST
+- State: **DONE**.
+- Existing 42-theme source of truth is unchanged; filtering/search, favorites/recent ordering, tone/material filters, system light/dark pairing and A/B selection are implemented on the shared preview/runtime path.
+- Unit coverage includes exact filtering/counts, ordering, pairing precedence and light/dark classification.
+- Runtime evidence: `captures\s06-theme-management-20260903-runtime\theme-selector.png` and `theme-selector.xml`; the live selector exposes pairing, favorite controls and A/B light/dark controls.

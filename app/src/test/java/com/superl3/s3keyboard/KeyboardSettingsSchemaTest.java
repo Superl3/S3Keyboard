@@ -51,6 +51,10 @@ public final class KeyboardSettingsSchemaTest {
                 KeyboardSettingsSchema.Section.REMOTE,
                 KeyboardSettingsSchema.StorageRisk.COMPATIBILITY);
         assertEntry(
+                KeyboardPreferences.APP_PROFILE_OVERRIDES_JSON,
+                KeyboardSettingsSchema.Section.REMOTE,
+                KeyboardSettingsSchema.StorageRisk.COMPATIBILITY);
+        assertEntry(
                 KeyboardPreferences.APP_PROFILE_ASCII_PACKAGES,
                 KeyboardSettingsSchema.Section.REMOTE,
                 KeyboardSettingsSchema.StorageRisk.COMPATIBILITY);

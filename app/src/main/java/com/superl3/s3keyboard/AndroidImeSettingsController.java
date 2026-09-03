@@ -1,6 +1,7 @@
 package com.superl3.s3keyboard;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.widget.LinearLayout;
 
 import java.util.function.BooleanSupplier;
@@ -42,6 +43,13 @@ final class AndroidImeSettingsController {
                 root,
                 BuildInfoProvider.summary(activity),
                 16);
+
+        SettingsRowBuilder.buttonRow(
+                activity,
+                root,
+                R.string.diagnostics_open,
+                12,
+                v -> activity.startActivity(new Intent(activity, DiagnosticsActivity.class)));
 
         if (debuggableBuild.getAsBoolean()) {
             debugOverlaySettingsController =

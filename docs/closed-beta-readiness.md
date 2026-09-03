@@ -43,3 +43,11 @@ Closed beta means a small tester group can install the keyboard without being su
   Parsec/Moonlight/RDP receiving behavior still requires per-app real-device
   confirmation.
 - The privacy policy draft needs the final developer entity and contact point before Play upload.
+
+## 2026-09 roadmap integration status
+
+- S01-S09 repository engineering gates are complete; final report: `docs\roadmap-2026-09\09-final-verification.md`.
+- Current product surface also includes reversible text actions/provider privacy gates, per-app overrides, Text Tools, backup/restore, theme management, Remote toolbar/modifier UX, and release-safe diagnostics/reset.
+- Fresh S09 AVD evidence covers Dingul input, synthetic sensitive/editor profiles, installed Chrome and Google Messages, and English/Hangul geometry for all four supported material families.
+- Closed-beta APK signing remains blocked until the external `HANGUL_IME_*` Gradle signing properties and keystore are supplied. This is not a debug/integration failure.
+- Real Windows Remote receiver delivery, final developer/contact metadata, and physical-device/TalkBack breadth remain explicit tester/distribution gates.

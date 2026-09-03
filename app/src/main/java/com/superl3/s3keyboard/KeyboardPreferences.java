@@ -103,6 +103,7 @@ final class KeyboardPreferences {
     static final String APP_PROFILE_NO_COMPOSING_PACKAGES = "app_profile_no_composing_packages";
     static final String APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES =
             "app_profile_no_text_conveniences_packages";
+    static final String APP_PROFILE_OVERRIDES_JSON = "app_profile_overrides_json";
     static final String SELECTED_THEME_ID = "selected_theme_id";
     static final String RESERVED_TAP_TEXT = "reserved_tap_text";
     static final String RESERVED_LEFT_TEXT = "reserved_left_text";
@@ -360,6 +361,14 @@ final class KeyboardPreferences {
                         RemoteImeShortcut.fromPreference(prefs.getString(
                                 REMOTE_IME_SHORTCUT,
                                 defaults.remoteImeShortcut.preferenceValue)));
+        if (ThemeManagementStore.isPairEnabled(context)) {
+            String pairedJson = themeJson(context, ThemeManagementStore.resolveSystemThemeId(
+                    context, loadSelectedThemeId(context)));
+            if (pairedJson != null) {
+                KeyboardSettings pairedAppearance = KeyboardThemeJson.importTheme(defaults, pairedJson);
+                loaded = loaded.withAppearanceFrom(pairedAppearance);
+            }
+        }
         return applyAccentPlacementPolicy(context, loaded);
     }
 
@@ -497,11 +506,42 @@ final class KeyboardPreferences {
 
     static AppInputProfileOverrides loadAppInputProfileOverrides(Context context) {
         SharedPreferences preferences = prefs(context);
-        return new AppInputProfileOverrides(
+        return AppInputProfileOverrides.decode(
+                preferences.getString(APP_PROFILE_OVERRIDES_JSON, ""),
                 preferences.getString(APP_PROFILE_ASCII_PACKAGES, ""),
                 preferences.getString(APP_PROFILE_NUMBER_ROW_PACKAGES, ""),
                 preferences.getString(APP_PROFILE_NO_COMPOSING_PACKAGES, ""),
                 preferences.getString(APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES, ""));
+    }
+
+    static void saveAppInputProfileOverride(
+            Context context,
+            String packageName,
+            AppInputProfileOverride override) {
+        AppInputProfileOverrides current = loadAppInputProfileOverrides(context);
+        AppInputProfileOverrides next = current.withOverride(packageName, override);
+        saveString(context, APP_PROFILE_OVERRIDES_JSON, next.encode());
+    }
+
+    static void resetAppInputProfileOverride(Context context, String packageName) {
+        String normalized = AppPackageCatalog.normalizePackageName(packageName);
+        AppInputProfileOverrides current = loadAppInputProfileOverrides(context);
+        saveString(context, APP_PROFILE_OVERRIDES_JSON, current.withoutOverride(normalized).encode());
+        saveAppProfileAsciiPackages(context, removePackageToken(current.asciiPackages, normalized));
+        saveAppProfileNumberRowPackages(context, removePackageToken(current.numberRowPackages, normalized));
+        saveAppProfileNoComposingPackages(context, removePackageToken(current.noComposingPackages, normalized));
+        saveAppProfileNoTextConveniencesPackages(
+                context, removePackageToken(current.noTextConveniencesPackages, normalized));
+    }
+
+    static void clearAllAppInputProfileOverrides(Context context) {
+        prefs(context).edit()
+                .remove(APP_PROFILE_OVERRIDES_JSON)
+                .remove(APP_PROFILE_ASCII_PACKAGES)
+                .remove(APP_PROFILE_NUMBER_ROW_PACKAGES)
+                .remove(APP_PROFILE_NO_COMPOSING_PACKAGES)
+                .remove(APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES)
+                .apply();
     }
 
     static String loadAppProfileAsciiPackages(Context context) {
@@ -534,6 +574,19 @@ final class KeyboardPreferences {
 
     static void saveAppProfileNoTextConveniencesPackages(Context context, String packages) {
         saveString(context, APP_PROFILE_NO_TEXT_CONVENIENCES_PACKAGES, packages);
+    }
+
+    private static String removePackageToken(String packageList, String packageName) {
+        String normalized = AppPackageCatalog.normalizePackageName(packageName);
+        StringBuilder kept = new StringBuilder();
+        String[] tokens = RuntimeDefaults.stringOrDefault(packageList, "").split("[,\s]+");
+        for (String token : tokens) {
+            String candidate = AppPackageCatalog.normalizePackageName(token);
+            if (candidate.isEmpty() || candidate.equals(normalized)) continue;
+            if (kept.length() > 0) kept.append(", ");
+            kept.append(candidate);
+        }
+        return kept.toString();
     }
 
     static boolean packageListContains(String packageList, String packageName) {
@@ -705,7 +758,11 @@ final class KeyboardPreferences {
     }
 
     private static String selectedThemeJson(Context context) {
-        String selectedThemeId = loadSelectedThemeId(context);
+        return themeJson(context, ThemeManagementStore.resolveSystemThemeId(
+                context, loadSelectedThemeId(context)));
+    }
+
+    private static String themeJson(Context context, String selectedThemeId) {
         if (selectedThemeId == null || selectedThemeId.isEmpty()) {
             return null;
         }

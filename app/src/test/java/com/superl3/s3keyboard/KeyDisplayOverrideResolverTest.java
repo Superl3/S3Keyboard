@@ -2,6 +2,7 @@ package com.superl3.s3keyboard;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
@@ -34,5 +35,16 @@ public final class KeyDisplayOverrideResolverTest {
         KeyDisplayOverride resolved = KeyDisplayOverrideResolver.resolve(settings, ENTER);
         assertEquals("GO", resolved.value);
         assertFalse(KeyDisplayOverrideResolver.hasNoveltyOverride(settings, ENTER));
+    }
+
+    @Test
+    public void remoteModeBypassesDecorativeThemeOverrides() {
+        Map<String, KeyDisplayOverride> overrides = new HashMap<>();
+        overrides.put("enter", KeyDisplayOverride.text("GO"));
+        KeyboardSettings settings = KeyboardSettings.defaults()
+                .withKeyDisplayOverrides(overrides)
+                .withRemoteOptions(true, RemoteKeyPreset.PC_KEYBOARD, RemoteImeShortcut.ALT_SHIFT);
+
+        assertNull(KeyDisplayOverrideResolver.resolve(settings, ENTER));
     }
 }

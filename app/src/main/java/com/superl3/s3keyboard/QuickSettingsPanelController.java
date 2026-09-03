@@ -14,6 +14,7 @@ final class QuickSettingsPanelController {
     private final Context context;
     private final RemoteCompatibilityPanelController remoteCompatibilityPanelController;
     private final QuickThemePanelController quickThemePanelController;
+    private final AppProfileQuickSettingsController appProfileQuickSettingsController;
     private final Supplier<KeyboardSettings> settings;
     private final Supplier<String> remoteModeToggleLabel;
     private final Runnable remoteModeToggler;
@@ -35,6 +36,7 @@ final class QuickSettingsPanelController {
             Context context,
             RemoteCompatibilityPanelController remoteCompatibilityPanelController,
             QuickThemePanelController quickThemePanelController,
+            AppProfileQuickSettingsController appProfileQuickSettingsController,
             Supplier<KeyboardSettings> settings,
             Supplier<String> remoteModeToggleLabel,
             Runnable remoteModeToggler,
@@ -54,6 +56,7 @@ final class QuickSettingsPanelController {
         this.context = context;
         this.remoteCompatibilityPanelController = remoteCompatibilityPanelController;
         this.quickThemePanelController = quickThemePanelController;
+        this.appProfileQuickSettingsController = appProfileQuickSettingsController;
         this.settings = RuntimeDefaults.keyboardSettingsSupplier(settings);
         this.remoteModeToggleLabel = RuntimeDefaults.emptyStringSupplier(remoteModeToggleLabel);
         this.remoteModeToggler = RuntimeDefaults.runnable(remoteModeToggler);
@@ -94,6 +97,9 @@ final class QuickSettingsPanelController {
                 panel,
                 QuickPanelUi.titleLabel(context, R.string.quick_settings_title),
                 0);
+        if (appProfileQuickSettingsController != null) {
+            appProfileQuickSettingsController.addTo(panel);
+        }
 
         LinearLayout handRow = QuickPanelUi.row(context);
         handRow.addView(
@@ -183,15 +189,17 @@ final class QuickSettingsPanelController {
                                     false,
                                     v -> themeClipboardImporter.run()),
                             6);
-                    QuickPanelUi.addWithTop(
-                            context,
-                            tools,
-                            QuickPanelUi.quickButton(
-                                    context,
-                                    context.getString(R.string.copy_input_issue_report),
-                                    false,
-                                    v -> inputIssueReportCopier.run()),
-                            6);
+                    if (BuildConfig.DEBUG) {
+                        QuickPanelUi.addWithTop(
+                                context,
+                                tools,
+                                QuickPanelUi.quickButton(
+                                        context,
+                                        context.getString(R.string.copy_input_issue_report),
+                                        false,
+                                        v -> inputIssueReportCopier.run()),
+                                6);
+                    }
                 });
         QuickPanelUi.addWithTop(
                 context,

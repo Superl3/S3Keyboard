@@ -27,7 +27,9 @@ final class LocalDataSettingsController {
 
         localDataSummaryValue = SettingsRowBuilder.bodyLabelRow(context, root, "", 6);
 
-        dingulInputDiagnosticsValue = SettingsRowBuilder.bodyLabelRow(context, root, "", 6);
+        if (BuildConfig.DEBUG) {
+            dingulInputDiagnosticsValue = SettingsRowBuilder.bodyLabelRow(context, root, "", 6);
+        }
 
         addResetButton(
                 root,

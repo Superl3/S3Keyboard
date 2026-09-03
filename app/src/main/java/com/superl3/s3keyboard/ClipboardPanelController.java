@@ -21,6 +21,7 @@ final class ClipboardPanelController {
     private final Supplier<EditorInputPolicy> editorPolicy;
     private final Consumer<String> clipboardTextCommitter;
     private final ClipboardStore store;
+    private final TextToolsStore textToolsStore;
     private final ClipboardManager clipboardManager;
     private final ClipboardManager.OnPrimaryClipChangedListener clipboardListener;
     private LinearLayout toolbarLayout;
@@ -38,6 +39,7 @@ final class ClipboardPanelController {
         this.editorPolicy = RuntimeDefaults.editorInputPolicySupplier(editorPolicy);
         this.clipboardTextCommitter = RuntimeDefaults.stringConsumer(clipboardTextCommitter);
         this.store = new ClipboardStore(context);
+        this.textToolsStore = new TextToolsStore(context);
         this.clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
         this.clipboardListener = this::capturePrimaryClipboard;
     }
@@ -59,6 +61,7 @@ final class ClipboardPanelController {
         clipboardView = new ClipboardView(
                 context,
                 store,
+                textToolsStore,
                 () -> clipboardView.setVisibility(View.GONE),
                 clipboardTextCommitter);
         clipboardView.setVisibility(View.GONE);
@@ -70,21 +73,18 @@ final class ClipboardPanelController {
     }
 
     void toggle() {
-        EditorInputPolicy currentPolicy = RuntimeDefaults.editorInputPolicyFrom(editorPolicy);
-        ClipboardPanelAccess.Result result = ClipboardPanelAccess.resolve(
-                clipboardView != null,
-                store.isEnabled(),
-                currentPolicy.password,
-                clipboardView != null && clipboardView.getVisibility() == View.VISIBLE);
-        if (result != ClipboardPanelAccess.Result.SHOW
-                && result != ClipboardPanelAccess.Result.HIDE) {
+        boolean allowed = textToolsAllowed();
+        if (!allowed || clipboardView == null) {
             if (clipboardView != null) {
                 clipboardView.setVisibility(View.GONE);
             }
-            showUnavailableMessage(result);
+            Toast.makeText(
+                    context,
+                    allowed ? R.string.clipboard_unavailable : R.string.text_tools_sensitive_field,
+                    Toast.LENGTH_SHORT).show();
             return;
         }
-        if (result == ClipboardPanelAccess.Result.HIDE) {
+        if (clipboardView.getVisibility() == View.VISIBLE) {
             clipboardView.setVisibility(View.GONE);
             return;
         }
@@ -92,29 +92,23 @@ final class ClipboardPanelController {
         clipboardView.setVisibility(View.VISIBLE);
     }
 
-    private void showUnavailableMessage(ClipboardPanelAccess.Result result) {
-        int messageResId;
-        if (result == ClipboardPanelAccess.Result.DISABLED) {
-            messageResId = R.string.clipboard_history_disabled;
-        } else if (result == ClipboardPanelAccess.Result.SECURE_FIELD) {
-            messageResId = R.string.clipboard_secure_field;
-        } else {
-            messageResId = R.string.clipboard_unavailable;
-        }
-        Toast.makeText(context, messageResId, Toast.LENGTH_SHORT).show();
+    private boolean textToolsAllowed() {
+        KeyboardSettings currentSettings = RuntimeDefaults.keyboardSettingsFrom(settings);
+        return TextToolsPolicy.allows(
+                RuntimeDefaults.editorInputPolicyFrom(editorPolicy),
+                currentSettings.remoteModeEnabled);
     }
 
     void updateVisibility() {
         if (toolbarLayout == null) {
             return;
         }
-        EditorInputPolicy currentPolicy = RuntimeDefaults.editorInputPolicyFrom(editorPolicy);
-        boolean clipboardEnabled = store.isEnabled() && !currentPolicy.password;
-        toolbarLayout.setVisibility(clipboardEnabled ? View.VISIBLE : View.GONE);
+        boolean textToolsEnabled = textToolsAllowed();
+        toolbarLayout.setVisibility(textToolsEnabled ? View.VISIBLE : View.GONE);
         if (clipboardButton != null) {
-            clipboardButton.setVisibility(clipboardEnabled ? View.VISIBLE : View.GONE);
+            clipboardButton.setVisibility(textToolsEnabled ? View.VISIBLE : View.GONE);
         }
-        if (!clipboardEnabled && clipboardView != null) {
+        if (!textToolsEnabled && clipboardView != null) {
             clipboardView.setVisibility(View.GONE);
         }
     }
@@ -134,8 +128,7 @@ final class ClipboardPanelController {
         if (clipboardManager == null) {
             return;
         }
-        boolean shouldRegister = store.isEnabled()
-                && !RuntimeDefaults.editorInputPolicyFrom(editorPolicy).password;
+        boolean shouldRegister = store.isEnabled() && textToolsAllowed();
         if (shouldRegister && !clipboardListenerRegistered) {
             clipboardManager.addPrimaryClipChangedListener(clipboardListener);
             clipboardListenerRegistered = true;
@@ -154,7 +147,7 @@ final class ClipboardPanelController {
     private void capturePrimaryClipboard() {
         if (clipboardManager == null
                 || !store.isEnabled()
-                || RuntimeDefaults.editorInputPolicyFrom(editorPolicy).password) {
+                || !textToolsAllowed()) {
             return;
         }
         ClipData clip = clipboardManager.getPrimaryClip();

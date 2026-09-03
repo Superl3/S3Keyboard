@@ -187,6 +187,7 @@ final class KeyboardSettingsSchema {
                 KeyboardPreferences.REMOTE_IME_SHORTCUT,
                 KeyboardPreferences.REMOTE_AUTO_MODE_ENABLED,
                 KeyboardPreferences.REMOTE_AUTO_MODE_PACKAGES,
+                KeyboardPreferences.APP_PROFILE_OVERRIDES_JSON,
                 KeyboardPreferences.APP_PROFILE_ASCII_PACKAGES,
                 KeyboardPreferences.APP_PROFILE_NUMBER_ROW_PACKAGES,
                 KeyboardPreferences.APP_PROFILE_NO_COMPOSING_PACKAGES,
@@ -213,6 +214,8 @@ final class KeyboardSettingsSchema {
                 KeyboardPreferences.INPUT_LEARNING_EPOCH);
         add(entries, Section.PRIVACY_DEBUG, StorageRisk.LOCAL_TEXT, false,
                 ClipboardStore.KEY_ENTRIES,
+                ClipboardStore.KEY_ENTRIES_V2,
+                TextToolsStore.KEY_DATA_V1,
                 TouchBiasStore.TYPING_EVENT_JOURNAL);
         add(entries, Section.PRIVACY_DEBUG, StorageRisk.LOCAL_DIAGNOSTIC, false,
                 TouchBiasStore.TYPING_PATTERN_LOG);

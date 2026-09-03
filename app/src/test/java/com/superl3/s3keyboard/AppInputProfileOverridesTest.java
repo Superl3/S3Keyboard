@@ -92,4 +92,43 @@ public final class AppInputProfileOverridesTest {
         assertTrue(applied.allowComposingText);
         assertFalse(applied.allowTextConveniences);
     }
+    @Test
+    public void versionedJsonRoundTripsPerAppOverride() {
+        AppInputProfileOverride value = AppInputProfileOverride.AUTO
+                .withKeyboardMode(KeyboardMode.ENGLISH)
+                .withNumberRowVisible(Boolean.FALSE)
+                .withAllowComposingText(Boolean.FALSE)
+                .withAllowTextConveniences(Boolean.TRUE)
+                .withRemoteMode(Boolean.FALSE);
+        AppInputProfileOverrides source = AppInputProfileOverrides.EMPTY
+                .withOverride("com.example.editor", value);
+
+        AppInputProfileOverrides decoded = AppInputProfileOverrides.decode(
+                source.encode(), "", "", "", "");
+        AppInputProfileOverride result = decoded.forPackage("com.example.editor");
+
+        assertEquals(1, decoded.storedOverrideCount());
+        assertEquals(KeyboardMode.ENGLISH, result.keyboardMode);
+        assertEquals(Boolean.FALSE, result.numberRowVisible);
+        assertEquals(Boolean.FALSE, result.allowComposingText);
+        assertEquals(Boolean.TRUE, result.allowTextConveniences);
+        assertEquals(Boolean.FALSE, result.remoteMode);
+    }
+
+
+    @Test
+    public void malformedOrFutureSchemaFallsBackToSafeEmptyRecords() {
+        AppInputProfileOverrides malformed = AppInputProfileOverrides.decode(
+                "not-json", "", "", "", "");
+        AppInputProfileOverrides future = AppInputProfileOverrides.decode(
+                "{\"version\":99,\"apps\":{\"com.example\":{\"remote\":true}}}",
+                "", "", "", "");
+
+        assertEquals(0, malformed.storedOverrideCount());
+        assertEquals(0, future.storedOverrideCount());
+        assertTrue(malformed.forPackage("com.example").isAuto());
+        assertTrue(future.forPackage("com.example").isAuto());
+    }
+
+
 }

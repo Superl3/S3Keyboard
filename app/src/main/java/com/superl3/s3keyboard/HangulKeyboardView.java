@@ -139,6 +139,7 @@ public final class HangulKeyboardView extends View
     private Consumer<GestureKey> previewKeySelectionListener;
     private boolean englishShiftActive;
     private boolean englishCapsLocked;
+    private int remotePendingMetaState;
     private int remoteLockedMetaState;
     private int previewPointerId = -1;
     private MotionEffectLevel motionEffectLevel = KeyboardPreferences.DEFAULT_MOTION_EFFECT_LEVEL;
@@ -439,6 +440,7 @@ public final class HangulKeyboardView extends View
     }
 
     void setRemoteMetaState(int pendingMetaState, int lockedMetaState) {
+        remotePendingMetaState = pendingMetaState;
         remoteLockedMetaState = lockedMetaState;
         invalidate();
     }
@@ -2393,6 +2395,7 @@ public final class HangulKeyboardView extends View
         float pressProgress = keyPressProgress(touchState);
         boolean shiftOnceActive = isShiftKey(key) && englishShiftActive && !englishCapsLocked;
         boolean shiftLockedActive = isShiftKey(key) && englishCapsLocked;
+        boolean remoteModifierPending = isRemoteMetaPending(key);
         boolean remoteModifierLocked = isRemoteMetaLocked(key);
         boolean englishLetterKey = isEnglishLetterKey(key);
         RectF visualBounds = keySlot.visualBounds();
@@ -2402,7 +2405,7 @@ public final class HangulKeyboardView extends View
                 : visualBounds;
         RectF surfaceBounds = keySurfaceBounds(faceBounds, pressProgress, keySurfaceScratch);
         drawKeyDepth(canvas, keySlot, faceBounds, pressProgress);
-        int faceColor = active || shiftOnceActive
+        int faceColor = active || shiftOnceActive || remoteModifierPending
                 ? settings.keyPressedColor
                 : baseColorForKey(keySlot);
         drawKeyFace(canvas, keySlot, surfaceBounds, faceColor, pressProgress);
@@ -2429,7 +2432,9 @@ public final class HangulKeyboardView extends View
             RectF iconBounds = iconSurfaceBoundsForKey(key, surfaceBounds);
             drawKeyIcon(canvas, key, icon, iconBounds, active);
         }
-        if (shiftLockedActive || remoteModifierLocked) {
+        if (remoteModifierPending && !remoteModifierLocked) {
+            drawModifierStateIndicator(canvas, surfaceBounds, true);
+        } else if (shiftLockedActive || remoteModifierLocked) {
             drawModifierStateIndicator(canvas, surfaceBounds, false);
         }
 
@@ -4525,6 +4530,11 @@ public final class HangulKeyboardView extends View
     private boolean isRemoteMetaLocked(GestureKey key) {
         int meta = remoteMetaForKey(key);
         return meta != 0 && (remoteLockedMetaState & meta) == meta;
+    }
+
+    private boolean isRemoteMetaPending(GestureKey key) {
+        int meta = remoteMetaForKey(key);
+        return meta != 0 && (remotePendingMetaState & meta) == meta;
     }
 
     private int remoteMetaForKey(GestureKey key) {
