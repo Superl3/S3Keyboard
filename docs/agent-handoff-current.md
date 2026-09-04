@@ -246,9 +246,10 @@ Implemented and verified on 2026-09-02 KST:
 
 ## Git / finalization status
 
-- The user explicitly requested finalization through S09 and accepted committing/pushing the remaining combined roadmap worktree.
-- The S03-S09 implementation, tests, release/check script hardening, roadmap documentation, and `docs\feature-catalog.md` belong to the final roadmap closeout commit.
-- Before pushing, run staged whitespace validation and confirm the intended file list; after pushing, verify `main` is clean and aligned with `origin/main`.
+- Product-expansion S01-S09 closeout was committed and pushed previously.
+- UI stabilization SUI01-SUI05 closeout was committed as `1500643` (`Complete UI stabilization regression pass`) and pushed to `origin/main` on 2026-09-04 KST.
+- Post-push `git status --short --branch` reported `main...origin/main` with a clean worktree.
+- Future work must start as a new explicitly scoped workstream; do not reopen completed S/SUI sessions as pending tasks.
 
 ## Useful artifacts
 

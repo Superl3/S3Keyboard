@@ -16,4 +16,4 @@ For every new UI stabilization session:
 
 Do not start the next session unless the user explicitly asks to continue beyond the current session boundary.
 
-Current next session: **SUI01 - `01-baseline-capture-inventory.md`**.
+Roadmap state: **COMPLETE. SUI01 through SUI05 are DONE; there is no next SUI session.**

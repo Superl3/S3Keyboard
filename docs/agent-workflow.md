@@ -49,25 +49,15 @@ rtk .\.android-tools\android-sdk\platform-tools\adb.exe -t <transport_id> shell 
 - `TouchBiasStore`: local input learning stats and redacted typing pattern event log.
 
 Visual background effects are layered separately from key styling. `effects.materialStyle`
-selects one of `solid`, `soft_keycap`, `frosted`, `acrylic`, or
-`experimental_refraction`. Solid, soft keycap, frosted, and acrylic are production-safe
-materials that use only theme-color Canvas rendering or Android's platform IME-window blur.
+selects exactly one of `solid`, `soft_keycap`, `frosted`, or `acrylic`.
+These four materials use only theme-color Canvas rendering or Android's platform IME-window blur.
 Old themes that declare blur or Glass without a material style normalize to `frosted`.
-They must never start accessibility capture implicitly.
-The IME must use `Window.setBackgroundBlurRadius()` without `FLAG_BLUR_BEHIND`,
-which would blur the entire host screen. True refraction requires a captured source
-texture. That is available only inside an owned preview/render tree; an IME cannot
-sample arbitrary pixels from another application's window.
-
-The optional accessibility Glass source is the explicit exception to that default boundary and
-is consumed only by `experimental_refraction`.
-On Android 14+ it uses `takeScreenshotOfWindow()` for the active application window, keeps only
-one roughly 100k-pixel frame in process memory, and rate-limits event-driven refreshes to less
-than three per second. It is user opt-in, defaults off, clears its frame when the IME closes, and
-must remain disabled for password fields. Devices without permission or API support fall back
-to the normal panel blur and theme tint. The same cached texture and one reused RuntimeShader
-render both the backplate and individual keycaps. Keycaps use per-key focus uniforms and a
-theme-color tint layer; never allocate a shader, bitmap, path, or capture per key or per frame.
+Legacy imports that explicitly contain `experimental_refraction` migrate one-way to `frosted`;
+Android/web UI and exports must not expose or emit the legacy value.
+The IME must use `Window.setBackgroundBlurRadius()` without `FLAG_BLUR_BEHIND`, which would blur
+the entire host screen. Do not reintroduce Accessibility/screen-capture backdrop sampling or
+AGSL/RuntimeShader refraction for the IME; an IME cannot directly sample arbitrary pixels from
+another application's window.
 
 ## Theme And Icon Rules
 
@@ -165,8 +155,7 @@ Point display packs (`geo-points`, `soft-symbols`, `terminal-points`, `punctuati
 
 `KeyboardVisualEffects` is part of `KeyboardSettings` and `KeyboardThemeJson`.
 
-- material style is the high-level user choice. Prefer `solid`, `soft_keycap`, `frosted`, or
-  `acrylic` for built-in themes. `experimental_refraction` must remain explicit and opt-in.
+- material style is the high-level user choice. Supported values are exactly `solid`, `soft_keycap`, `frosted`, and `acrylic`; legacy `experimental_refraction` is import-only and normalizes to `frosted`.
 - blur uses Android 12+ cross-window IME blur at runtime. Older or unsupported devices use only a
   translucent theme-colored panel; they do not add a fake white/black wash. Preview surfaces use
   the same translucent theme color because a static preview cannot sample the host app.
