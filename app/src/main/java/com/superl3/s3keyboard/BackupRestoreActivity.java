@@ -31,7 +31,9 @@ public final class BackupRestoreActivity extends Activity {
         super.onCreate(savedInstanceState);
         SettingsSystemBars.apply(this);
         if (getActionBar() != null) getActionBar().hide();
-        setContentView(createContent());
+        ScrollView content = createContent();
+        SettingsSystemBars.applyTopInset(content);
+        setContentView(content);
     }
 
     private ScrollView createContent() {

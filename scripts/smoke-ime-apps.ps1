@@ -85,12 +85,21 @@ function Test-PackageInstalled {
 }
 
 function Get-ImeDump {
-    return Invoke-AdbTargetText shell dumpsys input_method
+    for ($attempt = 0; $attempt -lt 4; $attempt++) {
+        $result = & $Adb @AdbTarget shell dumpsys input_method
+        if ($LASTEXITCODE -eq 0) {
+            return ($result | Out-String)
+        }
+        Start-Sleep -Milliseconds 400
+    }
+    throw "adb failed after retries: shell dumpsys input_method"
 }
 
 function Test-ImeVisible {
     param([string] $Dump)
-    return $Dump.Contains("mInputShown=true") -and $Dump.Contains($Ime)
+    return $Dump.Contains("mDecorViewVisible=true") -and
+        $Dump.Contains("mIsInputViewShown=true") -and
+        $Dump.Contains($Ime)
 }
 
 function Test-ImeSelected {
@@ -341,10 +350,10 @@ function Focus-LocalPracticeField {
     $tapY = [int](([int] $Matches[2] + [int] $Matches[4]) / 2)
 
     for ($attempt = 0; $attempt -lt 12; $attempt++) {
-        Invoke-AdbTarget shell input tap $tapX $tapY
-        Start-Sleep -Milliseconds 500
         Invoke-AdbTarget shell ime set $Ime
-        Start-Sleep -Milliseconds 700
+        Start-Sleep -Milliseconds 300
+        Invoke-AdbTarget shell input tap $tapX $tapY
+        Start-Sleep -Milliseconds 900
         if (Test-ImeVisible (Get-ImeDump)) {
             return
         }

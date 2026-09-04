@@ -1,6 +1,6 @@
 # Current Agent Handoff
 
-Updated: 2026-09-03 KST
+Updated: 2026-09-04 KST
 Repository: `C:\Users\bug95\Documents\Codex\2026-05-19\mimic-apk-ux`
 Branch: `main`
 Base HEAD when this work started: `1cbcfb7`
@@ -17,10 +17,10 @@ Base HEAD when this work started: `1cbcfb7`
 
 The 2026-09 S01-S09 product-expansion roadmap and installable beta publishing work are treated as complete. Do not reopen them as unfinished work.
 
-New canonical entry point: `docs\ui-stabilization-2026-09\README.md`.
-Current next session: **SUI01 — baseline capture inventory**.
+Canonical entry point: `docs\ui-stabilization-2026-09\README.md`.
+**UI stabilization roadmap state: COMPLETE. There is no unfinished SUI session.**
 
-This workstream is intentionally conservative: capture every meaningful view first, classify objective anomalies, and change only `FIX/BLOCKER` items. The unwanted clipboard-looking IME top bar is a priority observation for SUI01 and repair target for SUI02 once its runtime cause is established. Broad aesthetic redesign is out of scope.
+SUI01 through SUI05 are DONE. Baseline evidence remains `captures\ui-stabilization-202609\baseline` with `view-inventory.md` as the anomaly ledger. SUI02 removed the confirmed unwanted always-reserved clipboard/Text Tools top row while preserving explicit Text Tools access and sensitive-field suppression. SUI03 resolved the shared MainActivity/status-bar collision. SUI04 applied the shared inset repair to Theme Selector, Theme Editor, Accent Placement, Diagnostics, and Backup/Restore and changed the cramped Theme Selector A/B/light/dark row to two readable rows. SUI05 recaptured the complete clean-AVD portrait matrix at `captures\ui-stabilization-202609\sui05-final\app-settings-clean-avd`; its `.png/.xml` filename set matches baseline 127/127 with missing 0 and extra 0. Strict IME evidence is `captures\ui-stabilization-202609\sui05-final\ime-smoke-strict2`, responsive dark/landscape evidence is under `captures\ui-stabilization-202609\sui05-final\responsive`, and the final report is `docs\ui-stabilization-2026-09\final-visual-verification.md`. Fresh clean-data Dingul smoke is `captures\dingul-typing-20260904-151422` and passed 16 key actions. No unresolved in-scope `FIX/BLOCKER` remains; broad aesthetic redesign stayed out of scope.
 
 ## Hard constraints
 
@@ -112,15 +112,15 @@ Follow-up real-app artifacts are in `captures\runtime-input-followup-20260901`.
 ## Dingul probe status
 
 `scripts\smoke-dingul-typing.ps1` was hardened to accept `-Serial`, avoid ambiguous emulator selection, locate the practice EditText through UTF-8 uiautomator XML, retry transient dumps, and force `keyboard_mode=hangul`.
-The previous `Dingul typing plan was incomplete` state is no longer reproducible with the current APK/AVD state; no input-code change was required.
+A transient `Dingul typing plan was incomplete`/ADB artifact failure was reproducible while the SUI05 audit AVD was changing orientation/state; after restoring portrait and running with clean app data, the strict probe passed without any production input-code change.
 
-Latest run on `emulator-5558`:
-- command: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-dingul-typing.ps1 -SkipBuild -SkipEmulatorLaunch -Serial emulator-5558`
+Latest clean-data run on `emulator-5554`:
+- command: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-dingul-typing.ps1 -SkipBuild -SkipEmulatorLaunch -Serial emulator-5554 -ResetAppData`
 - result: `Dingul typing probe passed: 16 key actions`
-- artifacts: `captures\dingul-typing-20260901-133913`
-- `probe-plan.txt`: 20 PLAN rows
+- artifacts: `captures\dingul-typing-20260904-151422`
 - `probe-emits.txt`: 16 expected emitted actions
-- final input-method state has S3 selected and `mInputShown=true`
+- final input-method state uses strict actual IME-view visibility (`mDecorViewVisible=true`, `mIsInputViewShown=true`)
+- harness now retries transient `dumpsys input_method` and validates a non-zero final screenshot pull
 
 ## Runtime key behavior follow-up
 

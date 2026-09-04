@@ -36,3 +36,12 @@ Recapture the complete view matrix after all targeted repairs, catch only residu
 
 ## Done gate
 SUI05 and the roadmap are `DONE` only when the post-fix visual inventory is complete, there are no unresolved objective UI defects in scope, automatic/runtime evidence is separated clearly, and the rolling handoff accurately describes any remaining external-only caveats.
+
+## Completion — DONE (2026-09-04 KST)
+- Final clean-AVD app/settings matrix completed at `captures\ui-stabilization-202609\sui05-final\app-settings-clean-avd`; it matches the SUI01 baseline filename set 127/127 with missing 0 and extra 0.
+- Representative repaired portrait screens plus dark portrait and forced-landscape frames were visually reviewed; no new in-scope `FIX/BLOCKER` was found.
+- Strict IME smoke completed at `captures\ui-stabilization-202609\sui05-final\ime-smoke-strict2`; the harness was tightened so IME-visible PASS requires the actual input view/decor to be visible.
+- Fresh clean-data Dingul runtime probe passed 16/16 actions at `captures\dingul-typing-20260904-151422`.
+- `scripts\check.ps1`, web builder syntax check, and static preview regeneration all pass after the final harness changes.
+- Final report: `docs\ui-stabilization-2026-09\final-visual-verification.md`.
+- Remaining release signing, real Windows receiver delivery, and physical-device/TalkBack checks are external/manual caveats, not unfinished SUI05 engineering.

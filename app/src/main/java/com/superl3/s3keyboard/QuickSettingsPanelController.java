@@ -28,6 +28,7 @@ final class QuickSettingsPanelController {
     private final BooleanSupplier activeNumberRowVisible;
     private final Runnable activeNumberRowToggler;
     private final Consumer<HandednessMode> handednessApplier;
+    private final Runnable textToolsOpener;
     private final Runnable themeClipboardImporter;
     private final Runnable inputIssueReportCopier;
     private final Runnable dismissQuickSettings;
@@ -50,6 +51,7 @@ final class QuickSettingsPanelController {
             BooleanSupplier activeNumberRowVisible,
             Runnable activeNumberRowToggler,
             Consumer<HandednessMode> handednessApplier,
+            Runnable textToolsOpener,
             Runnable themeClipboardImporter,
             Runnable inputIssueReportCopier,
             Runnable dismissQuickSettings) {
@@ -72,6 +74,7 @@ final class QuickSettingsPanelController {
         this.activeNumberRowVisible = RuntimeDefaults.booleanSupplier(activeNumberRowVisible);
         this.activeNumberRowToggler = RuntimeDefaults.runnable(activeNumberRowToggler);
         this.handednessApplier = RuntimeDefaults.handednessConsumer(handednessApplier);
+        this.textToolsOpener = RuntimeDefaults.runnable(textToolsOpener);
         this.themeClipboardImporter = RuntimeDefaults.runnable(themeClipboardImporter);
         this.inputIssueReportCopier = RuntimeDefaults.runnable(inputIssueReportCopier);
         this.dismissQuickSettings = RuntimeDefaults.runnable(dismissQuickSettings);
@@ -150,6 +153,16 @@ final class QuickSettingsPanelController {
                         numberRowToggleLabel.get(),
                         activeNumberRowVisible.getAsBoolean(),
                         v -> activeNumberRowToggler.run()),
+                8);
+
+        QuickPanelUi.addWithTop(
+                context,
+                panel,
+                QuickPanelUi.quickButton(
+                        context,
+                        context.getString(R.string.clipboard_toolbar_button),
+                        false,
+                        v -> textToolsOpener.run()),
                 8);
 
         if (quickThemePanelController != null) {

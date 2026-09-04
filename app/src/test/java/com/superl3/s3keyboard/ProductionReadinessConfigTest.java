@@ -1381,10 +1381,19 @@ public final class ProductionReadinessConfigTest {
         assertTrue(bars.contains("window.setNavigationBarColor(palette.background)"));
         assertTrue(bars.contains("SYSTEM_UI_FLAG_LIGHT_STATUS_BAR"));
         assertTrue(bars.contains("SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR"));
+        assertTrue(bars.contains("static void applyTopInset(View root)"));
+        assertTrue(bars.contains("insets.getSystemWindowInsetTop()"));
         assertTrue(javaSource("MainActivity").contains("SettingsSystemBars.apply(this);"));
+        assertTrue(javaSource("MainActivity").contains("SettingsSystemBars.applyTopInset(page);"));
         assertTrue(javaSource("ThemeSelectorActivity").contains("SettingsSystemBars.apply(this);"));
+        assertTrue(javaSource("ThemeSelectorActivity").contains("SettingsSystemBars.applyTopInset(content);"));
+        assertTrue(javaSource("ThemeSelectorActivity").contains("group.addView(pairRow"));
         assertTrue(javaSource("ThemeEditorActivity").contains("SettingsSystemBars.apply(this);"));
+        assertTrue(javaSource("ThemeEditorActivity").contains("SettingsSystemBars.applyTopInset(content);"));
         assertTrue(javaSource("AccentPlacementActivity").contains("SettingsSystemBars.apply(this);"));
+        assertTrue(javaSource("AccentPlacementActivity").contains("SettingsSystemBars.applyTopInset(content);"));
+        assertTrue(javaSource("DiagnosticsActivity").contains("SettingsSystemBars.applyTopInset(content);"));
+        assertTrue(javaSource("BackupRestoreActivity").contains("SettingsSystemBars.applyTopInset(content);"));
     }
 
     @Test
@@ -1955,6 +1964,23 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void ordinaryImeDoesNotReserveClipboardToolbarAndKeepsExplicitTextToolsAccess() throws Exception {
+        String service = javaSource("S3KeyboardService");
+        String clipboard = javaSource("ClipboardPanelController");
+        String quickSettings = javaSource("QuickSettingsPanelController");
+
+        assertFalse(service.contains("clipboardPanelController.createToolbar()"));
+        assertFalse(clipboard.contains("createToolbar()"));
+        assertFalse(clipboard.contains("toolbarLayout"));
+        assertTrue(service.contains("this::openTextToolsFromQuickSettings"));
+        assertTrue(service.contains("dismissQuickSettings();\n        toggleClipboardPanel();"));
+        assertTrue(quickSettings.contains("private final Runnable textToolsOpener"));
+        assertEquals(1, countOccurrences(quickSettings, "R.string.clipboard_toolbar_button"));
+        assertEquals(1, countOccurrences(quickSettings, "v -> textToolsOpener.run()"));
+        assertTrue(clipboard.contains("if (!textToolsAllowed() && clipboardView != null)"));
+    }
+
+    @Test
     public void quickSettingsPanelStaysOutOfImeServiceBody() throws Exception {
         String service = javaSource("S3KeyboardService");
         String normalizedService = service.replace("\r\n", "\n");
@@ -2283,7 +2309,9 @@ public final class ProductionReadinessConfigTest {
         assertTrue(controller.contains("addPrimaryClipChangedListener("));
         assertTrue(controller.contains("new ClipboardView("));
         assertTrue(controller.contains("new ClipboardStore("));
-        assertTrue(controller.contains("createClipboardButton()"));
+        assertFalse(service.contains("clipboardPanelController.createToolbar()"));
+        assertFalse(controller.contains("createToolbar()"));
+        assertFalse(controller.contains("createClipboardButton()"));
         assertTrue(controller.contains("TextToolsPolicy.allows("));
         assertTrue(controller.contains("R.string.text_tools_sensitive_field"));
         assertTrue(controller.contains("TextToolsStore"));
@@ -3509,21 +3537,24 @@ public final class ProductionReadinessConfigTest {
         assertFalse(clipboardView.contains("private LayoutParams entryItemParams("));
         assertFalse(clipboardView.contains("private int dp("));
         assertFalse(clipboardView.contains("Math.round(value *"));
-        assertTrue(clipboardPanel.contains("new ImageButton(context)"));
-        assertTrue(clipboardPanel.contains("R.drawable.ic_keyboard_clipboard"));
-        assertTrue(clipboardPanel.contains("R.string.clipboard_toolbar_button"));
-        assertTrue(clipboardPanel.contains("SettingsRowBuilder.fixedSize(context, 48, 48)"));
-        assertTrue(clipboardPanel.contains("SettingsRowBuilder.horizontal(context)"));
-        assertTrue(clipboardPanel.contains("SettingsRowBuilder.weightedSpacer("));
+        String quickSettings = javaSource("QuickSettingsPanelController");
+        String leftAssistRail = javaSource("LeftAssistRailItem");
         assertTrue(clipboardPanel.contains("SettingsRowBuilder.frameMatchMatch()"));
-        assertTrue(clipboardPanel.contains("private int toolbarForegroundColor("));
-        assertEquals("Clipboard toolbar contrast should stay behind one helper.",
-                1,
-                countOccurrences(clipboardPanel, "KeyboardColorMath.contrastTextColor("));
+        assertFalse(clipboardPanel.contains("new ImageButton(context)"));
+        assertFalse(clipboardPanel.contains("R.drawable.ic_keyboard_clipboard"));
+        assertFalse(clipboardPanel.contains("R.string.clipboard_toolbar_button"));
+        assertFalse(clipboardPanel.contains("SettingsRowBuilder.fixedSize(context, 48, 48)"));
+        assertFalse(clipboardPanel.contains("SettingsRowBuilder.horizontal(context)"));
+        assertFalse(clipboardPanel.contains("SettingsRowBuilder.weightedSpacer("));
+        assertFalse(clipboardPanel.contains("private int toolbarForegroundColor("));
+        assertEquals(0, countOccurrences(clipboardPanel, "KeyboardColorMath.contrastTextColor("));
         assertFalse(clipboardPanel.contains("new Button("));
         assertFalse(clipboardPanel.contains("new LinearLayout(context)"));
         assertFalse(clipboardPanel.contains("setOrientation(LinearLayout."));
-        assertTrue(clipboardPanel.contains("button.setOnClickListener(view -> toggle())"));
+        assertTrue(quickSettings.contains("private final Runnable textToolsOpener;"));
+        assertEquals(1, countOccurrences(quickSettings, "R.string.clipboard_toolbar_button"));
+        assertEquals(1, countOccurrences(quickSettings, "v -> textToolsOpener.run()"));
+        assertTrue(leftAssistRail.contains("CLIPBOARD(KeyboardCommands.CMD_CLIPBOARD_PANEL"));
         assertFalse(clipboardPanel.contains("new TextView("));
         assertFalse(clipboardPanel.contains("new LinearLayout.LayoutParams("));
         assertFalse(clipboardPanel.contains("new FrameLayout.LayoutParams("));
@@ -3592,7 +3623,6 @@ public final class ProductionReadinessConfigTest {
         String colorMath = javaSource("KeyboardColorMath");
         assertTrue(colorMath.contains("contrastTextColor("));
         for (String className : new String[] {
-                "ClipboardPanelController",
                 "HangulKeyboardView",
                 "ThemeEditorActivity"
         }) {

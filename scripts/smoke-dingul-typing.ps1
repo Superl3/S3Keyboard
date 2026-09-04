@@ -71,16 +71,21 @@ function Invoke-AdbTarget {
 }
 
 function Get-ImeDump {
-    $dump = & $Adb @AdbTarget shell dumpsys input_method
-    if ($LASTEXITCODE -ne 0) {
-        throw "adb failed: shell dumpsys input_method"
+    for ($attempt = 0; $attempt -lt 4; $attempt++) {
+        $dump = & $Adb @AdbTarget shell dumpsys input_method
+        if ($LASTEXITCODE -eq 0) {
+            return ($dump | Out-String)
+        }
+        Start-Sleep -Milliseconds 400
     }
-    return ($dump | Out-String)
+    throw "adb failed after retries: shell dumpsys input_method"
 }
 
 function Test-ImeReady {
     $dump = Get-ImeDump
-    return $dump.Contains("mInputShown=true") -and $dump.Contains($Ime)
+    return $dump.Contains("mDecorViewVisible=true") -and
+        $dump.Contains("mIsInputViewShown=true") -and
+        $dump.Contains($Ime)
 }
 
 function Focus-PracticeField {
@@ -118,10 +123,10 @@ function Focus-PracticeField {
     $tapY = [int](([int] $Matches[2] + [int] $Matches[4]) / 2)
 
     for ($attempt = 0; $attempt -lt 8; $attempt++) {
-        Invoke-AdbTarget shell input tap $tapX $tapY
-        Start-Sleep -Milliseconds 450
         Invoke-AdbTarget shell ime set $Ime
-        Start-Sleep -Milliseconds 650
+        Start-Sleep -Milliseconds 300
+        Invoke-AdbTarget shell input tap $tapX $tapY
+        Start-Sleep -Milliseconds 900
         if (Test-ImeReady) {
             return
         }
@@ -280,7 +285,20 @@ $finalDump | Set-Content -LiteralPath (Join-Path $CaptureDir "input_method-final
 if ($LASTEXITCODE -ne 0) {
     throw "adb failed: shell screencap -p /sdcard/dingul-typing-final.png"
 }
-Invoke-AdbTarget pull /sdcard/dingul-typing-final.png (Join-Path $CaptureDir "dingul-typing-final.png")
+$screenFile = Join-Path $CaptureDir "dingul-typing-final.png"
+Remove-Item -LiteralPath $screenFile -Force -ErrorAction SilentlyContinue
+$pulled = $false
+for ($pullAttempt = 0; $pullAttempt -lt 4; $pullAttempt++) {
+    & $Adb @AdbTarget pull /sdcard/dingul-typing-final.png $screenFile | Out-Host
+    if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $screenFile) -and (Get-Item -LiteralPath $screenFile).Length -gt 0) {
+        $pulled = $true
+        break
+    }
+    Start-Sleep -Milliseconds 350
+}
+if (-not $pulled) {
+    throw "adb failed after retries: pull /sdcard/dingul-typing-final.png $screenFile"
+}
 
 Write-Host "Dingul typing probe passed: $($Cases.Count) key actions"
 Write-Host "Artifacts: $CaptureDir"

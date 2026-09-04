@@ -43,7 +43,9 @@ public final class ThemeSelectorActivity extends Activity {
             getActionBar().hide();
         }
         settings = KeyboardPreferences.load(this);
-        setContentView(createContentView());
+        View content = createContentView();
+        SettingsSystemBars.applyTopInset(content);
+        setContentView(content);
     }
 
     @Override
@@ -331,16 +333,21 @@ public final class ThemeSelectorActivity extends Activity {
 
     private LinearLayout themeManagementButtons(ThemeOption option) {
         String id = option.stableId();
-        LinearLayout row = SettingsRowBuilder.horizontal(this);
-        row.addView(SettingsRowBuilder.button(this, R.string.theme_management_set_a, v -> compareAId = id),
+        LinearLayout group = SettingsRowBuilder.vertical(this);
+        LinearLayout compareRow = SettingsRowBuilder.horizontal(this);
+        compareRow.addView(SettingsRowBuilder.button(this, R.string.theme_management_set_a, v -> compareAId = id),
                 SettingsRowBuilder.weightedWrap(this, 1, 1));
-        row.addView(SettingsRowBuilder.button(this, R.string.theme_management_set_b, v -> compareBId = id),
+        compareRow.addView(SettingsRowBuilder.button(this, R.string.theme_management_set_b, v -> compareBId = id),
                 SettingsRowBuilder.weightedWrap(this, 1, 1));
-        row.addView(SettingsRowBuilder.button(this, R.string.theme_management_set_light, v -> setPairSlot(id, true)),
+        group.addView(compareRow, SettingsRowBuilder.matchWrap());
+
+        LinearLayout pairRow = SettingsRowBuilder.horizontal(this);
+        pairRow.addView(SettingsRowBuilder.button(this, R.string.theme_management_set_light, v -> setPairSlot(id, true)),
                 SettingsRowBuilder.weightedWrap(this, 1, 1));
-        row.addView(SettingsRowBuilder.button(this, R.string.theme_management_set_dark, v -> setPairSlot(id, false)),
+        pairRow.addView(SettingsRowBuilder.button(this, R.string.theme_management_set_dark, v -> setPairSlot(id, false)),
                 SettingsRowBuilder.weightedWrap(this, 1, 1));
-        return row;
+        group.addView(pairRow, SettingsRowBuilder.matchWrapWithTop(this, 2));
+        return group;
     }
 
     private void setPairSlot(String id, boolean light) {

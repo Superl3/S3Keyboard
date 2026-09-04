@@ -42,7 +42,9 @@ public final class AccentPlacementActivity extends Activity {
             getActionBar().hide();
         }
         settings = KeyboardPreferences.load(this);
-        setContentView(createContentView());
+        View content = createContentView();
+        SettingsSystemBars.applyTopInset(content);
+        setContentView(content);
         syncControls();
     }
 

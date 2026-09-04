@@ -26,7 +26,9 @@ public final class DiagnosticsActivity extends Activity {
         super.onCreate(savedInstanceState);
         SettingsSystemBars.apply(this);
         if (getActionBar() != null) getActionBar().hide();
-        setContentView(createContentView());
+        ScrollView content = createContentView();
+        SettingsSystemBars.applyTopInset(content);
+        setContentView(content);
         refreshReport();
     }
 

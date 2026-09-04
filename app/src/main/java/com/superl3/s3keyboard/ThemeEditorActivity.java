@@ -132,7 +132,9 @@ public final class ThemeEditorActivity extends Activity {
         }
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         settings = KeyboardPreferences.load(this);
-        setContentView(createContentView());
+        View content = createContentView();
+        SettingsSystemBars.applyTopInset(content);
+        setContentView(content);
         syncControls();
     }
 

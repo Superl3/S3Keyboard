@@ -33,3 +33,11 @@ For every changed settings area, save before/after portrait captures and hierarc
 
 ## Done gate
 All SUI01 main-settings `FIX/BLOCKER` entries are resolved or explicitly reclassified. No healthy settings section is restyled without an anomaly reference. Evidence lives under `captures/ui-stabilization-202609/sui03-settings/` and the ledger records every intentional reorder.
+
+## Completion — 2026-09-04 KST
+- SUI01's only main-settings `FIX` was the Android 15 edge-to-edge status-bar collision shared by all eight wizard steps. `SettingsSystemBars.applyTopInset(View)` now applies the runtime status inset to the MainActivity root, and MainActivity opts into it without changing section order, labels, persistence, or control behavior.
+- Fresh post-fix matrix is `captures/ui-stabilization-202609/sui03-settings/full-matrix/`: all eight settings steps have top + three scroll PNG/XML pairs. Representative step 1/2/5/8 captures show the app title fully below the status icons and otherwise unchanged content geometry.
+- Rotation/recreation check used the real window-manager user-rotation lock. Step 3 `레이아웃` remained selected in landscape and again after returning to portrait (`rotate-valid-landscape.png`, `rotate-valid-portrait-after.png`).
+- Inline practice-field/IME check is `practice-ime-open-valid.png` plus `practice-ime-open-valid-input_method.txt`; the S3 IME opens over the Quick Start practice field while the fixed title/header remains correctly inset and the content remains usable.
+- Focused `ProductionReadinessConfigTest` + `assembleDebug` PASS. Canonical `scripts/check.ps1` PASS (`testDebugUnitTest`, lint, assemble, theme/material/settings audits), and `git diff --check` reports no whitespace errors.
+- No settings reorder or aesthetic restyle was justified by the baseline, so none was performed. SUI01's shared MainActivity settings defect is resolved; secondary-activity status-inset defects remain intentionally assigned to SUI04.

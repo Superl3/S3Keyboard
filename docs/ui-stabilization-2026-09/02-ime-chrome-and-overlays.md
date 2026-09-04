@@ -40,3 +40,12 @@ Capture before/after for at least:
 
 ## Done gate
 All SUI01 IME `FIX/BLOCKER` items are resolved or explicitly reclassified with evidence. Ordinary typing no longer contains the unwanted top bar, intentional surfaces still work, and before/after captures exist under `captures/ui-stabilization-202609/sui02-ime/`.
+
+## Completion — 2026-09-04 KST
+- Removed the always-reserved `ClipboardPanelController.createToolbar()` row from the IME root. Ordinary typing no longer shows the clipboard-looking/Text Tools bar merely because Text Tools are allowed.
+- Kept Text Tools explicit and reachable: Quick Settings now owns a Text Tools action, while the existing assist-rail command remains intact. Sensitive-field suppression continues to hide an already-open clipboard/Text Tools surface when policy disallows it.
+- Fresh SUI02 evidence is under `captures/ui-stabilization-202609/sui02-ime/`. `qwerty-ordinary-closed.png` confirms the unwanted row is absent; `text-action-open-fresh.png` and `text-action-closed-fresh.png` prove the text-action overlay can open and dismiss without hiding the IME. Password/number/multiline policy captures remain clean.
+- ADB synthetic long-press/swipe injection on the extreme-left settings key was not reliable enough to certify the Quick Settings gesture itself: repeated injected streams sometimes resolved as the normal settings tap. No production gesture/hit-test code was changed for this harness limitation. Existing S03/S07 runtime evidence remains the authority for one-finger/Caps and Remote toolbar semantics.
+- Current runtime audit log shows `bottomDelta=0` for both Hangul and English representative states after the root change. Fresh Dingul smoke: `captures/dingul-typing-20260904-111236`, 16 emitted key actions, PASS.
+- `ProductionReadinessConfigTest` locks out recreation of the forced toolbar and locks in explicit Text Tools access. Focused test PASS; canonical `scripts/check.ps1` PASS (`testDebugUnitTest`, lint, assemble, theme/material/settings audits).
+- SUI01's IME `FIX` is resolved. No unrelated renderer, mapping, text-action, Remote-key, or one-finger semantics were changed.

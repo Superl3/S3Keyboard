@@ -161,9 +161,6 @@ public final class S3KeyboardService extends InputMethodService {
                 SettingsRowBuilder.dp(this, 2));
         mainContainer.addView(runtimeStateIndicatorView, SettingsRowBuilder.matchWrap());
         mainContainer.addView(
-                clipboardPanelController.createToolbar(),
-                SettingsRowBuilder.matchWrap());
-        mainContainer.addView(
                 remoteNavigationToolbarController.createView(),
                 SettingsRowBuilder.matchWrap());
         mainContainer.addView(keyboardSurfaceContainer, SettingsRowBuilder.matchWrap());
@@ -309,6 +306,7 @@ public final class S3KeyboardService extends InputMethodService {
                 this::activeNumberRowVisible,
                 this::toggleActiveNumberRow,
                 this::setHandedness,
+                this::openTextToolsFromQuickSettings,
                 this::importThemeFromClipboard,
                 this::copyInputIssueReport,
                 this::dismissQuickSettings);
@@ -725,6 +723,11 @@ public final class S3KeyboardService extends InputMethodService {
             clipboardPanelController.toggle();
             requestOverlayTouchableRegionUpdate();
         }
+    }
+
+    private void openTextToolsFromQuickSettings() {
+        dismissQuickSettings();
+        toggleClipboardPanel();
     }
 
     void handleVoiceInput() {
@@ -2186,9 +2189,6 @@ public final class S3KeyboardService extends InputMethodService {
     }
 
     private void applyCurrentSettingsToInputView() {
-        if (clipboardPanelController != null) {
-            clipboardPanelController.updateAppearance();
-        }
         if (inputView != null) {
             inputView.setKeyboardSurface(editorPolicy.surface);
             inputView.setLayoutProfiles(layoutProfiles);

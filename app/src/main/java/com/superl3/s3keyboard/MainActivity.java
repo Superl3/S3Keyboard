@@ -119,6 +119,7 @@ public final class MainActivity extends Activity {
         LinearLayout page = SettingsRowBuilder.vertical(this);
         page.setBackgroundColor(ui.background);
         page.setFocusableInTouchMode(true);
+        SettingsSystemBars.applyTopInset(page);
         if (!demoShowKeyboard) {
             page.requestFocus();
         }

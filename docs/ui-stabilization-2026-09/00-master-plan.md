@@ -1,6 +1,6 @@
 # UI Stabilization Master Plan
 
-Updated: 2026-09-03 KST
+Updated: 2026-09-04 KST
 Repository: `C:\Users\bug95\Documents\Codex\2026-05-19\mimic-apk-ux`
 
 ## Goal
@@ -39,11 +39,13 @@ Audit every meaningful app/settings/IME view with runtime captures, identify onl
 ## Progress ledger
 | Session | State | Gate |
 |---|---|---|
-| SUI01 | NEXT | complete runtime view inventory + capture matrix + anomaly ledger; no unjustified visual changes |
-| SUI02 | TODO | ordinary IME has no forced auxiliary top bar; intentional overlays/toolbars appear only in their valid states; before/after evidence |
-| SUI03 | TODO | main settings sections have no clipping/overlap/reachability defects and any reorder is tied to a documented usability defect |
-| SUI04 | TODO | specialized/secondary surfaces and small-height/landscape cases have no remaining FIX/BLOCKER items |
-| SUI05 | TODO | full post-fix capture matrix reviewed; no unresolved FIX/BLOCKER; canonical checks and final handoff pass |
+| SUI01 | DONE | baseline app/settings + IME inventory captured; anomaly ledger records only objective FIX items; no product UI changes |
+| SUI02 | DONE | forced ordinary clipboard/Text Tools top bar removed; explicit Text Tools access preserved; text-action/policy/runtime geometry evidence passes |
+| SUI03 | DONE | shared MainActivity status-bar collision fixed across all eight settings steps; full runtime matrix, rotation, practice-IME, and canonical checks pass |
+| SUI04 | DONE | five secondary Activity status-inset defects plus Theme Selector management-label wrapping resolved; portrait and targeted landscape evidence pass |
+| SUI05 | DONE | complete 127/127 post-fix matrix reviewed; strict IME + fresh Dingul + dark/landscape evidence pass; no unresolved FIX/BLOCKER; canonical checks and final handoff pass |
 
 ## Definition of done
+**Roadmap state: COMPLETE.** SUI01-SUI05 are all `DONE`; the final evidence report is `final-visual-verification.md`.
+
 This roadmap is complete only when every meaningful view has post-change runtime evidence, all ledger items are either `KEEP`, accepted `MINOR`, or resolved, and the final report lists exactly what changed and what was deliberately left untouched.

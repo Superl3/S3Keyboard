@@ -41,3 +41,13 @@ Each `FIX/BLOCKER` row must record: capture filename, reproduction state, exact 
 
 ## Done gate
 SUI01 is `DONE` only when the baseline inventory and anomaly ledger are complete enough that SUI02-SUI04 can work from explicit defects rather than visual guesswork. Stop after updating the master ledger/handoff.
+
+## Completion — DONE 2026-09-04 KST
+
+- Added `scripts/capture-ui-stabilization-baseline.ps1`, kept ASCII-only for Windows PowerShell 5.1, with retry handling for transient `uiautomator` null-root failures.
+- Fresh app/settings baseline: `captures/ui-stabilization-202609/baseline/` with all eight wizard steps plus Theme selector/editor, Accent placement, Layout editor, expanded Remote, Android/IME, diagnostics and backup/restore. Each automated app/settings frame has PNG + hierarchy XML.
+- Fresh IME policy baseline: `captures/ui-stabilization-202609/baseline/ime-smoke/` covers standard, password, number, URL, email, web-edit, search, multiline and installed real-app targets.
+- Canonical inventory/anomaly ledger: `captures/ui-stabilization-202609/baseline/view-inventory.md`.
+- Confirmed SUI02 defect: ordinary Text-Tools-eligible input always reserves the clipboard-only toolbar; password/number states remove it, matching `ClipboardPanelController.updateVisibility()` exactly.
+- Confirmed later defects without changing them: shared Main settings status-bar intrusion (SUI03), and secondary Activity status-bar intrusion plus Theme selector filter wrapping (SUI04).
+- No product UI source was changed in SUI01; only capture tooling and documentation were added/updated.

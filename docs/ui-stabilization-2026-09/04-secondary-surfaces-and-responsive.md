@@ -34,3 +34,11 @@ Only repair SUI01 `FIX/BLOCKER` items or newly exposed defects caused by SUI02/S
 
 ## Done gate
 All specialized and responsive `FIX/BLOCKER` entries are resolved or explicitly accepted/reclassified, with evidence under `captures/ui-stabilization-202609/sui04-secondary/`. No feature behavior is changed merely to simplify layout.
+
+## Completion — 2026-09-04 KST
+- SUI01's five secondary-activity status-bar `FIX` items are resolved. `ThemeSelectorActivity`, `ThemeEditorActivity`, `AccentPlacementActivity`, `DiagnosticsActivity`, and `BackupRestoreActivity` now apply the shared runtime top inset to their content root before `setContentView`, matching the SUI03 MainActivity fix without changing feature behavior.
+- Theme selector's per-card A/B/light/dark management row was also a captured SUI01 `FIX`. A temporary one-line/ellipsis treatment still truncated `☀ 라이트`/`☾ 다크`, so the final layout uses two equal-width rows: `A | B`, then `☀ 라이트 | ☾ 다크`. The final portrait capture shows all four labels intact.
+- Canonical portrait evidence is `captures/ui-stabilization-202609/sui04-secondary/`; the latest `theme-selector-top.png`, `theme-editor-top.png`, `accent-placement-top.png`, `diagnostics-top.png`, and `backup-restore-top.png` all start below the status bar. Layout Editor and expanded Remote surfaces were rechecked and remain `KEEP`.
+- Constrained-height evidence is under `captures/ui-stabilization-202609/sui04-secondary/landscape/`. Theme Selector and Theme Editor both preserve the fixed inset and usable content in landscape; Theme Editor's full preview remains visible. Broader automated landscape traversal was not used as pass evidence because repeated `uiautomator` polling destabilized the audit AVD/System UI; no production code change was made for that harness-only instability.
+- Focused `ProductionReadinessConfigTest` + `assembleDebug` PASS. Canonical `scripts/check.ps1` PASS (`testDebugUnitTest`, lint, assemble, theme/material/settings audits), and `git diff --check` reports no whitespace errors.
+- No visual redesign, input behavior, editor/import/export semantics, or persistence behavior was changed. All SUI01 secondary-surface `FIX` entries are resolved; no SUI04 `BLOCKER` remains.

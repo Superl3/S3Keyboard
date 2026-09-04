@@ -30,4 +30,19 @@ final class SettingsSystemBars {
         }
         decor.setSystemUiVisibility(flags);
     }
+
+    static void applyTopInset(View root) {
+        if (root == null) {
+            return;
+        }
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            view.setPadding(
+                    view.getPaddingLeft(),
+                    insets.getSystemWindowInsetTop(),
+                    view.getPaddingRight(),
+                    view.getPaddingBottom());
+            return insets;
+        });
+        root.requestApplyInsets();
+    }
 }
