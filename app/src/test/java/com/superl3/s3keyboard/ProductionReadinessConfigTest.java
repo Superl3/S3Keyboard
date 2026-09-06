@@ -1981,6 +1981,31 @@ public final class ProductionReadinessConfigTest {
     }
 
     @Test
+    public void ordinaryImeKeepsChromeAndDebugWorkOffTheInputHotPath() throws Exception {
+        String service = javaSource("S3KeyboardService");
+        String preferences = javaSource("KeyboardPreferences");
+        String keyboard = javaSource("HangulKeyboardView");
+        String typefaces = javaSource("KeyboardTypefaceCatalog");
+        String smoke = readWorkspaceFile("scripts/smoke-dingul-typing.ps1");
+
+        assertFalse(service.contains("runtimeStateIndicatorView"));
+        assertFalse(service.contains("runtime_state_indicator_format"));
+        assertTrue(preferences.contains("DEFAULT_TRANSPARENT_OVERLAY_INPUT_ENABLED = false"));
+        assertTrue(keyboard.contains("Log.isLoggable(TYPING_PROBE_TAG, Log.DEBUG)"));
+        assertTrue(keyboard.contains("Log.isLoggable(ONE_FINGER_PROBE_TAG, Log.DEBUG)"));
+        assertTrue(smoke.contains("setprop log.tag.$ProbeTag DEBUG"));
+        String emitTouch = keyboard.substring(
+                keyboard.indexOf("private void emitTouchOutput"),
+                keyboard.indexOf("private int longPressDelayFor"));
+        assertTrue(emitTouch.indexOf("emitValue(output.value)") < emitTouch.indexOf("rememberTextTouch(output)"));
+        String emitValue = keyboard.substring(
+                keyboard.indexOf("private void emitValue"),
+                keyboard.indexOf("private void feedbackForKey"));
+        assertTrue(emitValue.indexOf("listener.accept(value)") < emitValue.indexOf("recordImmediateDeleteIfNeeded(value)"));
+        assertTrue(typefaces.contains("STYLE_CACHE"));
+    }
+
+    @Test
     public void quickSettingsPanelStaysOutOfImeServiceBody() throws Exception {
         String service = javaSource("S3KeyboardService");
         String normalizedService = service.replace("\r\n", "\n");

@@ -207,7 +207,7 @@ function Read-Emits {
     return $emits
 }
 
-Invoke-AdbTarget shell setprop log.tag.$ProbeTag INFO
+Invoke-AdbTarget shell setprop log.tag.$ProbeTag DEBUG
 Invoke-AdbTarget logcat -c
 Invoke-AdbTarget wait-for-device
 Invoke-AdbTarget install -r $Apk

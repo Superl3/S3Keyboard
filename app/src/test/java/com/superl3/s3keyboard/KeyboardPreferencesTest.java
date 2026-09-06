@@ -8,8 +8,8 @@ import org.junit.Test;
 
 public final class KeyboardPreferencesTest {
     @Test
-    public void transparentOverlayInputDefaultsOnDuringExperimentalPhase() {
-        assertTrue(KeyboardPreferences.DEFAULT_TRANSPARENT_OVERLAY_INPUT_ENABLED);
+    public void transparentOverlayInputDefaultsOffForOrdinaryImeUse() {
+        assertFalse(KeyboardPreferences.DEFAULT_TRANSPARENT_OVERLAY_INPUT_ENABLED);
         assertTrue(TransparentOverlayStyle.fromPreference(null)
                 == TransparentOverlayStyle.TRANSLUCENT_KEYS);
         assertTrue(TransparentOverlayStyle.fromPreference("extreme_floating")

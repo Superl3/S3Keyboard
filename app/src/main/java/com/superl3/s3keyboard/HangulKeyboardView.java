@@ -121,6 +121,7 @@ public final class HangulKeyboardView extends View
     private final KeyboardFeedback feedback = new KeyboardFeedback(this);
     private final RepeatController repeatController = new RepeatController(this, this::emitValue);
     private final boolean previewOnly;
+    private boolean typingProbeLoggingEnabled;
 
     private KeyboardSettings settings = KeyboardSettings.defaults();
     private boolean transparentOverlayPresentation;
@@ -1617,9 +1618,9 @@ public final class HangulKeyboardView extends View
         if (output == null) {
             return;
         }
-        rememberTextTouch(output);
-        logTypingProbeEmit(output);
         emitValue(output.value);
+        logTypingProbeEmit(output);
+        rememberTextTouch(output);
     }
 
     private int longPressDelayFor(GestureKey key) {
@@ -1724,8 +1725,8 @@ public final class HangulKeyboardView extends View
             return;
         }
         if (listener != null && value != null && !value.isEmpty()) {
-            recordImmediateDeleteIfNeeded(value);
             listener.accept(value);
+            recordImmediateDeleteIfNeeded(value);
         }
     }
 
@@ -2225,7 +2226,10 @@ public final class HangulKeyboardView extends View
     }
 
     private void scheduleTypingProbePlanLog() {
-        if (!shouldLogTypingProbe()) {
+        typingProbeLoggingEnabled = isDebuggableBuild()
+                && Log.isLoggable(TYPING_PROBE_TAG, Log.DEBUG)
+                && activeLayoutIsDingul();
+        if (!typingProbeLoggingEnabled) {
             return;
         }
         post(this::logTypingProbePlan);
@@ -2284,12 +2288,11 @@ public final class HangulKeyboardView extends View
     }
 
     private boolean shouldLogTypingProbe() {
-        return isDebuggableBuild()
-                && activeLayoutIsDingul();
+        return typingProbeLoggingEnabled;
     }
 
     private void logOneFingerProbe(String eventName, KeySlot keySlot, String detail, float x, float y) {
-        if (!isDebuggableBuild()) {
+        if (!isDebuggableBuild() || !Log.isLoggable(ONE_FINGER_PROBE_TAG, Log.DEBUG)) {
             return;
         }
         Log.i(ONE_FINGER_PROBE_TAG, String.format(

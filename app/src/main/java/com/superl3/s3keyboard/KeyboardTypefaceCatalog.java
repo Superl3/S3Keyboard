@@ -12,6 +12,7 @@ final class KeyboardTypefaceCatalog {
     static final String ASSET_D2CODING = "fonts/D2Coding.ttf";
 
     private static final Map<String, Typeface> CACHE = new HashMap<>();
+    private static final Map<String, Typeface> STYLE_CACHE = new HashMap<>();
 
     private KeyboardTypefaceCatalog() {
     }
@@ -24,8 +25,15 @@ final class KeyboardTypefaceCatalog {
         if (italic) {
             style |= Typeface.ITALIC;
         }
-        Typeface base = bundledTypeface(context, KeyboardSettings.normalizeFontFamily(fontFamily));
-        return Typeface.create(base, style);
+        String normalizedFamily = KeyboardSettings.normalizeFontFamily(fontFamily);
+        String cacheKey = normalizedFamily + ":" + style;
+        Typeface cached = STYLE_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+        Typeface styled = Typeface.create(bundledTypeface(context, normalizedFamily), style);
+        STYLE_CACHE.put(cacheKey, styled);
+        return styled;
     }
 
     static String assetPathFor(String fontFamily) {

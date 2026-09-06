@@ -1,6 +1,6 @@
 # Current Agent Handoff
 
-Updated: 2026-09-04 KST
+Updated: 2026-09-07 KST
 Repository: `C:\Users\bug95\Documents\Codex\2026-05-19\mimic-apk-ux`
 Branch: `main`
 Base HEAD when this work started: `1cbcfb7`
@@ -20,7 +20,16 @@ The 2026-09 S01-S09 product-expansion roadmap and installable beta publishing wo
 Canonical entry point: `docs\ui-stabilization-2026-09\README.md`.
 **UI stabilization roadmap state: COMPLETE. There is no unfinished SUI session.**
 
-SUI01 through SUI05 are DONE. Baseline evidence remains `captures\ui-stabilization-202609\baseline` with `view-inventory.md` as the anomaly ledger. SUI02 removed the confirmed unwanted always-reserved clipboard/Text Tools top row while preserving explicit Text Tools access and sensitive-field suppression. SUI03 resolved the shared MainActivity/status-bar collision. SUI04 applied the shared inset repair to Theme Selector, Theme Editor, Accent Placement, Diagnostics, and Backup/Restore and changed the cramped Theme Selector A/B/light/dark row to two readable rows. SUI05 recaptured the complete clean-AVD portrait matrix at `captures\ui-stabilization-202609\sui05-final\app-settings-clean-avd`; its `.png/.xml` filename set matches baseline 127/127 with missing 0 and extra 0. Strict IME evidence is `captures\ui-stabilization-202609\sui05-final\ime-smoke-strict2`, responsive dark/landscape evidence is under `captures\ui-stabilization-202609\sui05-final\responsive`, and the final report is `docs\ui-stabilization-2026-09\final-visual-verification.md`. Fresh clean-data Dingul smoke is `captures\dingul-typing-20260904-151422` and passed 16 key actions. No unresolved in-scope `FIX/BLOCKER` remains; broad aesthetic redesign stayed out of scope.
+SUI01 through SUI05 are DONE. Baseline evidence remains `captures\ui-stabilization-202609\baseline` with `view-inventory.md` as the anomaly ledger. SUI02 removed the confirmed unwanted always-reserved clipboard/Text Tools top row while preserving explicit Text Tools access and sensitive-field suppression. SUI03 resolved the shared MainActivity/status-bar collision. SUI04 applied the shared inset repair to Theme Selector, Theme Editor, Accent Placement, Diagnostics, and Backup/Restore and changed the cramped Theme Selector A/B/light/dark row to two readable rows. SUI05 recaptured the complete clean-AVD portrait matrix at `captures\ui-stabilization-202609\sui05-final\app-settings-clean-avd`; its `.png/.xml` filename set matches baseline 127/127 with missing 0 and extra 0. Strict IME evidence is `captures\ui-stabilization-202609\sui05-final\ime-smoke-strict2`, responsive dark/landscape evidence is under `captures\ui-stabilization-202609\sui05-final\responsive`, and the final report is `docs\ui-stabilization-2026-09\final-visual-verification.md`. No unresolved in-scope `FIX/BLOCKER` remains; broad aesthetic redesign stayed out of scope.
+
+## 2026-09-07 post-roadmap IME maintenance
+
+- Removed the always-reserved runtime state row (`한글/영문 · Dingul/QWERTY · Remote/Caps/1F`) from the IME root, so ordinary typing starts directly at the keyboard surface.
+- Changed transparent overlay input to default OFF. Existing explicit user preference values are still honored; overlay remains an opt-in research surface.
+- Debug Dingul and one-finger probe logging is now opt-in through Android log-tag DEBUG priority instead of running on every key in the GitHub debug-signed build. `smoke-dingul-typing.ps1` explicitly enables the tag only for its test run.
+- Actual key delivery now occurs before touch-learning/journal bookkeeping; immediate-delete learning bookkeeping also runs after the listener receives the key.
+- Styled keyboard typefaces are cached to avoid repeated `Typeface.create(...)` allocations during preview/drawing.
+- Canonical `scripts\check.ps1` passes after these changes; fresh clean-data Dingul smoke on `emulator-5554` passed 16/16 actions at `captures\dingul-typing-20260907-083013`. The final capture visually confirms no dedicated state row above the keyboard.
 
 ## Hard constraints
 
@@ -219,7 +228,7 @@ S02 runtime verification — PASS on `emulator-5558`, evidence `captures\s02-ai-
 Implemented and verified on 2026-09-02 KST:
 - Added versioned per-app override records with legacy package-list compatibility, tri-state language/number-row/composing/text-convenience/Remote controls, per-app reset, and global clear.
 - Resolver precedence is built-in editor/app policy -> user app override -> hard password/number/raw restrictions; `remote=false` can suppress stored/auto Remote for a specific app.
-- Added a compact separate runtime state row for effective Hangul/English, Dingul/QWERTY, and active Remote/Caps/one-finger state; it does not overlap key touch bounds.
+- S03 originally added a compact separate runtime state row for effective Hangul/English, Dingul/QWERTY, and active Remote/Caps/one-finger state. That row was intentionally removed in the 2026-09-07 post-roadmap maintenance because it permanently consumed IME height; the underlying app-profile/state behavior remains intact.
 - Final `scripts\check.ps1` -> PASS (`testDebugUnitTest`, `lintDebug`, `assembleDebug`, theme/material/settings audits). `git diff --check` passed before documentation-only updates.
 - Main synthetic/real-app evidence: `captures\s03-app-profiles-20260902-runtime`.
 - Real Chrome URL bar with stored Hangul still resolved to `EN · QWERTY`: `chrome-url-focused-hangul-stored.png`.

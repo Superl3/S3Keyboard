@@ -156,7 +156,7 @@ final class KeyboardPreferences {
     static final int MAX_SPACEBAR_CURSOR_DEAD_ZONE_DP = 48;
     static final int DEFAULT_SINGLE_TAP_START_HOLD_MS = 300;
     static final int DEFAULT_SINGLE_TAP_COMMIT_HOLD_MS = 140;
-    static final boolean DEFAULT_TRANSPARENT_OVERLAY_INPUT_ENABLED = true;
+    static final boolean DEFAULT_TRANSPARENT_OVERLAY_INPUT_ENABLED = false;
     static final boolean DEFAULT_WATCH_RADIAL_INPUT_ENABLED = false;
     static final int MIN_SINGLE_TAP_HOLD_MS = 100;
     static final int MAX_SINGLE_TAP_HOLD_MS = 700;

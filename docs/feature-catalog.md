@@ -27,7 +27,7 @@ Scope: 현재 `main` 소스, 설정 문자열, 기능 감사, Remote/레이아�
 ### S03 · 앱별 입력 프로필
 - 앱 패키지별로 언어, 숫자줄, composing, 텍스트 편의, Remote를 `자동/켜기/끄기` 방식으로 재정의한다.
 - 비밀번호/숫자/raw 입력의 안전 정책은 사용자 앱 프로필보다 우선한다.
-- 현재 앱에 실제 적용된 `한글/영문 · Dingul/QWERTY · Remote/Caps/연속 입력` 상태를 키보드에 별도 표시한다.
+- 앱별 프로필의 실제 적용 상태는 빠른 설정과 키 자체 상태로 확인할 수 있으며, 일반 입력에서는 `한글/영문 · Dingul/QWERTY` 전용 상단 상태 행을 예약하지 않는다.
 - Chrome URL과 Google Messages 실제 입력 surface, Remote 자동 진입/이탈까지 런타임 확인했다.
 
 ### S04 · 통합 Text Tools
@@ -212,7 +212,7 @@ Scope: 현재 `main` 소스, 설정 문자열, 기능 감사, Remote/레이아�
 - clean-room vector icon pipeline과 외부 icon/display pack authoring 경로를 제공한다.
 
 ### 2.18 연구/실험 입력 surface
-- **투명 overlay 입력**: 입력창을 밀지 않고 keyboard를 화면 위에 겹치는 경로와 반투명/축소 스타일이 코드에 존재한다.
+- **투명 overlay 입력**: 입력창을 밀지 않고 keyboard를 화면 위에 겹치는 경로와 반투명/축소 스타일이 코드에 존재한다. 일반 IME의 기본값은 꺼짐이며 사용자가 명시적으로 켠 경우에만 사용한다.
 - **시계형 radial 입력**: 한글 자음/모음/기능을 radial page로 선택하는 watch-oriented 입력 경로가 코드와 설정에 존재한다.
 - 두 기능은 debug/demo testbed와 연결된 연구 surface를 포함하므로 이 문서에서는 closed-beta 핵심 완료 기능과 별도로 분류한다.
 
